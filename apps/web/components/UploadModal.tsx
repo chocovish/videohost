@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { X, UploadCloud, Film, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, UploadCloud, Film, CheckCircle2, AlertCircle, Folder } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSuccess: () => void;
+  currentFolderId?: string | null;
+  folderPathName?: string;
 }
 
-export default function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalProps) {
+export default function UploadModal({
+  isOpen,
+  onClose,
+  onUploadSuccess,
+  currentFolderId = null,
+  folderPathName = "Root",
+}: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -44,7 +52,11 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
       const presignedRes = await fetch("/api/upload/presigned", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description }),
+        body: JSON.stringify({
+          title,
+          description,
+          folderId: currentFolderId || null,
+        }),
       });
 
       const presignedData = await presignedRes.json();
@@ -161,6 +173,14 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                 </div>
               )}
             </label>
+          </div>
+
+          {/* Destination Folder Info Banner */}
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 font-medium">
+            <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
+            <span>
+              <strong className="font-bold">{folderPathName || "Root"}</strong>
+            </span>
           </div>
 
           <div>

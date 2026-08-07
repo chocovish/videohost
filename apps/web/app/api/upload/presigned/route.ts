@@ -20,9 +20,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
     }
 
-    const { title, description } = await req.json();
+    const { title, description, folderId: rawFolderId } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    const folderId = !rawFolderId || rawFolderId === "root" || rawFolderId === "null" ? null : rawFolderId;
+
+    if (folderId) {
+      const folderExists = await db.folder.findFirst({
+        where: { id: folderId, organizationId: orgId },
+      });
+      if (!folderExists) {
+        return NextResponse.json({ error: "Target folder not found" }, { status: 404 });
+      }
     }
 
     // Check plan quota limits
@@ -43,6 +54,7 @@ export async function POST(req: Request) {
       data: {
         organizationId: orgId,
         uploadedByUserId: userId,
+        folderId: folderId,
         title,
         description: description || null,
         status: "UPLOADING",

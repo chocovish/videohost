@@ -80,6 +80,7 @@ model Organization {
 
   members     OrganizationMember[]
   invitations Invitation[]
+  folders     Folder[]
   videos      Video[]
   apiKeys     ApiKey[]
   webhooks    Webhook[]
@@ -129,6 +130,26 @@ model Plan {
 }
 
 // --------------------------------------------------------
+// Folders
+// --------------------------------------------------------
+
+model Folder {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  parentId       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent         Folder?      @relation("NestedFolders", fields: [parentId], references: [id], onDelete: Cascade)
+  children       Folder[]     @relation("NestedFolders")
+  videos         Video[]
+
+  @@unique([organizationId, parentId, name])
+}
+
+// --------------------------------------------------------
 // Video Pipeline & Renditions
 // --------------------------------------------------------
 
@@ -136,6 +157,7 @@ model Video {
   id               String      @id @default(cuid())
   organizationId   String
   uploadedByUserId String
+  folderId         String?
   title            String
   description      String?
   status           VideoStatus @default(UPLOADING)
@@ -150,6 +172,7 @@ model Video {
   updatedAt        DateTime    @updatedAt
 
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  folder       Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
   renditions   VideoRendition[]
 }
 
