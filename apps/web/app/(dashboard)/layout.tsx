@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOrganizationUsage } from "@/lib/usage";
+import { db } from "@videohost/db";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 
@@ -11,12 +12,25 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/login");
   }
 
-  const orgName = (session as any).organizationName || "My Organization";
   const userEmail = session.user.email || "";
   const userName = session.user.name || undefined;
   const role = (session as any).role || "MEMBER";
   const orgId = (session as any).organizationId;
   const themeId = (session as any).themeId || "lime";
+
+  let orgName = (session as any).organizationName || "My Organization";
+
+  try {
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      select: { name: true },
+    });
+    if (org?.name) {
+      orgName = org.name;
+    }
+  } catch (e) {
+    console.error("Error fetching organization name in layout:", e);
+  }
 
   let usageMinutes = 0;
   let minutesLimit = 200;

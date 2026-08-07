@@ -37,22 +37,9 @@ export default function DeveloperPage() {
   useEffect(() => {
     // Initial mock API Keys & Webhooks data
     setApiKeys([
-      {
-        id: "key_1",
-        name: "Production Backend",
-        prefix: "vk_live_8f12",
-        createdAt: new Date().toISOString(),
-      },
     ]);
 
     setWebhooks([
-      {
-        id: "wh_1",
-        url: "https://api.myapp.com/webhooks/video-events",
-        secret: "whsec_994a1b028ce3728f",
-        events: ["video.ready", "video.failed"],
-        createdAt: new Date().toISOString(),
-      },
     ]);
   }, []);
 
@@ -125,21 +112,19 @@ export default function DeveloperPage() {
       <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] pb-3">
         <button
           onClick={() => setActiveTab("apikeys")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-            activeTab === "apikeys"
-              ? "bg-[hsl(var(--primary))] text-white shadow-xs"
-              : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${activeTab === "apikeys"
+            ? "bg-[hsl(var(--primary))] text-white shadow-xs"
+            : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
+            }`}
         >
           <Key className="w-4 h-4" /> API Keys
         </button>
         <button
           onClick={() => setActiveTab("webhooks")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-            activeTab === "webhooks"
-              ? "bg-[hsl(var(--primary))] text-white shadow-xs"
-              : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-          }`}
+          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${activeTab === "webhooks"
+            ? "bg-[hsl(var(--primary))] text-white shadow-xs"
+            : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
+            }`}
         >
           <Webhook className="w-4 h-4" /> Webhook Subscriptions
         </button>
@@ -258,11 +243,10 @@ export default function DeveloperPage() {
                   {["video.processing", "video.ready", "video.failed", "usage.limit_reached"].map((ev) => (
                     <label
                       key={ev}
-                      className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${
-                        selectedEvents.includes(ev)
-                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--foreground))]"
-                          : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
-                      }`}
+                      className={`p-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 ${selectedEvents.includes(ev)
+                        ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--foreground))]"
+                        : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                        }`}
                     >
                       <input
                         type="checkbox"
