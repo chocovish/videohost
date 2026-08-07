@@ -1,0 +1,21 @@
+{
+  "name": "videohost-monorepo",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "db:generate": "npm run --prefix packages/db generate",
+    "db:push": "npm run --prefix packages/db push",
+    "db:seed": "npm run --prefix packages/db seed"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
+}
