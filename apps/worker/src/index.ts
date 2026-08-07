@@ -1,7 +1,9 @@
 import { Worker } from "bullmq";
 import dotenv from "dotenv";
+import path from "path";
 import { processVideoJob } from "./transcoder";
 
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 dotenv.config();
 
 const redisHost = process.env.REDIS_HOST || "127.0.0.1";

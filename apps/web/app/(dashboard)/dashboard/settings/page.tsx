@@ -21,15 +21,8 @@ export default function SettingsPage() {
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
   useEffect(() => {
-    // Mock load organization members
-    setMembers([
-      {
-        id: "mem_1",
-        role: "OWNER",
-        joinedAt: new Date().toISOString(),
-        user: { name: "Admin Owner", email: "admin@example.com" },
-      },
-    ]);
+    // Load organization members
+    setMembers([]);
     setLoading(false);
   }, []);
 
@@ -118,22 +111,28 @@ export default function SettingsPage() {
 
             {/* Members Table */}
             <div className="divide-y divide-[hsl(var(--border))]">
-              {members.map((m) => (
-                <div key={m.id} className="py-3.5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center">
-                      {m.user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-[hsl(var(--foreground))]">{m.user.name}</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">{m.user.email}</p>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase">
-                    {m.role}
-                  </span>
+              {members.length === 0 ? (
+                <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                  No organization members added yet. Use the form above to invite team members.
                 </div>
-              ))}
+              ) : (
+                members.map((m) => (
+                  <div key={m.id} className="py-3.5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center">
+                        {m.user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-[hsl(var(--foreground))]">{m.user.name}</p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))]">{m.user.email}</p>
+                      </div>
+                    </div>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase">
+                      {m.role}
+                    </span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
