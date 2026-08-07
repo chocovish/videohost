@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Video, ArrowRight, ShieldCheck, Play } from "lucide-react";
+import { Video, ArrowRight, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,11 +13,41 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isUnverified, setIsUnverified] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState("");
+  const [resendError, setResendError] = useState("");
+
+  const handleResend = async () => {
+    if (!email) return;
+    setResending(true);
+    setResendSuccess("");
+    setResendError("");
+
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResendSuccess("Verification email resent successfully! Please check your inbox.");
+      } else {
+        setResendError(data.error || "Failed to resend verification email.");
+      }
+    } catch (err) {
+      setResendError("Failed to resend verification email.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setIsUnverified(false);
+    setResendSuccess("");
+    setResendError("");
     setLoading(true);
 
     try {
@@ -28,7 +58,12 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        if (res.error.includes("EMAIL_NOT_VERIFIED") || res.code === "EMAIL_NOT_VERIFIED") {
+        if (
+          res.error.includes("EMAIL_NOT_VERIFIED") ||
+          (res as any).code === "EMAIL_NOT_VERIFIED" ||
+          res.error === "EMAIL_NOT_VERIFIED" ||
+          res.url?.includes("EMAIL_NOT_VERIFIED")
+        ) {
           setError("Your email address is not verified yet. Please check your inbox for the confirmation link.");
           setIsUnverified(true);
         } else {
@@ -62,15 +97,46 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-medium text-center space-y-2">
-            <div>{error}</div>
+          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-medium space-y-3">
+            <div className="flex items-start gap-2.5 text-left">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">{error}</div>
+            </div>
+
             {isUnverified && (
-              <Link
-                href={`/verify-email?sent=true&email=${encodeURIComponent(email)}`}
-                className="inline-block text-xs font-semibold text-[hsl(var(--primary))] underline hover:opacity-80 pt-1"
-              >
-                Resend verification email
-              </Link>
+              <div className="pt-2.5 border-t border-red-500/20 text-left space-y-2">
+                {resendSuccess ? (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-semibold border border-emerald-500/20">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+                    <span>{resendSuccess}</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resending}
+                    className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                  >
+                    {resending ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Sending Verification Email...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-3.5 h-3.5" />
+                        <span>Resend Verification Email</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {resendError && (
+                  <div className="text-xs text-red-600 font-semibold text-center pt-1">
+                    {resendError}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -163,3 +229,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
