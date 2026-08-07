@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { db } from "@videohost/db";
+import { sendVerificationEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
@@ -34,13 +36,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // Transaction to create User, Org & Member
+    // Transaction to create User, Org, Member & VerificationToken
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           name,
           email,
           passwordHash,
+          emailVerified: null,
         },
       });
 
@@ -61,12 +64,41 @@ export async function POST(req: Request) {
         },
       });
 
-      return { user, organization };
+      // Generate verification token
+      const token = crypto.randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      await tx.verificationToken.deleteMany({
+        where: { identifier: email },
+      });
+
+      await tx.verificationToken.create({
+        data: {
+          identifier: email,
+          token,
+          expires,
+        },
+      });
+
+      return { user, organization, token };
     });
 
-    return NextResponse.json({ success: true, orgId: result.organization.id });
+    // Send verification email
+    try {
+      await sendVerificationEmail(email, result.token);
+    } catch (mailErr) {
+      console.error("Failed to send verification email:", mailErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      requiresVerification: true,
+      email,
+      orgId: result.organization.id,
+    });
   } catch (error: any) {
     console.error("Registration error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

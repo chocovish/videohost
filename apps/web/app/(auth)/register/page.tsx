@@ -34,7 +34,12 @@ export default function RegisterPage() {
         return;
       }
 
-      // Auto sign in
+      if (data.requiresVerification) {
+        router.push(`/verify-email?sent=true&email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      // Auto sign in for social / verified
       const signInRes = await signIn("credentials", {
         email,
         password,

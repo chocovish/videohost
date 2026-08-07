@@ -12,10 +12,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isUnverified, setIsUnverified] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsUnverified(false);
     setLoading(true);
 
     try {
@@ -26,12 +28,17 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
-        setError("Invalid email or password");
+        if (res.error.includes("EMAIL_NOT_VERIFIED") || res.code === "EMAIL_NOT_VERIFIED") {
+          setError("Your email address is not verified yet. Please check your inbox for the confirmation link.");
+          setIsUnverified(true);
+        } else {
+          setError("Invalid email or password");
+        }
       } else {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("An unexpected error occurred");
     } finally {
       setLoading(false);
@@ -55,8 +62,16 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-medium text-center">
-            {error}
+          <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-medium text-center space-y-2">
+            <div>{error}</div>
+            {isUnverified && (
+              <Link
+                href={`/verify-email?sent=true&email=${encodeURIComponent(email)}`}
+                className="inline-block text-xs font-semibold text-[hsl(var(--primary))] underline hover:opacity-80 pt-1"
+              >
+                Resend verification email
+              </Link>
+            )}
           </div>
         )}
 
