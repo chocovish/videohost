@@ -18,6 +18,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     id: video.id,
     title: video.title,
     description: video.description,
+    folderId: video.folderId,
     status: video.status,
     durationSeconds: video.durationSeconds,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,

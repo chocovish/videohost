@@ -10,6 +10,7 @@ interface VideoDetail {
   id: string;
   title: string;
   description?: string;
+  folderId?: string | null;
   status: string;
   durationSeconds?: number;
   sourceResolution?: string;
@@ -30,6 +31,8 @@ export default function VideoDetailPage() {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "UNLISTED">("PRIVATE");
+
+  const backUrl = video?.folderId ? `/dashboard?folderId=${video.folderId}` : "/dashboard";
 
   const fetchVideoDetail = async () => {
     try {
@@ -69,7 +72,7 @@ export default function VideoDetailPage() {
     try {
       const res = await fetch(`/api/v1/videos/${id}`, { method: "DELETE" });
       if (res.ok) {
-        router.push("/dashboard");
+        router.push(backUrl);
       }
     } catch (e) {
       console.error("Delete error", e);
@@ -114,7 +117,7 @@ export default function VideoDetailPage() {
       {/* Top Bar Navigation */}
       <div className="flex items-center justify-between">
         <Link
-          href="/dashboard"
+          href={backUrl}
           className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Videos

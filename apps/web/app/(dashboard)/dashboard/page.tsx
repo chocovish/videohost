@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Plus,
@@ -41,8 +42,11 @@ interface VideoItem {
   folderId?: string | null;
 }
 
-export default function DashboardPage() {
-  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentFolderId = searchParams.get("folderId");
+
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [allFolders, setAllFolders] = useState<{ id: string; name: string }[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
@@ -55,6 +59,14 @@ export default function DashboardPage() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+
+  const navigateToFolder = (folderId: string | null) => {
+    if (folderId) {
+      router.push(`/dashboard?folderId=${folderId}`);
+    } else {
+      router.push("/dashboard");
+    }
+  };
 
   const fetchFolders = async (parentId: string | null) => {
     try {
@@ -209,7 +221,7 @@ export default function DashboardPage() {
       {/* Breadcrumb Navigation Bar */}
       <div className="flex items-center gap-2 px-4 py-3 bg-white/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
         <button
-          onClick={() => setCurrentFolderId(null)}
+          onClick={() => navigateToFolder(null)}
           className={`flex items-center gap-1.5 font-semibold transition-colors ${
             currentFolderId === null
               ? "text-[hsl(var(--primary))]"
@@ -222,7 +234,7 @@ export default function DashboardPage() {
           <div key={b.id} className="flex items-center gap-2 shrink-0">
             <ChevronRight className="w-4 h-4 text-slate-400" />
             <button
-              onClick={() => setCurrentFolderId(b.id)}
+              onClick={() => navigateToFolder(b.id)}
               className={`font-semibold transition-colors ${
                 currentFolderId === b.id
                   ? "text-[hsl(var(--primary))]"
@@ -273,7 +285,7 @@ export default function DashboardPage() {
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                onClick={() => setCurrentFolderId(folder.id)}
+                onClick={() => navigateToFolder(folder.id)}
                 className="group cursor-pointer glass-card bg-white p-4 rounded-2xl border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50 hover:shadow-md transition-all flex items-center justify-between"
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -430,3 +442,12 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
