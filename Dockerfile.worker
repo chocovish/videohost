@@ -1,11 +1,11 @@
 FROM node:26-slim AS builder
 
 # Install system dependencies including FFmpeg and OpenSSL
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    ca-certificates \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     ffmpeg \
+#     ca-certificates \
+#     openssl \
+#     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -18,9 +18,7 @@ COPY apps/worker ./apps/worker
 RUN npm ci
 
 # Generate Prisma client for database package if present
-RUN if [ -f packages/db/prisma/schema.prisma ]; then npm run db:generate; fi
-
-# Build worker application (and any package dependencies)
+# RUN if [ -f packages/db/prisma/schema.prisma ]; then npm run db:generate; fi
 RUN npm run build:worker
 
 FROM node:26-slim AS runner

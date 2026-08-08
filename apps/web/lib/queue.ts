@@ -13,13 +13,13 @@ declare global {
 export const transcodeQueue =
   redisHost
     ? globalThis.transcodeQueue ||
-      new Queue("video-transcode", {
-        connection: {
-          host: redisHost,
-          port: redisPort,
-          password: redisPassword,
-        },
-      })
+    new Queue("video-transcode", {
+      connection: {
+        host: redisHost,
+        port: redisPort,
+        password: redisPassword,
+      },
+    })
     : undefined;
 
 if (process.env.NODE_ENV !== "production" && transcodeQueue) {
@@ -30,7 +30,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   const containerUrl = process.env.CONTAINER_WORKER_URL;
   const workerSecret = process.env.WORKER_SECRET_TOKEN;
 
-  const appBaseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = process.env.CUSTOM_WORKER_CALLBACK_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
   const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
   const cdnHost = process.env.NEXT_PUBLIC_CDN_HOST || `${r2Endpoint}/videohost`;
 
@@ -38,7 +38,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
 
   const video = await db.video.findUnique({ where: { id: videoId } });
   const originalKey = video?.originalKey || `${orgId}/${videoId}/original.mp4`;
-  const callbackUrl = `${appBaseUrl.replace(/\/$/, "")}/api/v1/videos/transcode-callback`;
+  const callbackUrl = `${baseUrl.replace(/\/$/, "")}/api/v1/videos/transcode-callback`;
 
   const region =
     (process.env.R2_REGION || process.env.S3_REGION || "").replace(/^["']|["']$/g, "").trim() ||
