@@ -84,6 +84,7 @@ model Organization {
   videos      Video[]
   apiKeys     ApiKey[]
   webhooks    Webhook[]
+  sharedLinks SharedLink[]
 }
 
 model OrganizationMember {
@@ -145,6 +146,7 @@ model Folder {
   parent         Folder?      @relation("NestedFolders", fields: [parentId], references: [id], onDelete: Cascade)
   children       Folder[]     @relation("NestedFolders")
   videos         Video[]
+  sharedLinks    SharedLink[]
 
   @@unique([organizationId, parentId, name])
 }
@@ -174,6 +176,7 @@ model Video {
   organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   folder       Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
   renditions   VideoRendition[]
+  sharedLinks  SharedLink[]
 }
 
 enum VideoStatus {
@@ -229,3 +232,26 @@ model Webhook {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
+
+// --------------------------------------------------------
+// Shared Links for Video & Folder Email Sharing
+// --------------------------------------------------------
+
+model SharedLink {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  organizationId String
+  videoId        String?
+  folderId       String?
+  recipientEmail String?
+  message        String?  @db.Text
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  video        Video?        @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  folder       Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+

@@ -56,3 +56,75 @@ export async function sendVerificationEmail(email: string, token: string) {
     html,
   });
 }
+
+export interface SendShareEmailOptions {
+  toEmail: string;
+  senderName: string;
+  organizationName: string;
+  targetType: "video" | "folder";
+  targetTitle: string;
+  shareUrl: string;
+  message?: string;
+}
+
+export async function sendShareEmail(options: SendShareEmailOptions) {
+  const { toEmail, senderName, organizationName, targetType, targetTitle, shareUrl, message } = options;
+  const isVideo = targetType === "video";
+  const itemTypeName = isVideo ? "video" : "folder";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 580px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .org-badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); color: #000; font-weight: 800; font-size: 14px; padding: 6px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 12px; color: #ffffff; }
+          p { font-size: 15px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px; }
+          .card { background-color: #0b1324; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin: 20px 0; }
+          .item-title { font-size: 18px; font-weight: 700; color: #84cc16; margin-bottom: 6px; }
+          .message-quote { border-left: 3px solid #84cc16; padding-left: 14px; font-style: italic; color: #cbd5e1; margin-top: 12px; font-size: 14px; }
+          .button-wrap { text-align: center; margin: 28px 0; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 700; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(132, 204, 22, 0.4); }
+          .link-box { background-color: #0b1324; padding: 12px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .footer { margin-top: 36px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="org-badge">${organizationName}</div>
+          <h1>${senderName} shared a ${itemTypeName} with you</h1>
+          <p>You have been invited to view a ${itemTypeName} hosted by <strong>${organizationName}</strong>.</p>
+          
+          <div class="card">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700;">Shared ${itemTypeName}</div>
+            <div class="item-title">${targetTitle}</div>
+            ${message ? `<div class="message-quote">"${message}"</div>` : ''}
+          </div>
+
+          <div class="button-wrap">
+            <a href="${shareUrl}" class="button" target="_blank">View Shared ${isVideo ? 'Video' : 'Folder'}</a>
+          </div>
+
+          <p>Or copy and paste this link into your browser:</p>
+          <div class="link-box">${shareUrl}</div>
+
+          <div class="footer">
+            Shared via <strong>${organizationName}</strong> on Video Host.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Video Host" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `${senderName} shared a ${itemTypeName} with you - ${organizationName}`,
+    html,
+  });
+}
+

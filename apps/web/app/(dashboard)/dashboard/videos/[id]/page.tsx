@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Shield, Globe, Eye, Lock, Trash2, Code, FileCode, Clock, Layers } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Shield, Globe, Eye, Lock, Trash2, Code, FileCode, Clock, Layers, Share2 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import ShareModal from "@/components/ShareModal";
 
 interface VideoDetail {
   id: string;
@@ -31,6 +32,7 @@ export default function VideoDetailPage() {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "UNLISTED">("PRIVATE");
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   const backUrl = video?.folderId ? `/dashboard?folderId=${video.folderId}` : "/dashboard";
 
@@ -122,13 +124,31 @@ export default function VideoDetailPage() {
         >
           <ArrowLeft className="w-4 h-4" /> Back to Videos
         </Link>
-        <button
-          onClick={handleDelete}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-        >
-          <Trash2 className="w-4 h-4" /> Delete Video
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsShareOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-lg transition-colors shadow-xs"
+          >
+            <Share2 className="w-4 h-4" /> Share Video
+          </button>
+          <button
+            onClick={handleDelete}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
+          >
+            <Trash2 className="w-4 h-4" /> Delete Video
+          </button>
+        </div>
       </div>
+
+      {video && (
+        <ShareModal
+          isOpen={isShareOpen}
+          onClose={() => setIsShareOpen(false)}
+          targetType="video"
+          targetId={video.id}
+          targetName={video.title}
+        />
+      )}
 
       {/* Main Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

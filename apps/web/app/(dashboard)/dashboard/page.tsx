@@ -18,9 +18,11 @@ import {
   Home,
   Trash2,
   MoreVertical,
+  Share2,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import CreateFolderModal from "@/components/CreateFolderModal";
+import ShareModal from "@/components/ShareModal";
 
 interface FolderItem {
   id: string;
@@ -59,6 +61,11 @@ function DashboardContent() {
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [shareTarget, setShareTarget] = useState<{
+    type: "video" | "folder";
+    id: string;
+    name: string;
+  } | null>(null);
 
   const navigateToFolder = (folderId: string | null) => {
     if (folderId) {
@@ -316,13 +323,25 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <button
-                  onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
-                  title="Delete folder"
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShareTarget({ type: "folder", id: folder.id, name: folder.name });
+                    }}
+                    title="Share folder via email"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                    title="Delete folder"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -426,15 +445,39 @@ function DashboardContent() {
                 </div>
 
                 {/* Card Footer */}
-                <div className="p-4 pt-0 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
                   <span>{new Date(video.createdAt).toLocaleDateString()}</span>
-                  {getStatusBadge(video.status)}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShareTarget({ type: "video", id: video.id, name: video.title });
+                      }}
+                      title="Share video via email"
+                      className="p-1 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    {getStatusBadge(video.status)}
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
         )}
       </div>
+
+      {/* Share Modal */}
+      {shareTarget && (
+        <ShareModal
+          isOpen={!!shareTarget}
+          onClose={() => setShareTarget(null)}
+          targetType={shareTarget.type}
+          targetId={shareTarget.id}
+          targetName={shareTarget.name}
+        />
+      )}
 
       {/* Create Folder Modal */}
       <CreateFolderModal
