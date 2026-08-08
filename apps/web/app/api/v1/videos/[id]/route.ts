@@ -67,18 +67,31 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
-  const shouldDeleteS3 =
-    process.env.DELETE_S3_ON_VIDEO_DELETE === "true" || process.env.DELETE_S3_ON_VIDEO_DELETE === "1";
+  const rawEnv = process.env.DELETE_S3_ON_VIDEO_DELETE || "";
+  const cleanedEnv = rawEnv.replace(/^["']|["']$/g, "").replace(/["'\r\n]/g, "").trim().toLowerCase();
+  const shouldDeleteS3 = cleanedEnv === "true" || cleanedEnv === "1";
+
+  console.log(
+    `[Video Delete] Received request to delete video ${params.id} (Title: "${video.title}"). DELETE_S3_ON_VIDEO_DELETE="${rawEnv}" -> shouldDeleteS3=${shouldDeleteS3}`
+  );
 
   if (shouldDeleteS3) {
     try {
+      console.log(`[Video Delete] S3 deletion enabled. Deleting S3 files for video ${params.id}...`);
       await deleteVideoFromS3(video.organizationId, video.id, video.originalKey);
+      console.log(`[Video Delete] S3 file deletion finished for video ${params.id}.`);
     } catch (err) {
-      console.error(`Failed to delete video ${params.id} files from S3:`, err);
+      console.error(`[Video Delete Error] Failed to delete video ${params.id} files from S3:`, err);
     }
+  } else {
+    console.log(
+      `[Video Delete] S3 deletion is disabled (DELETE_S3_ON_VIDEO_DELETE=${rawEnv}). Skipping S3 cleanup.`
+    );
   }
 
   await db.video.delete({ where: { id: params.id } });
+  console.log(`[Video Delete] Database record for video ${params.id} deleted successfully.`);
 
   return NextResponse.json({ success: true, message: `Video ${params.id} deleted` });
 }
+

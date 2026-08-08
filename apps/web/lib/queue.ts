@@ -40,12 +40,17 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   const originalKey = video?.originalKey || `${orgId}/${videoId}/original.mp4`;
   const callbackUrl = `${appBaseUrl.replace(/\/$/, "")}/api/v1/videos/transcode-callback`;
 
+  const region =
+    (process.env.R2_REGION || process.env.S3_REGION || "").replace(/^["']|["']$/g, "").trim() ||
+    r2Endpoint.match(/(?:compat\.objectstorage|objectstorage)\.([a-z0-9-]+)\.oraclecloud\.com/i)?.[1] ||
+    "auto";
+
   const s3Config = {
     endpoint: r2Endpoint,
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || "minioadmin",
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "passpass",
-    bucket: process.env.R2_BUCKET_NAME || "videohost",
-    region: "auto",
+    accessKeyId: (process.env.R2_ACCESS_KEY_ID || "minioadmin").replace(/^["']|["']$/g, "").trim(),
+    secretAccessKey: (process.env.R2_SECRET_ACCESS_KEY || "passpass").replace(/^["']|["']$/g, "").trim(),
+    bucket: (process.env.R2_BUCKET_NAME || "videohost").replace(/^["']|["']$/g, "").trim(),
+    region,
     cdnHost,
   };
 
@@ -89,7 +94,14 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
     console.log(`[Queue Dispatch] Enqueuing job to BullMQ Redis queue for videoId: ${videoId}`);
     return await transcodeQueue.add(
       "transcode",
-      { videoId, orgId },
+      {
+        videoId,
+        orgId,
+        organizationId: orgId,
+        originalKey,
+        callbackUrl,
+        s3: s3Config,
+      },
       {
         attempts: 3,
         backoff: {

@@ -27,13 +27,29 @@ function cleanEnv(val: string | undefined, fallback: string): string {
   return cleaned || fallback;
 }
 
+function getRegionFromEndpoint(endpoint: string, overrideRegion?: string): string {
+  if (overrideRegion && overrideRegion !== "auto") return overrideRegion;
+  if (process.env.R2_REGION || process.env.S3_REGION) {
+    return cleanEnv(process.env.R2_REGION || process.env.S3_REGION, "auto");
+  }
+  const ociMatch = endpoint.match(/(?:compat\.objectstorage|objectstorage)\.([a-z0-9-]+)\.oraclecloud\.com/i);
+  if (ociMatch && ociMatch[1]) {
+    return ociMatch[1];
+  }
+  const awsMatch = endpoint.match(/s3[.-]([a-z0-9-]+)\.amazonaws\.com/i);
+  if (awsMatch && awsMatch[1]) {
+    return awsMatch[1];
+  }
+  return "auto";
+}
+
 export function getS3ClientAndBucket(config?: S3ConfigContext) {
   const rawEndpoint = cleanEnv(config?.endpoint || process.env.R2_ENDPOINT, "http://localhost:9000");
   const endpoint = useDockerHostForLocalhost(rawEndpoint);
   const accessKeyId = cleanEnv(config?.accessKeyId || process.env.R2_ACCESS_KEY_ID, "minioadmin");
   const secretAccessKey = cleanEnv(config?.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY, "passpass");
   const bucket = cleanEnv(config?.bucket || process.env.R2_BUCKET_NAME, "videohost");
-  const region = cleanEnv(config?.region, "auto");
+  const region = getRegionFromEndpoint(rawEndpoint, config?.region);
   const cdnHost = cleanEnv(
     config?.cdnHost || process.env.NEXT_PUBLIC_CDN_HOST,
     `${rawEndpoint.replace(/\/$/, "")}/${bucket}`
@@ -44,6 +60,8 @@ export function getS3ClientAndBucket(config?: S3ConfigContext) {
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
+    requestChecksumCalculation: "WHEN_SUPPORTED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 
   return { client, bucket, cdnHost };

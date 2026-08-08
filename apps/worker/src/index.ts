@@ -121,7 +121,7 @@ if (redisHost && !redisDisabled) {
       "video-transcode",
       async (job) => {
         console.log(`[Worker Service] [Queue] Received job ${job.id} for videoId: ${job.data.videoId}`);
-        await processVideoJob(job.data.videoId);
+        await processVideoJob(job.data);
       },
       {
         connection: {

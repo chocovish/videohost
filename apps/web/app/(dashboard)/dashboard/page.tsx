@@ -112,18 +112,23 @@ function DashboardContent() {
     }
   };
 
-  const refreshAll = () => {
-    fetchFolders(currentFolderId);
-    fetchAllFolders();
-    fetchVideos(currentFolderId);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const refreshAll = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        fetchFolders(currentFolderId),
+        fetchAllFolders(),
+        fetchVideos(currentFolderId),
+      ]);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
     refreshAll();
-    const interval = setInterval(() => {
-      fetchVideos(currentFolderId);
-    }, 8000);
-    return () => clearInterval(interval);
   }, [currentFolderId]);
 
   const handleDeleteFolder = async (e: React.MouseEvent, folderId: string, name: string) => {
@@ -204,14 +209,23 @@ function DashboardContent() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={() => refreshAll()}
+            disabled={isRefreshing}
+            title="Refresh video assets"
+            className="px-3.5 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 text-slate-600 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
+            Refresh
+          </button>
+          <button
             onClick={() => setIsCreateFolderOpen(true)}
-            className="px-4 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2"
+            className="px-4 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-sm"
           >
             <FolderPlus className="w-4 h-4 text-amber-600" /> New Folder
           </button>
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="px-4 py-2.5 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+            className="px-4 py-2.5 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm"
           >
             <Plus className="w-4 h-4" /> Upload Video
           </button>
