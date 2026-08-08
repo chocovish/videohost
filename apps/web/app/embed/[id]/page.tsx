@@ -2,9 +2,10 @@ import { db } from "@videohost/db";
 import { getPublicCdnUrl } from "@/lib/s3";
 import VideoPlayer from "@/components/VideoPlayer";
 
-export default async function EmbedPage({ params }: { params: { id: string } }) {
+export default async function EmbedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const video = await db.video.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!video || video.status !== "READY") {

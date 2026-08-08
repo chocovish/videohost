@@ -3,12 +3,13 @@ import { authenticateRequest } from "@/lib/api-auth";
 import { getPublicCdnUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const authCtx = await authenticateRequest(req);
   if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const video = await db.video.findFirst({
-    where: { id: params.id, organizationId: authCtx.orgId },
+    where: { id, organizationId: authCtx.orgId },
     include: { renditions: true },
   });
 
@@ -34,19 +35,20 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   });
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const authCtx = await authenticateRequest(req);
   if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const video = await db.video.findFirst({
-    where: { id: params.id, organizationId: authCtx.orgId },
+    where: { id, organizationId: authCtx.orgId },
   });
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
   const updated = await db.video.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       title: body.title ?? video.title,
       description: body.description ?? video.description,
@@ -57,12 +59,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json(updated);
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const authCtx = await authenticateRequest(req);
   if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const video = await db.video.findFirst({
-    where: { id: params.id, organizationId: authCtx.orgId },
+    where: { id, organizationId: authCtx.orgId },
   });
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
@@ -72,16 +75,16 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   const shouldDeleteS3 = cleanedEnv === "true" || cleanedEnv === "1";
 
   console.log(
-    `[Video Delete] Received request to delete video ${params.id} (Title: "${video.title}"). DELETE_S3_ON_VIDEO_DELETE="${rawEnv}" -> shouldDeleteS3=${shouldDeleteS3}`
+    `[Video Delete] Received request to delete video ${id} (Title: "${video.title}"). DELETE_S3_ON_VIDEO_DELETE="${rawEnv}" -> shouldDeleteS3=${shouldDeleteS3}`
   );
 
   if (shouldDeleteS3) {
     try {
-      console.log(`[Video Delete] S3 deletion enabled. Deleting S3 files for video ${params.id}...`);
+      console.log(`[Video Delete] S3 deletion enabled. Deleting S3 files for video ${id}...`);
       await deleteVideoFromS3(video.organizationId, video.id, video.originalKey);
-      console.log(`[Video Delete] S3 file deletion finished for video ${params.id}.`);
+      console.log(`[Video Delete] S3 file deletion finished for video ${id}.`);
     } catch (err) {
-      console.error(`[Video Delete Error] Failed to delete video ${params.id} files from S3:`, err);
+      console.error(`[Video Delete Error] Failed to delete video ${id} files from S3:`, err);
     }
   } else {
     console.log(
@@ -89,9 +92,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     );
   }
 
-  await db.video.delete({ where: { id: params.id } });
-  console.log(`[Video Delete] Database record for video ${params.id} deleted successfully.`);
+  await db.video.delete({ where: { id } });
+  console.log(`[Video Delete] Database record for video ${id} deleted successfully.`);
 
-  return NextResponse.json({ success: true, message: `Video ${params.id} deleted` });
+  return NextResponse.json({ success: true, message: `Video ${id} deleted` });
 }
 

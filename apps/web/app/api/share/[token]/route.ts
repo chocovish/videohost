@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
 import { getPublicCdnUrl } from "@/lib/s3";
 
-export async function GET(req: Request, { params }: { params: { token: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
-    const { token } = params;
+    const { token } = await params;
     const url = new URL(req.url);
     const subfolderId = url.searchParams.get("subfolderId");
 

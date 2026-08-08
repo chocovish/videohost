@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: folderId } = await params;
   const authCtx = await authenticateRequest(req);
   if (!authCtx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const folderId = params.id;
   try {
     const folder = await db.folder.findFirst({
       where: { id: folderId, organizationId: authCtx.orgId },
@@ -49,13 +49,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id: folderId } = await params;
   const authCtx = await authenticateRequest(req);
   if (!authCtx) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const folderId = params.id;
   try {
     const folder = await db.folder.findFirst({
       where: { id: folderId, organizationId: authCtx.orgId },
