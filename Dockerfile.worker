@@ -1,0 +1,46 @@
+FROM node:26-slim AS builder
+
+# Install system dependencies including FFmpeg and OpenSSL
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    ca-certificates \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy monorepo configuration and package definitions
+COPY package.json package-lock.json turbo.json ./
+# COPY packages ./packages # not needed for now
+COPY apps/worker ./apps/worker
+
+# Install workspace dependencies
+RUN npm ci
+
+# Generate Prisma client for database package if present
+RUN if [ -f packages/db/prisma/schema.prisma ]; then npm run db:generate; fi
+
+# Build worker application (and any package dependencies)
+RUN npm run build:worker
+
+FROM node:26-slim AS runner
+
+# Install runtime system dependencies (FFmpeg, OpenSSL, CA certificates)
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    ca-certificates \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV PORT=8080
+ENV IS_DOCKER=true
+
+# Copy built application and workspace dependencies from builder stage
+COPY --from=builder /app ./
+
+EXPOSE 8080
+
+CMD ["npm", "run", "start:worker"]
