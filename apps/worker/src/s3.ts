@@ -10,25 +10,48 @@ import {
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
+import { useDockerHostForLocalhost } from "./urlUtils";
 
-const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
-const r2AccessKey = process.env.R2_ACCESS_KEY_ID || "minioadmin";
-const r2SecretKey = process.env.R2_SECRET_ACCESS_KEY || "passpass";
-const r2Bucket = process.env.R2_BUCKET_NAME || "videohost";
+export interface S3ConfigContext {
+  endpoint?: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
+  bucket?: string;
+  region?: string;
+  cdnHost?: string;
+}
 
-export const s3 = new S3Client({
-  region: "auto",
-  endpoint: r2Endpoint,
-  credentials: {
-    accessKeyId: r2AccessKey,
-    secretAccessKey: r2SecretKey,
-  },
-  forcePathStyle: true,
-});
+function cleanEnv(val: string | undefined, fallback: string): string {
+  if (!val) return fallback;
+  const cleaned = val.replace(/["'\r\n]/g, "").trim();
+  return cleaned || fallback;
+}
 
-export const BUCKET_NAME = r2Bucket;
+export function getS3ClientAndBucket(config?: S3ConfigContext) {
+  const rawEndpoint = cleanEnv(config?.endpoint || process.env.R2_ENDPOINT, "http://localhost:9000");
+  const endpoint = useDockerHostForLocalhost(rawEndpoint);
+  const accessKeyId = cleanEnv(config?.accessKeyId || process.env.R2_ACCESS_KEY_ID, "minioadmin");
+  const secretAccessKey = cleanEnv(config?.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY, "passpass");
+  const bucket = cleanEnv(config?.bucket || process.env.R2_BUCKET_NAME, "videohost");
+  const region = cleanEnv(config?.region, "auto");
+  const cdnHost = cleanEnv(
+    config?.cdnHost || process.env.NEXT_PUBLIC_CDN_HOST,
+    `${rawEndpoint.replace(/\/$/, "")}/${bucket}`
+  );
 
-export async function ensureBucketExists(): Promise<void> {
+  const client = new S3Client({
+    region,
+    endpoint,
+    credentials: { accessKeyId, secretAccessKey },
+    forcePathStyle: true,
+  });
+
+  return { client, bucket, cdnHost };
+}
+
+export async function ensureBucketExists(config?: S3ConfigContext): Promise<void> {
+  const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
+
   try {
     await s3.send(new HeadBucketCommand({ Bucket: BUCKET_NAME }));
   } catch (err: any) {
@@ -80,7 +103,12 @@ export async function ensureBucketExists(): Promise<void> {
   } catch (e) {}
 }
 
-export async function downloadFileFromS3(key: string, destinationPath: string): Promise<void> {
+export async function downloadFileFromS3(
+  key: string,
+  destinationPath: string,
+  config?: S3ConfigContext
+): Promise<void> {
+  const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -97,8 +125,14 @@ export async function downloadFileFromS3(key: string, destinationPath: string): 
   });
 }
 
-export async function uploadFileToS3(filePath: string, key: string, contentType: string): Promise<string> {
-  await ensureBucketExists();
+export async function uploadFileToS3(
+  filePath: string,
+  key: string,
+  contentType: string,
+  config?: S3ConfigContext
+): Promise<string> {
+  await ensureBucketExists(config);
+  const { client: s3, bucket: BUCKET_NAME, cdnHost } = getS3ClientAndBucket(config);
 
   const fileBuffer = fs.readFileSync(filePath);
   const command = new PutObjectCommand({
@@ -109,12 +143,15 @@ export async function uploadFileToS3(filePath: string, key: string, contentType:
   });
 
   await s3.send(command);
-  const publicCdn = process.env.NEXT_PUBLIC_CDN_HOST || "http://localhost:9000/videohost";
-  return `${publicCdn}/${key}`;
+  return `${cdnHost.replace(/\/$/, "")}/${key}`;
 }
 
-export async function uploadDirectoryToS3(dirPath: string, keyPrefix: string): Promise<void> {
-  await ensureBucketExists();
+export async function uploadDirectoryToS3(
+  dirPath: string,
+  keyPrefix: string,
+  config?: S3ConfigContext
+): Promise<void> {
+  await ensureBucketExists(config);
 
   const files = fs.readdirSync(dirPath, { recursive: true });
 
@@ -132,6 +169,6 @@ export async function uploadDirectoryToS3(dirPath: string, keyPrefix: string): P
     else if (relativePath.endsWith(".jpg") || relativePath.endsWith(".jpeg")) contentType = "image/jpeg";
     else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
 
-    await uploadFileToS3(fullPath, s3Key, contentType);
+    await uploadFileToS3(fullPath, s3Key, contentType, config);
   }
 }

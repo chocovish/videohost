@@ -1,8 +1,16 @@
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
-import { db } from "@videohost/db";
-import { downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
+import { S3ConfigContext, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
+import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
+
+export interface TranscodeJobPayload {
+  videoId: string;
+  organizationId: string;
+  originalKey: string;
+  callbackUrl?: string;
+  s3?: S3ConfigContext;
+}
 
 export interface RenditionConfig {
   resolution: "480p" | "720p" | "1080p" | "1440p" | "4k";
@@ -32,22 +40,21 @@ export async function probeVideo(filePath: string): Promise<{ width: number; hei
   });
 }
 
-export async function processVideoJob(videoId: string): Promise<void> {
-  console.log(`[Worker] Starting transcoding for videoId: ${videoId}`);
+export async function processVideoJob(payloadInput: TranscodeJobPayload | string): Promise<any> {
+  const rawPayload: TranscodeJobPayload =
+    typeof payloadInput === "string"
+      ? {
+          videoId: payloadInput,
+          organizationId: "default",
+          originalKey: `default/${payloadInput}/original.mp4`,
+        }
+      : payloadInput;
 
-  const video = await db.video.findUnique({
-    where: { id: videoId },
-    include: { organization: true },
-  });
+  // Transform incoming payload URLs with localhost to host.docker.internal for worker container network calls
+  const payload = useDockerHostForLocalhost(rawPayload);
 
-  if (!video) {
-    throw new Error(`Video not found: ${videoId}`);
-  }
-
-  await db.video.update({
-    where: { id: videoId },
-    data: { status: "PROCESSING" },
-  });
+  const { videoId, organizationId, originalKey, callbackUrl } = payload;
+  console.log(`[Worker Stateless] Starting transcoding for videoId: ${videoId}, key: ${originalKey}`);
 
   const tempDir = path.join(process.cwd(), "temp", videoId);
   fs.mkdirSync(tempDir, { recursive: true });
@@ -55,9 +62,9 @@ export async function processVideoJob(videoId: string): Promise<void> {
   const inputPath = path.join(tempDir, "original.mp4");
 
   try {
-    // 1. Download original file from R2
-    console.log(`[Worker] Downloading source video: ${video.originalKey}`);
-    await downloadFileFromS3(video.originalKey, inputPath);
+    // 1. Download original file from R2/S3
+    console.log(`[Worker] Downloading source video: ${originalKey}`);
+    await downloadFileFromS3(originalKey, inputPath, payload.s3);
 
     // 2. Probe metadata
     const { width, height, duration } = await probeVideo(inputPath);
@@ -124,90 +131,89 @@ export async function processVideoJob(videoId: string): Promise<void> {
     });
 
     // 7. Upload HLS structure & thumbnail to R2
-    const orgId = video.organizationId;
+    const orgId = organizationId || "default";
     const s3HlsPrefix = `${orgId}/${videoId}/hls`;
     const s3ThumbKey = `${orgId}/${videoId}/thumbnail.jpg`;
 
     console.log(`[Worker] Uploading HLS renditions to R2 under ${s3HlsPrefix}...`);
-    await uploadDirectoryToS3(hlsOutputDir, s3HlsPrefix);
+    await uploadDirectoryToS3(hlsOutputDir, s3HlsPrefix, payload.s3);
 
     console.log(`[Worker] Uploading thumbnail to R2...`);
-    const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/jpeg");
+    const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/jpeg", payload.s3);
 
-    // 8. Update DB records
-    await db.videoRendition.deleteMany({ where: { videoId } });
+    const renditionsResult = targetRenditions.map((r) => ({
+      resolution: r.resolution,
+      bitrateKbps: r.bitrateKbps,
+      storageKey: `${s3HlsPrefix}/${r.resolution}/prog.m3u8`,
+    }));
 
-    for (const rend of targetRenditions) {
-      await db.videoRendition.create({
-        data: {
-          videoId,
-          resolution: rend.resolution,
-          bitrateKbps: rend.bitrateKbps,
-          storageKey: `${s3HlsPrefix}/${rend.resolution}/prog.m3u8`,
-          sizeBytes: BigInt(0),
-        },
-      });
+    const rawResultPayload = {
+      videoId,
+      organizationId: orgId,
+      status: "READY",
+      durationSeconds: duration,
+      sourceWidth: width,
+      sourceHeight: height,
+      thumbnailUrl,
+      renditions: renditionsResult,
+    };
+
+    // When responding back, ensure URLs respond with localhost
+    const resultPayload = useLocalhostForDockerHost(rawResultPayload);
+
+    console.log(`[Worker] Transcoding complete for ${videoId}! Posting results to callback...`);
+
+    if (callbackUrl) {
+      const workerSecret = process.env.WORKER_SECRET_TOKEN;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (workerSecret) {
+        headers["Authorization"] = `Bearer ${workerSecret}`;
+        headers["x-worker-secret"] = workerSecret;
+      }
+
+      try {
+        await fetch(callbackUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(resultPayload),
+        });
+        console.log(`[Worker] Successfully posted callback payload to ${callbackUrl}`);
+      } catch (cbErr: any) {
+        console.error(`[Worker Callback Error] Failed to post to ${callbackUrl}:`, cbErr?.message || cbErr);
+      }
     }
 
-    await db.video.update({
-      where: { id: videoId },
-      data: {
-        status: "READY",
-        durationSeconds: duration,
-        sourceWidth: width,
-        sourceHeight: height,
-        thumbnailUrl,
-      },
-    });
-
-    console.log(`[Worker] Video ${videoId} successfully transcoded and status set to READY!`);
-
-    // 9. Dispatch Webhook if registered
-    await triggerWebhooks(orgId, "video.ready", {
-      videoId,
-      title: video.title,
-      durationSeconds: duration,
-      thumbnailUrl,
-    });
+    return resultPayload;
   } catch (err: any) {
     console.error(`[Worker] Error transcoding video ${videoId}:`, err);
-    await db.video.update({
-      where: { id: videoId },
-      data: { status: "FAILED" },
-    });
-
-    await triggerWebhooks(video.organizationId, "video.failed", {
+    const rawFailPayload = {
       videoId,
+      organizationId: payload.organizationId,
+      status: "FAILED",
       error: err?.message || "Transcoding failed",
-    });
+    };
+    const failPayload = useLocalhostForDockerHost(rawFailPayload);
+
+    if (callbackUrl) {
+      const workerSecret = process.env.WORKER_SECRET_TOKEN;
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (workerSecret) {
+        headers["Authorization"] = `Bearer ${workerSecret}`;
+        headers["x-worker-secret"] = workerSecret;
+      }
+      try {
+        await fetch(callbackUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(failPayload),
+        });
+      } catch {}
+    }
 
     throw err;
   } finally {
-    // Cleanup temporary local dir
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
     } catch {}
-  }
-}
-
-async function triggerWebhooks(orgId: string, event: string, payload: object) {
-  try {
-    const webhooks = await db.webhook.findMany({
-      where: {
-        organizationId: orgId,
-        events: { has: event },
-      },
-    });
-
-    for (const wh of webhooks) {
-      console.log(`[Webhook Dispatch] Sending ${event} to ${wh.url}`);
-      fetch(wh.url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event, data: payload, timestamp: new Date().toISOString() }),
-      }).catch((e) => console.error(`[Webhook Dispatch Error]`, e));
-    }
-  } catch (e) {
-    console.error("[Webhook Trigger Error]", e);
   }
 }

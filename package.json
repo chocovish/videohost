@@ -4,11 +4,14 @@
   "packageManager": "npm@10.8.2",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=@videohost/web",
+    "dev:worker": "npm run dev --prefix apps/worker",
+    "dev:all": "turbo run dev",
     "lint": "turbo run lint",
     "db:generate": "npm run --prefix packages/db generate",
     "db:push": "npm run --prefix packages/db push",
-    "db:seed": "npm run --prefix packages/db seed"
+    "db:seed": "npm run --prefix packages/db seed",
+    "test:worker": "node scripts/test-worker.js"
   },
   "workspaces": [
     "apps/*",
