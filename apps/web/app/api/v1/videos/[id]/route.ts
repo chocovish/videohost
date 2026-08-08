@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPublicCdnUrl } from "@/lib/s3";
+import { getPublicCdnUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -66,6 +66,17 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   });
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
+
+  const shouldDeleteS3 =
+    process.env.DELETE_S3_ON_VIDEO_DELETE === "true" || process.env.DELETE_S3_ON_VIDEO_DELETE === "1";
+
+  if (shouldDeleteS3) {
+    try {
+      await deleteVideoFromS3(video.organizationId, video.id, video.originalKey);
+    } catch (err) {
+      console.error(`Failed to delete video ${params.id} files from S3:`, err);
+    }
+  }
 
   await db.video.delete({ where: { id: params.id } });
 

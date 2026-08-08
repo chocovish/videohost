@@ -6,6 +6,8 @@ import {
   CreateBucketCommand,
   PutBucketPolicyCommand,
   PutBucketCorsCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -105,4 +107,52 @@ export async function getPresignedPlaybackUrl(key: string, expiresInSeconds: num
 export function getPublicCdnUrl(key: string): string {
   const cdnHost = process.env.NEXT_PUBLIC_CDN_HOST || "http://localhost:9000/videohost";
   return `${cdnHost}/${key}`;
+}
+
+export async function deleteVideoFromS3(
+  organizationId: string,
+  videoId: string,
+  originalKey?: string | null
+): Promise<void> {
+  const prefix = `${organizationId}/${videoId}/`;
+  let continuationToken: string | undefined = undefined;
+
+  do {
+    const listCommand: ListObjectsV2Command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+    });
+
+    const listResponse = await s3.send(listCommand);
+    const objects = listResponse.Contents || [];
+
+    if (objects.length > 0) {
+      const deleteCommand = new DeleteObjectsCommand({
+        Bucket: BUCKET_NAME,
+        Delete: {
+          Objects: objects.filter((o) => o.Key).map((obj) => ({ Key: obj.Key! })),
+          Quiet: true,
+        },
+      });
+      await s3.send(deleteCommand);
+    }
+
+    continuationToken = listResponse.NextContinuationToken;
+  } while (continuationToken);
+
+  if (originalKey && !originalKey.startsWith(prefix)) {
+    try {
+      const deleteSingleCommand = new DeleteObjectsCommand({
+        Bucket: BUCKET_NAME,
+        Delete: {
+          Objects: [{ Key: originalKey }],
+          Quiet: true,
+        },
+      });
+      await s3.send(deleteSingleCommand);
+    } catch (err) {
+      console.error(`Failed to delete originalKey ${originalKey} from S3:`, err);
+    }
+  }
 }
