@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Video, Code2, Settings, HardDrive, Palette, Sparkles, LogOut, Check } from "lucide-react";
+import { Video, Code2, Settings, User, HardDrive, Palette, Sparkles, LogOut, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
 
@@ -39,6 +39,7 @@ export default function Sidebar({
     { label: "Videos", href: "/dashboard", icon: Video },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
     { label: "Organization", href: "/dashboard/settings", icon: Settings },
+    { label: "Profile", href: "/dashboard/profile", icon: User },
   ];
 
   return (

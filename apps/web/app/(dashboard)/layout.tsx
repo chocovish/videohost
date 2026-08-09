@@ -13,12 +13,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   const userEmail = session.user.email || "";
-  const userName = session.user.name || undefined;
+  let userName = session.user.name || undefined;
   const role = (session as any).role || "MEMBER";
   const orgId = (session as any).organizationId;
   const themeId = (session as any).themeId || "lime";
 
   let orgName = (session as any).organizationName || "My Organization";
+
+  try {
+    const userDb = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true },
+    });
+    if (userDb?.name) {
+      userName = userDb.name;
+    }
+  } catch (e) {
+    console.error("Error fetching user name in layout:", e);
+  }
 
   try {
     const org = await db.organization.findUnique({

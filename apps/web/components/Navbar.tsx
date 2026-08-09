@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { User, LogOut, ShieldAlert, Sparkles } from "lucide-react";
 
@@ -21,7 +22,11 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-[hsl(var(--muted))] text-sm">
+        <Link
+          href="/dashboard/profile"
+          className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors text-sm"
+          title="Profile Settings"
+        >
           <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center font-bold text-xs">
             {userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase()}
           </div>
@@ -29,7 +34,7 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
             <p className="text-xs font-semibold text-[hsl(var(--foreground))]">{userName || "User"}</p>
             <p className="text-[10px] text-[hsl(var(--muted-foreground))]">{userEmail}</p>
           </div>
-        </div>
+        </Link>
 
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
