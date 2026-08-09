@@ -36,6 +36,13 @@ export default function VideoPlayer({
   const [selectedQuality, setSelectedQuality] = useState<string>("auto");
   const [showMenu, setShowMenu] = useState(false);
 
+  const isHls = src ? (src.includes(".m3u8") || src.includes("/hls/")) : false;
+  const sourceType = isHls
+    ? "application/x-mpegURL"
+    : src?.endsWith(".webm")
+    ? "video/webm"
+    : "video/mp4";
+
   useEffect(() => {
     if (!playerRef.current && videoRef.current) {
       const videoElement = document.createElement("video-js");
@@ -59,7 +66,7 @@ export default function VideoPlayer({
           sources: [
             {
               src,
-              type: "application/x-mpegURL",
+              type: sourceType,
             },
           ],
         },
@@ -68,7 +75,7 @@ export default function VideoPlayer({
 
           // Initialize Video.js Quality Levels API if present
           const playerAny = player as any;
-          if (typeof playerAny.qualityLevels === "function") {
+          if (isHls && typeof playerAny.qualityLevels === "function") {
             const qualityLevels = playerAny.qualityLevels();
 
             const updateQualities = () => {
@@ -89,6 +96,8 @@ export default function VideoPlayer({
 
             qualityLevels.on("addqualitylevel", updateQualities);
             qualityLevels.on("change", updateQualities);
+          } else {
+            setQualities([]);
           }
 
           if (onReady) {
@@ -99,10 +108,10 @@ export default function VideoPlayer({
     } else if (playerRef.current) {
       const player = playerRef.current;
       player.autoplay(autoplay);
-      player.src([{ src, type: "application/x-mpegURL" }]);
+      player.src([{ src, type: sourceType }]);
       if (poster) player.poster(poster);
     }
-  }, [src, poster, controls, autoplay, onReady]);
+  }, [src, poster, controls, autoplay, onReady, sourceType, isHls]);
 
   useEffect(() => {
     const player = playerRef.current;

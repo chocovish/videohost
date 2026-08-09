@@ -107,10 +107,13 @@ export default function VideoDetailPage() {
     );
   }
 
+  const isHls = video.playbackUrl?.includes(".m3u8");
+  const mimeType = isHls ? "application/x-mpegURL" : "video/mp4";
+
   const iframeEmbedCode = `<iframe src="${window.location.origin}/embed/${video.id}" width="100%" height="450" frameborder="0" allowfullscreen></iframe>`;
   const scriptEmbedCode = `<link href="https://vjs.zencdn.net/8/video-js.css" rel="stylesheet" />
 <video-js id="player-${video.id}" class="vjs-big-play-centered" controls preload="auto">
-  <source src="${video.playbackUrl}" type="application/x-mpegURL">
+  <source src="${video.playbackUrl}" type="${mimeType}">
 </video-js>
 <script src="https://vjs.zencdn.net/8/video.js"></script>`;
 
@@ -150,102 +153,90 @@ export default function VideoDetailPage() {
         />
       )}
 
-      {/* Main Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Cols: Player & Embed Tabs */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-6">
-            <div>
-              <h1 className="text-2xl font-extrabold text-[hsl(var(--foreground))]">{video.title}</h1>
-              {video.description && (
-                <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">{video.description}</p>
-              )}
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] pb-3">
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Col: Player and Tabs */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="border border-[hsl(var(--border))] rounded-2xl bg-white p-4 shadow-xs space-y-4">
+            {/* Tabs */}
+            <div className="flex border-b border-[hsl(var(--border))] gap-6 text-sm font-semibold">
               <button
                 onClick={() => setActiveTab("player")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
                   activeTab === "player"
-                    ? "bg-[hsl(var(--primary))] text-white"
-                    : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
+                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 }`}
               >
                 <Play className="w-4 h-4" /> Player Preview
               </button>
               <button
                 onClick={() => setActiveTab("embed")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
                   activeTab === "embed"
-                    ? "bg-[hsl(var(--primary))] text-white"
-                    : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
+                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 }`}
               >
-                <Code className="w-4 h-4" /> Embed Code
+                <Code className="w-4 h-4" /> Embed Codes
               </button>
               <button
                 onClick={() => setActiveTab("renditions")}
-                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
                   activeTab === "renditions"
-                    ? "bg-[hsl(var(--primary))] text-white"
-                    : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
+                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 }`}
               >
                 <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length || 0})
               </button>
             </div>
 
-            {/* Tab 1: Bundled Video.js Player */}
+            {/* Tab 1: Video Player */}
             {activeTab === "player" && (
-              <div>
+              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden relative">
                 {video.playbackUrl ? (
                   <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
                 ) : (
-                  <div className="aspect-video bg-slate-900 rounded-xl flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                    <Clock className="w-12 h-12 mb-2 animate-pulse text-[hsl(var(--primary))]" />
-                    <p className="font-semibold text-sm">Video is currently being transcoded to HLS ladder</p>
-                    <p className="text-xs text-slate-500 mt-1">Check back in a moment or refresh page</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                    <Clock className="w-8 h-8 animate-spin" />
+                    <p className="text-sm font-medium">Video is currently processing...</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Tab 2: Embed Code Snippets */}
+            {/* Tab 2: Embed Code */}
             {activeTab === "embed" && (
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
-                      <FileCode className="w-4 h-4 text-[hsl(var(--primary))]" /> Responsive Iframe Embed
-                    </span>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                    <span>IFRAME EMBED (RECOMMENDED)</span>
                     <button
                       onClick={() => copyToClipboard(iframeEmbedCode, "iframe")}
-                      className="px-3 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] text-xs font-semibold rounded-md hover:bg-[hsl(var(--primary))]/20 transition-colors flex items-center gap-1"
+                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline"
                     >
                       {copiedType === "iframe" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedType === "iframe" ? "Copied" : "Copy Iframe"}
+                      {copiedType === "iframe" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto font-mono">
+                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono">
                     {iframeEmbedCode}
                   </pre>
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
-                      <Code className="w-4 h-4 text-[hsl(var(--primary))]" /> Native Video.js HTML Snippet
-                    </span>
+                <div className="space-y-2 pt-2">
+                  <div className="flex justify-between items-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                    <span>DIRECT VIDEO.JS EMBED</span>
                     <button
                       onClick={() => copyToClipboard(scriptEmbedCode, "script")}
-                      className="px-3 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] text-xs font-semibold rounded-md hover:bg-[hsl(var(--primary))]/20 transition-colors flex items-center gap-1"
+                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline"
                     >
                       {copiedType === "script" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedType === "script" ? "Copied" : "Copy HTML"}
+                      {copiedType === "script" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="bg-slate-900 text-emerald-400 p-4 rounded-xl text-xs overflow-x-auto font-mono">
+                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono">
                     {scriptEmbedCode}
                   </pre>
                 </div>
@@ -255,29 +246,40 @@ export default function VideoDetailPage() {
             {/* Tab 3: Transcoded Renditions Ladder */}
             {activeTab === "renditions" && (
               <div className="space-y-4">
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Adaptive bitrate renditions packaged into fMP4 / HLS streams:
-                </p>
-                <div className="divide-y divide-[hsl(var(--border))]">
-                  {video.renditions.map((rend) => (
-                    <div key={rend.resolution} className="py-3 flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold px-2.5 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] rounded-lg">
-                          {rend.resolution}
-                        </span>
-                        <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
-                          {rend.bitrateKbps} kbps bitrate
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => copyToClipboard(rend.playlistUrl, rend.resolution)}
-                        className="text-xs text-[hsl(var(--primary))] hover:underline font-medium"
-                      >
-                        {copiedType === rend.resolution ? "Copied URL" : "Copy Playlist URL"}
-                      </button>
+                {video.renditions?.length > 0 ? (
+                  <>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                      Adaptive bitrate renditions packaged into fMP4 / HLS streams:
+                    </p>
+                    <div className="divide-y divide-[hsl(var(--border))]">
+                      {video.renditions.map((rend) => (
+                        <div key={rend.resolution} className="py-3 flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold px-2.5 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] rounded-lg">
+                              {rend.resolution}
+                            </span>
+                            <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
+                              {rend.bitrateKbps} kbps bitrate
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(rend.playlistUrl, rend.resolution)}
+                            className="text-xs text-[hsl(var(--primary))] hover:underline font-medium"
+                          >
+                            {copiedType === rend.resolution ? "Copied URL" : "Copy Playlist URL"}
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                ) : (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
+                    <p className="font-semibold text-slate-800">Direct Playback Mode (Require HLS = OFF)</p>
+                    <p>
+                      HLS transcoding was disabled for this video upon upload. The original video file is stored in Cloudflare R2 and served directly.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -14,12 +14,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
-  await db.video.update({
-    where: { id },
-    data: { status: "QUEUED" },
-  });
+  if (video.requireHls) {
+    await db.video.update({
+      where: { id },
+      data: { status: "QUEUED" },
+    });
 
-  await addTranscodeJob(video.id, authCtx.orgId);
+    await addTranscodeJob(video.id, authCtx.orgId);
 
-  return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued" });
+    return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued" });
+  } else {
+    await db.video.update({
+      where: { id },
+      data: { status: "READY" },
+    });
+
+    return NextResponse.json({ id: video.id, status: "READY", message: "Video upload marked ready without transcoding" });
+  }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, UploadCloud, Film, CheckCircle2, AlertCircle, Folder } from "lucide-react";
+import { X, UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon } from "lucide-react";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -9,6 +9,120 @@ interface UploadModalProps {
   onUploadSuccess: () => void;
   currentFolderId?: string | null;
   folderPathName?: string;
+}
+
+interface VideoMetadata {
+  durationSeconds: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  thumbnailBlob: Blob | null;
+  thumbnailUrl: string | null;
+}
+
+function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    const url = URL.createObjectURL(file);
+    let resolved = false;
+
+    const cleanupAndResolve = (result: VideoMetadata) => {
+      if (!resolved) {
+        resolved = true;
+        URL.revokeObjectURL(url);
+        resolve(result);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      cleanupAndResolve({
+        durationSeconds: Math.round(video.duration || 0),
+        sourceWidth: video.videoWidth || 0,
+        sourceHeight: video.videoHeight || 0,
+        thumbnailBlob: null,
+        thumbnailUrl: null,
+      });
+    }, 4000);
+
+    const captureFrame = () => {
+      clearTimeout(timeoutId);
+      try {
+        const canvas = document.createElement("canvas");
+        const maxDim = 720; // Max width/height for lightweight fast loading thumbnails (~20-30KB)
+        const originalWidth = video.videoWidth || 640;
+        const originalHeight = video.videoHeight || 360;
+        const scale = Math.min(1, maxDim / Math.max(originalWidth, originalHeight));
+
+        canvas.width = Math.round(originalWidth * scale);
+        canvas.height = Math.round(originalHeight * scale);
+
+        const ctx = canvas.getContext("2d");
+        if (ctx && canvas.width > 0 && canvas.height > 0) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(
+            (blob) => {
+              const thumbUrl = blob ? URL.createObjectURL(blob) : null;
+              cleanupAndResolve({
+                durationSeconds: Math.round(video.duration || 0),
+                sourceWidth: originalWidth,
+                sourceHeight: originalHeight,
+                thumbnailBlob: blob,
+                thumbnailUrl: thumbUrl,
+              });
+            },
+            "image/jpeg",
+            0.7
+          );
+          return;
+        }
+      } catch (e) {
+        console.warn("Failed canvas thumbnail rendering:", e);
+      }
+
+      cleanupAndResolve({
+        durationSeconds: Math.round(video.duration || 0),
+        sourceWidth: video.videoWidth || 0,
+        sourceHeight: video.videoHeight || 0,
+        thumbnailBlob: null,
+        thumbnailUrl: null,
+      });
+    };
+
+    video.onloadedmetadata = () => {
+      const seekTime = Math.min(1.0, (video.duration || 0) / 2);
+      if (seekTime > 0) {
+        video.currentTime = seekTime;
+      } else {
+        captureFrame();
+      }
+    };
+
+    video.onseeked = captureFrame;
+
+    video.onerror = () => {
+      clearTimeout(timeoutId);
+      cleanupAndResolve({
+        durationSeconds: 0,
+        sourceWidth: 0,
+        sourceHeight: 0,
+        thumbnailBlob: null,
+        thumbnailUrl: null,
+      });
+    };
+
+    video.src = url;
+  });
+}
+
+function formatDuration(seconds: number): string {
+  if (!seconds) return "0s";
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  if (mins === 0) return `${secs}s`;
+  return `${mins}m ${secs.toString().padStart(2, "0")}s`;
 }
 
 export default function UploadModal({
@@ -19,6 +133,8 @@ export default function UploadModal({
   folderPathName = "Root",
 }: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+  const [requireHls, setRequireHls] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -26,14 +142,39 @@ export default function UploadModal({
   const [error, setError] = useState("");
   const [statusText, setStatusText] = useState("");
 
+  const resetForm = () => {
+    setFile(null);
+    setMetadata(null);
+    setRequireHls(false);
+    setTitle("");
+    setDescription("");
+    setError("");
+    setProgress(0);
+    setStatusText("");
+  };
+
+  const handleClose = () => {
+    if (uploading) return;
+    resetForm();
+    onClose();
+  };
+
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selected = e.target.files[0];
       setFile(selected);
       if (!title) {
         setTitle(selected.name.replace(/\.[^/.]+$/, ""));
+      }
+
+      // Collect video metadata & extract thumbnail on client side
+      try {
+        const meta = await extractVideoMetadataAndThumbnail(selected);
+        setMetadata(meta);
+      } catch (err) {
+        console.warn("Could not extract client video metadata/thumbnail:", err);
       }
     }
   };
@@ -48,7 +189,7 @@ export default function UploadModal({
     setStatusText("Requesting presigned upload URL...");
 
     try {
-      // 1. Request presigned upload URL
+      // 1. Request presigned upload URL (passing requireHls and client-extracted metadata)
       const presignedRes = await fetch("/api/upload/presigned", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,6 +197,10 @@ export default function UploadModal({
           title,
           description,
           folderId: currentFolderId || null,
+          requireHls,
+          durationSeconds: metadata?.durationSeconds || null,
+          sourceWidth: metadata?.sourceWidth || null,
+          sourceHeight: metadata?.sourceHeight || null,
         }),
       });
 
@@ -64,9 +209,9 @@ export default function UploadModal({
         throw new Error(presignedData.error || "Failed to generate upload URL");
       }
 
-      const { videoId, uploadUrl } = presignedData;
+      const { videoId, uploadUrl, thumbnailUploadUrl } = presignedData;
 
-      // 2. Upload file directly to R2 via XMLHttpRequest to track progress
+      // 2a. Upload video file directly to R2 via XMLHttpRequest to track progress
       setStatusText("Uploading video to Cloudflare R2...");
       await new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -92,8 +237,27 @@ export default function UploadModal({
         xhr.send(file);
       });
 
-      // 3. Signal upload complete to queue transcoding
-      setStatusText("Queueing HLS adaptive transcode job...");
+      // 2b. Upload client-extracted thumbnail image to R2
+      if (thumbnailUploadUrl && metadata?.thumbnailBlob) {
+        try {
+          setStatusText("Uploading video thumbnail...");
+          await fetch(thumbnailUploadUrl, {
+            method: "PUT",
+            headers: { "Content-Type": "image/jpeg" },
+            body: metadata.thumbnailBlob,
+          });
+        } catch (thumbErr) {
+          console.warn("Failed to upload client thumbnail:", thumbErr);
+        }
+      }
+
+      // 3. Signal upload complete
+      if (requireHls) {
+        setStatusText("Queueing HLS adaptive transcode job...");
+      } else {
+        setStatusText("Finalizing video upload...");
+      }
+
       const completeRes = await fetch("/api/upload/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -101,12 +265,18 @@ export default function UploadModal({
       });
 
       if (!completeRes.ok) {
-        throw new Error("Failed to queue transcode job");
+        throw new Error("Failed to finalize upload");
       }
 
-      setStatusText("Upload complete! Video queued for processing.");
+      if (requireHls) {
+        setStatusText("Upload complete! Video queued for processing.");
+      } else {
+        setStatusText("Upload complete! Video ready for playback.");
+      }
+
       setTimeout(() => {
         setUploading(false);
+        resetForm();
         onUploadSuccess();
         onClose();
       }, 1000);
@@ -128,7 +298,7 @@ export default function UploadModal({
             <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">Upload Video</h3>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={uploading}
             className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
@@ -145,7 +315,7 @@ export default function UploadModal({
 
         <form onSubmit={handleUpload} className="mt-4 space-y-4">
           {/* Dropzone */}
-          <div className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] rounded-xl p-6 text-center transition-colors bg-[hsl(var(--muted))]/30">
+          <div className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] rounded-xl p-5 text-center transition-colors bg-[hsl(var(--muted))]/30">
             <input
               type="file"
               accept="video/*"
@@ -156,13 +326,40 @@ export default function UploadModal({
               id="video-file-input"
             />
             <label htmlFor="video-file-input" className="cursor-pointer flex flex-col items-center justify-center">
-              <Film className="w-10 h-10 text-[hsl(var(--primary))] mb-2" />
+              {metadata?.thumbnailUrl ? (
+                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-sm">
+                  <img
+                    src={metadata.thumbnailUrl}
+                    alt="Extracted video thumbnail preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <ImageIcon className="w-3 h-3 text-emerald-400" /> Auto Thumbnail
+                  </div>
+                </div>
+              ) : (
+                <Film className="w-10 h-10 text-[hsl(var(--primary))] mb-2" />
+              )}
               {file ? (
-                <div>
+                <div className="space-y-1">
                   <p className="font-semibold text-sm text-[hsl(var(--foreground))]">{file.name}</p>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
                     {(file.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
+                  {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
+                    <div className="flex items-center justify-center gap-3 pt-1 text-[11px] font-medium text-[hsl(var(--primary))]">
+                      {metadata.durationSeconds > 0 && (
+                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                          <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
+                        </span>
+                      )}
+                      {metadata.sourceWidth > 0 && (
+                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                          <Maximize2 className="w-3 h-3" /> {metadata.sourceWidth}x{metadata.sourceHeight}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
@@ -175,11 +372,40 @@ export default function UploadModal({
             </label>
           </div>
 
+          {/* Require HLS Switch */}
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-[hsl(var(--border))]">
+            <div className="space-y-0.5">
+              <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
+                Require HLS
+              </label>
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                {requireHls
+                  ? "Transcode video into adaptive HLS stream (480p-4K)"
+                  : "Store original video & play directly without transcoding"}
+              </p>
+            </div>
+            <button
+              id="require-hls-toggle"
+              type="button"
+              role="switch"
+              aria-checked={requireHls}
+              disabled={uploading}
+              onClick={() => setRequireHls(!requireHls)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300"
+                }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${requireHls ? "translate-x-5" : "translate-x-0"
+                  }`}
+              />
+            </button>
+          </div>
+
           {/* Destination Folder Info Banner */}
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 font-medium">
             <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
             <span>
-              <strong className="font-bold">{folderPathName || "Root"}</strong>
+              Destination: <strong className="font-bold">{folderPathName || "Root"}</strong>
             </span>
           </div>
 
@@ -231,7 +457,7 @@ export default function UploadModal({
           <div className="flex justify-end gap-3 pt-4 border-t border-[hsl(var(--border))]">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={uploading}
               className="px-4 py-2 rounded-lg text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
             >
@@ -242,7 +468,7 @@ export default function UploadModal({
               disabled={uploading || !file}
               className="px-5 py-2 rounded-lg text-sm font-semibold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
             >
-              {uploading ? "Processing..." : "Upload & Transcode"}
+              {uploading ? "Processing..." : requireHls ? "Upload & Transcode" : "Upload Video"}
             </button>
           </div>
         </form>

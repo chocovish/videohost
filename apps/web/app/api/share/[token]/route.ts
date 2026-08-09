@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPublicCdnUrl } from "@/lib/s3";
+import { getPublicCdnUrl, getPlaybackUrl } from "@/lib/s3";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -32,10 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     // Shared Video
     if (sharedLink.videoId && sharedLink.video) {
       const video = sharedLink.video;
-      const playbackUrl =
-        video.status === "READY"
-          ? getPublicCdnUrl(`${video.organizationId}/${video.id}/hls/master.m3u8`)
-          : null;
+      const playbackUrl = getPlaybackUrl(video);
 
       return NextResponse.json({
         type: "video",
@@ -79,6 +76,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       // Fetch videos in active folder
       const rawVideos = await db.video.findMany({
         where: { folderId: activeFolderId, organizationId: sharedLink.organizationId },
+        include: { renditions: true },
         orderBy: { createdAt: "desc" },
       });
 
@@ -89,10 +87,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         status: v.status,
         durationSeconds: v.durationSeconds,
         thumbnailUrl: v.thumbnailUrl,
-        playbackUrl:
-          v.status === "READY"
-            ? getPublicCdnUrl(`${v.organizationId}/${v.id}/hls/master.m3u8`)
-            : null,
+        playbackUrl: getPlaybackUrl(v),
         createdAt: v.createdAt,
       }));
 

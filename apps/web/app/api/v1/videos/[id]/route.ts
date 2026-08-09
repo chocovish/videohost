@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPublicCdnUrl, deleteVideoFromS3 } from "@/lib/s3";
+import { getPublicCdnUrl, getPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -21,10 +21,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     description: video.description,
     folderId: video.folderId,
     status: video.status,
+    requireHls: video.requireHls,
     durationSeconds: video.durationSeconds,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     visibility: video.visibility,
-    playbackUrl: video.status === "READY" ? getPublicCdnUrl(`${video.organizationId}/${video.id}/hls/master.m3u8`) : null,
+    playbackUrl: getPlaybackUrl(video),
     thumbnailUrl: video.thumbnailUrl,
     renditions: video.renditions.map((r) => ({
       resolution: r.resolution,

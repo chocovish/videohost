@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPublicCdnUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
     }
 
-    const { title, description, folderId: rawFolderId } = await req.json();
+    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -60,21 +60,29 @@ export async function POST(req: Request) {
         status: "UPLOADING",
         originalKey: `temp-key`,
         visibility: "PRIVATE",
+        requireHls: Boolean(requireHls),
+        durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
+        sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
+        sourceHeight: sourceHeight ? Math.round(Number(sourceHeight)) : null,
       },
     });
 
     const originalKey = `${orgId}/${video.id}/original.mp4`;
+    const thumbnailKey = `${orgId}/${video.id}/thumbnail.jpg`;
+    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
 
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey },
+      data: { originalKey, thumbnailUrl },
     });
 
     const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
+    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/jpeg");
 
     return NextResponse.json({
       videoId: video.id,
       uploadUrl,
+      thumbnailUploadUrl,
       key: originalKey,
     });
   } catch (error: any) {

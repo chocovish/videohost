@@ -129,6 +129,21 @@ export function getPublicCdnUrl(key: string): string {
   return `${cdnHost}/${key}`;
 }
 
+export function getPlaybackUrl(video: {
+  status: string;
+  organizationId: string;
+  id: string;
+  originalKey: string;
+  requireHls?: boolean;
+  renditions?: any[];
+}): string | null {
+  if (video.status !== "READY") return null;
+  if (video.requireHls || (video.renditions && video.renditions.length > 0)) {
+    return getPublicCdnUrl(`${video.organizationId}/${video.id}/hls/master.m3u8`);
+  }
+  return getPublicCdnUrl(video.originalKey);
+}
+
 export async function deleteVideoFromS3(
   organizationId: string,
   videoId: string,

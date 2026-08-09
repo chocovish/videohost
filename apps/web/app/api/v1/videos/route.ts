@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPublicCdnUrl, getPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const orgId = authCtx.orgId;
 
   try {
-    const { title, description, visibility, folderId: rawFolderId } = await req.json();
+    const { title, description, visibility, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -38,6 +38,10 @@ export async function POST(req: Request) {
         status: "UPLOADING",
         originalKey: "temp",
         visibility: visibility || "PRIVATE",
+        requireHls: Boolean(requireHls),
+        durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
+        sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
+        sourceHeight: sourceHeight ? Math.round(Number(sourceHeight)) : null,
       },
     });
 
@@ -53,6 +57,7 @@ export async function POST(req: Request) {
       id: video.id,
       title: video.title,
       status: video.status,
+      requireHls: video.requireHls,
       folderId: video.folderId,
       uploadUrl,
       originalKey,
@@ -101,11 +106,12 @@ export async function GET(req: Request) {
     title: v.title,
     description: v.description,
     status: v.status,
+    requireHls: v.requireHls,
     folderId: v.folderId,
     folderName: v.folder?.name || null,
     durationSeconds: v.durationSeconds,
     visibility: v.visibility,
-    playbackUrl: v.status === "READY" ? getPublicCdnUrl(`${v.organizationId}/${v.id}/hls/master.m3u8`) : null,
+    playbackUrl: getPlaybackUrl(v),
     thumbnailUrl: v.thumbnailUrl,
     createdAt: v.createdAt,
   }));

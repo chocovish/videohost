@@ -25,16 +25,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
-    // Update status to QUEUED
-    await db.video.update({
-      where: { id: videoId },
-      data: { status: "QUEUED" },
-    });
+    if (video.requireHls) {
+      // Update status to QUEUED and queue transcoding job
+      await db.video.update({
+        where: { id: videoId },
+        data: { status: "QUEUED" },
+      });
 
-    // Enqueue transcode job
-    await addTranscodeJob(videoId, orgId);
+      await addTranscodeJob(videoId, orgId);
 
-    return NextResponse.json({ success: true, status: "QUEUED", videoId });
+      return NextResponse.json({ success: true, status: "QUEUED", videoId, requireHls: true });
+    } else {
+      // Direct video playback without HLS transcoding - set status to READY
+      await db.video.update({
+        where: { id: videoId },
+        data: { status: "READY" },
+      });
+
+      return NextResponse.json({ success: true, status: "READY", videoId, requireHls: false });
+    }
   } catch (error: any) {
     console.error("Upload complete route error:", error);
     return NextResponse.json({ error: "Failed to queue video" }, { status: 500 });

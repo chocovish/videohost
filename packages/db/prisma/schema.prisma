@@ -169,6 +169,7 @@ model Video {
   thumbnailUrl     String?
   spriteUrl        String?
   visibility       Visibility  @default(PRIVATE)
+  requireHls       Boolean     @default(false)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
