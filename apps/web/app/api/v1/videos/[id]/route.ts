@@ -24,7 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     requireHls: video.requireHls,
     durationSeconds: video.durationSeconds,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
-    visibility: video.visibility,
+    shareAccessMode: video.shareAccessMode,
     playbackUrl: getPlaybackUrl(video),
     thumbnailUrl: video.thumbnailUrl,
     renditions: video.renditions.map((r) => ({
@@ -53,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     data: {
       title: body.title ?? video.title,
       description: body.description ?? video.description,
-      visibility: body.visibility ?? video.visibility,
+      shareAccessMode: body.shareAccessMode ?? video.shareAccessMode,
     },
   });
 
@@ -98,4 +98,3 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   return NextResponse.json({ success: true, message: `Video ${id} deleted` });
 }
-

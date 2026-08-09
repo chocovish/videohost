@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Shield, Globe, Eye, Lock, Trash2, Code, FileCode, Clock, Layers, Share2 } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
 
@@ -15,7 +15,7 @@ interface VideoDetail {
   status: string;
   durationSeconds?: number;
   sourceResolution?: string;
-  visibility: "PUBLIC" | "PRIVATE" | "UNLISTED";
+  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
   playbackUrl?: string;
   thumbnailUrl?: string;
   renditions: { resolution: string; bitrateKbps: number; playlistUrl: string }[];
@@ -31,7 +31,6 @@ export default function VideoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
-  const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE" | "UNLISTED">("PRIVATE");
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   const backUrl = video?.folderId ? `/dashboard?folderId=${video.folderId}` : "/dashboard";
@@ -43,7 +42,6 @@ export default function VideoDetailPage() {
       const data = await res.json();
       if (res.ok) {
         setVideo(data);
-        setVisibility(data.visibility);
       }
     } catch (e) {
       console.error("Failed to load video details:", e);
@@ -55,19 +53,6 @@ export default function VideoDetailPage() {
   useEffect(() => {
     fetchVideoDetail();
   }, [id]);
-
-  const handleVisibilityChange = async (newVis: "PUBLIC" | "PRIVATE" | "UNLISTED") => {
-    setVisibility(newVis);
-    try {
-      await fetch(`/api/v1/videos/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visibility: newVis }),
-      });
-    } catch (e) {
-      console.error("Visibility change error", e);
-    }
-  };
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this video and all its transcoded renditions?")) return;
@@ -150,6 +135,9 @@ export default function VideoDetailPage() {
           targetType="video"
           targetId={video.id}
           targetName={video.title}
+          onAccessModeChange={(newMode) => {
+            setVideo((prev) => (prev ? { ...prev, shareAccessMode: newMode } : prev));
+          }}
         />
       )}
 
@@ -285,43 +273,8 @@ export default function VideoDetailPage() {
           </div>
         </div>
 
-        {/* Right 1 Col: Metadata & Controls Sidebar */}
+        {/* Right 1 Col: Metadata Sidebar */}
         <div className="space-y-6">
-          {/* Visibility Switcher Card */}
-          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-4">
-            <h3 className="font-bold text-sm text-[hsl(var(--foreground))] uppercase tracking-wider flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[hsl(var(--primary))]" /> Visibility Settings
-            </h3>
-
-            <div className="space-y-2">
-              {[
-                { id: "PUBLIC", label: "Public", icon: Globe, desc: "Accessible via direct CDN URL" },
-                { id: "UNLISTED", label: "Unlisted", icon: Eye, desc: "Accessible only with link" },
-                { id: "PRIVATE", label: "Private", icon: Lock, desc: "Requires signed playback URL" },
-              ].map((item) => {
-                const Icon = item.icon;
-                const isSelected = visibility === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleVisibilityChange(item.id as any)}
-                    className={`w-full p-3 rounded-xl text-left border transition-all flex items-start gap-3 ${
-                      isSelected
-                        ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
-                        : "border-[hsl(var(--border))] hover:bg-black/5"
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 mt-0.5 ${isSelected ? "text-[hsl(var(--primary))]" : "text-slate-400"}`} />
-                    <div>
-                      <p className="font-bold text-xs text-[hsl(var(--foreground))]">{item.label}</p>
-                      <p className="text-[10px] text-[hsl(var(--muted-foreground))]">{item.desc}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
           {/* Asset Info Card */}
           <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-3 text-xs">
             <h3 className="font-bold text-sm text-[hsl(var(--foreground))] uppercase tracking-wider mb-2">
@@ -330,6 +283,10 @@ export default function VideoDetailPage() {
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Video ID</span>
               <span className="font-mono text-[hsl(var(--foreground))]">{video.id}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
+              <span className="text-[hsl(var(--muted-foreground))]">Share Access</span>
+              <span className="font-bold text-[hsl(var(--foreground))] uppercase">{video.shareAccessMode}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Source Resolution</span>

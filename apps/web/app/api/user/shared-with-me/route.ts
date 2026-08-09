@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { getPlaybackUrl } from "@/lib/s3";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -15,49 +14,74 @@ export async function GET(req: Request) {
       select: { id: true, email: true },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    const userEmail = user.email ? user.email.toLowerCase() : "";
-
-    if (!userEmail) {
+    if (!user || !user.email) {
       return NextResponse.json({ items: [] });
     }
 
-    // Find all SharedLinks where recipientEmail matches the user's email
-    const sharedLinks = await db.sharedLink.findMany({
+    const userEmail = user.email.toLowerCase();
+
+    // Fetch shared videos
+    const sharedVideos = await db.video.findMany({
       where: {
-        recipientEmail: { equals: userEmail, mode: "insensitive" },
+        shareAccessMode: { not: "PRIVATE" },
+        sharedEmails: {
+          some: {
+            email: { equals: userEmail, mode: "insensitive" },
+          },
+        },
       },
       include: {
         organization: true,
-        video: true,
-        folder: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Fetch shared folders
+    const sharedFolders = await db.folder.findMany({
+      where: {
+        shareAccessMode: { not: "PRIVATE" },
+        sharedEmails: {
+          some: {
+            email: { equals: userEmail, mode: "insensitive" },
+          },
+        },
+      },
+      include: {
+        organization: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
 
-    const items = sharedLinks.map((link) => {
-      const isVideo = Boolean(link.videoId && link.video);
-      return {
-        id: link.id,
-        token: link.token,
-        shareUrl: `${baseUrl}/share/${link.token}`,
-        type: isVideo ? "video" : "folder",
-        title: isVideo ? link.video?.title || "Untitled Video" : link.folder?.name || "Untitled Folder",
-        description: isVideo ? link.video?.description : undefined,
-        thumbnailUrl: isVideo ? link.video?.thumbnailUrl : undefined,
-        durationSeconds: isVideo ? link.video?.durationSeconds : undefined,
-        organizationName: link.organization.name,
-        organizationLogo: link.organization.logoUrl,
-        message: link.message,
-        requireLogin: link.requireLogin,
-        createdAt: link.createdAt,
-      };
-    });
+    const videoItems = sharedVideos.map((video) => ({
+      id: video.id,
+      shareUrl: `${baseUrl}/share/${video.id}`,
+      accessMode: video.shareAccessMode,
+      type: "video" as const,
+      title: video.title,
+      description: video.description,
+      thumbnailUrl: video.thumbnailUrl,
+      durationSeconds: video.durationSeconds,
+      organizationName: video.organization.name,
+      organizationLogo: video.organization.logoUrl,
+      createdAt: video.createdAt,
+    }));
+
+    const folderItems = sharedFolders.map((folder) => ({
+      id: folder.id,
+      shareUrl: `${baseUrl}/share/${folder.id}`,
+      accessMode: folder.shareAccessMode,
+      type: "folder" as const,
+      title: folder.name,
+      organizationName: folder.organization.name,
+      organizationLogo: folder.organization.logoUrl,
+      createdAt: folder.createdAt,
+    }));
+
+    const items = [...videoItems, ...folderItems].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return NextResponse.json({ items });
   } catch (error: any) {

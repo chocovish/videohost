@@ -84,7 +84,6 @@ model Organization {
   videos      Video[]
   apiKeys     ApiKey[]
   webhooks    Webhook[]
-  sharedLinks SharedLink[]
 }
 
 model OrganizationMember {
@@ -142,11 +141,12 @@ model Folder {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  parent         Folder?      @relation("NestedFolders", fields: [parentId], references: [id], onDelete: Cascade)
-  children       Folder[]     @relation("NestedFolders")
-  videos         Video[]
-  sharedLinks    SharedLink[]
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parent          Folder?         @relation("NestedFolders", fields: [parentId], references: [id], onDelete: Cascade)
+  children        Folder[]        @relation("NestedFolders")
+  videos          Video[]
+  shareAccessMode ShareAccessMode @default(PUBLIC)
+  sharedEmails    SharedEmail[]
 
   @@unique([organizationId, parentId, name])
 }
@@ -169,15 +169,15 @@ model Video {
   originalKey      String      // R2 object key
   thumbnailUrl     String?
   spriteUrl        String?
-  visibility       Visibility  @default(PRIVATE)
   requireHls       Boolean     @default(false)
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
-  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  folder       Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
-  renditions   VideoRendition[]
-  sharedLinks  SharedLink[]
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  folder          Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  renditions      VideoRendition[]
+  shareAccessMode ShareAccessMode  @default(PUBLIC)
+  sharedEmails    SharedEmail[]
 }
 
 enum VideoStatus {
@@ -186,12 +186,6 @@ enum VideoStatus {
   PROCESSING
   READY
   FAILED
-}
-
-enum Visibility {
-  PUBLIC
-  PRIVATE
-  UNLISTED
 }
 
 model VideoRendition {
@@ -235,25 +229,28 @@ model Webhook {
 }
 
 // --------------------------------------------------------
-// Shared Links for Video & Folder Email Sharing
+// Email Access Control for Shared Videos & Folders
 // --------------------------------------------------------
 
-model SharedLink {
-  id             String   @id @default(cuid())
-  token          String   @unique
-  organizationId String
-  videoId        String?
-  folderId       String?
-  recipientEmail String?
-  message        String?  @db.Text
-  requireLogin   Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  expiresAt      DateTime?
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  video        Video?        @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  folder       Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
-
-  @@index([token])
-  @@index([recipientEmail])
+enum ShareAccessMode {
+  PUBLIC
+  RESTRICTED
+  PRIVATE
 }
+
+model SharedEmail {
+  id        String   @id @default(cuid())
+  videoId   String?
+  folderId  String?
+  email     String
+  createdAt DateTime @default(now())
+
+  video  Video?  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, email])
+  @@unique([folderId, email])
+  @@index([email])
+}
+
+

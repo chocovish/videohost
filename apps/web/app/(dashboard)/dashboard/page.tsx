@@ -39,7 +39,7 @@ interface VideoItem {
   status: "UPLOADING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
   durationSeconds?: number;
   thumbnailUrl?: string;
-  visibility: "PUBLIC" | "PRIVATE" | "UNLISTED";
+  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
   createdAt: string;
   folderId?: string | null;
 }
@@ -429,9 +429,9 @@ function DashboardContent() {
                       </span>
                     )}
 
-                    {/* Visibility Tag */}
+                    {/* Share Access Tag */}
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold uppercase backdrop-blur-xs">
-                      {video.visibility}
+                      {video.shareAccessMode}
                     </span>
                   </div>
 
@@ -480,6 +480,7 @@ function DashboardContent() {
           targetType={shareTarget.type}
           targetId={shareTarget.id}
           targetName={shareTarget.name}
+          onAccessModeChange={() => refreshAll()}
         />
       )}
 

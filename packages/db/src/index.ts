@@ -1,3 +1,12 @@
+import dotenv from "dotenv";
+import path from "path";
+
+// Try loading from root .env and current directory .env
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config();
+
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";

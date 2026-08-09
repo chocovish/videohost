@@ -7,31 +7,19 @@ export async function generateMetadata({
 }: {
   params: Promise<{ token: string }>;
 }): Promise<Metadata> {
-  const { token } = await params;
+  const { token } = await params; // token is video ID or folder ID
 
   try {
-    const sharedLink = await db.sharedLink.findUnique({
-      where: { token },
-      include: {
-        organization: true,
-        video: true,
-        folder: true,
-      },
+    const video = await db.video.findUnique({
+      where: { id: token },
+      include: { organization: true },
     });
 
-    if (!sharedLink) {
-      return {
-        title: "Shared Content | VideoHost",
-        description: "This shared link is invalid or has expired.",
-      };
-    }
-
-    if (sharedLink.videoId && sharedLink.video) {
-      const video = sharedLink.video;
-      const title = `${video.title} — ${sharedLink.organization.name}`;
+    if (video) {
+      const title = `${video.title} — ${video.organization.name}`;
       const description =
         video.description ||
-        `Watch "${video.title}" shared by ${sharedLink.organization.name} on VideoHost.`;
+        `Watch "${video.title}" shared by ${video.organization.name} on VideoHost.`;
       const imageUrl = video.thumbnailUrl || "/og-image.png";
 
       return {
@@ -41,7 +29,7 @@ export async function generateMetadata({
           title,
           description,
           url: `/share/${token}`,
-          siteName: sharedLink.organization.name,
+          siteName: video.organization.name,
           images: [
             {
               url: imageUrl,
@@ -61,10 +49,14 @@ export async function generateMetadata({
       };
     }
 
-    if (sharedLink.folderId && sharedLink.folder) {
-      const folder = sharedLink.folder;
-      const title = `${folder.name} (Folder) — ${sharedLink.organization.name}`;
-      const description = `Browse shared video collection "${folder.name}" from ${sharedLink.organization.name} on VideoHost.`;
+    const folder = await db.folder.findUnique({
+      where: { id: token },
+      include: { organization: true },
+    });
+
+    if (folder) {
+      const title = `${folder.name} (Folder) — ${folder.organization.name}`;
+      const description = `Browse shared video collection "${folder.name}" from ${folder.organization.name} on VideoHost.`;
 
       return {
         title,
@@ -73,7 +65,7 @@ export async function generateMetadata({
           title,
           description,
           url: `/share/${token}`,
-          siteName: sharedLink.organization.name,
+          siteName: folder.organization.name,
           images: [
             {
               url: "/og-image.png",

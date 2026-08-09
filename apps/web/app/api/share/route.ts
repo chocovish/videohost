@@ -2,7 +2,71 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { sendShareEmail } from "@/lib/mail";
-import crypto from "crypto";
+
+export async function GET(req: Request) {
+  const authCtx = await authenticateRequest(req);
+  if (!authCtx) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const targetType = searchParams.get("targetType") as "video" | "folder" | null;
+    const targetId = searchParams.get("targetId");
+
+    if (!targetType || !["video", "folder"].includes(targetType) || !targetId) {
+      return NextResponse.json(
+        { error: "Invalid parameters. Required: targetType ('video'|'folder') and targetId." },
+        { status: 400 }
+      );
+    }
+
+    let targetTitle = "";
+    let accessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" = "PUBLIC";
+    let allowedEmails: any[] = [];
+
+    if (targetType === "video") {
+      const video = await db.video.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      if (!video) {
+        return NextResponse.json({ error: "Video not found in organization" }, { status: 404 });
+      }
+      targetTitle = video.title;
+      accessMode = video.shareAccessMode;
+      allowedEmails = video.sharedEmails;
+    } else {
+      const folder = await db.folder.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      if (!folder) {
+        return NextResponse.json({ error: "Folder not found in organization" }, { status: 404 });
+      }
+      targetTitle = folder.name;
+      accessMode = folder.shareAccessMode;
+      allowedEmails = folder.sharedEmails;
+    }
+
+    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const shareUrl = `${baseUrl}/share/${targetId}`;
+
+    return NextResponse.json({
+      success: true,
+      id: targetId,
+      shareUrl,
+      accessMode,
+      allowedEmails,
+      targetType,
+      targetId,
+      targetTitle,
+    });
+  } catch (err: any) {
+    console.error("[GET /api/share Error]:", err);
+    return NextResponse.json({ error: err.message || "Failed to fetch share details" }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -12,7 +76,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { targetType, targetId, recipientEmail, message, requireLogin } = body;
+    const { action, targetType, targetId, accessMode, email, emailId, message } = body;
 
     if (!targetType || !["video", "folder"].includes(targetType) || !targetId) {
       return NextResponse.json(
@@ -24,81 +88,153 @@ export async function POST(req: Request) {
     const org = await db.organization.findUnique({
       where: { id: authCtx.orgId },
     });
-
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    const user = await db.user.findUnique({
-      where: { id: authCtx.userId },
-      select: { name: true, email: true },
-    });
-
-    const senderName = user?.name || user?.email?.split("@")[0] || "A teammate";
     let targetTitle = "";
+    let currentAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" = "PUBLIC";
 
     if (targetType === "video") {
       const video = await db.video.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
       });
-      if (!video) {
-        return NextResponse.json({ error: "Video not found in organization" }, { status: 404 });
-      }
+      if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
       targetTitle = video.title;
+      currentAccessMode = video.shareAccessMode;
     } else {
       const folder = await db.folder.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
       });
-      if (!folder) {
-        return NextResponse.json({ error: "Folder not found in organization" }, { status: 404 });
-      }
+      if (!folder) return NextResponse.json({ error: "Folder not found" }, { status: 404 });
       targetTitle = folder.name;
+      currentAccessMode = folder.shareAccessMode;
     }
 
-    const token = crypto.randomBytes(16).toString("hex");
-
-    const sharedLink = await db.sharedLink.create({
-      data: {
-        token,
-        organizationId: authCtx.orgId,
-        videoId: targetType === "video" ? targetId : null,
-        folderId: targetType === "folder" ? targetId : null,
-        recipientEmail: recipientEmail || null,
-        message: message || null,
-        requireLogin: Boolean(requireLogin),
-      },
-    });
-
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
-    const shareUrl = `${baseUrl}/share/${sharedLink.token}`;
+    const shareUrl = `${baseUrl}/share/${targetId}`;
 
-    // Send notification email if recipientEmail provided
-    if (recipientEmail) {
+    // Handle Action 1: UPDATE_MODE
+    if (action === "UPDATE_MODE" || accessMode) {
+      const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE"];
+      const newMode = accessMode && validModes.includes(accessMode) ? accessMode : currentAccessMode;
+
+      if (targetType === "video") {
+        await db.video.update({
+          where: { id: targetId },
+          data: { shareAccessMode: newMode },
+        });
+      } else {
+        await db.folder.update({
+          where: { id: targetId },
+          data: { shareAccessMode: newMode },
+        });
+      }
+      currentAccessMode = newMode;
+    }
+
+    // Handle Action 2: ADD_EMAIL
+    if (action === "ADD_EMAIL" || (email && !emailId && action !== "REMOVE_EMAIL")) {
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes("@")) {
+        return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+      }
+
+      // Upsert into SharedEmail table
+      await db.sharedEmail.upsert({
+        where:
+          targetType === "video"
+            ? { videoId_email: { videoId: targetId, email: cleanEmail } }
+            : { folderId_email: { folderId: targetId, email: cleanEmail } },
+        create: {
+          videoId: targetType === "video" ? targetId : null,
+          folderId: targetType === "folder" ? targetId : null,
+          email: cleanEmail,
+        },
+        update: {},
+      });
+
+      // Switch mode to RESTRICTED if currently PUBLIC
+      if (currentAccessMode === "PUBLIC") {
+        currentAccessMode = "RESTRICTED";
+        if (targetType === "video") {
+          await db.video.update({
+            where: { id: targetId },
+            data: { shareAccessMode: "RESTRICTED" },
+          });
+        } else {
+          await db.folder.update({
+            where: { id: targetId },
+            data: { shareAccessMode: "RESTRICTED" },
+          });
+        }
+      }
+
+      const user = await db.user.findUnique({
+        where: { id: authCtx.userId },
+        select: { name: true, email: true },
+      });
+      const senderName = user?.name || user?.email?.split("@")[0] || "A teammate";
+
       try {
         await sendShareEmail({
-          toEmail: recipientEmail,
+          toEmail: cleanEmail,
           senderName,
           organizationName: org.name,
           targetType: targetType as "video" | "folder",
           targetTitle,
           shareUrl,
-          message,
+          message: message || undefined,
         });
       } catch (mailErr) {
-        console.error("[Share API] Error sending email via Nodemailer:", mailErr);
+        console.error("[Share API] Error sending email invite:", mailErr);
       }
+    }
+
+    // Handle Action 3: REMOVE_EMAIL
+    if (action === "REMOVE_EMAIL" || emailId) {
+      if (emailId) {
+        await db.sharedEmail.deleteMany({
+          where: { id: emailId },
+        });
+      } else if (email) {
+        const cleanEmail = email.trim().toLowerCase();
+        await db.sharedEmail.deleteMany({
+          where:
+            targetType === "video"
+              ? { videoId: targetId, email: cleanEmail }
+              : { folderId: targetId, email: cleanEmail },
+        });
+      }
+    }
+
+    // Return updated details
+    let allowedEmails: any[] = [];
+    if (targetType === "video") {
+      const v = await db.video.findUnique({
+        where: { id: targetId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      allowedEmails = v?.sharedEmails || [];
+    } else {
+      const f = await db.folder.findUnique({
+        where: { id: targetId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      allowedEmails = f?.sharedEmails || [];
     }
 
     return NextResponse.json({
       success: true,
-      token: sharedLink.token,
       shareUrl,
-      message: recipientEmail
-        ? `Share link created and sent to ${recipientEmail}`
-        : "Share link generated successfully",
+      accessMode: currentAccessMode,
+      allowedEmails,
+      targetType,
+      targetId,
+      targetTitle,
     });
   } catch (err: any) {
-    console.error("[Share API Error]:", err);
-    return NextResponse.json({ error: err.message || "Failed to create share link" }, { status: 500 });
+    console.error("[POST /api/share Error]:", err);
+    return NextResponse.json({ error: err.message || "Failed to update share settings" }, { status: 500 });
   }
 }

@@ -17,17 +17,20 @@ import {
   LogIn,
   UserPlus,
   ShieldCheck,
+  ShieldAlert,
+  UserX,
+  ArrowRight,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 
 interface SharedData {
   type: "video" | "folder";
+  accessMode?: string;
   organization: {
     name: string;
     logoUrl?: string | null;
     slug: string;
   };
-  message?: string | null;
   video?: {
     id: string;
     title: string;
@@ -73,13 +76,13 @@ export default function SharedContentClient() {
 
   const [data, setData] = useState<SharedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [loginRequiredInfo, setLoginRequiredInfo] = useState<{
-    token: string;
-    recipientEmail?: string;
+  const [errorState, setErrorState] = useState<{
+    code: string;
+    message?: string;
+    userEmail?: string;
     organizationName?: string;
     itemTitle?: string;
-    type?: "video" | "folder";
+    type?: string;
   } | null>(null);
 
   // Selected video for folder preview modal
@@ -94,8 +97,7 @@ export default function SharedContentClient() {
   const fetchSharedContent = async () => {
     try {
       setLoading(true);
-      setError(null);
-      setLoginRequiredInfo(null);
+      setErrorState(null);
 
       const url = subfolderId
         ? `/api/share/${token}?subfolderId=${subfolderId}`
@@ -105,22 +107,23 @@ export default function SharedContentClient() {
       const result = await res.json();
 
       if (!res.ok) {
-        if (result.error === "LOGIN_REQUIRED" || result.requireLogin) {
-          setLoginRequiredInfo({
-            token,
-            recipientEmail: result.recipientEmail,
-            organizationName: result.organization?.name,
-            itemTitle: result.itemTitle,
-            type: result.type,
-          });
-          return;
-        }
-        throw new Error(result.error || "Failed to load shared content.");
+        setErrorState({
+          code: result.error || "UNKNOWN_ERROR",
+          message: result.message,
+          userEmail: result.userEmail,
+          organizationName: result.organization?.name,
+          itemTitle: result.itemTitle,
+          type: result.type,
+        });
+        return;
       }
 
       setData(result);
     } catch (err: any) {
-      setError(err.message || "Shared link not found or expired.");
+      setErrorState({
+        code: "FETCH_FAILED",
+        message: err.message || "Failed to load shared content.",
+      });
     } finally {
       setLoading(false);
     }
@@ -156,7 +159,39 @@ export default function SharedContentClient() {
     );
   }
 
-  if (loginRequiredInfo) {
+  // 1. PRIVATE CONTENT ACCESS BLOCKED
+  if (errorState?.code === "PRIVATE_CONTENT") {
+    return (
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black">
+        <div className="max-w-md w-full p-6 sm:p-8 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 text-center relative overflow-hidden">
+          <div className="p-4 bg-slate-800/80 text-slate-400 rounded-2xl border border-slate-700/60 inline-flex mx-auto">
+            <ShieldAlert className="w-8 h-8 text-amber-400" />
+          </div>
+
+          {errorState.organizationName && (
+            <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+              {errorState.organizationName}
+            </span>
+          )}
+
+          <div className="space-y-2">
+            <h1 className="text-xl font-extrabold text-slate-100">This Content is Private</h1>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              The owner of "{errorState.itemTitle || "this item"}" has set access to Private. Link sharing is currently disabled for all viewers.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-3 border-t border-slate-800">
+            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+            <span>VideoHost Security Portal</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. AUTHENTICATION REQUIRED (NOT LOGGED IN)
+  if (errorState?.code === "LOGIN_REQUIRED") {
     const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
     return (
       <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black">
@@ -168,9 +203,9 @@ export default function SharedContentClient() {
               <Lock className="w-8 h-8" />
             </div>
 
-            {loginRequiredInfo.organizationName && (
+            {errorState.organizationName && (
               <span className="text-xs font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3 py-1 rounded-full border border-lime-500/20">
-                {loginRequiredInfo.organizationName}
+                {errorState.organizationName}
               </span>
             )}
 
@@ -179,16 +214,9 @@ export default function SharedContentClient() {
             </h1>
 
             <p className="text-sm text-slate-400 leading-relaxed">
-              The owner of this {loginRequiredInfo.type || "content"} requires visitors to log in or create an account to view it.
+              Access to "{errorState.itemTitle || "this content"}" is restricted to specified email addresses. Please sign in with your invited email to view.
             </p>
           </div>
-
-          {loginRequiredInfo.recipientEmail && (
-            <div className="p-3 bg-slate-800/60 border border-slate-700/60 rounded-xl text-center">
-              <p className="text-xs text-slate-400">Invite sent to:</p>
-              <p className="text-xs font-bold text-lime-300 truncate">{loginRequiredInfo.recipientEmail}</p>
-            </div>
-          )}
 
           <div className="space-y-3 pt-2">
             <button
@@ -196,7 +224,7 @@ export default function SharedContentClient() {
               className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-lime-500/20 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <LogIn className="w-4 h-4" />
-              Sign In to View
+              Sign In to Access
             </button>
 
             <button
@@ -204,7 +232,7 @@ export default function SharedContentClient() {
               className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <UserPlus className="w-4 h-4 text-lime-400" />
-              Create Free Account (Viewer)
+              Create Free Viewer Account
             </button>
           </div>
 
@@ -217,7 +245,43 @@ export default function SharedContentClient() {
     );
   }
 
-  if (error || !data) {
+  // 3. LOGGED IN BUT ACCESS DENIED (EMAIL NOT IN ALLOWED LIST)
+  if (errorState?.code === "ACCESS_DENIED") {
+    const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
+    return (
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black">
+        <div className="max-w-md w-full p-6 sm:p-8 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 text-center relative overflow-hidden">
+          <div className="p-4 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 shadow-lg inline-flex mx-auto">
+            <UserX className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-xl font-extrabold text-slate-100">Access Denied</h1>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              You are signed in as <span className="font-bold text-slate-200">{errorState.userEmail}</span>, but this account has not been granted access to "{errorState.itemTitle || "this item"}".
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-800/80 border border-slate-700/60 rounded-xl text-xs text-slate-300">
+            If you were invited under a different email address, please switch accounts.
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <LogIn className="w-4 h-4 text-lime-400" />
+              Sign in with Different Email
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. UNHANDLED ERROR / LINK NOT FOUND
+  if (errorState || !data) {
     return (
       <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-6">
         <div className="max-w-md w-full p-8 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl text-center space-y-4">
@@ -225,13 +289,13 @@ export default function SharedContentClient() {
             <AlertTriangle className="w-8 h-8" />
           </div>
           <h1 className="text-xl font-bold text-slate-100">Unable to load shared content</h1>
-          <p className="text-sm text-slate-400">{error || "This share link is invalid or expired."}</p>
+          <p className="text-sm text-slate-400">{errorState?.message || "This share link is invalid or expired."}</p>
         </div>
       </div>
     );
   }
 
-  const { organization, message } = data;
+  const { organization } = data;
   const isVideo = data.type === "video";
 
   return (
@@ -272,21 +336,6 @@ export default function SharedContentClient() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Personal Message Quote Banner */}
-        {message && (
-          <div className="p-4 bg-slate-900/60 border border-lime-500/30 rounded-2xl flex items-start gap-3 shadow-lg">
-            <div className="p-2 bg-lime-500/10 text-lime-400 rounded-xl shrink-0 mt-0.5">
-              <Share2 className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-lime-400 uppercase tracking-wider">
-                Note from sender
-              </p>
-              <p className="text-sm text-slate-200 mt-0.5 italic">"{message}"</p>
-            </div>
-          </div>
-        )}
-
         {/* SINGLE VIDEO SHARE VIEW */}
         {isVideo && data.video && (
           <div className="space-y-6 max-w-5xl mx-auto">

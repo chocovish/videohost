@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPublicCdnUrl, getPlaybackUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const orgId = authCtx.orgId;
 
   try {
-    const { title, description, visibility, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
+    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
         description: description || null,
         status: "UPLOADING",
         originalKey: "temp",
-        visibility: visibility || "PRIVATE",
+        shareAccessMode: "PUBLIC",
         requireHls: Boolean(requireHls),
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
@@ -110,7 +110,7 @@ export async function GET(req: Request) {
     folderId: v.folderId,
     folderName: v.folder?.name || null,
     durationSeconds: v.durationSeconds,
-    visibility: v.visibility,
+    shareAccessMode: v.shareAccessMode,
     playbackUrl: getPlaybackUrl(v),
     thumbnailUrl: v.thumbnailUrl,
     createdAt: v.createdAt,

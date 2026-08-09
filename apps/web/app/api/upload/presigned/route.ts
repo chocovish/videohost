@@ -59,7 +59,6 @@ export async function POST(req: Request) {
         description: description || null,
         status: "UPLOADING",
         originalKey: `temp-key`,
-        visibility: "PRIVATE",
         requireHls: Boolean(requireHls),
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
