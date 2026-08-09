@@ -55,6 +55,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
 
   const { videoId, organizationId, originalKey, callbackUrl } = payload;
   console.log(`[Worker Stateless] Starting transcoding for videoId: ${videoId}, key: ${originalKey}`);
+  console.log(`[Worker Stateless] Received job payload:`, JSON.stringify(payload, null, 2));
 
   const tempDir = path.join(process.cwd(), "temp", videoId);
   fs.mkdirSync(tempDir, { recursive: true });
@@ -171,13 +172,21 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
         headers["x-worker-secret"] = workerSecret;
       }
 
+      console.log(`[Worker] Posting callback payload to ${callbackUrl}:`, JSON.stringify(resultPayload, null, 2));
+
       try {
-        await fetch(callbackUrl, {
+        const res = await fetch(callbackUrl, {
           method: "POST",
           headers,
           body: JSON.stringify(resultPayload),
         });
-        console.log(`[Worker] Successfully posted callback payload to ${callbackUrl}`);
+
+        if (!res.ok) {
+          const errorText = await res.text().catch(() => "");
+          console.error(`[Worker Callback Error] HTTP ${res.status} ${res.statusText} from ${callbackUrl}: ${errorText}`);
+        } else {
+          console.log(`[Worker] Successfully posted callback payload to ${callbackUrl} (status: ${res.status})`);
+        }
       } catch (cbErr: any) {
         console.error(`[Worker Callback Error] Failed to post to ${callbackUrl}:`, cbErr?.message || cbErr);
       }
@@ -201,13 +210,25 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
         headers["Authorization"] = `Bearer ${workerSecret}`;
         headers["x-worker-secret"] = workerSecret;
       }
+
+      console.log(`[Worker] Posting failure callback payload to ${callbackUrl}:`, JSON.stringify(failPayload, null, 2));
+
       try {
-        await fetch(callbackUrl, {
+        const res = await fetch(callbackUrl, {
           method: "POST",
           headers,
           body: JSON.stringify(failPayload),
         });
-      } catch {}
+
+        if (!res.ok) {
+          const errorText = await res.text().catch(() => "");
+          console.error(`[Worker Callback Error] HTTP ${res.status} ${res.statusText} from failure callback ${callbackUrl}: ${errorText}`);
+        } else {
+          console.log(`[Worker] Successfully posted failure callback payload to ${callbackUrl} (status: ${res.status})`);
+        }
+      } catch (cbErr: any) {
+        console.error(`[Worker Callback Error] Failed to post failure callback to ${callbackUrl}:`, cbErr?.message || cbErr);
+      }
     }
 
     throw err;

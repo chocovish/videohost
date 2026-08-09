@@ -15,6 +15,7 @@ export async function POST(req: Request) {
     }
 
     const payload = await req.json();
+    console.log(`[Transcode Callback] Received callback payload:`, JSON.stringify(payload, null, 2));
     const {
       videoId,
       organizationId,

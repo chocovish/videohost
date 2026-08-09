@@ -73,7 +73,7 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        console.log(`[Worker HTTP] Received transcode request for videoId: ${videoId}`);
+        console.log(`[Worker HTTP] Received transcode request for videoId: ${videoId}:`, JSON.stringify(payload, null, 2));
 
         // Acknowledge request immediately to prevent HTTP client timeout
         sendJsonResponse(res, 202, {
