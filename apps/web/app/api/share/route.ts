@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       },
     });
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl = process.env.APP_URL || "http://localhost:3000";
     const shareUrl = `${baseUrl}/share/${sharedLink.token}`;
 
     // Send notification email if recipientEmail provided

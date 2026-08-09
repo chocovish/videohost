@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = process.env.APP_URL || "http://localhost:3000";
   const confirmLink = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
   const html = `
