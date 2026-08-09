@@ -1,5 +1,36 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Video, ArrowRight, Play, Zap, ShieldCheck, Code, Layers, Sparkles } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+  description:
+    "Upload, transcode, and stream HLS video anywhere with Cloudflare R2 zero-egress storage, automated FFmpeg pipelines (480p to 4K), Auth.js multi-tenancy, and bundled Video.js embeds.",
+  openGraph: {
+    title: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+    description:
+      "Upload, transcode, and stream HLS video anywhere with Cloudflare R2 zero-egress storage, automated FFmpeg pipelines, and customizable embeds.",
+    url: "/",
+    siteName: "VideoHost",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "VideoHost - Video Hosting & Adaptive HLS Transcoding Platform",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+    description:
+      "Upload, transcode, and stream HLS video anywhere with Cloudflare R2 zero-egress storage, automated FFmpeg pipelines, and customizable embeds.",
+    images: ["/og-image.png"],
+  },
+};
+
 
 export default function LandingPage() {
   return (
@@ -35,7 +66,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main className="max-w-5xl w-full mx-auto px-6 py-16 text-center relative z-10 space-y-8 my-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" /> Mux-Style Video Platform Platform
+          <Sparkles className="w-3.5 h-3.5" /> Dead simple video sharing platform
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">

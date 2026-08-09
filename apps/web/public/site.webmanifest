@@ -1,0 +1,26 @@
+{
+  "name": "VideoHost — Adaptive HLS Video Hosting Platform",
+  "short_name": "VideoHost",
+  "description": "High performance video hosting and adaptive HLS transcoding platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070b14",
+  "theme_color": "#84cc16",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
