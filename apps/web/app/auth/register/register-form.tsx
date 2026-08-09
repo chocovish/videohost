@@ -49,7 +49,7 @@ export default function RegisterForm() {
       }
 
       if (data.requiresVerification) {
-        router.push(`/verify-email?sent=true&email=${encodeURIComponent(email)}`);
+        router.push(`/auth/verify-email?sent=true&email=${encodeURIComponent(email)}`);
         return;
       }
 
@@ -61,7 +61,7 @@ export default function RegisterForm() {
       });
 
       if (signInRes?.error) {
-        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+        router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
         router.push(callbackUrl);
         router.refresh();
@@ -204,7 +204,7 @@ export default function RegisterForm() {
         <div className="mt-8 pt-6 border-t border-[hsl(var(--border))] text-center">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Already have an account?{" "}
-            <Link href="/login" className="font-semibold text-[hsl(var(--primary))] hover:underline">
+            <Link href="/auth/login" className="font-semibold text-[hsl(var(--primary))] hover:underline">
               Sign in
             </Link>
           </p>

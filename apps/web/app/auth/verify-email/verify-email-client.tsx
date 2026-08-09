@@ -114,7 +114,7 @@ function VerifyEmailInner() {
               </button>
             )}
             <div className="pt-4 border-t border-[hsl(var(--border))]">
-              <Link href="/login" className="text-sm font-semibold text-[hsl(var(--primary))] hover:underline flex items-center justify-center gap-1">
+              <Link href="/auth/login" className="text-sm font-semibold text-[hsl(var(--primary))] hover:underline flex items-center justify-center gap-1">
                 Back to Sign In <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -130,7 +130,7 @@ function VerifyEmailInner() {
             <p className="text-sm text-[hsl(var(--muted-foreground))]">{message}</p>
             <div className="pt-4">
               <Link
-                href="/login"
+                href="/auth/login"
                 className="w-full py-3 px-4 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
                 Sign In to Dashboard <ArrowRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ function VerifyEmailInner() {
             )}
 
             <div className="pt-4 border-t border-[hsl(var(--border))]">
-              <Link href="/login" className="text-sm font-semibold text-[hsl(var(--primary))] hover:underline flex items-center justify-center gap-1">
+              <Link href="/auth/login" className="text-sm font-semibold text-[hsl(var(--primary))] hover:underline flex items-center justify-center gap-1">
                 Return to Login
               </Link>
             </div>

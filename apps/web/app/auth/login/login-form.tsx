@@ -223,7 +223,7 @@ export default function LoginForm() {
         <div className="mt-8 pt-6 border-t border-[hsl(var(--border))] text-center">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             Don't have an account?{" "}
-            <Link href="/register" className="font-semibold text-[hsl(var(--primary))] hover:underline">
+            <Link href="/auth/register" className="font-semibold text-[hsl(var(--primary))] hover:underline">
               Create an organization
             </Link>
           </p>

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: "Create a VideoHost Account | 200 Free Video Mins",
     description:
       "Create your VideoHost organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
-    url: "/register",
+    url: "/auth/register",
     siteName: "VideoHost",
     images: [
       {

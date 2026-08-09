@@ -68,7 +68,7 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
         </Link>
 
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={() => signOut({ callbackUrl: "/auth/login" })}
           className="p-2 text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-colors"
           title="Sign Out"
           aria-label="Sign Out"

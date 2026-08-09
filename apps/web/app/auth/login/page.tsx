@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: "Sign In | VideoHost",
     description:
       "Sign in to your VideoHost organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
-    url: "/login",
+    url: "/auth/login",
     siteName: "VideoHost",
     images: [
       {

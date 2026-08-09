@@ -10,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await auth();
 
   if (!session || !session.user || !(session as any).organizationId) {
-    redirect("/login");
+    redirect("/auth/login");
   }
 
   const userEmail = session.user.email || "";

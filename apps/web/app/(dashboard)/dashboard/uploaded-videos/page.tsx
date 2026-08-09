@@ -243,11 +243,10 @@ function UploadedVideosContent() {
       <div className="flex items-center gap-2 px-4 py-3 bg-white/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
         <button
           onClick={() => navigateToFolder(null)}
-          className={`flex items-center gap-1.5 font-semibold transition-colors ${
-            currentFolderId === null
+          className={`flex items-center gap-1.5 font-semibold transition-colors ${currentFolderId === null
               ? "text-[hsl(var(--primary))]"
               : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-          }`}
+            }`}
         >
           <Home className="w-4 h-4" /> Root
         </button>
@@ -256,11 +255,10 @@ function UploadedVideosContent() {
             <ChevronRight className="w-4 h-4 text-slate-400" />
             <button
               onClick={() => navigateToFolder(b.id)}
-              className={`font-semibold transition-colors ${
-                currentFolderId === b.id
+              className={`font-semibold transition-colors ${currentFolderId === b.id
                   ? "text-[hsl(var(--primary))]"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              }`}
+                }`}
             >
               {b.name}
             </button>
@@ -286,11 +284,10 @@ function UploadedVideosContent() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                statusFilter === st
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === st
                   ? "bg-[hsl(var(--primary))] text-white shadow-xs"
                   : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-              }`}
+                }`}
             >
               {st}
             </button>

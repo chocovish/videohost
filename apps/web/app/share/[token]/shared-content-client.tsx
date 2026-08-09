@@ -220,7 +220,7 @@ export default function SharedContentClient() {
 
           <div className="space-y-3 pt-2">
             <button
-              onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
               className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-lime-500/20 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <LogIn className="w-4 h-4" />
@@ -228,7 +228,7 @@ export default function SharedContentClient() {
             </button>
 
             <button
-              onClick={() => router.push(`/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
               className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <UserPlus className="w-4 h-4 text-lime-400" />
@@ -268,7 +268,7 @@ export default function SharedContentClient() {
 
           <div className="space-y-3 pt-2">
             <button
-              onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
               className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <LogIn className="w-4 h-4 text-lime-400" />

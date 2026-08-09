@@ -49,13 +49,13 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-2 sm:gap-4">
           <Link
-            href="/login"
+            href="/auth/login"
             className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[hsl(var(--foreground))] hover:bg-black/5 transition-colors"
           >
             Sign In
           </Link>
           <Link
-            href="/register"
+            href="/auth/register"
             className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity"
           >
             Get Started Free
@@ -82,14 +82,14 @@ export default function LandingPage() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <Link
-            href="/register"
+            href="/auth/register"
             className="w-full sm:w-auto px-8 py-4 bg-[hsl(var(--primary))] text-white font-extrabold text-base rounded-2xl shadow-xl hover:opacity-95 transition-all flex items-center justify-center gap-3 group"
           >
             Start Free (200 Video Mins)
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link
-            href="/login"
+            href="/auth/login"
             className="w-full sm:w-auto px-8 py-4 glass-card font-extrabold text-base rounded-2xl border border-[hsl(var(--border))] hover:bg-black/5 transition-all flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4 fill-current" /> Live Demo Dashboard
