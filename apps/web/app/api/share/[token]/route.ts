@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
 import { getPublicCdnUrl, getPlaybackUrl } from "@/lib/s3";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await params;
     const url = new URL(req.url);
     const subfolderId = url.searchParams.get("subfolderId");
+    const session = await auth();
 
     const sharedLink = await db.sharedLink.findUnique({
       where: { token },
@@ -28,6 +30,45 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       logoUrl: sharedLink.organization.logoUrl,
       slug: sharedLink.organization.slug,
     };
+
+    // Check require login condition
+    if (sharedLink.requireLogin && (!session || !session.user || !session.user.id)) {
+      return NextResponse.json(
+        {
+          error: "LOGIN_REQUIRED",
+          requireLogin: true,
+          token: sharedLink.token,
+          recipientEmail: sharedLink.recipientEmail,
+          organization,
+          type: sharedLink.videoId ? "video" : "folder",
+          itemTitle: sharedLink.video?.title || sharedLink.folder?.name || "Shared item",
+        },
+        { status: 401 }
+      );
+    }
+
+    // Log shared link access if user is authenticated
+    if (session?.user?.id) {
+      try {
+        await db.sharedLinkAccess.upsert({
+          where: {
+            sharedLinkId_userId: {
+              sharedLinkId: sharedLink.id,
+              userId: session.user.id,
+            },
+          },
+          create: {
+            sharedLinkId: sharedLink.id,
+            userId: session.user.id,
+          },
+          update: {
+            accessedAt: new Date(),
+          },
+        });
+      } catch (accessErr) {
+        console.error("Error logging shared link access:", accessErr);
+      }
+    }
 
     // Shared Video
     if (sharedLink.videoId && sharedLink.video) {

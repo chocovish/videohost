@@ -17,10 +17,12 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
+  viewMode      String    @default("CREATOR") // "CREATOR" | "VIEWER"
   accounts      Account[]
   sessions      Session[]
   memberships   OrganizationMember[]
   createdApiKeys ApiKey[]
+  sharedAccesses SharedLinkAccess[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -245,13 +247,29 @@ model SharedLink {
   folderId       String?
   recipientEmail String?
   message        String?  @db.Text
+  requireLogin   Boolean  @default(false)
   createdAt      DateTime @default(now())
   expiresAt      DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   video        Video?        @relation(fields: [videoId], references: [id], onDelete: Cascade)
   folder       Folder?       @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  accesses     SharedLinkAccess[]
 
   @@index([token])
+  @@index([recipientEmail])
 }
+
+model SharedLinkAccess {
+  id           String     @id @default(cuid())
+  sharedLinkId String
+  userId       String
+  accessedAt   DateTime   @default(now())
+
+  sharedLink   SharedLink @relation(fields: [sharedLinkId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sharedLinkId, userId])
+}
+
 

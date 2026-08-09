@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Video,
   Code2,
@@ -10,10 +11,11 @@ import {
   HardDrive,
   Palette,
   X,
-  ChevronLeft,
-  ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  Eye,
+  Share2,
+  Loader2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
@@ -24,6 +26,7 @@ interface SidebarProps {
   usageMinutes: number;
   minutesLimit: number;
   currentTheme: string;
+  initialViewMode?: string;
   onThemeChange?: (themeId: string) => void;
 }
 
@@ -32,12 +35,28 @@ export default function Sidebar({
   usageMinutes,
   minutesLimit,
   currentTheme,
+  initialViewMode = "CREATOR",
   onThemeChange,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session, update: updateSession } = useSession();
   const { isMobileOpen, isCollapsed, closeMobile, toggleCollapse } = useSidebar();
   const [activeTheme, setActiveTheme] = useState(currentTheme || "lime");
+  const [viewMode, setViewMode] = useState<"CREATOR" | "VIEWER">(
+    ((session?.user as any)?.viewMode as "CREATOR" | "VIEWER") ||
+      (initialViewMode as "CREATOR" | "VIEWER") ||
+      "CREATOR"
+  );
+  const [isUpdatingMode, setIsUpdatingMode] = useState(false);
+
   const percentage = Math.min(100, Math.round((usageMinutes / minutesLimit) * 100));
+
+  useEffect(() => {
+    if ((session?.user as any)?.viewMode) {
+      setViewMode((session?.user as any).viewMode);
+    }
+  }, [session?.user]);
 
   const applyTheme = (themeId: string) => {
     setActiveTheme(themeId);
@@ -49,16 +68,48 @@ export default function Sidebar({
     document.documentElement.setAttribute("data-theme", activeTheme);
   }, [activeTheme]);
 
-  const navItems = [
+  const handleModeSwitch = async (newMode: "CREATOR" | "VIEWER") => {
+    if (newMode === viewMode || isUpdatingMode) return;
+    setIsUpdatingMode(true);
+    try {
+      const res = await fetch("/api/user/mode", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ viewMode: newMode }),
+      });
+      if (res.ok) {
+        setViewMode(newMode);
+        await updateSession({ viewMode: newMode });
+        if (newMode === "VIEWER") {
+          router.push("/dashboard/shared-with-you");
+        } else {
+          router.push("/dashboard");
+        }
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Failed to update view mode:", err);
+    } finally {
+      setIsUpdatingMode(false);
+    }
+  };
+
+  const creatorNavItems = [
     { label: "Videos", href: "/dashboard", icon: Video },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
     { label: "Organization", href: "/dashboard/settings", icon: Settings },
     { label: "Profile", href: "/dashboard/profile", icon: User },
   ];
 
+  const viewerNavItems = [
+    { label: "Shared with you", href: "/dashboard/shared-with-you", icon: Share2 },
+  ];
+
+  const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;
+
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col justify-between h-full p-4">
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Brand Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 px-1 py-1">
@@ -87,6 +138,48 @@ export default function Sidebar({
               <X className="w-5 h-5" />
             </button>
           )}
+        </div>
+
+        {/* View Mode Toggle Pill Switcher */}
+        <div className="px-1">
+          {(!isCollapsed || isMobile) && (
+            <div className="text-[10px] font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5 px-0.5 flex items-center justify-between">
+              <span>View Mode</span>
+              {isUpdatingMode && <Loader2 className="w-3 h-3 animate-spin text-[hsl(var(--primary))]" />}
+            </div>
+          )}
+          <div
+            className={`p-1 bg-slate-100/90 border border-[hsl(var(--border))] rounded-xl flex items-center gap-1 ${
+              isCollapsed && !isMobile ? "flex-col" : ""
+            }`}
+          >
+            <button
+              onClick={() => handleModeSwitch("CREATOR")}
+              disabled={isUpdatingMode}
+              title="Creator Mode: Manage uploads & library"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                viewMode === "CREATOR"
+                  ? "bg-white text-[hsl(var(--foreground))] shadow-xs"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+              {(!isCollapsed || isMobile) && <span>Creator</span>}
+            </button>
+            <button
+              onClick={() => handleModeSwitch("VIEWER")}
+              disabled={isUpdatingMode}
+              title="Viewer Mode: Access content shared with you"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                viewMode === "VIEWER"
+                  ? "bg-white text-[hsl(var(--foreground))] shadow-xs"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5 text-indigo-500" />
+              {(!isCollapsed || isMobile) && <span>Viewer</span>}
+            </button>
+          </div>
         </div>
 
         {/* Navigation Items */}
@@ -124,41 +217,43 @@ export default function Sidebar({
 
       {/* Footer Widgets */}
       <div className="space-y-4 pt-4 border-t border-[hsl(var(--border))]">
-        {/* Quota Progress Meter */}
-        <div
-          className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${
-            isCollapsed && !isMobile ? "p-2 text-center" : ""
-          }`}
-        >
-          {(!isCollapsed || isMobile) ? (
-            <>
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                  <HardDrive className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Storage Quota
-                </span>
-                <span className="text-[hsl(var(--muted-foreground))] font-medium">
-                  {usageMinutes} / {minutesLimit}m
-                </span>
+        {/* Quota Progress Meter (Shown in Creator Mode) */}
+        {viewMode === "CREATOR" && (
+          <div
+            className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${
+              isCollapsed && !isMobile ? "p-2 text-center" : ""
+            }`}
+          >
+            {(!isCollapsed || isMobile) ? (
+              <>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                    <HardDrive className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Storage Quota
+                  </span>
+                  <span className="text-[hsl(var(--muted-foreground))] font-medium">
+                    {usageMinutes} / {minutesLimit}m
+                  </span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
+                  <div
+                    className="h-full bg-[hsl(var(--primary))] transition-all duration-500 rounded-full"
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+                {percentage >= 80 && (
+                  <p className="text-[10px] text-amber-600 font-medium">
+                    {percentage >= 100 ? "Quota limit reached!" : "Approaching 80% limit"}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-1" title={`Storage: ${usageMinutes}/${minutesLimit}m`}>
+                <HardDrive className="w-4 h-4 text-[hsl(var(--primary))]" />
+                <span className="text-[10px] font-bold text-[hsl(var(--foreground))]">{percentage}%</span>
               </div>
-              <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
-                <div
-                  className="h-full bg-[hsl(var(--primary))] transition-all duration-500 rounded-full"
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-              {percentage >= 80 && (
-                <p className="text-[10px] text-amber-600 font-medium">
-                  {percentage >= 100 ? "Quota limit reached!" : "Approaching 80% limit"}
-                </p>
-              )}
-            </>
-          ) : (
-            <div className="flex flex-col items-center gap-1" title={`Storage: ${usageMinutes}/${minutesLimit}m`}>
-              <HardDrive className="w-4 h-4 text-[hsl(var(--primary))]" />
-              <span className="text-[10px] font-bold text-[hsl(var(--foreground))]">{percentage}%</span>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
         {/* Theme Token Selector */}
         <div className="p-2 rounded-xl border border-[hsl(var(--border))] bg-white/40 space-y-1.5">

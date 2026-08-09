@@ -6,8 +6,16 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Video, ArrowRight } from "lucide-react";
 
+import { useSearchParams } from "next/navigation";
+
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const modeParam = searchParams.get("mode") || searchParams.get("viewMode");
+  const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/dashboard";
+  const isViewerFlow = modeParam?.toLowerCase() === "viewer";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [orgName, setOrgName] = useState("");
@@ -24,7 +32,13 @@ export default function RegisterForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, orgName }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          orgName: orgName || undefined,
+          viewMode: isViewerFlow ? "VIEWER" : "CREATOR",
+        }),
       });
 
       const data = await res.json();
@@ -47,9 +61,9 @@ export default function RegisterForm() {
       });
 
       if (signInRes?.error) {
-        router.push("/login");
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        router.push("/dashboard");
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {

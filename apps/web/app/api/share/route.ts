@@ -12,7 +12,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { targetType, targetId, recipientEmail, message } = body;
+    const { targetType, targetId, recipientEmail, message, requireLogin } = body;
 
     if (!targetType || !["video", "folder"].includes(targetType) || !targetId) {
       return NextResponse.json(
@@ -65,6 +65,7 @@ export async function POST(req: Request) {
         folderId: targetType === "folder" ? targetId : null,
         recipientEmail: recipientEmail || null,
         message: message || null,
+        requireLogin: Boolean(requireLogin),
       },
     });
 

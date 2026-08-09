@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import RegisterForm from "./register-form";
 
 export const metadata: Metadata = {
@@ -31,5 +32,9 @@ export const metadata: Metadata = {
 };
 
 export default function RegisterPage() {
-  return <RegisterForm />;
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[hsl(var(--background))]" />}>
+      <RegisterForm />
+    </Suspense>
+  );
 }

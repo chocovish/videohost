@@ -177,8 +177,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // Fetch active organization membership
+      // Fetch active organization membership and viewMode
       if (token.id) {
+        const dbUser = await db.user.findUnique({
+          where: { id: token.id as string },
+          select: { viewMode: true },
+        });
+        token.viewMode = dbUser?.viewMode || "CREATOR";
+
         const memberships = await db.organizationMember.findMany({
           where: { userId: token.id as string },
           include: { organization: true },
@@ -201,6 +207,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (trigger === "update" && session) {
         if (session.organizationId) token.organizationId = session.organizationId;
+        if (session.viewMode) token.viewMode = session.viewMode;
       }
 
       return token;
@@ -208,6 +215,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string;
+        (session.user as any).viewMode = (token.viewMode as string) || "CREATOR";
         (session as any).organizationId = token.organizationId;
         (session as any).organizationSlug = token.organizationSlug;
         (session as any).organizationName = token.organizationName;

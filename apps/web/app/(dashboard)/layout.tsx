@@ -21,16 +21,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let orgName = (session as any).organizationName || "My Organization";
 
+  let viewMode = (session.user as any)?.viewMode || "CREATOR";
+
   try {
     const userDb = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true },
+      select: { name: true, viewMode: true },
     });
     if (userDb?.name) {
       userName = userDb.name;
     }
+    if (userDb?.viewMode) {
+      viewMode = userDb.viewMode;
+    }
   } catch (e) {
-    console.error("Error fetching user name in layout:", e);
+    console.error("Error fetching user name & viewMode in layout:", e);
   }
 
   try {
@@ -64,6 +69,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           usageMinutes={usageMinutes}
           minutesLimit={minutesLimit}
           currentTheme={themeId}
+          initialViewMode={viewMode}
         />
         <div className="flex-1 flex flex-col min-w-0">
           <Navbar

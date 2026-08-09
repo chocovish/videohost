@@ -13,6 +13,7 @@ import {
   Loader2,
   AlertCircle,
   Link as LinkIcon,
+  Lock,
 } from "lucide-react";
 
 interface ShareModalProps {
@@ -33,12 +34,34 @@ export default function ShareModal({
   const [shareUrl, setShareUrl] = useState<string>("");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [requireLogin, setRequireLogin] = useState(false);
 
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const generateLink = async (loginReq: boolean) => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetType, targetId, requireLogin: loginReq }),
+      });
+      const data = await res.json();
+      if (res.ok && data.shareUrl) {
+        setShareUrl(data.shareUrl);
+      } else {
+        setError(data.error || "Failed to generate link");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to generate link");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && targetId) {
@@ -48,31 +71,16 @@ export default function ShareModal({
       setEmailSuccess(null);
       setError(null);
       setCopied(false);
+      setRequireLogin(false);
 
-      const generateLink = async () => {
-        setGenerating(true);
-        try {
-          const res = await fetch("/api/share", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ targetType, targetId }),
-          });
-          const data = await res.json();
-          if (res.ok && data.shareUrl) {
-            setShareUrl(data.shareUrl);
-          } else {
-            setError(data.error || "Failed to generate link");
-          }
-        } catch (err: any) {
-          setError(err.message || "Failed to generate link");
-        } finally {
-          setGenerating(false);
-        }
-      };
-
-      generateLink();
+      generateLink(false);
     }
   }, [isOpen, targetId, targetType]);
+
+  const handleToggleRequireLogin = (newValue: boolean) => {
+    setRequireLogin(newValue);
+    generateLink(newValue);
+  };
 
   if (!isOpen) return null;
 
@@ -104,6 +112,7 @@ export default function ShareModal({
           targetId,
           recipientEmail: email,
           message,
+          requireLogin,
         }),
       });
 
@@ -166,6 +175,36 @@ export default function ShareModal({
             </p>
             <p className="text-sm font-bold text-[hsl(var(--foreground))] truncate">{targetName}</p>
           </div>
+        </div>
+
+        {/* REQUIRE LOGIN TOGGLE SWITCH */}
+        <div className="p-3 rounded-xl bg-slate-50 border border-[hsl(var(--border))] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 bg-indigo-500/10 text-indigo-600 rounded-lg shrink-0">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[hsl(var(--foreground))] truncate">
+                Require login to view
+              </p>
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))] truncate">
+                Recipients must sign in or create an account
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleToggleRequireLogin(!requireLogin)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              requireLogin ? "bg-[hsl(var(--primary))]" : "bg-slate-300"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                requireLogin ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
 
         {error && (

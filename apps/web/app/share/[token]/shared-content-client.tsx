@@ -13,6 +13,10 @@ import {
   Building2,
   AlertTriangle,
   Sparkles,
+  Lock,
+  LogIn,
+  UserPlus,
+  ShieldCheck,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 
@@ -70,6 +74,13 @@ export default function SharedContentClient() {
   const [data, setData] = useState<SharedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loginRequiredInfo, setLoginRequiredInfo] = useState<{
+    token: string;
+    recipientEmail?: string;
+    organizationName?: string;
+    itemTitle?: string;
+    type?: "video" | "folder";
+  } | null>(null);
 
   // Selected video for folder preview modal
   const [selectedVideo, setSelectedVideo] = useState<{
@@ -84,6 +95,8 @@ export default function SharedContentClient() {
     try {
       setLoading(true);
       setError(null);
+      setLoginRequiredInfo(null);
+
       const url = subfolderId
         ? `/api/share/${token}?subfolderId=${subfolderId}`
         : `/api/share/${token}`;
@@ -92,6 +105,16 @@ export default function SharedContentClient() {
       const result = await res.json();
 
       if (!res.ok) {
+        if (result.error === "LOGIN_REQUIRED" || result.requireLogin) {
+          setLoginRequiredInfo({
+            token,
+            recipientEmail: result.recipientEmail,
+            organizationName: result.organization?.name,
+            itemTitle: result.itemTitle,
+            type: result.type,
+          });
+          return;
+        }
         throw new Error(result.error || "Failed to load shared content.");
       }
 
@@ -128,6 +151,67 @@ export default function SharedContentClient() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-lime-500/20 border-t-lime-500 rounded-full animate-spin" />
           <p className="text-sm font-semibold text-slate-400">Loading shared content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loginRequiredInfo) {
+    const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
+    return (
+      <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black">
+        <div className="max-w-md w-full p-6 sm:p-8 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-lime-500/10 blur-2xl rounded-full pointer-events-none" />
+
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="p-4 bg-lime-500/10 text-lime-400 rounded-2xl border border-lime-500/20 shadow-lg">
+              <Lock className="w-8 h-8" />
+            </div>
+
+            {loginRequiredInfo.organizationName && (
+              <span className="text-xs font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3 py-1 rounded-full border border-lime-500/20">
+                {loginRequiredInfo.organizationName}
+              </span>
+            )}
+
+            <h1 className="text-xl font-extrabold text-slate-100">
+              Authentication Required
+            </h1>
+
+            <p className="text-sm text-slate-400 leading-relaxed">
+              The owner of this {loginRequiredInfo.type || "content"} requires visitors to log in or create an account to view it.
+            </p>
+          </div>
+
+          {loginRequiredInfo.recipientEmail && (
+            <div className="p-3 bg-slate-800/60 border border-slate-700/60 rounded-xl text-center">
+              <p className="text-xs text-slate-400">Invite sent to:</p>
+              <p className="text-xs font-bold text-lime-300 truncate">{loginRequiredInfo.recipientEmail}</p>
+            </div>
+          )}
+
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-lime-500/20 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In to View
+            </button>
+
+            <button
+              onClick={() => router.push(`/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
+            >
+              <UserPlus className="w-4 h-4 text-lime-400" />
+              Create Free Account (Viewer)
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-2 border-t border-slate-800">
+            <ShieldCheck className="w-3.5 h-3.5 text-lime-400" />
+            <span>Secure VideoHost Sharing Portal</span>
+          </div>
         </div>
       </div>
     );

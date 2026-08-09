@@ -6,11 +6,14 @@ import { sendVerificationEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, orgName } = await req.json();
+    const { name, email, password, orgName, viewMode } = await req.json();
 
-    if (!email || !password || !orgName) {
+    if (!email || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+
+    const selectedViewMode = viewMode === "VIEWER" ? "VIEWER" : "CREATOR";
+    const effectiveOrgName = orgName || `${name || email.split("@")[0]}'s Workspace`;
 
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -18,7 +21,7 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const slug = orgName.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.random().toString(36).substring(2, 6);
+    const slug = effectiveOrgName.toLowerCase().replace(/[^a-z0-9]/g, "-") + "-" + Math.random().toString(36).substring(2, 6);
 
     // Get default free plan
     let freePlan = await db.plan.findUnique({ where: { id: "plan_free" } });
@@ -44,12 +47,13 @@ export async function POST(req: Request) {
           email,
           passwordHash,
           emailVerified: null,
+          viewMode: selectedViewMode,
         },
       });
 
       const organization = await tx.organization.create({
         data: {
-          name: orgName,
+          name: effectiveOrgName,
           slug,
           planId: freePlan.id,
           themeId: "lime",
