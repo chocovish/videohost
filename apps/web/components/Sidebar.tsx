@@ -83,7 +83,7 @@ export default function Sidebar({
         if (newMode === "VIEWER") {
           router.push("/dashboard/shared-with-you");
         } else {
-          router.push("/dashboard");
+          router.push("/dashboard/uploaded-videos");
         }
         router.refresh();
       }
@@ -95,7 +95,7 @@ export default function Sidebar({
   };
 
   const creatorNavItems = [
-    { label: "Videos", href: "/dashboard", icon: Video },
+    { label: "Videos", href: "/dashboard/uploaded-videos", icon: Video },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
     { label: "Organization", href: "/dashboard/settings", icon: Settings },
     { label: "Profile", href: "/dashboard/profile", icon: User },
@@ -188,7 +188,8 @@ export default function Sidebar({
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
+              (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/videos"));
             return (
               <Link
                 key={item.href}

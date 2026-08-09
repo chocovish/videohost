@@ -33,7 +33,7 @@ export default function VideoDetailPage() {
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [isShareOpen, setIsShareOpen] = useState(false);
 
-  const backUrl = video?.folderId ? `/dashboard?folderId=${video.folderId}` : "/dashboard";
+  const backUrl = video?.folderId ? `/dashboard/uploaded-videos?folderId=${video.folderId}` : "/dashboard/uploaded-videos";
 
   const fetchVideoDetail = async () => {
     try {
@@ -85,8 +85,8 @@ export default function VideoDetailPage() {
     return (
       <div className="text-center py-16">
         <h2 className="text-xl font-bold">Video not found</h2>
-        <Link href="/dashboard" className="text-[hsl(var(--primary))] hover:underline mt-2 inline-block">
-          Return to Dashboard
+        <Link href="/dashboard/uploaded-videos" className="text-[hsl(var(--primary))] hover:underline mt-2 inline-block">
+          Return to Uploaded Videos
         </Link>
       </div>
     );
