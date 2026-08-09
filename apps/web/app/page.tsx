@@ -39,24 +39,24 @@ export default function LandingPage() {
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-[hsl(var(--primary))] opacity-25 blur-3xl rounded-full pointer-events-none" />
 
       {/* Header Navigation */}
-      <header className="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-md">
-            <Video className="w-6 h-6" />
+      <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-md">
+            <Video className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
-          <span className="font-extrabold text-xl tracking-tight">VideoHost</span>
+          <span className="font-extrabold text-lg sm:text-xl tracking-tight">VideoHost</span>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link
             href="/login"
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-[hsl(var(--foreground))] hover:bg-black/5 transition-colors"
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[hsl(var(--foreground))] hover:bg-black/5 transition-colors"
           >
             Sign In
           </Link>
           <Link
             href="/register"
-            className="px-5 py-2.5 rounded-xl text-sm font-bold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity"
+            className="px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity"
           >
             Get Started Free
           </Link>
@@ -64,19 +64,19 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-5xl w-full mx-auto px-6 py-16 text-center relative z-10 space-y-8 my-auto">
+      <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center relative z-10 space-y-6 sm:space-y-8 my-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
           <Sparkles className="w-3.5 h-3.5" /> Dead simple video sharing platform
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight">
           Next-gen video hosting & <br />
           <span className="text-[hsl(var(--primary))] underline decoration-[hsl(var(--primary))]/40">
             adaptive HLS streaming
           </span>
         </h1>
 
-        <p className="text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto leading-relaxed">
+        <p className="text-sm sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto leading-relaxed">
           Powered by Cloudflare R2 zero-egress storage, BullMQ queue-based FFmpeg transcoding (480p to 4K), Auth.js multi-tenancy, and bundled Video.js embeds.
         </p>
 

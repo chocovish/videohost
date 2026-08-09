@@ -124,8 +124,8 @@ export default function ShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg glass-card bg-white rounded-2xl p-6 shadow-2xl relative border border-[hsl(var(--border))] space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto glass-card bg-white rounded-2xl p-4 sm:p-6 shadow-2xl relative border border-[hsl(var(--border))] space-y-4 my-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -181,17 +181,17 @@ export default function ShareModal({
             <LinkIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Direct Share Link
           </label>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <input
               type="text"
               readOnly
               value={generating ? "Generating link..." : shareUrl}
-              className="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-[hsl(var(--input))] rounded-xl text-[hsl(var(--foreground))] select-all focus:outline-none"
+              className="w-full px-3.5 py-2.5 text-xs font-mono bg-slate-50 border border-[hsl(var(--input))] rounded-xl text-[hsl(var(--foreground))] select-all focus:outline-none min-h-[44px]"
             />
             <button
               onClick={handleCopy}
               disabled={generating || !shareUrl}
-              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl shadow-xs transition-all shrink-0 disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl shadow-xs transition-all shrink-0 disabled:opacity-50 min-h-[44px]"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? "Copied!" : "Copy Link"}

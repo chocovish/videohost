@@ -120,7 +120,7 @@ export default function VideoDetailPage() {
   return (
     <div className="space-y-6">
       {/* Top Bar Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Link
           href={backUrl}
           className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
@@ -130,13 +130,13 @@ export default function VideoDetailPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsShareOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-lg transition-colors shadow-xs"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl transition-colors shadow-xs min-h-[40px]"
           >
             <Share2 className="w-4 h-4" /> Share Video
           </button>
           <button
             onClick={handleDelete}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-xl transition-colors min-h-[40px]"
           >
             <Trash2 className="w-4 h-4" /> Delete Video
           </button>
@@ -157,12 +157,12 @@ export default function VideoDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Col: Player and Tabs */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="border border-[hsl(var(--border))] rounded-2xl bg-white p-4 shadow-xs space-y-4">
+          <div className="border border-[hsl(var(--border))] rounded-2xl bg-white p-4 sm:p-6 shadow-xs space-y-4">
             {/* Tabs */}
-            <div className="flex border-b border-[hsl(var(--border))] gap-6 text-sm font-semibold">
+            <div className="flex border-b border-[hsl(var(--border))] gap-4 sm:gap-6 text-sm font-semibold overflow-x-auto whitespace-nowrap">
               <button
                 onClick={() => setActiveTab("player")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
                   activeTab === "player"
                     ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
                     : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
@@ -172,7 +172,7 @@ export default function VideoDetailPage() {
               </button>
               <button
                 onClick={() => setActiveTab("embed")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
                   activeTab === "embed"
                     ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
                     : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
@@ -182,7 +182,7 @@ export default function VideoDetailPage() {
               </button>
               <button
                 onClick={() => setActiveTab("renditions")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 ${
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
                   activeTab === "renditions"
                     ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
                     : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
@@ -198,7 +198,7 @@ export default function VideoDetailPage() {
                 {video.playbackUrl ? (
                   <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 p-4 text-center">
                     <Clock className="w-8 h-8 animate-spin" />
                     <p className="text-sm font-medium">Video is currently processing...</p>
                   </div>
@@ -214,13 +214,13 @@ export default function VideoDetailPage() {
                     <span>IFRAME EMBED (RECOMMENDED)</span>
                     <button
                       onClick={() => copyToClipboard(iframeEmbedCode, "iframe")}
-                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline"
+                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline p-1"
                     >
                       {copiedType === "iframe" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "iframe" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono">
+                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {iframeEmbedCode}
                   </pre>
                 </div>
@@ -230,13 +230,13 @@ export default function VideoDetailPage() {
                     <span>DIRECT VIDEO.JS EMBED</span>
                     <button
                       onClick={() => copyToClipboard(scriptEmbedCode, "script")}
-                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline"
+                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline p-1"
                     >
                       {copiedType === "script" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "script" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono">
+                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {scriptEmbedCode}
                   </pre>
                 </div>
@@ -253,7 +253,7 @@ export default function VideoDetailPage() {
                     </p>
                     <div className="divide-y divide-[hsl(var(--border))]">
                       {video.renditions.map((rend) => (
-                        <div key={rend.resolution} className="py-3 flex items-center justify-between text-sm">
+                        <div key={rend.resolution} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
                           <div className="flex items-center gap-3">
                             <span className="font-bold px-2.5 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] rounded-lg">
                               {rend.resolution}
@@ -264,7 +264,7 @@ export default function VideoDetailPage() {
                           </div>
                           <button
                             onClick={() => copyToClipboard(rend.playlistUrl, rend.resolution)}
-                            className="text-xs text-[hsl(var(--primary))] hover:underline font-medium"
+                            className="text-xs text-[hsl(var(--primary))] hover:underline font-medium self-start sm:self-auto"
                           >
                             {copiedType === rend.resolution ? "Copied URL" : "Copy Playlist URL"}
                           </button>

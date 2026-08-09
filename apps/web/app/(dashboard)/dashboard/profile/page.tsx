@@ -186,7 +186,7 @@ export default function ProfileSettingsPage() {
       </div>
 
       {/* Section 1: Profile Information */}
-      <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-6">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-[hsl(var(--border))]">
           <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
             <User className="w-5 h-5" />
@@ -222,7 +222,7 @@ export default function ProfileSettingsPage() {
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-[hsl(var(--muted-foreground))]" />
+                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-[hsl(var(--muted-foreground))]" />
                 <input
                   type="email"
                   disabled
@@ -230,7 +230,7 @@ export default function ProfileSettingsPage() {
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[hsl(var(--border))] bg-gray-50 text-gray-500 text-sm outline-none cursor-not-allowed"
                 />
               </div>
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {profile?.isGoogleAccount && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
                     <Sparkles className="w-3 h-3" /> Signed in via Google
@@ -263,7 +263,7 @@ export default function ProfileSettingsPage() {
             <button
               type="submit"
               disabled={isSavingName || !name.trim() || name.trim() === initialName}
-              className="px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px]"
             >
               {isSavingName ? (
                 <>
@@ -280,7 +280,7 @@ export default function ProfileSettingsPage() {
       </div>
 
       {/* Section 2: Password & Security */}
-      <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-6">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
         <div className="flex items-center gap-3 pb-4 border-b border-[hsl(var(--border))]">
           <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
             <Lock className="w-5 h-5" />
@@ -374,7 +374,7 @@ export default function ProfileSettingsPage() {
             <button
               type="submit"
               disabled={isSavingPassword || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
-              className="px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px]"
             >
               {isSavingPassword ? (
                 <>

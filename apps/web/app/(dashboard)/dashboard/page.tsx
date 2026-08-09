@@ -214,27 +214,29 @@ function DashboardContent() {
             Organize folders, manage your video library, and stream adaptive HLS
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
           <button
             onClick={() => refreshAll()}
             disabled={isRefreshing}
             title="Refresh video assets"
-            className="px-3.5 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+            className="flex-1 sm:flex-none px-3.5 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 min-h-[44px]"
           >
             <RefreshCw className={`w-4 h-4 text-slate-600 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
-            Refresh
+            <span>Refresh</span>
           </button>
           <button
             onClick={() => setIsCreateFolderOpen(true)}
-            className="px-4 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-sm"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
           >
-            <FolderPlus className="w-4 h-4 text-amber-600" /> New Folder
+            <FolderPlus className="w-4 h-4 text-amber-600" />
+            <span>New Folder</span>
           </button>
           <button
             onClick={() => setIsUploadOpen(true)}
-            className="px-4 py-2.5 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm"
+            className="w-full sm:w-auto px-4 py-2.5 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
           >
-            <Plus className="w-4 h-4" /> Upload Video
+            <Plus className="w-4 h-4" />
+            <span>Upload Video</span>
           </button>
         </div>
       </div>
@@ -323,21 +325,23 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShareTarget({ type: "folder", id: folder.id, name: folder.name });
                     }}
                     title="Share folder via email"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
+                    aria-label="Share folder"
+                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
                     title="Delete folder"
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    aria-label="Delete folder"
+                    className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

@@ -130,9 +130,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Top Section: Organization Profile (Change Name) */}
-      <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-4">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-4">
         <div className="flex items-center gap-3 pb-4 border-b border-[hsl(var(--border))]">
-          <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+          <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
@@ -175,7 +175,7 @@ export default function SettingsPage() {
               <button
                 type="submit"
                 disabled={isSavingOrgName || loading || !orgName.trim() || orgName.trim() === initialOrgName}
-                className="px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px]"
               >
                 {isSavingOrgName ? (
                   <>
@@ -192,10 +192,10 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left 2 Cols: Team Members */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-6">
+          <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-[hsl(var(--primary))]" />
@@ -220,12 +220,12 @@ export default function SettingsPage() {
                 placeholder="colleague@company.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1 px-3.5 py-2 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
               />
               <select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="px-3.5 py-2 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none"
+                className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none"
               >
                 <option value="MEMBER">Member</option>
                 <option value="ADMIN">Admin</option>
@@ -233,7 +233,7 @@ export default function SettingsPage() {
               </select>
               <button
                 type="submit"
-                className="px-4 py-2 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-4 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 min-h-[44px]"
               >
                 <UserPlus className="w-4 h-4" /> Invite
               </button>
@@ -251,17 +251,17 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 members.map((m) => (
-                  <div key={m.id} className="py-3.5 flex items-center justify-between">
+                  <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center shrink-0">
                         {m.user.name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-semibold text-sm text-[hsl(var(--foreground))]">{m.user.name}</p>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))]">{m.user.email}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-sm text-[hsl(var(--foreground))] truncate">{m.user.name}</p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{m.user.email}</p>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase">
+                    <span className="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase">
                       {m.role}
                     </span>
                   </div>

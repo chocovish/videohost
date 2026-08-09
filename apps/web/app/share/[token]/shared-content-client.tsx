@@ -356,13 +356,13 @@ export default function SharedContentClient() {
 
       {/* Video Modal Player for Shared Folder view */}
       {selectedVideo && selectedVideo.playbackUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl my-auto">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-800">
               <h2 className="text-base font-bold text-slate-100 truncate pr-4">{selectedVideo.title}</h2>
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>

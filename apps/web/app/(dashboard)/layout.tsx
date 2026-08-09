@@ -4,6 +4,7 @@ import { getOrganizationUsage } from "@/lib/usage";
 import { db } from "@videohost/db";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
+import { SidebarProvider } from "@/components/SidebarContext";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -56,22 +57,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen flex bg-[hsl(var(--background))]">
-      <Sidebar
-        organizationName={orgName}
-        usageMinutes={usageMinutes}
-        minutesLimit={minutesLimit}
-        currentTheme={themeId}
-      />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Navbar
-          userEmail={userEmail}
-          userName={userName}
-          role={role}
+    <SidebarProvider>
+      <div className="min-h-screen flex bg-[hsl(var(--background))] overflow-x-hidden">
+        <Sidebar
           organizationName={orgName}
+          usageMinutes={usageMinutes}
+          minutesLimit={minutesLimit}
+          currentTheme={themeId}
         />
-        <main className="flex-1 p-6 md:p-8 max-w-7xl w-full mx-auto">{children}</main>
+        <div className="flex-1 flex flex-col min-w-0">
+          <Navbar
+            userEmail={userEmail}
+            userName={userName}
+            role={role}
+            organizationName={orgName}
+          />
+          <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

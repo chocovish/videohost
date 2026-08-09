@@ -288,8 +288,8 @@ export default function UploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg glass-card bg-white rounded-2xl p-6 shadow-2xl relative border border-[hsl(var(--border))]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto glass-card bg-white rounded-2xl p-4 sm:p-6 shadow-2xl relative border border-[hsl(var(--border))] my-auto">
         <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-lg bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
@@ -454,19 +454,19 @@ export default function UploadModal({
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[hsl(var(--border))]">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-[hsl(var(--border))]">
             <button
               type="button"
               onClick={handleClose}
               disabled={uploading}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors min-h-[44px]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={uploading || !file}
-              className="px-5 py-2 rounded-lg text-sm font-semibold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
             >
               {uploading ? "Processing..." : requireHls ? "Upload & Transcode" : "Upload Video"}
             </button>

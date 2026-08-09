@@ -85,7 +85,7 @@ export default function LoginForm() {
       {/* Decorative gradient glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[hsl(var(--primary))] opacity-20 blur-3xl rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-md glass-card rounded-2xl p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))]">
+      <div className="w-full max-w-md glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))]">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-lg mb-4 transform hover:scale-105 transition-transform">
             <Video className="w-8 h-8" />
