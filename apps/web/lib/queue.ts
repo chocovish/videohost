@@ -30,7 +30,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   const containerUrl = process.env.CONTAINER_WORKER_URL;
   const workerSecret = process.env.WORKER_SECRET_TOKEN;
 
-  const baseUrl = process.env.CUSTOM_WORKER_CALLBACK_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+  const baseUrl = process.env.CUSTOM_WORKER_CALLBACK_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
   const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
   const cdnHost = process.env.NEXT_PUBLIC_CDN_HOST || `${r2Endpoint}/videohost`;
 
