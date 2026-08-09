@@ -21,13 +21,14 @@ export async function GET(req: Request) {
 
     const userEmail = user.email ? user.email.toLowerCase() : "";
 
-    // Find all SharedLinks where recipientEmail matches OR user accessed it
+    if (!userEmail) {
+      return NextResponse.json({ items: [] });
+    }
+
+    // Find all SharedLinks where recipientEmail matches the user's email
     const sharedLinks = await db.sharedLink.findMany({
       where: {
-        OR: [
-          ...(userEmail ? [{ recipientEmail: { equals: userEmail, mode: "insensitive" as const } }] : []),
-          { accesses: { some: { userId: user.id } } },
-        ],
+        recipientEmail: { equals: userEmail, mode: "insensitive" },
       },
       include: {
         organization: true,

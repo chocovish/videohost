@@ -47,29 +47,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       );
     }
 
-    // Log shared link access if user is authenticated
-    if (session?.user?.id) {
-      try {
-        await db.sharedLinkAccess.upsert({
-          where: {
-            sharedLinkId_userId: {
-              sharedLinkId: sharedLink.id,
-              userId: session.user.id,
-            },
-          },
-          create: {
-            sharedLinkId: sharedLink.id,
-            userId: session.user.id,
-          },
-          update: {
-            accessedAt: new Date(),
-          },
-        });
-      } catch (accessErr) {
-        console.error("Error logging shared link access:", accessErr);
-      }
-    }
-
     // Shared Video
     if (sharedLink.videoId && sharedLink.video) {
       const video = sharedLink.video;
