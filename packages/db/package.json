@@ -11,10 +11,14 @@
     "seed": "ts-node src/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.14.0"
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "dotenv": "^16.4.5",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
-    "prisma": "^5.14.0",
+    "@types/pg": "^8.11.6",
+    "prisma": "^7.9.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
