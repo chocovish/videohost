@@ -151,8 +151,8 @@ export default function VideoDetailPage() {
               className="flex-1 sm:flex-none font-semibold min-h-[40px]"
               title="Retry transcoding job"
             >
-              <RotateCcw className={`w-3.5 h-3.5 mr-1.5 ${isRetrying ? "animate-spin" : ""}`} />
-              {isRetrying ? "Retrying..." : "Retry Transcoding"}
+              <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              <span>{isRetrying ? "Retrying..." : "Retry Transcoding"}</span>
             </Button>
           )}
           <Button
@@ -163,14 +163,16 @@ export default function VideoDetailPage() {
             className="flex-1 sm:flex-none font-semibold min-h-[40px]"
             title="Refresh video details"
           >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} /> Refresh
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
+            <span>Refresh</span>
           </Button>
           <Button
             size="sm"
             onClick={() => setIsShareOpen(true)}
             className="flex-1 sm:flex-none font-semibold min-h-[40px]"
           >
-            <Share2 className="w-4 h-4 mr-1.5" /> Share Video
+            <Share2 className="w-4 h-4" />
+            <span>Share Video</span>
           </Button>
           <Button
             variant="ghost"

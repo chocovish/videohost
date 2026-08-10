@@ -217,14 +217,14 @@ function UploadedVideosContent() {
             onClick={() => setIsCreateFolderOpen(true)}
             className="flex-1 sm:flex-none font-semibold min-h-[44px]"
           >
-            <FolderPlus className="w-4 h-4 text-amber-600 mr-1" />
+            <FolderPlus className="w-4 h-4 text-amber-600" />
             <span>New Folder</span>
           </Button>
           <Button
             onClick={() => setIsUploadOpen(true)}
             className="w-full sm:w-auto font-semibold min-h-[44px]"
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus className="w-4 h-4" />
             <span>Upload Video</span>
           </Button>
         </div>
