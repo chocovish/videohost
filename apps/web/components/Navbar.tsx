@@ -4,6 +4,9 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface NavbarProps {
   userEmail: string;
@@ -15,23 +18,29 @@ interface NavbarProps {
 export default function Navbar({ userEmail, userName, role, organizationName }: NavbarProps) {
   const { toggleMobile, toggleCollapse, isCollapsed } = useSidebar();
 
+  const userInitial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
+
   return (
-    <header className="h-16 border-b border-[hsl(var(--border))] bg-white/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
+    <header className="h-16 border-b border-[hsl(var(--border))] bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile Hamburger Button */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={toggleMobile}
-          className="p-2 -ml-1 text-[hsl(var(--foreground))] hover:bg-black/5 rounded-xl transition-colors md:hidden shrink-0"
+          className="md:hidden shrink-0 h-9 w-9 -ml-1"
           title="Open Menu"
           aria-label="Open Navigation Menu"
         >
           <Menu className="w-5 h-5 text-[hsl(var(--primary))]" />
-        </button>
+        </Button>
 
         {/* Desktop Collapse Toggle */}
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={toggleCollapse}
-          className="p-2 -ml-1 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-black/5 rounded-xl transition-colors hidden md:flex shrink-0"
+          className="hidden md:flex shrink-0 h-9 w-9 -ml-1 text-[hsl(var(--muted-foreground))]"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           aria-label="Toggle Sidebar"
         >
@@ -40,15 +49,15 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
           ) : (
             <PanelLeftClose className="w-5 h-5" />
           )}
-        </button>
+        </Button>
 
         <div className="flex items-center gap-2 min-w-0 truncate">
           <h1 className="font-semibold text-base sm:text-lg text-[hsl(var(--foreground))] truncate max-w-[140px] sm:max-w-xs">
             {organizationName}
           </h1>
-          <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] uppercase tracking-wider shrink-0">
+          <Badge variant="lime" className="shrink-0">
             {role}
-          </span>
+          </Badge>
         </div>
       </div>
 
@@ -58,23 +67,25 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
           className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors text-sm"
           title="Profile Settings"
         >
-          <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center font-bold text-xs shrink-0">
-            {userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase()}
-          </div>
+          <Avatar className="h-7 w-7">
+            <AvatarFallback>{userInitial}</AvatarFallback>
+          </Avatar>
           <div className="text-left hidden sm:block max-w-[120px] md:max-w-[160px] truncate">
             <p className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">{userName || "User"}</p>
             <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">{userEmail}</p>
           </div>
         </Link>
 
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => signOut({ callbackUrl: "/auth/login" })}
-          className="p-2 text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-colors"
+          className="h-9 w-9 text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:bg-red-500/10 rounded-xl"
           title="Sign Out"
           aria-label="Sign Out"
         >
           <LogOut className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </header>
   );

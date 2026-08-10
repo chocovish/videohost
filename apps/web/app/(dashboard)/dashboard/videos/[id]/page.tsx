@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface VideoDetail {
   id: string;
@@ -139,38 +141,45 @@ export default function VideoDetailPage() {
         >
           <ArrowLeft className="w-4 h-4" /> Back to Videos
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {video.status === "FAILED" && (
-            <button
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleRetryTranscode}
               disabled={isRetrying}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors min-h-[40px] shadow-xs disabled:opacity-50"
+              className="flex-1 sm:flex-none font-semibold min-h-[40px]"
               title="Retry transcoding job"
             >
-              <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              <RotateCcw className={`w-3.5 h-3.5 mr-1.5 ${isRetrying ? "animate-spin" : ""}`} />
               {isRetrying ? "Retrying..." : "Retry Transcoding"}
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors min-h-[40px] border border-slate-200"
+            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
             title="Refresh video details"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} /> Refresh
-          </button>
-          <button
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} /> Refresh
+          </Button>
+          <Button
+            size="sm"
             onClick={() => setIsShareOpen(true)}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl transition-colors shadow-xs min-h-[40px]"
+            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
           >
-            <Share2 className="w-4 h-4" /> Share Video
-          </button>
-          <button
+            <Share2 className="w-4 h-4 mr-1.5" /> Share Video
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleDelete}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-500/10 rounded-xl transition-colors min-h-[40px]"
+            className="flex-1 sm:flex-none font-semibold text-red-600 hover:bg-red-500/10 min-h-[40px]"
           >
-            <Trash2 className="w-4 h-4" /> Delete Video
-          </button>
+            <Trash2 className="w-4 h-4 mr-1.5" /> Delete Video
+          </Button>
         </div>
       </div>
 

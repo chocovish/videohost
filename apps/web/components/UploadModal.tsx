@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X, UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -51,7 +62,7 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
       clearTimeout(timeoutId);
       try {
         const canvas = document.createElement("canvas");
-        const maxDim = 720; // Max width/height for lightweight fast loading thumbnails (~20-30KB)
+        const maxDim = 720;
         const originalWidth = video.videoWidth || 640;
         const originalHeight = video.videoHeight || 360;
         const scale = Math.min(1, maxDim / Math.max(originalWidth, originalHeight));
@@ -100,7 +111,9 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
       }
     };
 
-    video.onseeked = captureFrame;
+    video.onseeked = () => {
+      captureFrame();
+    };
 
     video.onerror = () => {
       clearTimeout(timeoutId);
@@ -117,111 +130,104 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
   });
 }
 
-function formatDuration(seconds: number): string {
-  if (!seconds) return "0s";
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  if (mins === 0) return `${secs}s`;
-  return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
 export default function UploadModal({
   isOpen,
   onClose,
   onUploadSuccess,
-  currentFolderId = null,
-  folderPathName = "Root",
+  currentFolderId,
+  folderPathName,
 }: UploadModalProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
-  const [requireHls, setRequireHls] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [requireHls, setRequireHls] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState("");
   const [statusText, setStatusText] = useState("");
+  const [error, setError] = useState("");
+  const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
 
   const resetForm = () => {
     setFile(null);
-    setMetadata(null);
-    setRequireHls(false);
     setTitle("");
     setDescription("");
+    setRequireHls(true);
     setError("");
     setProgress(0);
     setStatusText("");
+    if (metadata?.thumbnailUrl) {
+      URL.revokeObjectURL(metadata.thumbnailUrl);
+    }
+    setMetadata(null);
   };
 
   const handleClose = () => {
-    if (uploading) return;
-    resetForm();
-    onClose();
+    if (!uploading) {
+      resetForm();
+      onClose();
+    }
   };
-
-  if (!isOpen) return null;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selected = e.target.files[0];
-      setFile(selected);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
       if (!title) {
-        setTitle(selected.name.replace(/\.[^/.]+$/, ""));
+        const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
+        setTitle(nameWithoutExt);
       }
-
-      // Collect video metadata & extract thumbnail on client side
-      try {
-        const meta = await extractVideoMetadataAndThumbnail(selected);
-        setMetadata(meta);
-      } catch (err) {
-        console.warn("Could not extract client video metadata/thumbnail:", err);
-      }
+      const meta = await extractVideoMetadataAndThumbnail(selectedFile);
+      setMetadata(meta);
     }
   };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title) return;
+    if (!file || !title.trim()) return;
 
     setError("");
     setUploading(true);
-    setProgress(0);
-    setStatusText("Requesting presigned upload URL...");
+    setProgress(5);
+    setStatusText("Initializing upload session...");
 
     try {
-      // 1. Request presigned upload URL (passing requireHls and client-extracted metadata)
-      const presignedRes = await fetch("/api/upload/presigned", {
+      const initRes = await fetch("/api/v1/videos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          description,
-          folderId: currentFolderId || null,
+          title: title.trim(),
+          description: description.trim() || undefined,
+          fileName: file.name,
+          contentType: file.type || "video/mp4",
           requireHls,
-          durationSeconds: metadata?.durationSeconds || null,
-          sourceWidth: metadata?.sourceWidth || null,
-          sourceHeight: metadata?.sourceHeight || null,
+          durationSeconds: metadata?.durationSeconds || undefined,
+          sourceWidth: metadata?.sourceWidth || undefined,
+          sourceHeight: metadata?.sourceHeight || undefined,
+          folderId: currentFolderId || null,
         }),
       });
 
-      const presignedData = await presignedRes.json();
-      if (!presignedRes.ok) {
-        throw new Error(presignedData.error || "Failed to generate upload URL");
+      const initData = await initRes.json();
+      if (!initRes.ok) {
+        throw new Error(initData.error || "Failed to initialize upload");
       }
 
-      const { videoId, uploadUrl, thumbnailUploadUrl } = presignedData;
+      const { uploadUrl, videoId } = initData.data;
 
-      // 2a. Upload video file directly to R2 via XMLHttpRequest to track progress
-      setStatusText("Uploading video to Cloudflare R2...");
+      setStatusText("Uploading video file to S3...");
+      const xhr = new XMLHttpRequest();
+
       await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("PUT", uploadUrl, true);
-        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-
         xhr.upload.onprogress = (event) => {
           if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            setProgress(percent);
+            const percentComplete = Math.round((event.loaded / event.total) * 75) + 5;
+            setProgress(percentComplete);
           }
         };
 
@@ -229,29 +235,43 @@ export default function UploadModal({
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error(`R2 upload failed with status ${xhr.status}`));
+            reject(new Error(`S3 upload failed with status ${xhr.status}`));
           }
         };
 
-        xhr.onerror = () => reject(new Error("Network error during R2 upload"));
+        xhr.onerror = () => reject(new Error("Network error during S3 upload"));
+
+        xhr.open("PUT", uploadUrl);
+        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
         xhr.send(file);
       });
 
-      // 2b. Upload client-extracted thumbnail image to R2
-      if (thumbnailUploadUrl && metadata?.thumbnailBlob) {
+      setProgress(85);
+
+      if (metadata?.thumbnailBlob) {
         try {
-          setStatusText("Uploading video thumbnail...");
-          await fetch(thumbnailUploadUrl, {
-            method: "PUT",
-            headers: { "Content-Type": "image/jpeg" },
-            body: metadata.thumbnailBlob,
+          setStatusText("Uploading generated thumbnail...");
+          const thumbInitRes = await fetch("/api/upload/thumbnail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              videoId,
+              contentType: "image/jpeg",
+            }),
           });
+          const thumbInitData = await thumbInitRes.json();
+          if (thumbInitRes.ok && thumbInitData.uploadUrl) {
+            await fetch(thumbInitData.uploadUrl, {
+              method: "PUT",
+              headers: { "Content-Type": "image/jpeg" },
+              body: metadata.thumbnailBlob,
+            });
+          }
         } catch (thumbErr) {
           console.warn("Failed to upload client thumbnail:", thumbErr);
         }
       }
 
-      // 3. Signal upload complete
       if (requireHls) {
         setStatusText("Queueing HLS adaptive transcode job...");
       } else {
@@ -288,32 +308,28 @@ export default function UploadModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto glass-card bg-white rounded-2xl p-4 sm:p-6 shadow-2xl relative border border-[hsl(var(--border))] my-auto">
-        <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
               <UploadCloud className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">Upload Video</h3>
+            <div>
+              <DialogTitle>Upload Video</DialogTitle>
+              <DialogDescription>Add a new video to your library or active folder</DialogDescription>
+            </div>
           </div>
-          <button
-            onClick={handleClose}
-            disabled={uploading}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleUpload} className="mt-4 space-y-4">
+        <form onSubmit={handleUpload} className="space-y-4">
           {/* Dropzone */}
           <div className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] rounded-xl p-5 text-center transition-colors bg-[hsl(var(--muted))]/30">
             <input
@@ -373,7 +389,7 @@ export default function UploadModal({
           </div>
 
           {/* Require HLS Switch */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-[hsl(var(--border))]">
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))]">
             <div className="space-y-0.5">
               <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
                 Require HLS
@@ -391,50 +407,49 @@ export default function UploadModal({
               aria-checked={requireHls}
               disabled={uploading}
               onClick={() => setRequireHls(!requireHls)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300"
-                }`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${
+                requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300"
+              }`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${requireHls ? "translate-x-5" : "translate-x-0"
-                  }`}
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  requireHls ? "translate-x-5" : "translate-x-0"
+                }`}
               />
             </button>
           </div>
 
           {/* Destination Folder Info Banner */}
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 font-medium">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium">
             <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
             <span>
               Destination: <strong className="font-bold">{folderPathName || "Root"}</strong>
             </span>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
-              Title
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="video-title">Title</Label>
+            <Input
+              id="video-title"
               type="text"
               required
               disabled={uploading}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Q3 Product Keynote"
-              className="w-full px-3.5 py-2 rounded-lg border border-[hsl(var(--input))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm outline-none"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
-              Description (Optional)
-            </label>
+          <div className="space-y-1.5">
+            <Label htmlFor="video-description">Description (Optional)</Label>
             <textarea
+              id="video-description"
               rows={2}
               disabled={uploading}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details about this video..."
-              className="w-full px-3.5 py-2 rounded-lg border border-[hsl(var(--input))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm outline-none resize-none"
+              className="flex w-full rounded-xl border border-[hsl(var(--input))] bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
             />
           </div>
 
@@ -445,7 +460,7 @@ export default function UploadModal({
                 <span>{statusText}</span>
                 <span>{progress}%</span>
               </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
                   className="h-full bg-[hsl(var(--primary))] transition-all duration-300 rounded-full"
                   style={{ width: `${progress}%` }}
@@ -454,25 +469,26 @@ export default function UploadModal({
             </div>
           )}
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-[hsl(var(--border))]">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="ghost"
               onClick={handleClose}
               disabled={uploading}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors min-h-[44px]"
+              className="w-full sm:w-auto"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={uploading || !file}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
+              className="w-full sm:w-auto min-w-[140px]"
             >
               {uploading ? "Processing..." : requireHls ? "Upload & Transcode" : "Upload Video"}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

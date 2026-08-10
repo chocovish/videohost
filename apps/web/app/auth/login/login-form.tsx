@@ -5,6 +5,9 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Video, ArrowRight, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -144,10 +147,11 @@ export default function LoginForm() {
           </div>
         )}
 
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-3 text-sm mb-6 hover:shadow"
+          className="w-full py-2.5 px-4 font-semibold mb-6 flex items-center justify-center gap-3 text-sm min-h-[44px]"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -168,56 +172,52 @@ export default function LoginForm() {
             />
           </svg>
           Continue with Google
-        </button>
+        </Button>
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-[hsl(var(--border))]" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white/80 px-2 text-[hsl(var(--muted-foreground))] font-medium backdrop-blur-sm">
+            <span className="bg-white/80 dark:bg-slate-900/80 px-2 text-[hsl(var(--muted-foreground))] font-medium backdrop-blur-sm">
               Or continue with email
             </span>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
-              Work Email
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="login-email">Work Email</Label>
+            <Input
+              id="login-email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
               placeholder="you@company.com"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
-              Password
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="login-password">Password</Label>
+            <Input
+              id="login-password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
               placeholder="••••••••"
             />
           </div>
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full mt-2 py-3 px-4 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+            className="w-full mt-2 min-h-[44px] font-semibold text-sm group"
           >
             {loading ? "Signing in..." : "Sign in to Dashboard"}
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+          </Button>
         </form>
 
         <div className="mt-8 pt-6 border-t border-[hsl(var(--border))] text-center">

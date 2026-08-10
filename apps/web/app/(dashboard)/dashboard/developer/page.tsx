@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Key, Webhook, Plus, Copy, Check, ShieldAlert, Sparkles, Trash2, Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface ApiKeyItem {
   id: string;
@@ -110,73 +114,71 @@ export default function DeveloperPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] pb-3 overflow-x-auto whitespace-nowrap">
-        <button
+        <Button
+          variant={activeTab === "apikeys" ? "default" : "ghost"}
           onClick={() => setActiveTab("apikeys")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${activeTab === "apikeys"
-            ? "bg-[hsl(var(--primary))] text-white shadow-xs"
-            : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-            }`}
+          className="shrink-0"
         >
-          <Key className="w-4 h-4" /> API Keys
-        </button>
-        <button
+          <Key className="w-4 h-4 mr-2" /> API Keys
+        </Button>
+        <Button
+          variant={activeTab === "webhooks" ? "default" : "ghost"}
           onClick={() => setActiveTab("webhooks")}
-          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 shrink-0 ${activeTab === "webhooks"
-            ? "bg-[hsl(var(--primary))] text-white shadow-xs"
-            : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-            }`}
+          className="shrink-0"
         >
-          <Webhook className="w-4 h-4" /> Webhook Subscriptions
-        </button>
+          <Webhook className="w-4 h-4 mr-2" /> Webhook Subscriptions
+        </Button>
       </div>
 
       {/* TAB 1: API KEYS */}
       {activeTab === "apikeys" && (
         <div className="space-y-6">
           {/* Create Key Card */}
-          <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-4">
-            <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Create New API Key</h3>
-            <form onSubmit={handleCreateApiKey} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                required
-                placeholder="Key Description (e.g. Mobile App Backend)"
-                value={newKeyName}
-                onChange={(e) => setNewKeyName(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
-              />
-              <button
-                type="submit"
-                className="px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 min-h-[44px]"
-              >
-                <Plus className="w-4 h-4" /> Generate Secret Key
-              </button>
-            </form>
+          <Card>
+            <CardHeader>
+              <CardTitle>Create New API Key</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleCreateApiKey} className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  type="text"
+                  required
+                  placeholder="Key Description (e.g. Mobile App Backend)"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit" className="min-h-[40px]">
+                  <Plus className="w-4 h-4 mr-1.5" /> Generate Secret Key
+                </Button>
+              </form>
 
-            {/* Display raw secret ONCE */}
-            {createdRawKey && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <ShieldAlert className="w-4 h-4 shrink-0" /> Secret Key Created — Save It Now!
-                  </span>
-                  <button
-                    onClick={() => copyToClipboard(createdRawKey)}
-                    className="px-3 py-1.5 bg-amber-600 text-white font-bold text-xs rounded-lg hover:bg-amber-700 transition-colors flex items-center justify-center gap-1 self-start sm:self-auto min-h-[36px]"
-                  >
-                    {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedKey ? "Copied" : "Copy Secret"}
-                  </button>
+              {/* Display raw secret ONCE */}
+              {createdRawKey && (
+                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <ShieldAlert className="w-4 h-4 shrink-0" /> Secret Key Created — Save It Now!
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => copyToClipboard(createdRawKey)}
+                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+                    >
+                      {copiedKey ? <Check className="w-3.5 h-3.5 mr-1" /> : <Copy className="w-3.5 h-3.5 mr-1" />}
+                      {copiedKey ? "Copied" : "Copy Secret"}
+                    </Button>
+                  </div>
+                  <pre className="bg-slate-900 text-emerald-400 p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
+                    {createdRawKey}
+                  </pre>
+                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                    This key will never be shown again. It is securely hashed at rest in our database.
+                  </p>
                 </div>
-                <pre className="bg-slate-900 text-emerald-400 p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
-                  {createdRawKey}
-                </pre>
-                <p className="text-[11px] text-amber-700">
-                  This key will never be shown again. It is securely hashed at rest in our database.
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Active Keys Table */}
           <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-4">

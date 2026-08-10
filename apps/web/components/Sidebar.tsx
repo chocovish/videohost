@@ -7,8 +7,6 @@ import {
   Video,
   Code2,
   Settings,
-  User,
-  HardDrive,
   Palette,
   X,
   PanelLeftClose,
@@ -16,11 +14,12 @@ import {
   Eye,
   Share2,
   Loader2,
-  Building2,
+  HardDrive,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
-import { useSidebar } from "@/components/SidebarContext";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
   organizationName: string;
@@ -46,8 +45,8 @@ export default function Sidebar({
   const [activeTheme, setActiveTheme] = useState(currentTheme || "lime");
   const [viewMode, setViewMode] = useState<"CREATOR" | "VIEWER">(
     ((session?.user as any)?.viewMode as "CREATOR" | "VIEWER") ||
-    (initialViewMode as "CREATOR" | "VIEWER") ||
-    "CREATOR"
+      (initialViewMode as "CREATOR" | "VIEWER") ||
+      "CREATOR"
   );
   const [isUpdatingMode, setIsUpdatingMode] = useState(false);
 
@@ -107,7 +106,7 @@ export default function Sidebar({
 
   const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;
 
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const SidebarInner = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col justify-between h-full p-4">
       <div className="space-y-5">
         {/* Brand Header */}
@@ -134,13 +133,15 @@ export default function Sidebar({
 
           {/* Close button for mobile drawer */}
           {isMobile && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={closeMobile}
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              className="h-8 w-8 text-slate-400 hover:text-slate-600 rounded-lg"
               aria-label="Close menu"
             >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -153,17 +154,19 @@ export default function Sidebar({
             </div>
           )}
           <div
-            className={`p-1 bg-slate-100/90 border border-[hsl(var(--border))] rounded-xl flex items-center gap-1 ${isCollapsed && !isMobile ? "flex-col" : ""
-              }`}
+            className={`p-1 bg-slate-100/90 dark:bg-slate-800/90 border border-[hsl(var(--border))] rounded-xl flex items-center gap-1 ${
+              isCollapsed && !isMobile ? "flex-col" : ""
+            }`}
           >
             <button
               onClick={() => handleModeSwitch("CREATOR")}
               disabled={isUpdatingMode}
               title="Creator Mode: Manage uploads & library"
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${viewMode === "CREATOR"
-                ? "bg-white text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                viewMode === "CREATOR"
+                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-xs"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
             >
               <Video className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
               {(!isCollapsed || isMobile) && <span>Creator</span>}
@@ -172,10 +175,11 @@ export default function Sidebar({
               onClick={() => handleModeSwitch("VIEWER")}
               disabled={isUpdatingMode}
               title="Viewer Mode: Access content shared with you"
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${viewMode === "VIEWER"
-                ? "bg-white text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                viewMode === "VIEWER"
+                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-xs"
+                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
             >
               <Eye className="w-3.5 h-3.5 text-indigo-500" />
               {(!isCollapsed || isMobile) && <span>Viewer</span>}
@@ -199,16 +203,16 @@ export default function Sidebar({
                   if (isMobile) closeMobile();
                 }}
                 title={isCollapsed && !isMobile ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isCollapsed && !isMobile ? "justify-center px-2" : ""
-                  } ${isActive
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isCollapsed && !isMobile ? "justify-center px-2" : ""
+                } ${
+                  isActive
                     ? "bg-[hsl(var(--primary))] text-white shadow-sm font-semibold"
                     : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
-                  }`}
+                }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                {(!isCollapsed || isMobile) && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                {(!isCollapsed || isMobile) && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
@@ -217,13 +221,14 @@ export default function Sidebar({
 
       {/* Footer Widgets */}
       <div className="space-y-4 pt-4 border-t border-[hsl(var(--border))]">
-        {/* Quota Progress Meter (Shown in Creator Mode) */}
+        {/* Quota Progress Meter */}
         {viewMode === "CREATOR" && (
           <div
-            className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${isCollapsed && !isMobile ? "p-2 text-center" : ""
-              }`}
+            className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${
+              isCollapsed && !isMobile ? "p-2 text-center" : ""
+            }`}
           >
-            {(!isCollapsed || isMobile) ? (
+            {!isCollapsed || isMobile ? (
               <>
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
@@ -233,7 +238,7 @@ export default function Sidebar({
                     {usageMinutes} / {minutesLimit}m
                   </span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                   <div
                     className="h-full bg-[hsl(var(--primary))] transition-all duration-500 rounded-full"
                     style={{ width: `${percentage}%` }}
@@ -255,7 +260,7 @@ export default function Sidebar({
         )}
 
         {/* Theme Token Selector */}
-        <div className="p-2 rounded-xl border border-[hsl(var(--border))] bg-white/40 space-y-1.5">
+        <div className="p-2 rounded-xl border border-[hsl(var(--border))] bg-white/40 dark:bg-slate-900/40 space-y-1.5">
           {(!isCollapsed || isMobile) && (
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[hsl(var(--muted-foreground))] px-1">
               <Palette className="w-3 h-3 text-[hsl(var(--primary))]" /> Color Palette
@@ -267,10 +272,11 @@ export default function Sidebar({
                 key={theme.id}
                 onClick={() => applyTheme(theme.id)}
                 title={theme.name}
-                className={`py-1 px-1.5 rounded-md text-[10px] font-medium transition-all flex items-center justify-center gap-1 border ${activeTheme === theme.id
-                  ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--foreground))]"
-                  : "border-transparent hover:bg-black/5 text-[hsl(var(--muted-foreground))]"
-                  }`}
+                className={`py-1 px-1.5 rounded-md text-[10px] font-medium transition-all flex items-center justify-center gap-1 border cursor-pointer ${
+                  activeTheme === theme.id
+                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--foreground))]"
+                    : "border-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[hsl(var(--muted-foreground))]"
+                }`}
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
@@ -284,9 +290,10 @@ export default function Sidebar({
 
         {/* Desktop Collapse Toggle */}
         {!isMobile && (
-          <button
+          <Button
+            variant="ghost"
             onClick={toggleCollapse}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors border border-transparent hover:border-[hsl(var(--border))]"
+            className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? (
@@ -297,7 +304,7 @@ export default function Sidebar({
                 <span>Collapse Sidebar</span>
               </>
             )}
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -305,28 +312,26 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Mobile Drawer (Slide-out Overlay) */}
+      {/* Mobile Drawer Overlay */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          {/* Backdrop blur overlay */}
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
             onClick={closeMobile}
           />
-
-          {/* Off-canvas sidebar sheet */}
-          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white border-r border-[hsl(var(--border))] shadow-2xl z-50 animate-in slide-in-from-left duration-300 overflow-y-auto">
-            <SidebarContent isMobile={true} />
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-[hsl(var(--border))] shadow-2xl z-50 animate-in slide-in-from-left duration-300 overflow-y-auto">
+            <SidebarInner isMobile={true} />
           </aside>
         </div>
       )}
 
       {/* Desktop Sticky Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${isCollapsed ? "w-20" : "w-64"
-          }`}
+        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
       >
-        <SidebarContent isMobile={false} />
+        <SidebarInner isMobile={false} />
       </aside>
     </>
   );

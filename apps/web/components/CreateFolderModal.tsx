@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { X, FolderPlus, AlertCircle, Loader2 } from "lucide-react";
+import { FolderPlus, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CreateFolderModalProps {
   isOpen: boolean;
@@ -21,8 +32,6 @@ export default function CreateFolderModal({
   const [folderName, setFolderName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,42 +66,34 @@ export default function CreateFolderModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto glass-card bg-white rounded-2xl p-4 sm:p-6 shadow-2xl relative border border-[hsl(var(--border))] my-auto">
-        <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
               <FolderPlus className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">New Folder</h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <DialogTitle>New Folder</DialogTitle>
+              <DialogDescription>
                 {parentFolderName ? `Creating inside "${parentFolderName}"` : "Creating at root level"}
-              </p>
+              </DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
-              Folder Name
-            </label>
-            <input
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="folder-name-input">Folder Name</Label>
+            <Input
+              id="folder-name-input"
               type="text"
               required
               autoFocus
@@ -100,35 +101,35 @@ export default function CreateFolderModal({
               value={folderName}
               onChange={(e) => setFolderName(e.target.value)}
               placeholder="e.g. Marketing Assets"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm outline-none transition-all"
             />
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-4 border-t border-[hsl(var(--border))]">
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="ghost"
               onClick={onClose}
               disabled={loading}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-sm font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors min-h-[44px]"
+              className="w-full sm:w-auto"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={loading || !folderName.trim()}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-semibold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
+              className="w-full sm:w-auto min-w-[120px]"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...
                 </>
               ) : (
                 "Create Folder"
               )}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

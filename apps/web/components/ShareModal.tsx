@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  X,
   Mail,
   Send,
   Check,
@@ -20,6 +19,18 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface SharedEmailItem {
   id: string;
@@ -60,7 +71,6 @@ export default function ShareModal({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Fetch share details on open
   const fetchShareDetails = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -92,8 +102,6 @@ export default function ShareModal({
       fetchShareDetails();
     }
   }, [isOpen, targetId, targetType]);
-
-  if (!isOpen) return null;
 
   const handleCopyLink = () => {
     if (shareUrl) {
@@ -209,31 +217,19 @@ export default function ShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
-      <div className="w-full max-w-xl max-h-[92vh] overflow-y-auto glass-card bg-white rounded-3xl p-5 sm:p-7 shadow-2xl relative border border-[hsl(var(--border))] space-y-5 my-auto">
-
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-3 rounded-2xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
-              <Share2 className="w-5 h-5" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+              {targetType === "video" ? <Film className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
             </div>
             <div className="min-w-0">
-              <h3 className="font-extrabold text-lg text-[hsl(var(--foreground))]">
-                Share {targetType === "video" ? "Video" : "Folder"}
-              </h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] truncate max-w-xs sm:max-w-sm">
-                {targetName}
-              </p>
+              <DialogTitle>Share {targetType === "video" ? "Video" : "Folder"}</DialogTitle>
+              <DialogDescription className="truncate max-w-xs sm:max-w-sm">{targetName}</DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Notifications */}
         {errorMsg && (
@@ -243,7 +239,7 @@ export default function ShareModal({
           </div>
         )}
         {successMsg && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
             <Check className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
           </div>
@@ -251,35 +247,32 @@ export default function ShareModal({
 
         {/* 1. CONSTANT SHARE LINK SECTION */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--foreground))] flex items-center gap-1.5">
-              <LinkIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Share Link
-            </label>
-          </div>
+          <Label className="flex items-center gap-1.5">
+            <LinkIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Share Link
+          </Label>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <input
+            <Input
               type="text"
               readOnly
               value={loading ? "Loading link..." : shareUrl}
-              className="w-full px-4 py-2.5 text-xs font-mono bg-slate-50 border border-[hsl(var(--input))] rounded-xl text-[hsl(var(--foreground))] select-all focus:outline-none min-h-[44px]"
+              className="font-mono bg-slate-50 dark:bg-slate-900 select-all"
             />
-            <button
+            <Button
+              type="button"
               onClick={handleCopyLink}
               disabled={loading || !shareUrl}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl shadow-xs transition-all shrink-0 disabled:opacity-50 min-h-[44px]"
+              className="shrink-0 min-w-[110px]"
             >
-              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
               {copied ? "Copied!" : "Copy Link"}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* 2. ACCESS MODE CONTROLS */}
         <div className="space-y-2.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--foreground))] block">
-            Access Settings
-          </label>
+          <Label>Access Settings</Label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {[
               {
@@ -287,21 +280,18 @@ export default function ShareModal({
                 title: "Public",
                 icon: Globe,
                 desc: "Anyone with link can view",
-                badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
               },
               {
                 id: "RESTRICTED",
                 title: "Specific Emails",
                 icon: Lock,
                 desc: "Requires login & invited email",
-                badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
               },
               {
                 id: "PRIVATE",
                 title: "Private",
                 icon: ShieldAlert,
                 desc: "Disabled for everyone",
-                badgeClass: "bg-slate-100 text-slate-700 border-slate-300",
               },
             ].map((option) => {
               const Icon = option.icon;
@@ -312,16 +302,15 @@ export default function ShareModal({
                   type="button"
                   disabled={savingMode}
                   onClick={() => handleModeChange(option.id as any)}
-                  className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-2 cursor-pointer ${isSelected
-                    ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 shadow-xs ring-2 ring-[hsl(var(--primary))]/20"
-                    : "bg-slate-50 border-[hsl(var(--input))] hover:bg-slate-100 hover:border-slate-300"
-                    }`}
+                  className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
+                    isSelected
+                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 shadow-xs ring-2 ring-[hsl(var(--primary))]/20"
+                      : "bg-slate-50 dark:bg-slate-900 border-[hsl(var(--input))] hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <Icon className={`w-4 h-4 ${isSelected ? "text-[hsl(var(--primary))]" : "text-slate-400"}`} />
-                    {isSelected && (
-                      <span className="w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />
-                    )}
+                    {isSelected && <span className="w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />}
                   </div>
                   <div>
                     <p className="font-extrabold text-xs text-[hsl(var(--foreground))]">{option.title}</p>
@@ -338,29 +327,27 @@ export default function ShareModal({
         {/* 3. ADD AND INVITE EMAIL SECTION */}
         <div className="pt-2 border-t border-[hsl(var(--border))] space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--foreground))] flex items-center gap-1.5">
+            <Label className="flex items-center gap-1.5">
               <UserPlus className="w-3.5 h-3.5 text-indigo-600" /> Share with Emails
-            </label>
+            </Label>
             {allowedEmails.length > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <Badge variant="outline" className="text-indigo-600 border-indigo-200">
                 {allowedEmails.length} invited
-              </span>
+              </Badge>
             )}
           </div>
 
           <form onSubmit={handleAddAndInvite} className="space-y-3">
-            <div>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-                <input
-                  type="email"
-                  disabled={addingEmail}
-                  placeholder="colleague@example.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm outline-none text-[hsl(var(--foreground))] transition-all"
-                />
-              </div>
+            <div className="relative">
+              <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+              <Input
+                type="email"
+                disabled={addingEmail}
+                placeholder="colleague@example.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="pl-10"
+              />
             </div>
 
             <div>
@@ -370,26 +357,26 @@ export default function ShareModal({
                 placeholder="Add an optional note in the email invitation..."
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-xl border border-[hsl(var(--input))] bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs outline-none text-[hsl(var(--foreground))] resize-none transition-all"
+                className="flex w-full rounded-xl border border-[hsl(var(--input))] bg-background px-3.5 py-2 text-xs ring-offset-background placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
               />
             </div>
 
             <div className="flex justify-end">
-              <button
+              <Button
                 type="submit"
                 disabled={addingEmail || !emailInput.trim()}
-                className="px-5 py-2.5 rounded-xl text-xs font-extrabold bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                className="min-w-[130px]"
               >
                 {addingEmail ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Adding...
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Adding...
                   </>
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5" /> Add & Invite
+                    <Send className="w-3.5 h-3.5 mr-1.5" /> Add & Invite
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -401,11 +388,11 @@ export default function ShareModal({
               <Users className="w-3.5 h-3.5" /> People with Access ({allowedEmails.length})
             </h4>
 
-            <div className="max-h-40 overflow-y-auto divide-y divide-[hsl(var(--border))] rounded-xl border border-[hsl(var(--border))] bg-slate-50/50">
+            <div className="max-h-40 overflow-y-auto divide-y divide-[hsl(var(--border))] rounded-xl border border-[hsl(var(--border))] bg-slate-50/50 dark:bg-slate-900/50">
               {allowedEmails.map((item) => (
                 <div
                   key={item.id}
-                  className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-slate-100/60 transition-colors"
+                  className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
                 >
                   <div className="min-w-0 pr-2">
                     <p className="font-semibold text-[hsl(var(--foreground))] truncate">{item.email}</p>
@@ -413,37 +400,33 @@ export default function ShareModal({
                       Added {new Date(item.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     disabled={deletingEmailId === item.id}
                     onClick={() => handleRemoveEmail(item.id, item.email)}
                     title="Remove access"
-                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
                   >
                     {deletingEmailId === item.id ? (
                       <Loader2 className="w-4 h-4 animate-spin text-red-600" />
                     ) : (
                       <Trash2 className="w-4 h-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex justify-end pt-3 border-t border-[hsl(var(--border))]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-          >
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">
             Done
-          </button>
-        </div>
-
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -23,6 +23,17 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Member {
   id: string;
@@ -814,83 +825,79 @@ export default function SettingsPage() {
       </div>
 
       {/* Create Organization Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-white border border-[hsl(var(--border))] rounded-2xl p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-4">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))]">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <h2 className="text-lg font-bold text-[hsl(var(--foreground))]">Create New Organization</h2>
+      <Dialog open={isCreateModalOpen} onOpenChange={(open) => !open && setIsCreateModalOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] shrink-0">
+                <Building2 className="w-5 h-5" />
               </div>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-1.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] rounded-lg hover:bg-[hsl(var(--muted))] transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <DialogTitle>Create New Organization</DialogTitle>
+                <DialogDescription>Add a new workspace to manage videos and team members</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateOrg} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="org-name-input">
+                Organization Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="org-name-input"
+                type="text"
+                required
+                placeholder="e.g. Acme Video Studio"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+              />
             </div>
 
-            <form onSubmit={handleCreateOrg} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-wider mb-1.5">
-                  Organization Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Acme Video Studio"
-                  value={newOrgName}
-                  onChange={(e) => setNewOrgName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-[hsl(var(--input))] rounded-xl text-sm text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="org-slug-input">
+                Custom Slug <span className="text-[hsl(var(--muted-foreground))] font-normal">(Optional)</span>
+              </Label>
+              <Input
+                id="org-slug-input"
+                type="text"
+                placeholder="e.g. acme-video-studio"
+                value={newOrgSlug}
+                onChange={(e) => setNewOrgSlug(e.target.value)}
+              />
+              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                Unique identifier used in URLs and API keys.
+              </p>
+            </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-wider mb-1.5">
-                  Custom Slug <span className="text-[hsl(var(--muted-foreground))] font-normal">(Optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. acme-video-studio"
-                  value={newOrgSlug}
-                  onChange={(e) => setNewOrgSlug(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-[hsl(var(--input))] rounded-xl text-sm text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
-                />
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-1">
-                  Unique identifier used in URLs and API keys.
-                </p>
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-[hsl(var(--border))]">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-sm font-semibold text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isCreatingOrg || !newOrgName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2 bg-[hsl(var(--primary))] text-white font-bold text-sm rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
-                >
-                  {isCreatingOrg ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" /> Create Workspace
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isCreatingOrg || !newOrgName.trim()}
+                className="w-full sm:w-auto min-w-[150px]"
+              >
+                {isCreatingOrg ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-1.5" /> Create Workspace
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

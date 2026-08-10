@@ -22,6 +22,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface SharedData {
   type: "video" | "folder";
@@ -488,29 +489,25 @@ export default function SharedContentClient() {
       </main>
 
       {/* Video Modal Player for Shared Folder view */}
-      {selectedVideo && selectedVideo.playbackUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl my-auto">
-            <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-slate-800">
-              <h2 className="text-base font-bold text-slate-100 truncate pr-4">{selectedVideo.title}</h2>
-              <button
-                onClick={() => setSelectedVideo(null)}
-                className="p-1 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-2 sm:p-4 bg-black">
+      <Dialog open={!!(selectedVideo && selectedVideo.playbackUrl)} onOpenChange={(open) => !open && setSelectedVideo(null)}>
+        <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-slate-900 border-slate-800 text-slate-100">
+          <DialogHeader className="p-4 border-b border-slate-800 text-left">
+            <DialogTitle className="text-base text-slate-100 font-bold truncate">
+              {selectedVideo?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-2 sm:p-4 bg-black">
+            {selectedVideo && selectedVideo.playbackUrl && (
               <VideoPlayer src={selectedVideo.playbackUrl} poster={selectedVideo.thumbnailUrl} />
-            </div>
-            {selectedVideo.description && (
-              <div className="p-4 bg-slate-900 border-t border-slate-800">
-                <p className="text-xs text-slate-400">{selectedVideo.description}</p>
-              </div>
             )}
           </div>
-        </div>
-      )}
+          {selectedVideo?.description && (
+            <div className="p-4 bg-slate-900 border-t border-slate-800">
+              <p className="text-xs text-slate-400">{selectedVideo.description}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -22,6 +22,8 @@ import {
 import UploadModal from "@/components/UploadModal";
 import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface FolderItem {
   id: string;
@@ -200,40 +202,43 @@ function UploadedVideosContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          <button
+          <Button
+            variant="outline"
             onClick={() => refreshAll()}
             disabled={isRefreshing}
             title="Refresh video assets"
-            className="flex-1 sm:flex-none px-3.5 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs sm:text-sm disabled:opacity-50 min-h-[44px]"
+            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
           >
             <RefreshCw className={`w-4 h-4 text-slate-600 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
             <span>Refresh</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => setIsCreateFolderOpen(true)}
-            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2.5 bg-white border border-[hsl(var(--border))] hover:bg-slate-50 text-[hsl(var(--foreground))] font-semibold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
           >
-            <FolderPlus className="w-4 h-4 text-amber-600" />
+            <FolderPlus className="w-4 h-4 text-amber-600 mr-1" />
             <span>New Folder</span>
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => setIsUploadOpen(true)}
-            className="w-full sm:w-auto px-4 py-2.5 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-xs sm:text-sm min-h-[44px]"
+            className="w-full sm:w-auto font-semibold min-h-[44px]"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 mr-1" />
             <span>Upload Video</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Breadcrumb Navigation Bar */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-white/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
+      <div className="flex items-center gap-2 px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
         <button
           onClick={() => navigateToFolder(null)}
-          className={`flex items-center gap-1.5 font-semibold transition-colors ${currentFolderId === null
+          className={`flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
+            currentFolderId === null
               ? "text-[hsl(var(--primary))]"
               : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
+          }`}
         >
           <Home className="w-4 h-4" /> Root
         </button>
@@ -242,10 +247,11 @@ function UploadedVideosContent() {
             <ChevronRight className="w-4 h-4 text-slate-400" />
             <button
               onClick={() => navigateToFolder(b.id)}
-              className={`font-semibold transition-colors ${currentFolderId === b.id
+              className={`font-semibold transition-colors cursor-pointer ${
+                currentFolderId === b.id
                   ? "text-[hsl(var(--primary))]"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+              }`}
             >
               {b.name}
             </button>
@@ -254,30 +260,29 @@ function UploadedVideosContent() {
       </div>
 
       {/* Controls Bar: Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white/60 backdrop-blur-md p-3 rounded-2xl border border-[hsl(var(--border))] shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-3 rounded-2xl border border-[hsl(var(--border))] shadow-sm">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <Input
             type="text"
             placeholder="Search by title..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-[hsl(var(--input))] text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+            className="pl-9"
           />
         </div>
 
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
           {["ALL", "READY", "PROCESSING", "FAILED"].map((st) => (
-            <button
+            <Button
               key={st}
+              variant={statusFilter === st ? "default" : "ghost"}
+              size="sm"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${statusFilter === st
-                  ? "bg-[hsl(var(--primary))] text-white shadow-xs"
-                  : "text-[hsl(var(--muted-foreground))] hover:bg-black/5"
-                }`}
+              className="text-xs font-semibold"
             >
               {st}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
