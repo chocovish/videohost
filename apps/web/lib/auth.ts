@@ -144,7 +144,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const baseSlug = userName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "workspace";
           const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
 
-          await db.organization.create({
+          const newOrg = await db.organization.create({
             data: {
               name: orgName,
               slug,
@@ -156,6 +156,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 },
               },
             },
+          });
+
+          await db.user.update({
+            where: { id: dbUser.id },
+            data: { activeOrganizationId: newOrg.id },
           });
         }
 
@@ -181,7 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { viewMode: true },
+          select: { viewMode: true, activeOrganizationId: true },
         });
         token.viewMode = dbUser?.viewMode || "CREATOR";
 
@@ -191,24 +196,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
 
         if (memberships.length > 0) {
-          const primaryMem = memberships[0];
-          token.organizationId = primaryMem.organizationId;
-          token.organizationSlug = primaryMem.organization.slug;
-          token.organizationName = primaryMem.organization.name;
-          token.role = primaryMem.role;
-          token.themeId = primaryMem.organization.themeId;
+          let targetOrgId: string | null = (trigger === "update" && session?.organizationId) ? session.organizationId : null;
+
+          if (!targetOrgId && dbUser?.activeOrganizationId) {
+            if (memberships.some((m) => m.organizationId === dbUser.activeOrganizationId)) {
+              targetOrgId = dbUser.activeOrganizationId;
+            }
+          }
+
+          if (!targetOrgId && token.organizationId) {
+            if (memberships.some((m) => m.organizationId === (token.organizationId as string))) {
+              targetOrgId = token.organizationId as string;
+            }
+          }
+
+          if (!targetOrgId) {
+            targetOrgId = memberships[0].organizationId;
+          }
+
+          const activeMem = memberships.find((m) => m.organizationId === targetOrgId) || memberships[0];
+
+          token.organizationId = activeMem.organizationId;
+          token.organizationSlug = activeMem.organization.slug;
+          token.organizationName = activeMem.organization.name;
+          token.role = activeMem.role;
+          token.themeId = activeMem.organization.themeId;
           token.memberships = memberships.map((m) => ({
             orgId: m.organizationId,
             orgName: m.organization.name,
+            orgSlug: m.organization.slug,
             role: m.role,
           }));
         }
       }
 
       if (trigger === "update" && session) {
-        if (session.organizationId) token.organizationId = session.organizationId;
         if (session.viewMode) token.viewMode = session.viewMode;
       }
+
+      return token;
 
       return token;
     },

@@ -17,8 +17,9 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  viewMode      String    @default("CREATOR") // "CREATOR" | "VIEWER"
-  accounts      Account[]
+  viewMode             String               @default("CREATOR") // "CREATOR" | "VIEWER"
+  activeOrganizationId String?
+  accounts             Account[]
   sessions      Session[]
   memberships   OrganizationMember[]
   createdApiKeys ApiKey[]

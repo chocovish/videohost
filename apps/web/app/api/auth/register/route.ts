@@ -59,6 +59,15 @@ export async function POST(req: Request) {
 
     // Transaction to create User, Org, Member & VerificationToken
     const result = await db.$transaction(async (tx) => {
+      const organization = await tx.organization.create({
+        data: {
+          name: effectiveOrgName,
+          slug,
+          planId: freePlan.id,
+          themeId: "lime",
+        },
+      });
+
       const user = await tx.user.create({
         data: {
           name,
@@ -66,15 +75,7 @@ export async function POST(req: Request) {
           passwordHash,
           emailVerified: null,
           viewMode: selectedViewMode,
-        },
-      });
-
-      const organization = await tx.organization.create({
-        data: {
-          name: effectiveOrgName,
-          slug,
-          planId: freePlan.id,
-          themeId: "lime",
+          activeOrganizationId: organization.id,
         },
       });
 

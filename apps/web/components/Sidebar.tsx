@@ -16,6 +16,7 @@ import {
   Eye,
   Share2,
   Loader2,
+  Building2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
@@ -97,7 +98,7 @@ export default function Sidebar({
   const creatorNavItems = [
     { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
-    { label: "Organization", href: "/dashboard/settings", icon: Settings }
+    { label: "Organization", href: "/dashboard/settings", icon: Settings },
   ];
 
   const viewerNavItems = [
@@ -120,9 +121,13 @@ export default function Sidebar({
                 <h2 className="font-bold text-base tracking-tight text-[hsl(var(--foreground))] whitespace-nowrap">
                   VideoHost
                 </h2>
-                <p className="text-xs font-medium text-[hsl(var(--primary))] truncate max-w-[130px]">
+                <Link
+                  href="/dashboard/settings"
+                  className="text-xs font-medium text-[hsl(var(--primary))] hover:underline truncate max-w-[130px] block"
+                  title="Switch active organization or manage settings"
+                >
                   {organizationName}
-                </p>
+                </Link>
               </div>
             )}
           </div>
