@@ -1,5 +1,6 @@
 import { Queue } from "bullmq";
 import { db } from "@videohost/db";
+import { parseRenditionResolutions } from "./renditions";
 
 const redisHost = process.env.REDIS_HOST;
 const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -54,6 +55,9 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
     cdnHost,
   };
 
+  const renditions = parseRenditionResolutions();
+  console.log(`[Queue Dispatch] Configured HLS renditions for job (${videoId}):`, renditions.map((r) => r.resolution).join(", "));
+
   if (containerUrl) {
     console.log(`[Queue Dispatch] Triggering Container worker at ${containerUrl}/transcode for videoId: ${videoId}`);
     try {
@@ -74,6 +78,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
           originalKey,
           callbackUrl,
           s3: s3Config,
+          renditions,
         }),
       });
 
@@ -101,6 +106,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
         originalKey,
         callbackUrl,
         s3: s3Config,
+        renditions,
       },
       {
         attempts: 3,

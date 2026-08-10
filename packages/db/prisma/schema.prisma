@@ -163,6 +163,7 @@ model Video {
   title            String
   description      String?
   status           VideoStatus @default(UPLOADING)
+  progress         Int         @default(0)
   durationSeconds  Int?
   sourceWidth      Int?
   sourceHeight     Int?

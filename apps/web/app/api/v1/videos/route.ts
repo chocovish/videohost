@@ -106,6 +106,7 @@ export async function GET(req: Request) {
     title: v.title,
     description: v.description,
     status: v.status,
+    progress: v.progress || 0,
     requireHls: v.requireHls,
     folderId: v.folderId,
     folderName: v.folder?.name || null,

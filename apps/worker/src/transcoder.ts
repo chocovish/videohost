@@ -3,6 +3,19 @@ import fs from "fs";
 import path from "path";
 import { S3ConfigContext, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
+import {
+  ProgressReporter,
+  calculateTranscodeProgress,
+  calculateUploadProgress,
+  parseTimemarkToSeconds,
+} from "./progress";
+
+export interface RenditionConfig {
+  resolution: string;
+  width: number;
+  height: number;
+  bitrateKbps: number;
+}
 
 export interface TranscodeJobPayload {
   videoId: string;
@@ -10,22 +23,68 @@ export interface TranscodeJobPayload {
   originalKey: string;
   callbackUrl?: string;
   s3?: S3ConfigContext;
+  renditions?: RenditionConfig[];
 }
 
-export interface RenditionConfig {
-  resolution: "480p" | "720p" | "1080p" | "1440p" | "4k";
-  width: number;
-  height: number;
-  bitrateKbps: number;
-}
-
-export const RESOLUTION_LADDER: RenditionConfig[] = [
+export const DEFAULT_RESOLUTION_LADDER: RenditionConfig[] = [
   { resolution: "480p", width: 854, height: 480, bitrateKbps: 1000 },
   { resolution: "720p", width: 1280, height: 720, bitrateKbps: 3000 },
   { resolution: "1080p", width: 1920, height: 1080, bitrateKbps: 5500 },
   { resolution: "1440p", width: 2560, height: 1440, bitrateKbps: 9000 },
   { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
 ];
+
+export function parseEnvRenditions(): RenditionConfig[] {
+  const envResolutions = process.env.HLS_RENDITION_RESOLUTIONS;
+  if (!envResolutions) return DEFAULT_RESOLUTION_LADDER;
+
+  const standardMap: Record<string, RenditionConfig> = {
+    "360": { resolution: "360p", width: 640, height: 360, bitrateKbps: 800 },
+    "360p": { resolution: "360p", width: 640, height: 360, bitrateKbps: 800 },
+    "480": { resolution: "480p", width: 854, height: 480, bitrateKbps: 1000 },
+    "480p": { resolution: "480p", width: 854, height: 480, bitrateKbps: 1000 },
+    "720": { resolution: "720p", width: 1280, height: 720, bitrateKbps: 3000 },
+    "720p": { resolution: "720p", width: 1280, height: 720, bitrateKbps: 3000 },
+    "1080": { resolution: "1080p", width: 1920, height: 1080, bitrateKbps: 5500 },
+    "1080p": { resolution: "1080p", width: 1920, height: 1080, bitrateKbps: 5500 },
+    "1440": { resolution: "1440p", width: 2560, height: 1440, bitrateKbps: 9000 },
+    "1440p": { resolution: "1440p", width: 2560, height: 1440, bitrateKbps: 9000 },
+    "2160": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
+    "2160p": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
+    "4k": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
+  };
+
+  const tokens = envResolutions
+    .split(",")
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean);
+
+  const parsed: RenditionConfig[] = [];
+  for (const token of tokens) {
+    if (standardMap[token]) {
+      parsed.push(standardMap[token]);
+    } else {
+      const numMatch = token.match(/^(\d+)/);
+      if (numMatch) {
+        const height = parseInt(numMatch[1], 10);
+        let width = Math.round((height * 16) / 9);
+        if (width % 2 !== 0) width += 1;
+
+        let bitrateKbps = 1500;
+        if (height <= 360) bitrateKbps = 800;
+        else if (height <= 480) bitrateKbps = 1000;
+        else if (height <= 720) bitrateKbps = 3000;
+        else if (height <= 1080) bitrateKbps = 5500;
+        else if (height <= 1440) bitrateKbps = 9000;
+        else bitrateKbps = 18000;
+
+        parsed.push({ resolution: `${height}p`, width, height, bitrateKbps });
+      }
+    }
+  }
+
+  return parsed.length > 0 ? parsed : DEFAULT_RESOLUTION_LADDER;
+}
 
 export async function probeVideo(filePath: string): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -57,6 +116,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
   console.log(`[Worker Stateless] Starting transcoding for videoId: ${videoId}, key: ${originalKey}`);
   console.log(`[Worker Stateless] Received job payload:`, JSON.stringify(payload, null, 2));
 
+  const reporter = new ProgressReporter(videoId, organizationId || "default", callbackUrl);
+  await reporter.report(0, "PROCESSING", true);
+
   const tempDir = path.join(process.cwd(), "temp", videoId);
   fs.mkdirSync(tempDir, { recursive: true });
 
@@ -71,21 +133,33 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const { width, height, duration } = await probeVideo(inputPath);
     console.log(`[Worker] Video probed: ${width}x${height}, duration: ${duration}s`);
 
-    // 3. Filter resolution ladder — NO UPSCALING
-    const targetRenditions = RESOLUTION_LADDER.filter((r) => r.height <= height || r.resolution === "480p");
+    // Determine initial rendition candidates from payload or env or default ladder
+    const candidateRenditions =
+      Array.isArray(payload.renditions) && payload.renditions.length > 0
+        ? payload.renditions
+        : parseEnvRenditions();
+
+    // 3. Filter resolution ladder — NO UPSCALING (keep 480p fallback if video is smaller)
+    const targetRenditions = candidateRenditions.filter(
+      (r) => r.height <= height || r.resolution === "480p" || r.resolution === "480"
+    );
     console.log(`[Worker] Generating renditions: ${targetRenditions.map((r) => r.resolution).join(", ")}`);
 
     const hlsOutputDir = path.join(tempDir, "hls");
     fs.mkdirSync(hlsOutputDir, { recursive: true });
 
+    const totalRenditions = targetRenditions.length;
+
     // 4. Transcode each rendition to HLS playlist & segments
-    for (const rend of targetRenditions) {
+    for (let i = 0; i < totalRenditions; i++) {
+      const rend = targetRenditions[i];
       const renditionDir = path.join(hlsOutputDir, rend.resolution);
       fs.mkdirSync(renditionDir, { recursive: true });
 
       const playlistPath = path.join(renditionDir, "prog.m3u8");
 
-      console.log(`[Worker] Encoding rendition ${rend.resolution}...`);
+      console.log(`[Worker] Encoding rendition ${rend.resolution} (${i + 1}/${totalRenditions})...`);
+
       await new Promise<void>((resolve, reject) => {
         ffmpeg(inputPath)
           .outputOptions([
@@ -101,7 +175,17 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
             `-hls_segment_filename ${path.join(renditionDir, "seq_%03d.ts")}`,
           ])
           .output(playlistPath)
-          .on("end", () => resolve())
+          .on("progress", (p) => {
+            const elapsed = parseTimemarkToSeconds(p.timemark);
+            const renditionPercent = duration > 0 ? (elapsed / duration) * 100 : p.percent || 0;
+            const overallTranscodeProgress = calculateTranscodeProgress(i, totalRenditions, renditionPercent);
+            reporter.report(overallTranscodeProgress, "PROCESSING");
+          })
+          .on("end", () => {
+            const completedTranscodeProgress = calculateTranscodeProgress(i + 1, totalRenditions, 100);
+            reporter.report(completedTranscodeProgress, "PROCESSING");
+            resolve();
+          })
           .on("error", (err) => reject(err))
           .run();
       });
@@ -131,16 +215,21 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
         .on("error", (err) => reject(err));
     });
 
-    // 7. Upload HLS structure & thumbnail to R2
+    // 7. Upload HLS structure & thumbnail to R2 (20% of total progress)
     const orgId = organizationId || "default";
     const s3HlsPrefix = `${orgId}/${videoId}/hls`;
     const s3ThumbKey = `${orgId}/${videoId}/thumbnail.jpg`;
 
     console.log(`[Worker] Uploading HLS renditions to R2 under ${s3HlsPrefix}...`);
-    await uploadDirectoryToS3(hlsOutputDir, s3HlsPrefix, payload.s3);
+    await uploadDirectoryToS3(hlsOutputDir, s3HlsPrefix, payload.s3, (uploadRatio) => {
+      const uploadProgress = calculateUploadProgress(uploadRatio * 0.9);
+      reporter.report(uploadProgress, "PROCESSING");
+    });
 
     console.log(`[Worker] Uploading thumbnail to R2...`);
     const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/jpeg", payload.s3);
+    const finalUploadProgress = calculateUploadProgress(1.0);
+    await reporter.report(finalUploadProgress, "PROCESSING");
 
     const renditionsResult = targetRenditions.map((r) => ({
       resolution: r.resolution,
@@ -152,6 +241,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       videoId,
       organizationId: orgId,
       status: "READY",
+      progress: 100,
       durationSeconds: duration,
       sourceWidth: width,
       sourceHeight: height,
@@ -159,38 +249,10 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       renditions: renditionsResult,
     };
 
-    // When responding back, ensure URLs respond with localhost
     const resultPayload = useLocalhostForDockerHost(rawResultPayload);
 
     console.log(`[Worker] Transcoding complete for ${videoId}! Posting results to callback...`);
-
-    if (callbackUrl) {
-      const workerSecret = process.env.WORKER_SECRET_TOKEN;
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (workerSecret) {
-        headers["Authorization"] = `Bearer ${workerSecret}`;
-        headers["x-worker-secret"] = workerSecret;
-      }
-
-      console.log(`[Worker] Posting callback payload to ${callbackUrl}:`, JSON.stringify(resultPayload, null, 2));
-
-      try {
-        const res = await fetch(callbackUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(resultPayload),
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text().catch(() => "");
-          console.error(`[Worker Callback Error] HTTP ${res.status} ${res.statusText} from ${callbackUrl}: ${errorText}`);
-        } else {
-          console.log(`[Worker] Successfully posted callback payload to ${callbackUrl} (status: ${res.status})`);
-        }
-      } catch (cbErr: any) {
-        console.error(`[Worker Callback Error] Failed to post to ${callbackUrl}:`, cbErr?.message || cbErr);
-      }
-    }
+    await reporter.report(100, "READY", true, resultPayload);
 
     return resultPayload;
   } catch (err: any) {
@@ -199,37 +261,11 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       videoId,
       organizationId: payload.organizationId,
       status: "FAILED",
+      progress: 0,
       error: err?.message || "Transcoding failed",
     };
     const failPayload = useLocalhostForDockerHost(rawFailPayload);
-
-    if (callbackUrl) {
-      const workerSecret = process.env.WORKER_SECRET_TOKEN;
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (workerSecret) {
-        headers["Authorization"] = `Bearer ${workerSecret}`;
-        headers["x-worker-secret"] = workerSecret;
-      }
-
-      console.log(`[Worker] Posting failure callback payload to ${callbackUrl}:`, JSON.stringify(failPayload, null, 2));
-
-      try {
-        const res = await fetch(callbackUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(failPayload),
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text().catch(() => "");
-          console.error(`[Worker Callback Error] HTTP ${res.status} ${res.statusText} from failure callback ${callbackUrl}: ${errorText}`);
-        } else {
-          console.log(`[Worker] Successfully posted failure callback payload to ${callbackUrl} (status: ${res.status})`);
-        }
-      } catch (cbErr: any) {
-        console.error(`[Worker Callback Error] Failed to post failure callback to ${callbackUrl}:`, cbErr?.message || cbErr);
-      }
-    }
+    await reporter.report(0, "FAILED", true, failPayload);
 
     throw err;
   } finally {
@@ -238,3 +274,4 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     } catch {}
   }
 }
+

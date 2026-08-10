@@ -36,6 +36,7 @@ interface VideoItem {
   title: string;
   description?: string;
   status: "UPLOADING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+  progress?: number;
   durationSeconds?: number;
   thumbnailUrl?: string;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
@@ -155,7 +156,7 @@ function UploadedVideosContent() {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, progress?: number) => {
     switch (status) {
       case "READY":
         return (
@@ -167,7 +168,7 @@ function UploadedVideosContent() {
       case "QUEUED":
         return (
           <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-600 flex items-center gap-1 animate-pulse">
-            <RefreshCw className="w-3 h-3 animate-spin" /> {status === "QUEUED" ? "Queued" : "Encoding"}
+            <RefreshCw className="w-3 h-3 animate-spin" /> {status === "QUEUED" ? "Queued" : `Encoding ${progress || 0}%`}
           </span>
         );
       case "UPLOADING":
@@ -444,7 +445,7 @@ function UploadedVideosContent() {
                     >
                       <Share2 className="w-4 h-4" />
                     </button>
-                    {getStatusBadge(video.status)}
+                    {getStatusBadge(video.status, video.progress)}
                   </div>
                 </div>
               </Link>

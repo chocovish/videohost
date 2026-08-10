@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       videoId,
       organizationId,
       status,
+      progress,
       durationSeconds,
       sourceWidth,
       sourceHeight,
@@ -42,7 +43,19 @@ export async function POST(req: Request) {
 
     const orgId = organizationId || video.organizationId;
 
-    if (status === "READY") {
+    if (status === "PROCESSING") {
+      const currentProgress = typeof progress === "number" ? Math.min(100, Math.max(0, Math.floor(progress))) : 0;
+      await db.video.update({
+        where: { id: videoId },
+        data: {
+          status: "PROCESSING",
+          progress: currentProgress,
+        },
+      });
+
+      console.log(`[Transcode Callback] Video ${videoId} progress updated: ${currentProgress}%`);
+      return NextResponse.json({ success: true, status: "PROCESSING", progress: currentProgress, videoId });
+    } else if (status === "READY") {
       await db.videoRendition.deleteMany({ where: { videoId } });
 
       if (Array.isArray(renditions)) {
@@ -63,6 +76,7 @@ export async function POST(req: Request) {
         where: { id: videoId },
         data: {
           status: "READY",
+          progress: 100,
           durationSeconds: durationSeconds || 0,
           sourceWidth: sourceWidth || 1280,
           sourceHeight: sourceHeight || 720,

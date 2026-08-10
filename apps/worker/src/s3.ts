@@ -167,16 +167,25 @@ export async function uploadFileToS3(
 export async function uploadDirectoryToS3(
   dirPath: string,
   keyPrefix: string,
-  config?: S3ConfigContext
+  config?: S3ConfigContext,
+  onProgress?: (progressRatio: number) => void
 ): Promise<void> {
   await ensureBucketExists(config);
 
-  const files = fs.readdirSync(dirPath, { recursive: true });
+  const rawEntries = fs.readdirSync(dirPath, { recursive: true });
+  const filePaths: string[] = [];
 
-  for (const file of files) {
-    const fullPath = path.join(dirPath, file.toString());
-    if (fs.statSync(fullPath).isDirectory()) continue;
+  for (const entry of rawEntries) {
+    const fullPath = path.join(dirPath, entry.toString());
+    if (!fs.statSync(fullPath).isDirectory()) {
+      filePaths.push(fullPath);
+    }
+  }
 
+  const totalFiles = filePaths.length;
+  let uploadedCount = 0;
+
+  for (const fullPath of filePaths) {
     const relativePath = path.relative(dirPath, fullPath).replace(/\\/g, "/");
     const s3Key = `${keyPrefix}/${relativePath}`;
 
@@ -188,5 +197,9 @@ export async function uploadDirectoryToS3(
     else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
 
     await uploadFileToS3(fullPath, s3Key, contentType, config);
+    uploadedCount++;
+    if (onProgress && totalFiles > 0) {
+      onProgress(uploadedCount / totalFiles);
+    }
   }
 }

@@ -13,6 +13,7 @@ interface VideoDetail {
   description?: string;
   folderId?: string | null;
   status: string;
+  progress?: number;
   requireHls?: boolean;
   durationSeconds?: number;
   sourceResolution?: string;
@@ -198,13 +199,22 @@ export default function VideoDetailPage() {
 
             {/* Tab 1: Video Player */}
             {activeTab === "player" && (
-              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden relative">
+              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
                 {video.playbackUrl ? (
                   <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2 p-4 text-center">
-                    <Clock className="w-8 h-8 animate-spin" />
-                    <p className="text-sm font-medium">Video is currently processing...</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
+                    <Clock className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
+                    <div className="space-y-2 w-full">
+                      <p className="text-sm font-semibold text-slate-200">Video Transcoding in Progress</p>
+                      <p className="text-xs text-slate-400 font-medium">Progress: {video.progress || 0}%</p>
+                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                        <div
+                          className="bg-[hsl(var(--primary))] h-2 transition-all duration-500 rounded-full"
+                          style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -288,11 +298,11 @@ export default function VideoDetailPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-2">
+                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-3">
                       <div className="flex items-center justify-between gap-2 font-semibold text-amber-800">
                         <div className="flex items-center gap-2">
                           <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
-                          <span>Transcoding in Progress (Require HLS = ON)</span>
+                          <span>Transcoding in Progress ({video.progress || 0}%)</span>
                         </div>
                         <button
                           onClick={handleRefresh}
@@ -302,8 +312,14 @@ export default function VideoDetailPage() {
                           <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} /> Refresh Status
                         </button>
                       </div>
+                      <div className="w-full bg-amber-200/80 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-amber-600 h-2.5 transition-all duration-500 rounded-full"
+                          style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
+                        />
+                      </div>
                       <p className="text-amber-800/90 leading-relaxed">
-                        HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : "Processing"}). Adaptive bitrate renditions (480p, 720p, 1080p, etc.) will be available here once completed. Use the Refresh button above to check status.
+                        HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : `Processing ${video.progress || 0}%`}). Adaptive bitrate renditions will be available here once completed. Use the Refresh button above to check latest status.
                       </p>
                     </div>
                   )
