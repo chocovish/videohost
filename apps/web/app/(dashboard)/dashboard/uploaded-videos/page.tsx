@@ -49,7 +49,6 @@ function UploadedVideosContent() {
   const currentFolderId = searchParams.get("folderId");
 
   const [folders, setFolders] = useState<FolderItem[]>([]);
-  const [allFolders, setAllFolders] = useState<{ id: string; name: string }[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
   const [currentFolder, setCurrentFolder] = useState<{ id: string; name: string } | null>(null);
 
@@ -89,18 +88,6 @@ function UploadedVideosContent() {
     }
   };
 
-  const fetchAllFolders = async () => {
-    try {
-      const res = await fetch("/api/folders?parentId=all");
-      const data = await res.json();
-      if (res.ok && data.folders) {
-        setAllFolders(data.folders.map((f: any) => ({ id: f.id, name: f.name })));
-      }
-    } catch (err) {
-      console.error("Error loading all folders:", err);
-    }
-  };
-
   const fetchVideos = async (folderId: string | null) => {
     try {
       setLoading(true);
@@ -124,7 +111,6 @@ function UploadedVideosContent() {
     try {
       await Promise.all([
         fetchFolders(currentFolderId),
-        fetchAllFolders(),
         fetchVideos(currentFolderId),
       ]);
     } finally {
