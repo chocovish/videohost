@@ -26,6 +26,7 @@ import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { formatDuration } from "@/lib/video-utils";
 
 interface FolderItem {
   id: string;
@@ -154,12 +155,7 @@ function UploadedVideosContent() {
     return matchesSearch && matchesStatus;
   });
 
-  const formatDuration = (seconds?: number) => {
-    if (!seconds || !isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
+
 
   const getStatusBadge = (status: string, progress?: number) => {
     switch (status) {

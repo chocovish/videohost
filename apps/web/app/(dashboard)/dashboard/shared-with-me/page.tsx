@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import { formatDuration } from "@/lib/video-utils";
 
 interface SharedItem {
   id: string;
@@ -61,12 +62,7 @@ export default function SharedWithYouPage() {
     fetchSharedItems();
   }, []);
 
-  const formatDuration = (seconds?: number) => {
-    if (!seconds || !isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-  };
+
 
   const filteredItems = items.filter((item) => {
     const matchesType = filterType === "all" || item.type === filterType;
