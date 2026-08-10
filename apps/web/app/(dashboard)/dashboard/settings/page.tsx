@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Users, UserPlus, HardDrive, Building2, Save, Loader2, Check, AlertCircle } from "lucide-react";
+import { Users, UserPlus, HardDrive, Building2, Save, Loader2, Check, AlertCircle, Mail, Trash2, RefreshCw, Clock } from "lucide-react";
 
 interface Member {
   id: string;
   role: string;
   joinedAt: string;
-  user: { name: string; email: string };
+  user: { id: string; name: string; email: string };
+}
+
+interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  token: string;
+  expiresAt: string;
 }
 
 export default function SettingsPage() {
@@ -23,36 +31,43 @@ export default function SettingsPage() {
 
   // Team members & invites state
   const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("MEMBER");
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
 
   // Custom limit request state
   const [customLimitInput, setCustomLimitInput] = useState("");
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
-  useEffect(() => {
-    async function fetchOrgData() {
-      try {
-        const res = await fetch("/api/organization");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.organization) {
-            setOrgName(data.organization.name || "");
-            setInitialOrgName(data.organization.name || "");
-            if (data.organization.members) {
-              setMembers(data.organization.members);
-            }
+  const fetchOrgData = async () => {
+    try {
+      const res = await fetch("/api/organization");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.organization) {
+          setOrgName(data.organization.name || "");
+          setInitialOrgName(data.organization.name || "");
+          if (data.organization.members) {
+            setMembers(data.organization.members);
+          }
+          if (data.organization.invitations) {
+            setInvitations(data.organization.invitations);
           }
         }
-      } catch (err) {
-        console.error("Failed to load organization data:", err);
-      } finally {
-        setLoading(false);
       }
+    } catch (err) {
+      console.error("Failed to load organization data:", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     fetchOrgData();
   }, []);
 
@@ -81,9 +96,7 @@ export default function SettingsPage() {
       setOrgName(data.organization.name);
       setOrgSuccessMsg("Organization name updated successfully!");
 
-      // Refresh layout to update Navbar and Sidebar with new organization name
       router.refresh();
-
       setTimeout(() => setOrgSuccessMsg(""), 4000);
     } catch (err: any) {
       setOrgErrorMsg(err.message || "Failed to update organization name");
@@ -93,23 +106,133 @@ export default function SettingsPage() {
     }
   };
 
-  const handleInvite = (e: React.FormEvent) => {
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail) return;
+    if (!inviteEmail.trim()) return;
 
-    setMembers((prev) => [
-      ...prev,
-      {
-        id: `mem_${Date.now()}`,
-        role: inviteRole,
-        joinedAt: new Date().toISOString(),
-        user: { name: inviteEmail.split("@")[0], email: inviteEmail },
-      },
-    ]);
+    setIsInviting(true);
+    setInviteSuccess("");
+    setInviteError("");
 
-    setInviteEmail("");
-    setMessage(`Invitation sent to ${inviteEmail}`);
-    setTimeout(() => setMessage(""), 3000);
+    try {
+      const res = await fetch("/api/organization/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          role: inviteRole,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send invitation");
+      }
+
+      setInviteSuccess(data.message || `Invitation sent to ${inviteEmail.trim()}`);
+      setInviteEmail("");
+      fetchOrgData();
+      setTimeout(() => setInviteSuccess(""), 5000);
+    } catch (err: any) {
+      setInviteError(err.message || "Failed to send invitation");
+      setTimeout(() => setInviteError(""), 5000);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRevokeInvite = async (invitationId: string) => {
+    try {
+      const res = await fetch(`/api/organization/invite?id=${invitationId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to revoke invitation");
+      }
+
+      setActionMessage("Invitation revoked successfully");
+      fetchOrgData();
+      setTimeout(() => setActionMessage(""), 3000);
+    } catch (err: any) {
+      setInviteError(err.message || "Failed to revoke invitation");
+      setTimeout(() => setInviteError(""), 4000);
+    }
+  };
+
+  const handleResendInvite = async (email: string, role: string) => {
+    setIsInviting(true);
+    setInviteSuccess("");
+    setInviteError("");
+
+    try {
+      const res = await fetch("/api/organization/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to resend invitation email");
+      }
+
+      setInviteSuccess(`Invitation email resent to ${email}`);
+      fetchOrgData();
+      setTimeout(() => setInviteSuccess(""), 4000);
+    } catch (err: any) {
+      setInviteError(err.message || "Failed to resend invitation");
+      setTimeout(() => setInviteError(""), 4000);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (!confirm(`Are you sure you want to remove ${memberName} from this organization?`)) return;
+
+    try {
+      const res = await fetch(`/api/organization/members/${memberId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to remove member");
+      }
+
+      setActionMessage(`Member ${memberName} removed successfully`);
+      fetchOrgData();
+      setTimeout(() => setActionMessage(""), 3000);
+    } catch (err: any) {
+      setOrgErrorMsg(err.message || "Failed to remove member");
+      setTimeout(() => setOrgErrorMsg(""), 4000);
+    }
+  };
+
+  const handleRoleChange = async (memberId: string, newRole: string) => {
+    try {
+      const res = await fetch(`/api/organization/members/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to update role");
+      }
+
+      setActionMessage("Member role updated");
+      fetchOrgData();
+      setTimeout(() => setActionMessage(""), 3000);
+    } catch (err: any) {
+      setOrgErrorMsg(err.message || "Failed to update role");
+      setTimeout(() => setOrgErrorMsg(""), 4000);
+    }
   };
 
   const handleCustomLimitRequest = (e: React.FormEvent) => {
@@ -125,7 +248,7 @@ export default function SettingsPage() {
           Organization Settings
         </h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))]">
-          Manage your organization name, team permissions, role-based access, and storage limits
+          Manage your organization details, team member invitations, permissions, and storage limits
         </p>
       </div>
 
@@ -193,22 +316,37 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-        {/* Left 2 Cols: Team Members */}
+        {/* Left 2 Cols: Team Members & Invitations */}
         <div className="lg:col-span-2 space-y-6">
           <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-[hsl(var(--primary))]" />
-                <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Team Members</h3>
+                <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Invite & Manage Members</h3>
               </div>
               <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                {members.length} members
+                {members.length} members {invitations.length > 0 && `(${invitations.length} pending)`}
               </span>
             </div>
 
-            {message && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-                <Check className="w-4 h-4" /> {message}
+            {inviteSuccess && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                <span>{inviteSuccess}</span>
+              </div>
+            )}
+
+            {inviteError && (
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{inviteError}</span>
+              </div>
+            )}
+
+            {actionMessage && (
+              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm flex items-center gap-2">
+                <Check className="w-4 h-4 flex-shrink-0" />
+                <span>{actionMessage}</span>
               </div>
             )}
 
@@ -217,15 +355,17 @@ export default function SettingsPage() {
               <input
                 type="email"
                 required
+                disabled={isInviting}
                 placeholder="colleague@company.com"
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] disabled:opacity-60 transition-all"
               />
               <select
                 value={inviteRole}
+                disabled={isInviting}
                 onChange={(e) => setInviteRole(e.target.value)}
-                className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none"
+                className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none disabled:opacity-60 transition-all"
               >
                 <option value="MEMBER">Member</option>
                 <option value="ADMIN">Admin</option>
@@ -233,40 +373,123 @@ export default function SettingsPage() {
               </select>
               <button
                 type="submit"
-                className="w-full sm:w-auto px-4 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 min-h-[44px]"
+                disabled={isInviting || !inviteEmail.trim()}
+                className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all min-h-[44px] shadow-sm hover:opacity-95"
               >
-                <UserPlus className="w-4 h-4" /> Invite
+                {isInviting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4" /> Send Invite
+                  </>
+                )}
               </button>
             </form>
 
-            {/* Members Table */}
-            <div className="divide-y divide-[hsl(var(--border))]">
-              {loading ? (
-                <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))] flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--primary))]" /> Loading members...
-                </div>
-              ) : members.length === 0 ? (
-                <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-                  No organization members added yet. Use the form above to invite team members.
-                </div>
-              ) : (
-                members.map((m) => (
-                  <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center shrink-0">
-                        {m.user.name.charAt(0).toUpperCase()}
+            {/* Pending Invitations Section */}
+            {invitations.length > 0 && (
+              <div className="pt-2 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" /> Pending Invitations ({invitations.length})
+                </h4>
+                <div className="divide-y divide-[hsl(var(--border))] border border-[hsl(var(--border))] rounded-xl p-2 bg-[hsl(var(--muted))]/30">
+                  {invitations.map((inv) => (
+                    <div key={inv.id} className="py-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 font-bold text-xs flex items-center justify-center shrink-0">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-xs text-[hsl(var(--foreground))] truncate">{inv.email}</p>
+                          <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                            Expires {new Date(inv.expiresAt).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-sm text-[hsl(var(--foreground))] truncate">{m.user.name}</p>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{m.user.email}</p>
+                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 uppercase">
+                          {inv.role}
+                        </span>
+                        <button
+                          onClick={() => handleResendInvite(inv.email, inv.role)}
+                          disabled={isInviting}
+                          title="Resend invitation email"
+                          className="p-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRevokeInvite(inv.id)}
+                          title="Revoke invitation"
+                          className="p-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
-                    <span className="self-start sm:self-auto px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase">
-                      {m.role}
-                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Active Members Table */}
+            <div className="pt-2 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Active Team Members ({members.length})
+              </h4>
+              <div className="divide-y divide-[hsl(var(--border))]">
+                {loading ? (
+                  <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))] flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--primary))]" /> Loading members...
                   </div>
-                ))
-              )}
+                ) : members.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                    No organization members added yet. Use the form above to invite team members.
+                  </div>
+                ) : (
+                  members.map((m) => (
+                    <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center shrink-0">
+                          {m.user.name ? m.user.name.charAt(0).toUpperCase() : m.user.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm text-[hsl(var(--foreground))] truncate">{m.user.name}</p>
+                          <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{m.user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 self-start sm:self-auto">
+                        {m.role === "OWNER" ? (
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] uppercase">
+                            OWNER
+                          </span>
+                        ) : (
+                          <>
+                            <select
+                              value={m.role}
+                              onChange={(e) => handleRoleChange(m.id, e.target.value)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase border border-[hsl(var(--border))] outline-none cursor-pointer"
+                            >
+                              <option value="ADMIN">ADMIN</option>
+                              <option value="MEMBER">MEMBER</option>
+                              <option value="VIEWER">VIEWER</option>
+                            </select>
+                            <button
+                              onClick={() => handleRemoveMember(m.id, m.user.name || m.user.email)}
+                              title="Remove member"
+                              className="p-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -128,3 +128,64 @@ export async function sendShareEmail(options: SendShareEmailOptions) {
   });
 }
 
+export interface SendOrgInviteEmailOptions {
+  toEmail: string;
+  senderName: string;
+  organizationName: string;
+  role: string;
+  inviteUrl: string;
+}
+
+export async function sendOrgInviteEmail(options: SendOrgInviteEmailOptions) {
+  const { toEmail, senderName, organizationName, role, inviteUrl } = options;
+  const formattedRole = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 580px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .org-badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); color: #000; font-weight: 800; font-size: 14px; padding: 6px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 12px; color: #ffffff; }
+          p { font-size: 15px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px; }
+          .role-badge { display: inline-block; background-color: rgba(132, 204, 22, 0.15); color: #84cc16; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; margin: 0 2px; }
+          .button-wrap { text-align: center; margin: 28px 0; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 700; font-size: 15px; padding: 14px 32px; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(132, 204, 22, 0.4); }
+          .link-box { background-color: #0b1324; padding: 12px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .footer { margin-top: 36px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="org-badge">${organizationName}</div>
+          <h1>Join ${organizationName} on Video Host</h1>
+          <p><strong>${senderName}</strong> has invited you to join <strong>${organizationName}</strong> as a <span class="role-badge">${formattedRole}</span>.</p>
+          
+          <div class="button-wrap">
+            <a href="${inviteUrl}" class="button" target="_blank">Accept Invitation</a>
+          </div>
+
+          <p>Or copy and paste this link into your browser:</p>
+          <div class="link-box">${inviteUrl}</div>
+
+          <div class="footer">
+            Invited to <strong>${organizationName}</strong> on Video Host.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Video Host" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `Invitation to join ${organizationName} on Video Host`,
+    html,
+  });
+}
+
+

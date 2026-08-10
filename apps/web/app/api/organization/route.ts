@@ -24,6 +24,13 @@ export async function GET(req: Request) {
           },
           orderBy: { joinedAt: "asc" },
         },
+        invitations: {
+          where: {
+            acceptedAt: null,
+            expiresAt: { gt: new Date() },
+          },
+          orderBy: { expiresAt: "desc" },
+        },
       },
     });
 
@@ -47,6 +54,13 @@ export async function GET(req: Request) {
             name: m.user.name || m.user.email?.split("@")[0] || "User",
             email: m.user.email || "",
           },
+        })),
+        invitations: organization.invitations.map((inv) => ({
+          id: inv.id,
+          email: inv.email,
+          role: inv.role,
+          token: inv.token,
+          expiresAt: inv.expiresAt,
         })),
       },
     });

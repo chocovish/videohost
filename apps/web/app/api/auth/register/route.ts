@@ -6,7 +6,7 @@ import { sendVerificationEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, orgName, viewMode } = await req.json();
+    const { name, email, password, orgName, viewMode, inviteToken } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -18,6 +18,24 @@ export async function POST(req: Request) {
     const existingUser = await db.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 });
+    }
+
+    // Check optional invitation token
+    let validInvite = null;
+    if (inviteToken && typeof inviteToken === "string") {
+      const inviteRecord = await db.invitation.findUnique({
+        where: { token: inviteToken },
+      });
+      if (inviteRecord && !inviteRecord.acceptedAt && new Date(inviteRecord.expiresAt) > new Date()) {
+        if (inviteRecord.email.toLowerCase() === email.trim().toLowerCase()) {
+          validInvite = inviteRecord;
+        } else {
+          return NextResponse.json(
+            { error: `This invitation was issued to ${inviteRecord.email}. Please register with ${inviteRecord.email} to accept.` },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -67,6 +85,21 @@ export async function POST(req: Request) {
           role: "OWNER",
         },
       });
+
+      if (validInvite) {
+        await tx.organizationMember.create({
+          data: {
+            organizationId: validInvite.organizationId,
+            userId: user.id,
+            role: validInvite.role,
+          },
+        });
+
+        await tx.invitation.update({
+          where: { id: validInvite.id },
+          data: { acceptedAt: new Date() },
+        });
+      }
 
       // Generate verification token
       const token = crypto.randomBytes(32).toString("hex");
