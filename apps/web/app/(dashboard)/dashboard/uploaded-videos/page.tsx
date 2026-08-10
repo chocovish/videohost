@@ -18,8 +18,10 @@ import {
   Home,
   Trash2,
   Share2,
+  Video,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
+import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
 import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
 import { Button } from "@/components/ui/button";
@@ -61,6 +63,7 @@ function UploadedVideosContent() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<{
     type: "video" | "folder";
@@ -152,9 +155,9 @@ function UploadedVideosContent() {
   });
 
   const formatDuration = (seconds?: number) => {
-    if (!seconds) return "0:00";
+    if (!seconds || !isFinite(seconds) || isNaN(seconds) || seconds < 0) return "0:00";
     const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const secs = Math.floor(seconds % 60);
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
@@ -222,10 +225,18 @@ function UploadedVideosContent() {
           </Button>
           <Button
             onClick={() => setIsUploadOpen(true)}
-            className="w-full sm:w-auto font-semibold min-h-[44px]"
+            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
           >
             <Plus className="w-4 h-4" />
             <span>Upload Video</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setIsRecordOpen(true)}
+            className="flex-1 sm:flex-none font-semibold min-h-[44px] border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700"
+          >
+            <Video className="w-4 h-4 text-red-600" />
+            <span>Record Screen</span>
           </Button>
         </div>
       </div>
@@ -484,6 +495,15 @@ function UploadedVideosContent() {
       <UploadModal
         isOpen={isUploadOpen}
         onClose={() => setIsUploadOpen(false)}
+        onUploadSuccess={refreshAll}
+        currentFolderId={currentFolderId}
+        folderPathName={folderPathName}
+      />
+
+      {/* Screen Record Drawer */}
+      <ScreenRecordDrawer
+        isOpen={isRecordOpen}
+        onClose={() => setIsRecordOpen(false)}
         onUploadSuccess={refreshAll}
         currentFolderId={currentFolderId}
         folderPathName={folderPathName}

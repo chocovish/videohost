@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPlaybackUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPlaybackUrl, getPublicCdnUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -46,12 +46,16 @@ export async function POST(req: Request) {
     });
 
     const originalKey = `${orgId}/${video.id}/original.mp4`;
+    const thumbnailKey = `${orgId}/${video.id}/thumbnail.jpg`;
+    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
+
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey },
+      data: { originalKey, thumbnailUrl },
     });
 
     const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
+    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/jpeg");
 
     return NextResponse.json({
       id: video.id,
@@ -60,6 +64,7 @@ export async function POST(req: Request) {
       requireHls: video.requireHls,
       folderId: video.folderId,
       uploadUrl,
+      thumbnailUploadUrl,
       originalKey,
       createdAt: video.createdAt,
     });

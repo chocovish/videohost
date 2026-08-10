@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uploadVideoFile } from "@/lib/upload-video";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -48,9 +49,19 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
       }
     };
 
+    const getValidDuration = (): number => {
+      if (typeof video.duration === "number" && isFinite(video.duration) && !isNaN(video.duration) && video.duration > 0) {
+        return Math.round(video.duration);
+      }
+      if (typeof video.currentTime === "number" && isFinite(video.currentTime) && video.currentTime > 0 && video.currentTime < 1e5) {
+        return Math.round(video.currentTime);
+      }
+      return 0;
+    };
+
     const timeoutId = setTimeout(() => {
       cleanupAndResolve({
-        durationSeconds: Math.round(video.duration || 0),
+        durationSeconds: getValidDuration(),
         sourceWidth: video.videoWidth || 0,
         sourceHeight: video.videoHeight || 0,
         thumbnailBlob: null,
@@ -77,7 +88,7 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
             (blob) => {
               const thumbUrl = blob ? URL.createObjectURL(blob) : null;
               cleanupAndResolve({
-                durationSeconds: Math.round(video.duration || 0),
+                durationSeconds: getValidDuration(),
                 sourceWidth: originalWidth,
                 sourceHeight: originalHeight,
                 thumbnailBlob: blob,
@@ -94,7 +105,7 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
       }
 
       cleanupAndResolve({
-        durationSeconds: Math.round(video.duration || 0),
+        durationSeconds: getValidDuration(),
         sourceWidth: video.videoWidth || 0,
         sourceHeight: video.videoHeight || 0,
         thumbnailBlob: null,
@@ -103,11 +114,23 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
     };
 
     video.onloadedmetadata = () => {
-      const seekTime = Math.min(1.0, (video.duration || 0) / 2);
-      if (seekTime > 0) {
-        video.currentTime = seekTime;
+      if (video.duration === Infinity) {
+        video.currentTime = 1e101;
+        video.ontimeupdate = () => {
+          video.ontimeupdate = null;
+          if (video.duration === Infinity) {
+            video.currentTime = 0;
+          }
+          captureFrame();
+        };
       } else {
-        captureFrame();
+        const dur = video.duration || 0;
+        const seekTime = isFinite(dur) && dur > 0 ? Math.min(1.0, dur / 2) : 0;
+        if (seekTime > 0) {
+          video.currentTime = seekTime;
+        } else {
+          captureFrame();
+        }
       }
     };
 
@@ -118,7 +141,7 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
     video.onerror = () => {
       clearTimeout(timeoutId);
       cleanupAndResolve({
-        durationSeconds: 0,
+        durationSeconds: getValidDuration(),
         sourceWidth: 0,
         sourceHeight: 0,
         thumbnailBlob: null,
@@ -130,9 +153,12 @@ function extractVideoMetadataAndThumbnail(file: File): Promise<VideoMetadata> {
   });
 }
 
-function formatDuration(sec: number): string {
+function formatDuration(sec?: number): string {
+  if (sec === undefined || sec === null || !isFinite(sec) || isNaN(sec) || sec < 0) {
+    return "0:00";
+  }
   const m = Math.floor(sec / 60);
-  const s = sec % 60;
+  const s = Math.floor(sec % 60);
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
@@ -146,7 +172,7 @@ export default function UploadModal({
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [requireHls, setRequireHls] = useState(true);
+  const [requireHls, setRequireHls] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -157,7 +183,7 @@ export default function UploadModal({
     setFile(null);
     setTitle("");
     setDescription("");
-    setRequireHls(true);
+    setRequireHls(false);
     setError("");
     setProgress(0);
     setStatusText("");
@@ -193,106 +219,20 @@ export default function UploadModal({
 
     setError("");
     setUploading(true);
-    setProgress(5);
-    setStatusText("Initializing upload session...");
 
     try {
-      const initRes = await fetch("/api/v1/videos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          fileName: file.name,
-          contentType: file.type || "video/mp4",
-          requireHls,
-          durationSeconds: metadata?.durationSeconds || undefined,
-          sourceWidth: metadata?.sourceWidth || undefined,
-          sourceHeight: metadata?.sourceHeight || undefined,
-          folderId: currentFolderId || null,
-        }),
+      await uploadVideoFile({
+        file,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        requireHls,
+        currentFolderId,
+        metadata,
+        onProgress: (percent, status) => {
+          setProgress(percent);
+          setStatusText(status);
+        },
       });
-
-      const initData = await initRes.json();
-      if (!initRes.ok) {
-        throw new Error(initData.error || "Failed to initialize upload");
-      }
-
-      const { uploadUrl, videoId } = initData.data;
-
-      setStatusText("Uploading video file to S3...");
-      const xhr = new XMLHttpRequest();
-
-      await new Promise<void>((resolve, reject) => {
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = Math.round((event.loaded / event.total) * 75) + 5;
-            setProgress(percentComplete);
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`S3 upload failed with status ${xhr.status}`));
-          }
-        };
-
-        xhr.onerror = () => reject(new Error("Network error during S3 upload"));
-
-        xhr.open("PUT", uploadUrl);
-        xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
-        xhr.send(file);
-      });
-
-      setProgress(85);
-
-      if (metadata?.thumbnailBlob) {
-        try {
-          setStatusText("Uploading generated thumbnail...");
-          const thumbInitRes = await fetch("/api/upload/thumbnail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              videoId,
-              contentType: "image/jpeg",
-            }),
-          });
-          const thumbInitData = await thumbInitRes.json();
-          if (thumbInitRes.ok && thumbInitData.uploadUrl) {
-            await fetch(thumbInitData.uploadUrl, {
-              method: "PUT",
-              headers: { "Content-Type": "image/jpeg" },
-              body: metadata.thumbnailBlob,
-            });
-          }
-        } catch (thumbErr) {
-          console.warn("Failed to upload client thumbnail:", thumbErr);
-        }
-      }
-
-      if (requireHls) {
-        setStatusText("Queueing HLS adaptive transcode job...");
-      } else {
-        setStatusText("Finalizing video upload...");
-      }
-
-      const completeRes = await fetch("/api/upload/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ videoId }),
-      });
-
-      if (!completeRes.ok) {
-        throw new Error("Failed to finalize upload");
-      }
-
-      if (requireHls) {
-        setStatusText("Upload complete! Video queued for processing.");
-      } else {
-        setStatusText("Upload complete! Video ready for playback.");
-      }
 
       setTimeout(() => {
         setUploading(false);
