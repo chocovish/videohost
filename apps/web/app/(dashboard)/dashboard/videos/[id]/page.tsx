@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2 } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
 
@@ -13,6 +13,7 @@ interface VideoDetail {
   description?: string;
   folderId?: string | null;
   status: string;
+  requireHls?: boolean;
   durationSeconds?: number;
   sourceResolution?: string;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
@@ -29,15 +30,16 @@ export default function VideoDetailPage() {
 
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [isShareOpen, setIsShareOpen] = useState(false);
 
   const backUrl = video?.folderId ? `/dashboard/uploaded-videos?folderId=${video.folderId}` : "/dashboard/uploaded-videos";
 
-  const fetchVideoDetail = async () => {
+  const fetchVideoDetail = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) setLoading(true);
       const res = await fetch(`/api/v1/videos/${id}`);
       const data = await res.json();
       if (res.ok) {
@@ -46,8 +48,14 @@ export default function VideoDetailPage() {
     } catch (e) {
       console.error("Failed to load video details:", e);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchVideoDetail(true);
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -114,6 +122,14 @@ export default function VideoDetailPage() {
         </Link>
         <div className="flex items-center gap-2">
           <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl transition-colors min-h-[40px] border border-slate-200"
+            title="Refresh video details"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} /> Refresh
+          </button>
+          <button
             onClick={() => setIsShareOpen(true)}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-[hsl(var(--primary))] text-white hover:opacity-90 rounded-xl transition-colors shadow-xs min-h-[40px]"
           >
@@ -176,7 +192,7 @@ export default function VideoDetailPage() {
                     : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                 }`}
               >
-                <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length || 0})
+                <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
               </button>
             </div>
 
@@ -260,6 +276,37 @@ export default function VideoDetailPage() {
                       ))}
                     </div>
                   </>
+                ) : video.requireHls ? (
+                  video.status === "FAILED" ? (
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-1">
+                      <div className="flex items-center gap-2 font-semibold text-red-800">
+                        <AlertTriangle className="w-4 h-4 text-red-600" />
+                        <span>Transcoding Failed (Require HLS = ON)</span>
+                      </div>
+                      <p>
+                        HLS transcoding failed during processing. Please try re-uploading the video.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-2">
+                      <div className="flex items-center justify-between gap-2 font-semibold text-amber-800">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
+                          <span>Transcoding in Progress (Require HLS = ON)</span>
+                        </div>
+                        <button
+                          onClick={handleRefresh}
+                          disabled={isRefreshing}
+                          className="px-2.5 py-1 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold rounded-lg transition-colors border border-amber-300 flex items-center gap-1 shrink-0"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} /> Refresh Status
+                        </button>
+                      </div>
+                      <p className="text-amber-800/90 leading-relaxed">
+                        HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : "Processing"}). Adaptive bitrate renditions (480p, 720p, 1080p, etc.) will be available here once completed. Use the Refresh button above to check status.
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
                     <p className="font-semibold text-slate-800">Direct Playback Mode (Require HLS = OFF)</p>
@@ -287,6 +334,12 @@ export default function VideoDetailPage() {
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Share Access</span>
               <span className="font-bold text-[hsl(var(--foreground))] uppercase">{video.shareAccessMode}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
+              <span className="text-[hsl(var(--muted-foreground))]">HLS Mode</span>
+              <span className="font-semibold text-[hsl(var(--foreground))]">
+                {video.requireHls ? "Required" : "Disabled (Direct)"}
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Source Resolution</span>
