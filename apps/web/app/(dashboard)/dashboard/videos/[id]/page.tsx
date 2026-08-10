@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
 
@@ -32,6 +32,7 @@ export default function VideoDetailPage() {
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -57,6 +58,23 @@ export default function VideoDetailPage() {
     setIsRefreshing(true);
     await fetchVideoDetail(true);
     setIsRefreshing(false);
+  };
+
+  const handleRetryTranscode = async () => {
+    setIsRetrying(true);
+    try {
+      const res = await fetch(`/api/v1/videos/${id}/retry`, { method: "POST" });
+      if (res.ok) {
+        await fetchVideoDetail(true);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to retry transcoding.");
+      }
+    } catch (e) {
+      console.error("Retry transcode error", e);
+    } finally {
+      setIsRetrying(false);
+    }
   };
 
   useEffect(() => {
@@ -122,6 +140,17 @@ export default function VideoDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Videos
         </Link>
         <div className="flex items-center gap-2">
+          {video.status === "FAILED" && (
+            <button
+              onClick={handleRetryTranscode}
+              disabled={isRetrying}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors min-h-[40px] shadow-xs disabled:opacity-50"
+              title="Retry transcoding job"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+              {isRetrying ? "Retrying..." : "Retry Transcoding"}
+            </button>
+          )}
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -202,6 +231,26 @@ export default function VideoDetailPage() {
               <div className="aspect-video w-full bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
                 {video.playbackUrl ? (
                   <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
+                ) : video.status === "FAILED" ? (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-md mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-base font-bold text-slate-100">Transcoding Failed</p>
+                      <p className="text-xs text-slate-400">
+                        HLS adaptive bitrate encoding encountered an issue during processing.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRetryTranscode}
+                      disabled={isRetrying}
+                      className="mt-2 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors shadow-md disabled:opacity-50"
+                    >
+                      <RotateCcw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
+                      {isRetrying ? "Requeueing Job..." : "Retry Transcoding"}
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
                     <Clock className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
@@ -288,13 +337,23 @@ export default function VideoDetailPage() {
                   </>
                 ) : video.requireHls ? (
                   video.status === "FAILED" ? (
-                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-1">
-                      <div className="flex items-center gap-2 font-semibold text-red-800">
-                        <AlertTriangle className="w-4 h-4 text-red-600" />
-                        <span>Transcoding Failed (Require HLS = ON)</span>
+                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-3">
+                      <div className="flex items-center justify-between gap-2 font-semibold text-red-800">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-red-600" />
+                          <span>Transcoding Failed (Require HLS = ON)</span>
+                        </div>
+                        <button
+                          onClick={handleRetryTranscode}
+                          disabled={isRetrying}
+                          className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
+                        >
+                          <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
+                          {isRetrying ? "Requeueing..." : "Retry Transcoding"}
+                        </button>
                       </div>
-                      <p>
-                        HLS transcoding failed during processing. Please try re-uploading the video.
+                      <p className="text-red-700/90 leading-relaxed">
+                        HLS transcoding failed during processing. Click the button above to retry transcoding or re-upload the video.
                       </p>
                     </div>
                   ) : (
