@@ -35,7 +35,7 @@ export default async function DashboardPage({
   }
 
   if (viewMode === "VIEWER") {
-    redirect(`/dashboard/shared-with-you${querySuffix}`);
+    redirect(`/dashboard/shared-with-me${querySuffix}`);
   } else {
     redirect(`/dashboard/uploaded-videos${querySuffix}`);
   }

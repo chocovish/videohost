@@ -20,7 +20,6 @@ import VideoPlayer from "@/components/VideoPlayer";
 
 interface SharedItem {
   id: string;
-  token: string;
   shareUrl: string;
   type: "video" | "folder";
   title: string;
@@ -30,7 +29,7 @@ interface SharedItem {
   organizationName: string;
   organizationLogo?: string;
   message?: string;
-  requireLogin: boolean;
+  requireLogin?: boolean;
   createdAt: string;
 }
 
@@ -247,7 +246,7 @@ export default function SharedWithYouPage() {
               {/* Action Button */}
               <div className="p-4 pt-0">
                 <Link
-                  href={`/share/${item.token}`}
+                  href={item.shareUrl || `/share/${item.id}`}
                   target="_blank"
                   className="w-full py-2.5 px-4 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
                 >

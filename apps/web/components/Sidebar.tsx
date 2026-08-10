@@ -81,7 +81,7 @@ export default function Sidebar({
         setViewMode(newMode);
         await updateSession({ viewMode: newMode });
         if (newMode === "VIEWER") {
-          router.push("/dashboard/shared-with-you");
+          router.push("/dashboard/shared-with-me");
         } else {
           router.push("/dashboard/uploaded-videos");
         }
@@ -101,7 +101,7 @@ export default function Sidebar({
   ];
 
   const viewerNavItems = [
-    { label: "Shared with you", href: "/dashboard/shared-with-you", icon: Share2 },
+    { label: "Shared with me", href: "/dashboard/shared-with-me", icon: Share2 },
   ];
 
   const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;
