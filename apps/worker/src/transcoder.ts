@@ -245,7 +245,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       durationSeconds: duration,
       sourceWidth: width,
       sourceHeight: height,
-      thumbnailUrl,
+      thumbnailUrl: s3ThumbKey,
       renditions: renditionsResult,
     };
 

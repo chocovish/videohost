@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
+import { getPublicCdnUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request) {
@@ -62,7 +63,7 @@ export async function GET(req: Request) {
       type: "video" as const,
       title: video.title,
       description: video.description,
-      thumbnailUrl: video.thumbnailUrl,
+      thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
       durationSeconds: video.durationSeconds,
       organizationName: video.organization.name,
       organizationLogo: video.organization.logoUrl,

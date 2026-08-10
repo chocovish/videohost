@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPlaybackUrl } from "@/lib/s3";
+import { getPlaybackUrl, getPublicCdnUrl } from "@/lib/s3";
 import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -126,7 +126,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           description: video.description,
           status: video.status,
           durationSeconds: video.durationSeconds,
-          thumbnailUrl: video.thumbnailUrl,
+          thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
           playbackUrl: getPlaybackUrl(video),
           createdAt: video.createdAt,
         },
@@ -166,7 +166,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         description: v.description,
         status: v.status,
         durationSeconds: v.durationSeconds,
-        thumbnailUrl: v.thumbnailUrl,
+        thumbnailUrl: v.thumbnailKey ? getPublicCdnUrl(v.thumbnailKey) : null,
         playbackUrl: getPlaybackUrl(v),
         createdAt: v.createdAt,
       }));

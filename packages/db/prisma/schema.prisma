@@ -169,7 +169,7 @@ model Video {
   sourceWidth      Int?
   sourceHeight     Int?
   originalKey      String      // R2 object key
-  thumbnailUrl     String?
+  thumbnailKey     String?
   spriteUrl        String?
   requireHls       Boolean     @default(false)
   createdAt        DateTime    @default(now())

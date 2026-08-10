@@ -27,7 +27,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     shareAccessMode: video.shareAccessMode,
     playbackUrl: getPlaybackUrl(video),
-    thumbnailUrl: video.thumbnailUrl,
+    thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
     renditions: video.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,

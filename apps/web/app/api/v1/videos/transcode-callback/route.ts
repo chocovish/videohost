@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
+import { getPublicCdnUrl } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
@@ -24,10 +25,12 @@ export async function POST(req: Request) {
       durationSeconds,
       sourceWidth,
       sourceHeight,
-      thumbnailUrl,
+      thumbnailKey: rawThumbKey,
+      thumbnailUrl: rawThumbUrl,
       renditions,
       error,
     } = payload;
+    const incomingThumb = rawThumbKey || rawThumbUrl;
 
     if (!videoId) {
       return NextResponse.json({ error: "videoId is required" }, { status: 400 });
@@ -72,6 +75,20 @@ export async function POST(req: Request) {
         }
       }
 
+      let thumbnailKey: string | null = null;
+      if (incomingThumb) {
+        if (incomingThumb.includes("/o/")) {
+          thumbnailKey = incomingThumb.split("/o/")[1];
+        } else if (incomingThumb.includes("/videohost/")) {
+          thumbnailKey = incomingThumb.split("/videohost/")[1];
+        } else if (incomingThumb.startsWith("http://") || incomingThumb.startsWith("https://")) {
+          const parts = incomingThumb.split("/");
+          thumbnailKey = parts.slice(-3).join("/");
+        } else {
+          thumbnailKey = incomingThumb;
+        }
+      }
+
       await db.video.update({
         where: { id: videoId },
         data: {
@@ -80,7 +97,7 @@ export async function POST(req: Request) {
           durationSeconds: durationSeconds || 0,
           sourceWidth: sourceWidth || 1280,
           sourceHeight: sourceHeight || 720,
-          thumbnailUrl: thumbnailUrl || null,
+          thumbnailKey: thumbnailKey,
         },
       });
 
@@ -91,7 +108,7 @@ export async function POST(req: Request) {
         videoId,
         title: video.title,
         durationSeconds,
-        thumbnailUrl,
+        thumbnailUrl: thumbnailKey ? getPublicCdnUrl(thumbnailKey) : null,
       });
 
       return NextResponse.json({ success: true, status: "READY", videoId });

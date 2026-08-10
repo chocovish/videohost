@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@videohost/db";
+import { getPublicCdnUrl } from "@/lib/s3";
 import SharedContentClient from "./shared-content-client";
 
 export async function generateMetadata({
@@ -20,7 +21,7 @@ export async function generateMetadata({
       const description =
         video.description ||
         `Watch "${video.title}" shared by ${video.organization.name} on VideoHost.`;
-      const imageUrl = video.thumbnailUrl || "/og-image.png";
+      const imageUrl = video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : "/og-image.png";
 
       return {
         title,

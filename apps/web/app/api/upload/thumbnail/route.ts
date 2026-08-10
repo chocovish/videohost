@@ -26,14 +26,14 @@ export async function POST(req: Request) {
     }
 
     const thumbnailKey = `${orgId}/${video.id}/thumbnail.jpg`;
-    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
 
     await db.video.update({
       where: { id: videoId },
-      data: { thumbnailUrl },
+      data: { thumbnailKey },
     });
 
     const uploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/jpeg");
+    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
 
     return NextResponse.json({ uploadUrl, thumbnailUrl });
   } catch (error: any) {

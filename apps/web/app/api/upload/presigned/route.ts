@@ -68,11 +68,10 @@ export async function POST(req: Request) {
 
     const originalKey = `${orgId}/${video.id}/original.mp4`;
     const thumbnailKey = `${orgId}/${video.id}/thumbnail.jpg`;
-    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
 
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey, thumbnailUrl },
+      data: { originalKey, thumbnailKey },
     });
 
     const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
