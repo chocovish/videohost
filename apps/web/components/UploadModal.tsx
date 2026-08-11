@@ -47,6 +47,7 @@ export default function UploadModal({
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
   const [checkingQuota, setCheckingQuota] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>("free");
 
   const resetForm = () => {
     setFile(null);
@@ -83,15 +84,19 @@ export default function UploadModal({
       setCheckingQuota(true);
       setIsQuotaExceeded(false);
 
-      // Check remaining storage before allowing upload
+      // Check remaining storage & current plan before allowing upload
       try {
         const usageRes = await fetch("/api/v1/usage");
         if (usageRes.ok) {
           const usageData = await usageRes.json();
+          if (usageData.plan) {
+            setUserPlan(usageData.plan.toLowerCase());
+          }
           if (usageData.usage) {
             const { usedBytes, storageLimitBytes, isLimitReached } = usageData.usage;
+            const isUnlimited = storageLimitBytes >= Number.MAX_SAFE_INTEGER - 1000;
             const remainingBytes = Math.max(0, storageLimitBytes - usedBytes);
-            if (isLimitReached || selectedFile.size > remainingBytes) {
+            if (!isUnlimited && (isLimitReached || selectedFile.size > remainingBytes)) {
               setIsQuotaExceeded(true);
               setError(
                 `Selected file size (${formatBytes(selectedFile.size)}) exceeds your available storage quota (${formatBytes(remainingBytes)} remaining out of ${formatBytes(storageLimitBytes)}). Upload is disabled.`
@@ -263,32 +268,38 @@ export default function UploadModal({
           {/* Require HLS Switch */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))]">
             <div className="space-y-0.5">
-              <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
-                Require HLS
-              </label>
+              <div className="flex items-center gap-2">
+                <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
+                  Require HLS (Adaptive Bitrate)
+                </label>
+                {userPlan === "free" && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30">
+                    PRO FEATURE
+                  </span>
+                )}
+              </div>
               <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
-                {requireHls
+                {userPlan === "free"
+                  ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
+                  : requireHls
                   ? "Transcode video into adaptive HLS stream (480p-4K)"
                   : "Store original video & play directly without transcoding"}
-              </p>
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium pt-0.5">
-                Note: HLS takes more storage space (original file + converted renditions)
               </p>
             </div>
             <button
               id="require-hls-toggle"
               type="button"
               role="switch"
-              aria-checked={requireHls}
-              disabled={uploading}
-              onClick={() => setRequireHls(!requireHls)}
+              aria-checked={userPlan !== "free" && requireHls}
+              disabled={uploading || userPlan === "free"}
+              onClick={() => userPlan !== "free" && setRequireHls(!requireHls)}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${
-                requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300"
+                userPlan !== "free" && requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300 opacity-60"
               }`}
             >
               <span
                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  requireHls ? "translate-x-5" : "translate-x-0"
+                  userPlan !== "free" && requireHls ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>

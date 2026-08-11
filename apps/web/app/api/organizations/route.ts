@@ -73,6 +73,43 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check user's current memberships & active plan for multi-org entitlement
+    const existingMemberships = await db.organizationMember.findMany({
+      where: { userId: authCtx.userId },
+      include: {
+        organization: {
+          include: { plan: true },
+        },
+      },
+    });
+
+    if (existingMemberships.length > 0) {
+      // Find if any existing org has enterprise plan
+      const hasEnterprisePlan = existingMemberships.some(
+        (m) => m.organization.plan.name.toLowerCase() === "enterprise"
+      );
+
+      if (!hasEnterprisePlan) {
+        return NextResponse.json(
+          {
+            error: "Creating new organizations can only be done on an Enterprise plan. Upgrade to Enterprise to create additional workspaces.",
+            code: "PLAN_RESTRICTION",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (existingMemberships.length >= 5) {
+        return NextResponse.json(
+          {
+            error: "Organization limit reached: You can create up to 5 organizations maximum on the Enterprise plan.",
+            code: "ORGANIZATION_LIMIT_REACHED",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     let defaultPlan = await db.plan.findFirst({ where: { name: "free" } });
     if (!defaultPlan) {
       defaultPlan = await db.plan.create({

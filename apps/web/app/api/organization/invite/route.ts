@@ -36,11 +36,21 @@ export async function POST(req: Request) {
 
     const organization = await db.organization.findUnique({
       where: { id: authCtx.orgId },
-      select: { id: true, name: true },
+      include: { plan: true },
     });
 
     if (!organization) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
+    if (organization.plan.name.toLowerCase() !== "enterprise") {
+      return NextResponse.json(
+        {
+          error: "Inviting team members requires an Enterprise plan. Upgrade to Enterprise to add members to your workspace.",
+          code: "PLAN_RESTRICTION",
+        },
+        { status: 403 }
+      );
     }
 
     // Check if user is already a member

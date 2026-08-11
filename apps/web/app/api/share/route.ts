@@ -87,6 +87,7 @@ export async function POST(req: Request) {
 
     const org = await db.organization.findUnique({
       where: { id: authCtx.orgId },
+      include: { plan: true },
     });
     if (!org) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });

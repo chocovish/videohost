@@ -15,6 +15,7 @@ import {
   Share2,
   Loader2,
   HardDrive,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
@@ -93,7 +94,8 @@ export default function Sidebar({
     };
   }, []);
 
-  const percentage = Math.min(100, Math.round((currentUsedBytes / currentLimitBytes) * 100));
+  const isUnlimited = currentLimitBytes >= Number.MAX_SAFE_INTEGER - 1000;
+  const percentage = isUnlimited ? 0 : Math.min(100, Math.round((currentUsedBytes / currentLimitBytes) * 100));
 
   useEffect(() => {
     if ((session?.user as any)?.viewMode) {
@@ -139,6 +141,7 @@ export default function Sidebar({
 
   const creatorNavItems = [
     { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
+    { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
     { label: "Organization", href: "/dashboard/settings", icon: Settings },
   ];
@@ -278,25 +281,25 @@ export default function Sidebar({
                     <HardDrive className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Storage Quota
                   </span>
                   <span className="text-[hsl(var(--muted-foreground))] font-medium">
-                    {formatBytes(currentUsedBytes)} / {formatBytes(currentLimitBytes)}
+                    {isUnlimited ? `${formatBytes(currentUsedBytes)} / Unlimited` : `${formatBytes(currentUsedBytes)} / ${formatBytes(currentLimitBytes)}`}
                   </span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                   <div
                     className="h-full bg-[hsl(var(--primary))] transition-all duration-500 rounded-full"
-                    style={{ width: `${percentage}%` }}
+                    style={{ width: `${isUnlimited ? 0 : percentage}%` }}
                   />
                 </div>
-                {percentage >= 80 && (
+                {!isUnlimited && percentage >= 80 && (
                   <p className="text-[10px] text-amber-600 font-medium">
                     {percentage >= 100 ? "Storage limit reached!" : "Approaching 80% limit"}
                   </p>
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center gap-1" title={`Storage: ${formatBytes(currentUsedBytes)} / ${formatBytes(currentLimitBytes)}`}>
+              <div className="flex flex-col items-center gap-1" title={isUnlimited ? `Storage: ${formatBytes(currentUsedBytes)} / Unlimited` : `Storage: ${formatBytes(currentUsedBytes)} / ${formatBytes(currentLimitBytes)}`}>
                 <HardDrive className="w-4 h-4 text-[hsl(var(--primary))]" />
-                <span className="text-[10px] font-bold text-[hsl(var(--foreground))]">{percentage}%</span>
+                <span className="text-[10px] font-bold text-[hsl(var(--foreground))]">{isUnlimited ? "∞" : `${percentage}%`}</span>
               </div>
             )}
           </div>

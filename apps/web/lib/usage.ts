@@ -33,12 +33,15 @@ export async function getOrganizationUsage(organizationId: string): Promise<Usag
   });
 
   const usedBytes = Number(aggregateResult._sum.sizeBytes || 0n);
-  const storageLimitGb = org.customStorageLimitGb ?? (org.plan as any).storageLimitGb ?? 2;
-  const storageLimitBytes = storageLimitGb * 1024 * 1024 * 1024;
+  const rawStorageLimitGb = org.customStorageLimitGb ?? (org.plan as any)?.storageLimitGb ?? 2;
+  const isUnlimited = rawStorageLimitGb === 0;
+
+  const storageLimitGb = isUnlimited ? 0 : rawStorageLimitGb;
+  const storageLimitBytes = isUnlimited ? Number.MAX_SAFE_INTEGER : storageLimitGb * 1024 * 1024 * 1024;
 
   const usedGb = parseFloat((usedBytes / (1024 * 1024 * 1024)).toFixed(2));
-  const percentageUsed = Math.min(100, Math.round((usedBytes / storageLimitBytes) * 100));
-  const isLimitReached = usedBytes >= storageLimitBytes;
+  const percentageUsed = isUnlimited ? 0 : Math.min(100, Math.round((usedBytes / storageLimitBytes) * 100));
+  const isLimitReached = isUnlimited ? false : usedBytes >= storageLimitBytes;
 
   return {
     usedBytes,

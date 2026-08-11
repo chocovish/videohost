@@ -12,6 +12,7 @@ async function main() {
     where: { id: "plan_free" },
     update: {
       storageLimitGb: 2,
+      priceMonthlyCents: 0,
     },
     create: {
       id: "plan_free",
@@ -19,7 +20,7 @@ async function main() {
       minutesLimit: 200,
       storageLimitGb: 2,
       maxResolution: "1080p",
-      seatLimit: 5,
+      seatLimit: 1,
       priceMonthlyCents: 0,
       isCustom: false,
     },
@@ -28,16 +29,17 @@ async function main() {
   const proPlan = await db.plan.upsert({
     where: { id: "plan_pro" },
     update: {
-      storageLimitGb: 50,
+      storageLimitGb: 200,
+      priceMonthlyCents: 99900,
     },
     create: {
       id: "plan_pro",
       name: "pro",
-      minutesLimit: 1000,
-      storageLimitGb: 50,
+      minutesLimit: 10000,
+      storageLimitGb: 200,
       maxResolution: "4k",
-      seatLimit: 20,
-      priceMonthlyCents: 4900,
+      seatLimit: 1,
+      priceMonthlyCents: 99900,
       isCustom: false,
     },
   });
@@ -45,16 +47,17 @@ async function main() {
   const enterprisePlan = await db.plan.upsert({
     where: { id: "plan_enterprise" },
     update: {
-      storageLimitGb: 500,
+      storageLimitGb: 0,
+      priceMonthlyCents: 299900,
     },
     create: {
       id: "plan_enterprise",
       name: "enterprise",
-      minutesLimit: 10000,
-      storageLimitGb: 500,
+      minutesLimit: 100000,
+      storageLimitGb: 0, // 0 denotes unlimited storage
       maxResolution: "4k",
-      seatLimit: 100,
-      priceMonthlyCents: 49900,
+      seatLimit: 1000,
+      priceMonthlyCents: 299900,
       isCustom: true,
     },
   });

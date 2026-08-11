@@ -72,6 +72,8 @@ export default function SettingsPage() {
   const [activeOrgId, setActiveOrgId] = useState<string>("");
   const [switchingOrgId, setSwitchingOrgId] = useState<string | null>(null);
 
+  const activeOrg = userOrgs.find((o) => o.isActive || o.id === activeOrgId);
+
   // Create org modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
@@ -651,42 +653,62 @@ export default function SettingsPage() {
             )}
 
             {/* Invite Form */}
-            <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                required
-                disabled={isInviting}
-                placeholder="colleague@company.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] disabled:opacity-60 transition-all"
-              />
-              <select
-                value={inviteRole}
-                disabled={isInviting}
-                onChange={(e) => setInviteRole(e.target.value)}
-                className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none disabled:opacity-60 transition-all"
-              >
-                <option value="MEMBER">Member</option>
-                <option value="ADMIN">Admin</option>
-                <option value="VIEWER">Viewer</option>
-              </select>
-              <button
-                type="submit"
-                disabled={isInviting || !inviteEmail.trim()}
-                className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all min-h-[44px] shadow-sm hover:opacity-95"
-              >
-                {isInviting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Sending...
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4" /> Send Invite
-                  </>
-                )}
-              </button>
-            </form>
+            {activeOrg?.planName?.toLowerCase() !== "enterprise" ? (
+              <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4" /> Enterprise Feature: Team Member Invites
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/dashboard/pricing")}
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg transition-all shadow-xs"
+                  >
+                    Upgrade to Enterprise
+                  </button>
+                </div>
+                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  Inviting team members to collaborate in your workspace is an Enterprise plan feature. Upgrade your workspace to invite team members and assign roles.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  required
+                  disabled={isInviting}
+                  placeholder="colleague@company.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] disabled:opacity-60 transition-all"
+                />
+                <select
+                  value={inviteRole}
+                  disabled={isInviting}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none disabled:opacity-60 transition-all"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="VIEWER">Viewer</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={isInviting || !inviteEmail.trim()}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all min-h-[44px] shadow-sm hover:opacity-95"
+                >
+                  {isInviting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Sending...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4" /> Send Invite
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
             {/* Pending Invitations Section */}
             {invitations.length > 0 && (
@@ -880,63 +902,93 @@ export default function SettingsPage() {
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleCreateOrg} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="org-name-input">
-                Organization Name <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="org-name-input"
-                type="text"
-                required
-                placeholder="e.g. Acme Video Studio"
-                value={newOrgName}
-                onChange={(e) => setNewOrgName(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="org-slug-input">
-                Custom Slug <span className="text-[hsl(var(--muted-foreground))] font-normal">(Optional)</span>
-              </Label>
-              <Input
-                id="org-slug-input"
-                type="text"
-                placeholder="e.g. acme-video-studio"
-                value={newOrgSlug}
-                onChange={(e) => setNewOrgSlug(e.target.value)}
-              />
-              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
-                Unique identifier used in URLs and API keys.
+          {activeOrg?.planName?.toLowerCase() !== "enterprise" ? (
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 my-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
+                <Sparkles className="w-4 h-4 text-purple-600" /> Enterprise Plan Required
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                New organization creation can only be done on the Enterprise plan (up to 5 organizations maximum).
               </p>
-            </div>
-
-            <DialogFooter>
               <Button
                 type="button"
-                variant="ghost"
-                onClick={() => setIsCreateModalOpen(false)}
-                className="w-full sm:w-auto"
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  router.push("/dashboard/pricing");
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs"
               >
-                Cancel
+                Upgrade to Enterprise Plan
               </Button>
-              <Button
-                type="submit"
-                disabled={isCreatingOrg || !newOrgName.trim()}
-                className="w-full sm:w-auto min-w-[150px]"
-              >
-                {isCreatingOrg ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-1.5" /> Create Workspace
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+            </div>
+          ) : userOrgs.length >= 5 ? (
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 my-2 text-center">
+              <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
+                <AlertCircle className="w-4 h-4" /> Organization Limit Reached
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                You have reached the maximum limit of 5 organizations allowed on the Enterprise plan.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleCreateOrg} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="org-name-input">
+                  Organization Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="org-name-input"
+                  type="text"
+                  required
+                  placeholder="e.g. Acme Video Studio"
+                  value={newOrgName}
+                  onChange={(e) => setNewOrgName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="org-slug-input">
+                  Custom Slug <span className="text-[hsl(var(--muted-foreground))] font-normal">(Optional)</span>
+                </Label>
+                <Input
+                  id="org-slug-input"
+                  type="text"
+                  placeholder="e.g. acme-video-studio"
+                  value={newOrgSlug}
+                  onChange={(e) => setNewOrgSlug(e.target.value)}
+                />
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                  Unique identifier used in URLs and API keys (up to 5 orgs per Enterprise account).
+                </p>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isCreatingOrg || !newOrgName.trim()}
+                  className="w-full sm:w-auto min-w-[150px]"
+                >
+                  {isCreatingOrg ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-1.5" /> Create Workspace
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -50,7 +50,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const isHls = Boolean(requireHls);
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { plan: true },
+    });
+
+    const isFreePlan = org?.plan.name.toLowerCase() === "free";
+    // Adaptive bitrate storage (HLS) is only available on Pro and Enterprise plans
+    const isHls = isFreePlan ? false : Boolean(requireHls);
 
     // Create DB Video record (for non-HLS videos, store sizeBytes immediately upon upload; for HLS videos, store after processing)
     const video = await db.video.create({
