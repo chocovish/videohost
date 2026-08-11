@@ -25,6 +25,7 @@ export interface UseScreenRecorderOptions {
 export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const [recordState, setRecordState] = useState<RecordState>("idle");
   const [isMicEnabled, setIsMicEnabled] = useState(false);
+  const [wasMicEnabledOnStart, setWasMicEnabledOnStart] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -150,6 +151,10 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
 
   // Toggle microphone track audio status
   const handleToggleMic = () => {
+    if ((recordState === "recording" || recordState === "paused") && !wasMicEnabledOnStart) {
+      return;
+    }
+
     const nextState = !isMicEnabled;
     setIsMicEnabled(nextState);
 
@@ -232,6 +237,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     setRecordedFile(null);
     setIsWebcamEnabled(false);
     setIsMicEnabled(false);
+    setWasMicEnabledOnStart(false);
     setCountdownTime(0);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
@@ -268,6 +274,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   // Start Screen Recording with Canvas Compositer Engine & Optimized Compression
   const startRecording = async () => {
     setError("");
+    setWasMicEnabledOnStart(isMicEnabled);
     try {
       // 1. Get Screen Display Stream
       const displayConstraints = getDisplayVideoConstraints(resolution, fps);
@@ -516,6 +523,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     recordState,
     setRecordState,
     isMicEnabled,
+    wasMicEnabledOnStart,
     setIsMicEnabled,
     handleToggleMic,
     recordingTime,

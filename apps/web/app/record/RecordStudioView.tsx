@@ -46,6 +46,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import PublicHeader from "@/components/PublicHeader";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
 import {
@@ -60,6 +66,7 @@ export default function RecordStudioView() {
   const {
     recordState,
     isMicEnabled,
+    wasMicEnabledOnStart,
     handleToggleMic,
     recordingTime,
     recordedFile,
@@ -97,6 +104,8 @@ export default function RecordStudioView() {
     handleReRecord,
     handleDownload,
   } = useScreenRecorder();
+
+  const isMicDisabledMidRecording = (recordState === "recording" || recordState === "paused") && !wasMicEnabledOnStart;
 
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [downloadFilename, setDownloadFilename] = useState("");
@@ -556,29 +565,56 @@ export default function RecordStudioView() {
 
                     {/* Mic & Webcam Toggles */}
                     <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={handleToggleMic}
-                        className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                          isMicEnabled
-                            ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                        }`}
-                      >
-                        <div
-                          className={`p-1.5 rounded-lg shrink-0 ${
-                            isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                      {isMicDisabledMidRecording ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="w-full">
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all bg-white/5 border-white/10 text-slate-500 opacity-50 cursor-not-allowed"
+                                >
+                                  <div className="p-1.5 rounded-lg shrink-0 bg-white/5 text-slate-500">
+                                    <MicOff className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold truncate">Mic Audio</p>
+                                    <p className="text-[10px] opacity-75 truncate">Disabled</p>
+                                  </div>
+                                </button>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="bg-slate-900 text-slate-100 border-white/15">
+                              Cannot enable microphone mid-recording because it was disabled when recording started.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleToggleMic}
+                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                            isMicEnabled
+                              ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
+                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                           }`}
                         >
-                          {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold truncate">Mic Audio</p>
-                          <p className="text-[10px] opacity-75 truncate">
-                            {isMicEnabled ? "Unmuted" : "Muted"}
-                          </p>
-                        </div>
-                      </button>
+                          <div
+                            className={`p-1.5 rounded-lg shrink-0 ${
+                              isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                            }`}
+                          >
+                            {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold truncate">Mic Audio</p>
+                            <p className="text-[10px] opacity-75 truncate">
+                              {isMicEnabled ? "Unmuted" : "Muted"}
+                            </p>
+                          </div>
+                        </button>
+                      )}
 
                       <button
                         type="button"

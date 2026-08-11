@@ -60,6 +60,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,6 +98,7 @@ export default function ScreenRecordDrawer({
     recordState,
     setRecordState,
     isMicEnabled,
+    wasMicEnabledOnStart,
     handleToggleMic,
     recordingTime,
     recordedFile,
@@ -131,6 +138,8 @@ export default function ScreenRecordDrawer({
     resetAll,
     handleDownload,
   } = useScreenRecorder();
+
+  const isMicDisabledMidRecording = (recordState === "recording" || recordState === "paused") && !wasMicEnabledOnStart;
 
   const [description, setDescription] = useState("");
   const [requireHls, setRequireHls] = useState(false);
