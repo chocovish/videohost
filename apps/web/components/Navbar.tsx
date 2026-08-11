@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Video } from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,16 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        <Link
+          href="/record"
+          target="_blank"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-colors text-xs font-bold"
+          title="Open Public Recorder Page in new tab"
+        >
+          <Video className="w-3.5 h-3.5" />
+          Public Studio
+        </Link>
+
         <Link
           href="/dashboard/profile"
           className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors text-sm"

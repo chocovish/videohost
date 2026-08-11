@@ -49,6 +49,12 @@ export default function LandingPage() {
 
         <div className="flex items-center gap-2 sm:gap-4">
           <Link
+            href="/record"
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-colors flex items-center gap-1.5"
+          >
+            <Video className="w-3.5 h-3.5" /> Free Recorder
+          </Link>
+          <Link
             href="/auth/login"
             className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-[hsl(var(--foreground))] hover:bg-black/5 transition-colors"
           >
@@ -66,7 +72,7 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main className="max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-16 text-center relative z-10 space-y-6 sm:space-y-8 my-auto">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" /> Dead simple video sharing platform
+          <Sparkles className="w-3.5 h-3.5" /> Dead simple video sharing & browser recording platform
         </div>
 
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight">
@@ -87,6 +93,12 @@ export default function LandingPage() {
           >
             Start Free (200 Video Mins)
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <Link
+            href="/record"
+            className="w-full sm:w-auto px-8 py-4 border-2 border-[hsl(var(--primary))] text-[hsl(var(--primary))] font-extrabold text-base rounded-2xl hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[hsl(var(--primary))]/10"
+          >
+            <Video className="w-5 h-5" /> Free Screen Recorder
           </Link>
           <Link
             href="/auth/login"
