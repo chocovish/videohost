@@ -159,7 +159,7 @@ export default function ScreenRecordDrawer({
   }>({
     isOpen: false,
     settingLabel: "",
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const handleSelectFps = (selectedFps: TargetFps) => {
@@ -406,529 +406,510 @@ export default function ScreenRecordDrawer({
                 recordState === "countdown" ||
                 recordState === "recording" ||
                 recordState === "paused") && (
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* LEFT COLUMN: Video Preview Viewport */}
-                  <div className="lg:col-span-7 space-y-3">
-                    <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video flex items-center justify-center border border-slate-800 shadow-xl group">
-                      <video
-                        ref={videoPreviewRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className={`w-full h-full object-contain ${
-                          recordState === "idle" ? "hidden" : "block"
-                        }`}
-                      />
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* LEFT COLUMN: Video Preview Viewport */}
+                    <div className="lg:col-span-7 space-y-3">
+                      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video flex items-center justify-center border border-slate-800 shadow-xl group">
+                        <video
+                          ref={videoPreviewRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className={`w-full h-full object-contain ${recordState === "idle" ? "hidden" : "block"
+                            }`}
+                        />
 
-                      {/* Countdown Overlay */}
-                      {recordState === "countdown" && (
-                        <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-20 gap-3">
-                          <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center animate-ping absolute" />
-                          <span className="text-7xl font-black text-white font-mono tracking-tighter drop-shadow-lg z-10">
-                            {countdownTime}
-                          </span>
-                          <p className="text-xs text-slate-300 font-semibold uppercase tracking-widest">
-                            Get Ready...
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={cancelCountdown}
-                            className="mt-2 text-xs text-slate-400 hover:text-white hover:bg-white/10"
-                          >
-                            Cancel Countdown
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* Idle State Banner */}
-                      {recordState === "idle" && (
-                        <div className="text-center p-6 space-y-3 max-w-sm">
-                          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-lime-500/20 to-emerald-500/20 border border-lime-500/30 flex items-center justify-center mx-auto text-lime-500 shadow-inner">
-                            <Monitor className="w-8 h-8" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="text-lg font-bold text-white tracking-tight">
-                              Ready to Record
-                            </h3>
-                            <p className="text-xs text-slate-400">
-                              Configure studio controls on the right and click start.
+                        {/* Countdown Overlay */}
+                        {recordState === "countdown" && (
+                          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-20 gap-3">
+                            <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center animate-ping absolute" />
+                            <span className="text-7xl font-black text-white font-mono tracking-tighter drop-shadow-lg z-10">
+                              {countdownTime}
+                            </span>
+                            <p className="text-xs text-slate-300 font-semibold uppercase tracking-widest">
+                              Get Ready...
                             </p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={cancelCountdown}
+                              className="mt-2 text-xs text-slate-400 hover:text-white hover:bg-white/10"
+                            >
+                              Cancel Countdown
+                            </Button>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {/* Live Recording HUD Status Bar */}
-                      {(recordState === "recording" || recordState === "paused") && (
-                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
-                          <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg pointer-events-auto">
-                            <span
-                              className={`w-2.5 h-2.5 rounded-full ${
-                                recordState === "recording"
+                        {/* Idle State Banner */}
+                        {recordState === "idle" && (
+                          <div className="text-center p-6 space-y-3 max-w-sm">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-lime-500/20 to-emerald-500/20 border border-lime-500/30 flex items-center justify-center mx-auto text-lime-500 shadow-inner">
+                              <Monitor className="w-8 h-8" />
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="text-lg font-bold text-white tracking-tight">
+                                Ready to Record
+                              </h3>
+                              <p className="text-xs text-slate-400">
+                                Configure studio controls on the right and click start.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Live Recording HUD Status Bar */}
+                        {(recordState === "recording" || recordState === "paused") && (
+                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10 pointer-events-none">
+                            <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg pointer-events-auto">
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full ${recordState === "recording"
                                   ? "bg-red-500 animate-pulse"
                                   : "bg-amber-500"
-                              }`}
-                            />
-                            <span className="text-xs font-mono font-bold text-white">
-                              {formatDuration(recordingTime)}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg text-[11px] font-semibold text-slate-300 pointer-events-auto">
-                            <span className="text-lime-400 uppercase font-mono">{resolution}</span>
-                            <span>•</span>
-                            <span>{fps} FPS</span>
-                            <span>•</span>
-                            <span>{isWebcamEnabled ? "Cam Active" : "No Cam"}</span>
-                            <span>•</span>
-                            <span>{isMicEnabled ? "Mic On" : "Mic Muted"}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* RIGHT COLUMN: Controls Panel in Stacked Rows */}
-                  <div className="lg:col-span-5 space-y-3">
-                    {recordState === "idle" && (
-                      <div className="space-y-3">
-                        {/* Row 1: Mic & Webcam Toggles */}
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button
-                            type="button"
-                            onClick={handleToggleMic}
-                            className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${
-                              isMicEnabled
-                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
-                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                          >
-                            <div
-                              className={`p-2 rounded-xl shrink-0 ${
-                                isMicEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                              }`}
-                            >
-                              {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate">Microphone</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                {isMicEnabled ? "Voice On" : "Muted"}
-                              </p>
-                            </div>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={handleToggleWebcam}
-                            className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${
-                              isWebcamEnabled
-                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
-                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                          >
-                            <div
-                              className={`p-2 rounded-xl shrink-0 ${
-                                isWebcamEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                              }`}
-                            >
-                              {isWebcamEnabled ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate">Webcam PIP</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                                {isWebcamEnabled ? "Active PIP" : "Disabled"}
-                              </p>
-                            </div>
-                          </button>
-                        </div>
-
-                        {/* Auto-Expanded Webcam PIP Controls (Shown immediately below On/Off toggle when enabled) */}
-                        {isWebcamEnabled && (
-                          <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-lime-500/30 space-y-2.5 animate-in fade-in slide-in-from-top-2">
-                            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
-                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                <Sparkles className="w-3.5 h-3.5 text-lime-500" /> Webcam PIP Controls
-                              </h4>
-                              <span className="text-[10px] font-bold bg-lime-500/15 text-lime-600 dark:text-lime-400 px-2 py-0.5 rounded-full">
-                                Active
+                                  }`}
+                              />
+                              <span className="text-xs font-mono font-bold text-white">
+                                {formatDuration(recordingTime)}
                               </span>
                             </div>
 
-                            {/* Camera Device */}
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                                Camera Device
-                              </Label>
-                              <Select
-                                value={selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")}
-                                onValueChange={(val) => handleSelectCameraDevice(val)}
-                                disabled={cameraDevices.length === 0}
-                              >
-                                <SelectTrigger className="w-full h-8 text-xs font-medium rounded-xl bg-white dark:bg-slate-800">
-                                  <SelectValue placeholder="Select camera" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {cameraDevices.length === 0 ? (
-                                    <SelectItem value="none" disabled>No camera found</SelectItem>
-                                  ) : (
-                                    cameraDevices.map((dev) => (
-                                      <SelectItem key={dev.deviceId} value={dev.deviceId}>
-                                        {dev.label || `Camera (${dev.deviceId.slice(0, 5)}...)`}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
+                            <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-full shadow-lg text-[11px] font-semibold text-slate-300 pointer-events-auto">
+                              <span className="text-lime-400 uppercase font-mono">{resolution}</span>
+                              <span>•</span>
+                              <span>{fps} FPS</span>
+                              <span>•</span>
+                              <span>{isWebcamEnabled ? "Cam Active" : "No Cam"}</span>
+                              <span>•</span>
+                              <span>{isMicEnabled ? "Mic On" : "Mic Muted"}</span>
                             </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                            {/* Corner Position */}
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                                PIP Position Corner
-                              </Label>
-                              <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                                {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
-                                  <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setWebcamCorner(c)}
-                                    className={`text-[10px] font-bold py-1 px-1.5 rounded-lg capitalize transition-all ${
-                                      webcamCorner === c
+                    {/* RIGHT COLUMN: Controls Panel in Stacked Rows */}
+                    <div className="lg:col-span-5 space-y-3">
+                      {recordState === "idle" && (
+                        <div className="space-y-3">
+                          {/* Row 1: Mic & Webcam Toggles */}
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                              type="button"
+                              onClick={handleToggleMic}
+                              className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isMicEnabled
+                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
+                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                }`}
+                            >
+                              <div
+                                className={`p-2 rounded-xl shrink-0 ${isMicEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                  }`}
+                              >
+                                {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold truncate">Microphone</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                  {isMicEnabled ? "Voice On" : "Muted"}
+                                </p>
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleToggleWebcam}
+                              className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isWebcamEnabled
+                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
+                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                }`}
+                            >
+                              <div
+                                className={`p-2 rounded-xl shrink-0 ${isWebcamEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                  }`}
+                              >
+                                {isWebcamEnabled ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold truncate">Webcam PIP</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                  {isWebcamEnabled ? "Active PIP" : "Disabled"}
+                                </p>
+                              </div>
+                            </button>
+                          </div>
+
+                          {/* Auto-Expanded Webcam PIP Controls (Shown immediately below On/Off toggle when enabled) */}
+                          {isWebcamEnabled && (
+                            <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-lime-500/30 space-y-2.5 animate-in fade-in slide-in-from-top-2">
+                              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                                <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5 text-lime-500" /> Webcam PIP Controls
+                                </h4>
+                                <span className="text-[10px] font-bold bg-lime-500/15 text-lime-600 dark:text-lime-400 px-2 py-0.5 rounded-full">
+                                  Active
+                                </span>
+                              </div>
+
+                              {/* Camera Device */}
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                  Camera Device
+                                </Label>
+                                <Select
+                                  value={selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")}
+                                  onValueChange={(val) => handleSelectCameraDevice(val)}
+                                  disabled={cameraDevices.length === 0}
+                                >
+                                  <SelectTrigger className="w-full h-8 text-xs font-medium rounded-xl bg-white dark:bg-slate-800">
+                                    <SelectValue placeholder="Select camera" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {cameraDevices.length === 0 ? (
+                                      <SelectItem value="none" disabled>No camera found</SelectItem>
+                                    ) : (
+                                      cameraDevices.map((dev) => (
+                                        <SelectItem key={dev.deviceId} value={dev.deviceId}>
+                                          {dev.label || `Camera (${dev.deviceId.slice(0, 5)}...)`}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Corner Position */}
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                  PIP Position Corner
+                                </Label>
+                                <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                                  {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
+                                    <button
+                                      key={c}
+                                      type="button"
+                                      onClick={() => setWebcamCorner(c)}
+                                      className={`text-[10px] font-bold py-1 px-1.5 rounded-lg capitalize transition-all ${webcamCorner === c
                                         ? "bg-lime-500 text-white shadow-sm"
                                         : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                    }`}
-                                  >
-                                    {c.replace("-", " ")}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {c.replace("-", " ")}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
 
-                            {/* Frame Shape */}
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                                PIP Frame Shape
-                              </Label>
-                              <div className="flex items-center gap-1">
-                                {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                  <button
-                                    key={s}
-                                    type="button"
-                                    onClick={() => setWebcamShape(s)}
-                                    className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${
-                                      webcamShape === s
+                              {/* Frame Shape */}
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                  PIP Frame Shape
+                                </Label>
+                                <div className="flex items-center gap-1">
+                                  {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => setWebcamShape(s)}
+                                      className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamShape === s
                                         ? "bg-lime-500 text-white border-lime-600 shadow-sm"
                                         : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                                    }`}
-                                  >
-                                    {s.replace("-", " ")}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {s.replace("-", " ")}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
 
-                            {/* PIP Preview Size */}
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
-                                PIP Preview Size
-                              </Label>
-                              <div className="flex items-center gap-1">
-                                {(["small", "medium", "large"] as WebcamSize[]).map((sz) => (
-                                  <button
-                                    key={sz}
-                                    type="button"
-                                    onClick={() => setWebcamSize(sz)}
-                                    className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${
-                                      webcamSize === sz
+                              {/* PIP Preview Size */}
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-semibold text-slate-600 dark:text-slate-400">
+                                  PIP Preview Size
+                                </Label>
+                                <div className="flex items-center gap-1">
+                                  {(["small", "medium", "large"] as WebcamSize[]).map((sz) => (
+                                    <button
+                                      key={sz}
+                                      type="button"
+                                      onClick={() => setWebcamSize(sz)}
+                                      className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamSize === sz
                                         ? "bg-lime-500 text-white border-lime-600 shadow-sm"
                                         : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                                    }`}
-                                  >
-                                    {sz}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {sz}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Row 2: Resolution Selector Pills */}
-                        <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Resolution Preset
-                          </Label>
-                          <div className="grid grid-cols-4 gap-1">
-                            {(["720p", "1080p", "1440p", "4k"] as ResolutionPreset[]).map((res) => (
-                              <button
-                                key={res}
-                                type="button"
-                                onClick={() => handleSelectResolution(res)}
-                                className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${
-                                  resolution === res
+                          {/* Row 2: Resolution Selector Pills */}
+                          <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              Resolution Preset
+                            </Label>
+                            <div className="grid grid-cols-4 gap-1">
+                              {(["720p", "1080p", "1440p", "4k"] as ResolutionPreset[]).map((res) => (
+                                <button
+                                  key={res}
+                                  type="button"
+                                  onClick={() => handleSelectResolution(res)}
+                                  className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
                                     ? "bg-lime-500 text-white border-lime-500 shadow-sm"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                              >
-                                {res}
-                              </button>
-                            ))}
+                                    }`}
+                                >
+                                  {res}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Row 2b: Frame Rate (FPS) Selector Pills */}
-                        <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Frame Rate (FPS)
-                          </Label>
-                          <div className="grid grid-cols-4 gap-1">
-                            {([15, 24, 30, 60] as TargetFps[]).map((rate) => (
-                              <button
-                                key={rate}
-                                type="button"
-                                onClick={() => handleSelectFps(rate)}
-                                className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${
-                                  fps === rate
+                          {/* Row 2b: Frame Rate (FPS) Selector Pills */}
+                          <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              Frame Rate (FPS)
+                            </Label>
+                            <div className="grid grid-cols-4 gap-1">
+                              {([15, 24, 30, 60] as TargetFps[]).map((rate) => (
+                                <button
+                                  key={rate}
+                                  type="button"
+                                  onClick={() => handleSelectFps(rate)}
+                                  className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
                                     ? "bg-lime-500 text-white border-lime-500 shadow-sm"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                              >
-                                {rate} FPS
-                              </button>
-                            ))}
+                                    }`}
+                                >
+                                  {rate} FPS
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Row 3: Countdown Delay Pills */}
-                        <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                            Countdown Timer
-                          </Label>
-                          <div className="grid grid-cols-3 gap-1">
-                            {[
-                              { value: 0, label: "0s" },
-                              { value: 3, label: "3s" },
-                              { value: 5, label: "5s" },
-                            ].map((cd) => (
-                              <button
-                                key={cd.value}
-                                type="button"
-                                onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
-                                className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${
-                                  countdownDelay === cd.value
+                          {/* Row 3: Countdown Delay Pills */}
+                          <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              Countdown Timer
+                            </Label>
+                            <div className="grid grid-cols-3 gap-1">
+                              {[
+                                { value: 0, label: "0s" },
+                                { value: 3, label: "3s" },
+                                { value: 5, label: "5s" },
+                              ].map((cd) => (
+                                <button
+                                  key={cd.value}
+                                  type="button"
+                                  onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
+                                  className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
                                     ? "bg-lime-500 text-white border-lime-500 shadow-sm"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                              >
-                                {cd.label}
-                              </button>
-                            ))}
+                                    }`}
+                                >
+                                  {cd.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Row 4: Bitrate Quality Pills */}
-                        <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                          <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                            <Zap className="w-3 h-3 text-lime-500" /> Bitrate Quality
-                          </Label>
-                          <div className="grid grid-cols-3 gap-1">
-                            {[
-                              { id: "compact", label: "Compact" },
-                              { id: "balanced", label: "Balanced" },
-                              { id: "max_quality", label: "Max" },
-                            ].map((b) => (
-                              <button
-                                key={b.id}
-                                type="button"
-                                onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
-                                className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${
-                                  compressionMode === b.id
+                          {/* Row 4: Bitrate Quality Pills */}
+                          <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
+                            <Label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                              <Zap className="w-3 h-3 text-lime-500" /> Recording Quality (bitrate)
+                            </Label>
+                            <div className="grid grid-cols-3 gap-1">
+                              {[
+                                { id: "compact", label: "Compact" },
+                                { id: "balanced", label: "Balanced" },
+                                { id: "max_quality", label: "Max" },
+                              ].map((b) => (
+                                <button
+                                  key={b.id}
+                                  type="button"
+                                  onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
+                                  className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
                                     ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-sm"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    }`}
+                                >
+                                  {b.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live Mid-Recording Controls Bar */}
+                      {(recordState === "recording" || recordState === "paused") && (
+                        <div className="p-4 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/15 text-white shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
+                                Live Recording Controls
+                              </h4>
+                            </div>
+                            <span className="text-[10px] font-bold bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
+                              Live Active
+                            </span>
+                          </div>
+
+                          {/* Mic & Webcam Toggles */}
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                              type="button"
+                              onClick={handleToggleMic}
+                              className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${isMicEnabled
+                                ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
+                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
                                 }`}
+                            >
+                              <div
+                                className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                                  }`}
                               >
-                                {b.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                                {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold truncate">Mic Audio</p>
+                                <p className="text-[10px] opacity-75 truncate">
+                                  {isMicEnabled ? "Unmuted" : "Muted"}
+                                </p>
+                              </div>
+                            </button>
 
-                    {/* Live Mid-Recording Controls Bar */}
-                    {(recordState === "recording" || recordState === "paused") && (
-                      <div className="p-4 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/15 text-white shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
-                              Live Recording Controls
-                            </h4>
-                          </div>
-                          <span className="text-[10px] font-bold bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
-                            Live Active
-                          </span>
-                        </div>
-
-                        {/* Mic & Webcam Toggles */}
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <button
-                            type="button"
-                            onClick={handleToggleMic}
-                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                              isMicEnabled
+                            <button
+                              type="button"
+                              onClick={handleToggleWebcam}
+                              className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${isWebcamEnabled
                                 ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
                                 : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                            }`}
-                          >
-                            <div
-                              className={`p-1.5 rounded-lg shrink-0 ${
-                                isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
-                              }`}
+                                }`}
                             >
-                              {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate">Mic Audio</p>
-                              <p className="text-[10px] opacity-75 truncate">
-                                {isMicEnabled ? "Unmuted" : "Muted"}
-                              </p>
-                            </div>
-                          </button>
+                              <div
+                                className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                                  }`}
+                              >
+                                {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold truncate">Webcam PIP</p>
+                                <p className="text-[10px] opacity-75 truncate">
+                                  {isWebcamEnabled ? "Active" : "Disabled"}
+                                </p>
+                              </div>
+                            </button>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={handleToggleWebcam}
-                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                              isWebcamEnabled
-                                ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                            }`}
-                          >
-                            <div
-                              className={`p-1.5 rounded-lg shrink-0 ${
-                                isWebcamEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
-                              }`}
-                            >
-                              {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate">Webcam PIP</p>
-                              <p className="text-[10px] opacity-75 truncate">
-                                {isWebcamEnabled ? "Active" : "Disabled"}
-                              </p>
-                            </div>
-                          </button>
-                        </div>
-
-                        {/* Live Advanced Webcam Controls */}
-                        {isWebcamEnabled && (
-                          <div className="space-y-2 pt-2 border-t border-white/10">
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                PIP Corner Position
-                              </Label>
-                              <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                                {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
-                                  <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setWebcamCorner(c)}
-                                    className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${
-                                      webcamCorner === c
+                          {/* Live Advanced Webcam Controls */}
+                          {isWebcamEnabled && (
+                            <div className="space-y-2 pt-2 border-t border-white/10">
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  PIP Corner Position
+                                </Label>
+                                <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                                  {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
+                                    <button
+                                      key={c}
+                                      type="button"
+                                      onClick={() => setWebcamCorner(c)}
+                                      className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
                                         ? "bg-lime-500 text-slate-950 shadow-sm"
                                         : "text-slate-300 hover:bg-white/10"
-                                    }`}
-                                  >
-                                    {c.replace("-", " ")}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {c.replace("-", " ")}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
 
-                            <div className="space-y-1">
-                              <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                PIP Frame Shape
-                              </Label>
-                              <div className="flex items-center gap-1">
-                                {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                  <button
-                                    key={s}
-                                    type="button"
-                                    onClick={() => setWebcamShape(s)}
-                                    className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${
-                                      webcamShape === s
+                              <div className="space-y-1">
+                                <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  PIP Frame Shape
+                                </Label>
+                                <div className="flex items-center gap-1">
+                                  {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => setWebcamShape(s)}
+                                      className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${webcamShape === s
                                         ? "bg-lime-500 text-slate-950 border-lime-500 shadow-sm"
                                         : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                                    }`}
-                                  >
-                                    {s.replace("-", " ")}
-                                  </button>
-                                ))}
+                                        }`}
+                                    >
+                                      {s.replace("-", " ")}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Primary Studio Action Bar */}
+                      <div className="pt-1">
+                        {recordState === "idle" && (
+                          <Button
+                            size="lg"
+                            onClick={startRecording}
+                            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/20 text-base gap-3 group transition-all hover:scale-[1.02]"
+                          >
+                            <Disc className="w-5 h-5 animate-pulse text-white" />
+                            Start Screen Recording
+                          </Button>
+                        )}
+
+                        {recordState === "recording" && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button
+                              size="lg"
+                              variant="outline"
+                              onClick={pauseRecording}
+                              className="font-bold rounded-2xl py-6 border-slate-300 dark:border-slate-700 gap-2"
+                            >
+                              <Pause className="w-5 h-5 text-amber-500 fill-current" /> Pause
+                            </Button>
+
+                            <Button
+                              size="lg"
+                              onClick={stopRecording}
+                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
+                            >
+                              <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
+                            </Button>
+                          </div>
+                        )}
+
+                        {recordState === "paused" && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <Button
+                              size="lg"
+                              onClick={resumeRecording}
+                              className="bg-lime-600 hover:bg-lime-700 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
+                            >
+                              <Play className="w-5 h-5 fill-current" /> Resume
+                            </Button>
+
+                            <Button
+                              size="lg"
+                              onClick={stopRecording}
+                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
+                            >
+                              <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
+                            </Button>
                           </div>
                         )}
                       </div>
-                    )}
-
-                    {/* Primary Studio Action Bar */}
-                    <div className="pt-1">
-                      {recordState === "idle" && (
-                        <Button
-                          size="lg"
-                          onClick={startRecording}
-                          className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/20 text-base gap-3 group transition-all hover:scale-[1.02]"
-                        >
-                          <Disc className="w-5 h-5 animate-pulse text-white" />
-                          Start Screen Studio
-                        </Button>
-                      )}
-
-                      {recordState === "recording" && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <Button
-                            size="lg"
-                            variant="outline"
-                            onClick={pauseRecording}
-                            className="font-bold rounded-2xl py-6 border-slate-300 dark:border-slate-700 gap-2"
-                          >
-                            <Pause className="w-5 h-5 text-amber-500 fill-current" /> Pause
-                          </Button>
-
-                          <Button
-                            size="lg"
-                            onClick={stopRecording}
-                            className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
-                          >
-                            <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
-                          </Button>
-                        </div>
-                      )}
-
-                      {recordState === "paused" && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <Button
-                            size="lg"
-                            onClick={resumeRecording}
-                            className="bg-lime-600 hover:bg-lime-700 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
-                          >
-                            <Play className="w-5 h-5 fill-current" /> Resume
-                          </Button>
-
-                          <Button
-                            size="lg"
-                            onClick={stopRecording}
-                            className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
-                          >
-                            <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* State: RECORDED / PREVIEW & UPLOAD */}
               {(recordState === "recorded" || recordState === "uploading") && (
@@ -1007,11 +988,10 @@ export default function ScreenRecordDrawer({
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5 min-w-0">
                               <div
-                                className={`p-2 rounded-xl shrink-0 transition-colors ${
-                                  requireHls
-                                    ? "bg-lime-500/15 text-lime-600 dark:text-lime-400"
-                                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-400"
-                                }`}
+                                className={`p-2 rounded-xl shrink-0 transition-colors ${requireHls
+                                  ? "bg-lime-500/15 text-lime-600 dark:text-lime-400"
+                                  : "bg-slate-200/60 dark:bg-slate-800 text-slate-400"
+                                  }`}
                               >
                                 <Layers className="w-4 h-4" />
                               </div>
@@ -1036,14 +1016,12 @@ export default function ScreenRecordDrawer({
                               aria-checked={requireHls}
                               disabled={uploading}
                               onClick={() => setRequireHls(!requireHls)}
-                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
-                              }`}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
+                                }`}
                             >
                               <span
-                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                                  requireHls ? "translate-x-5" : "translate-x-0"
-                                }`}
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${requireHls ? "translate-x-5" : "translate-x-0"
+                                  }`}
                               />
                             </button>
                           </div>
