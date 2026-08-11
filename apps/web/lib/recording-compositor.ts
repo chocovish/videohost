@@ -18,6 +18,8 @@ export class RecordingCompositor {
 
   private animationFrameId: number | null = null;
   private isRunning: boolean = false;
+  private worker: Worker | null = null;
+  private workerUrl: string | null = null;
 
   public webcamCorner: WebcamCorner = "bottom-left";
   public webcamShape: WebcamShape = "circle";
@@ -72,6 +74,7 @@ export class RecordingCompositor {
 
   public start(fps: number = 30): MediaStream {
     this.isRunning = true;
+    this.startWorkerTimer(fps);
     this.renderLoop();
     return this.canvas.captureStream(fps);
   }
@@ -82,16 +85,79 @@ export class RecordingCompositor {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+
+    this.stopWorkerTimer();
+
     this.screenVideo.pause();
     this.screenVideo.srcObject = null;
     this.webcamVideo.pause();
     this.webcamVideo.srcObject = null;
   }
 
+  private startWorkerTimer(fps: number) {
+    if (typeof window === "undefined" || typeof Worker === "undefined") return;
+
+    try {
+      const code = `
+        let timerId = null;
+        self.onmessage = function(e) {
+          if (e.data.action === "start") {
+            const interval = Math.max(10, Math.floor(1000 / (e.data.fps || 30)));
+            if (timerId) clearInterval(timerId);
+            timerId = setInterval(() => {
+              self.postMessage("tick");
+            }, interval);
+          } else if (e.data.action === "stop") {
+            if (timerId) {
+              clearInterval(timerId);
+              timerId = null;
+            }
+          }
+        };
+      `;
+      const blob = new Blob([code], { type: "application/javascript" });
+      this.workerUrl = URL.createObjectURL(blob);
+      this.worker = new Worker(this.workerUrl);
+
+      this.worker.onmessage = () => {
+        if (this.isRunning && typeof document !== "undefined" && document.hidden) {
+          this.renderFrame();
+        }
+      };
+
+      this.worker.postMessage({ action: "start", fps });
+    } catch (e) {
+      console.warn("Failed to initialize background worker timer:", e);
+    }
+  }
+
+  private stopWorkerTimer() {
+    if (this.worker) {
+      try {
+        this.worker.postMessage({ action: "stop" });
+        this.worker.terminate();
+      } catch (e) {
+        console.warn("Error stopping worker timer:", e);
+      }
+      this.worker = null;
+    }
+
+    if (this.workerUrl) {
+      try {
+        URL.revokeObjectURL(this.workerUrl);
+      } catch (e) {
+        console.warn("Error revoking worker URL:", e);
+      }
+      this.workerUrl = null;
+    }
+  }
+
   private renderLoop = () => {
     if (!this.isRunning) return;
 
-    this.renderFrame();
+    if (typeof document === "undefined" || !document.hidden) {
+      this.renderFrame();
+    }
     this.animationFrameId = requestAnimationFrame(this.renderLoop);
   };
 
