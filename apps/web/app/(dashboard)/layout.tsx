@@ -65,7 +65,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex bg-[hsl(var(--background))] overflow-x-hidden">
+      <div className="h-screen flex bg-[hsl(var(--background))] overflow-hidden">
         <Sidebar
           organizationName={orgName}
           usedBytes={usedBytes}
@@ -74,14 +74,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
           currentTheme={themeId}
           initialViewMode={viewMode}
         />
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <Navbar
             userEmail={userEmail}
             userName={userName}
             role={role}
             organizationName={orgName}
           />
-          <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
+          <div className="flex-1 overflow-y-auto w-full">
+            <main className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
+          </div>
         </div>
       </div>
     </SidebarProvider>

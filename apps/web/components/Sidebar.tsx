@@ -150,7 +150,7 @@ export default function Sidebar({
   const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;
 
   const SidebarInner = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className="flex flex-col justify-between h-full p-4">
+    <div className="flex flex-col justify-between h-full p-4 overflow-y-auto">
       <div className="space-y-5">
         {/* Brand Header */}
         <div className="flex items-center justify-between">
@@ -370,7 +370,7 @@ export default function Sidebar({
 
       {/* Desktop Sticky Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl h-screen sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${
+        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl h-full sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${
           isCollapsed ? "w-20" : "w-64"
         }`}
       >

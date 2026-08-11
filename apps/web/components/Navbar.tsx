@@ -21,7 +21,7 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
   const userInitial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 border-b border-[hsl(var(--border))] bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
+    <header className="h-16 shrink-0 border-b border-[hsl(var(--border))] bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile Hamburger Button */}
         <Button
