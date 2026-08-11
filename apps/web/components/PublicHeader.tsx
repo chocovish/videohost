@@ -43,7 +43,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
               className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center gap-2"
             >
               <Video className="w-4 h-4" />
-              <span>Free Recorder</span>
+              <span>Recorder</span>
               <span className="px-1.5 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[10px] uppercase tracking-wider font-extrabold ml-0.5">
                 Free
               </span>
@@ -78,7 +78,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
               className="px-3 py-1.5 rounded-xl text-xs font-bold border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center gap-1.5"
             >
               <Video className="w-3.5 h-3.5" />
-              <span>Free Recorder</span>
+              <span>Recorder</span>
               <span className="px-1.5 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[9px] uppercase tracking-wider font-extrabold ml-0.5">
                 Free
               </span>
