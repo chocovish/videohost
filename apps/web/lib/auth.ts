@@ -186,14 +186,69 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { viewMode: true, activeOrganizationId: true },
+          select: { id: true, name: true, email: true, viewMode: true, activeOrganizationId: true },
         });
-        token.viewMode = dbUser?.viewMode || "CREATOR";
 
-        const memberships = await db.organizationMember.findMany({
+        if (!dbUser) {
+          token.id = undefined;
+          token.organizationId = undefined;
+          return token;
+        }
+
+        token.viewMode = dbUser.viewMode || "CREATOR";
+
+        let memberships = await db.organizationMember.findMany({
           where: { userId: token.id as string },
           include: { organization: true },
         });
+
+        if (memberships.length === 0) {
+          try {
+            let defaultPlan = await db.plan.findFirst({ where: { name: "free" } });
+            if (!defaultPlan) {
+              defaultPlan = await db.plan.create({
+                data: {
+                  name: "free",
+                  minutesLimit: 200,
+                  maxResolution: "1080p",
+                  seatLimit: 3,
+                  priceMonthlyCents: 0,
+                },
+              });
+            }
+
+            const userName = dbUser.name || dbUser.email?.split("@")[0] || "User";
+            const orgName = `${userName}'s Workspace`;
+            const baseSlug = userName.toLowerCase().replace(/[^a-z0-9]/g, "-") || "workspace";
+            const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
+
+            const newOrg = await db.organization.create({
+              data: {
+                name: orgName,
+                slug,
+                planId: defaultPlan.id,
+                members: {
+                  create: {
+                    userId: dbUser.id,
+                    role: "OWNER",
+                  },
+                },
+              },
+            });
+
+            await db.user.update({
+              where: { id: dbUser.id },
+              data: { activeOrganizationId: newOrg.id },
+            });
+
+            memberships = await db.organizationMember.findMany({
+              where: { userId: token.id as string },
+              include: { organization: true },
+            });
+          } catch (e) {
+            console.error("Error auto-creating organization for user:", e);
+          }
+        }
 
         if (memberships.length > 0) {
           let targetOrgId: string | null = (trigger === "update" && session?.organizationId) ? session.organizationId : null;
@@ -235,11 +290,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       return token;
-
-      return token;
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && token.id && token.organizationId) {
         session.user.id = token.id as string;
         (session.user as any).viewMode = (token.viewMode as string) || "CREATOR";
         (session as any).organizationId = token.organizationId;
@@ -248,6 +301,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session as any).role = token.role;
         (session as any).themeId = token.themeId;
         (session as any).memberships = token.memberships;
+      } else {
+        session.user = null as any;
       }
       return session;
     },

@@ -17,7 +17,7 @@ export default async function DashboardPage({
   const querySuffix = queryString ? `?${queryString}` : "";
 
   const session = await auth();
-  if (!session || !session.user) {
+  if (!session || !session.user || !(session as any).organizationId) {
     redirect("/auth/login");
   }
 
