@@ -18,6 +18,7 @@ import {
   VideoMetadata,
   extractVideoMetadataAndThumbnail,
   formatDuration,
+  formatBytes,
 } from "@/lib/video-utils";
 
 interface UploadModalProps {
@@ -44,6 +45,8 @@ export default function UploadModal({
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+  const [checkingQuota, setCheckingQuota] = useState(false);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
 
   const resetForm = () => {
     setFile(null);
@@ -53,6 +56,8 @@ export default function UploadModal({
     setError("");
     setProgress(0);
     setStatusText("");
+    setCheckingQuota(false);
+    setIsQuotaExceeded(false);
     if (metadata?.thumbnailUrl) {
       URL.revokeObjectURL(metadata.thumbnailUrl);
     }
@@ -74,6 +79,35 @@ export default function UploadModal({
         const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
         setTitle(nameWithoutExt);
       }
+
+      setCheckingQuota(true);
+      setIsQuotaExceeded(false);
+
+      // Check remaining storage before allowing upload
+      try {
+        const usageRes = await fetch("/api/v1/usage");
+        if (usageRes.ok) {
+          const usageData = await usageRes.json();
+          if (usageData.usage) {
+            const { usedBytes, storageLimitBytes, isLimitReached } = usageData.usage;
+            const remainingBytes = Math.max(0, storageLimitBytes - usedBytes);
+            if (isLimitReached || selectedFile.size > remainingBytes) {
+              setIsQuotaExceeded(true);
+              setError(
+                `Selected file size (${formatBytes(selectedFile.size)}) exceeds your available storage quota (${formatBytes(remainingBytes)} remaining out of ${formatBytes(storageLimitBytes)}). Upload is disabled.`
+              );
+            } else {
+              setIsQuotaExceeded(false);
+              setError("");
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Quota check error:", e);
+      } finally {
+        setCheckingQuota(false);
+      }
+
       const meta = await extractVideoMetadataAndThumbnail(selectedFile);
       setMetadata(meta);
     }
@@ -81,9 +115,35 @@ export default function UploadModal({
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title.trim()) return;
+    if (!file || !title.trim() || checkingQuota || isQuotaExceeded) return;
 
     setError("");
+    setCheckingQuota(true);
+
+    // Validate storage quota before starting upload
+    try {
+      const usageRes = await fetch("/api/v1/usage");
+      if (usageRes.ok) {
+        const usageData = await usageRes.json();
+        if (usageData.usage) {
+          const { usedBytes, storageLimitBytes, isLimitReached } = usageData.usage;
+          const remainingBytes = Math.max(0, storageLimitBytes - usedBytes);
+          if (isLimitReached || file.size > remainingBytes) {
+            setIsQuotaExceeded(true);
+            setError(
+              `Cannot upload video (${formatBytes(file.size)}). Your available storage quota is ${formatBytes(remainingBytes)} remaining out of ${formatBytes(storageLimitBytes)}.`
+            );
+            setCheckingQuota(false);
+            return;
+          }
+        }
+      }
+    } catch (quotaErr) {
+      console.warn("Pre-upload quota check failed:", quotaErr);
+    } finally {
+      setCheckingQuota(false);
+    }
+
     setUploading(true);
 
     try {
@@ -99,6 +159,12 @@ export default function UploadModal({
           setStatusText(status);
         },
       });
+
+      // Dispatch live usage update event for Sidebar
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("usage-updated"));
+        window.dispatchEvent(new CustomEvent("video-uploaded"));
+      }
 
       setTimeout(() => {
         setUploading(false);
@@ -205,6 +271,9 @@ export default function UploadModal({
                   ? "Transcode video into adaptive HLS stream (480p-4K)"
                   : "Store original video & play directly without transcoding"}
               </p>
+              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium pt-0.5">
+                Note: HLS takes more storage space (original file + converted renditions)
+              </p>
             </div>
             <button
               id="require-hls-toggle"
@@ -287,10 +356,18 @@ export default function UploadModal({
             </Button>
             <Button
               type="submit"
-              disabled={uploading || !file}
+              disabled={uploading || !file || checkingQuota || isQuotaExceeded}
               className="w-full sm:w-auto min-w-[140px]"
             >
-              {uploading ? "Processing..." : requireHls ? "Upload & Transcode" : "Upload Video"}
+              {uploading
+                ? "Processing..."
+                : checkingQuota
+                ? "Checking Quota..."
+                : isQuotaExceeded
+                ? "Quota Exceeded"
+                : requireHls
+                ? "Upload & Transcode"
+                : "Upload Video"}
             </Button>
           </DialogFooter>
         </form>

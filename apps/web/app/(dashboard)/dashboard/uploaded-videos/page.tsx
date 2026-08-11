@@ -19,6 +19,7 @@ import {
   Trash2,
   Share2,
   Video,
+  HardDrive,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
@@ -26,7 +27,7 @@ import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatDuration } from "@/lib/video-utils";
+import { formatDuration, formatBytes } from "@/lib/video-utils";
 
 interface FolderItem {
   id: string;
@@ -43,6 +44,8 @@ interface VideoItem {
   status: "UPLOADING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
   progress?: number;
   durationSeconds?: number;
+  sizeBytes?: number | null;
+  requireHls?: boolean;
   thumbnailUrl?: string;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
   createdAt: string;
@@ -120,6 +123,10 @@ function UploadedVideosContent() {
         fetchFolders(currentFolderId),
         fetchVideos(currentFolderId),
       ]);
+      router.refresh();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("usage-updated"));
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -439,6 +446,13 @@ function UploadedVideosContent() {
                     {video.description && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-2">{video.description}</p>
                     )}
+                    <div className="flex items-center gap-2 pt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                      <span className="inline-flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px]" title="Video file size">
+                        <HardDrive className="w-3 h-3 text-slate-400" />
+                        {formatBytes(video.sizeBytes)}
+                        {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

@@ -172,3 +172,14 @@ export function formatDuration(sec?: number): string {
   const s = Math.floor(sec % 60);
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
+
+export function formatBytes(bytes?: number | bigint | string | null): string {
+  if (bytes === undefined || bytes === null) return "Not available";
+  const num = typeof bytes === "bigint" ? Number(bytes) : typeof bytes === "string" ? parseFloat(bytes) : bytes;
+  if (isNaN(num) || num < 0) return "Not available";
+  if (num === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(num) / Math.log(k));
+  return `${parseFloat((num / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}

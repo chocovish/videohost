@@ -28,6 +28,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
       fileName: file.name,
       contentType: file.type || "video/mp4",
       requireHls,
+      sizeBytes: file.size,
       durationSeconds: metadata?.durationSeconds || undefined,
       sourceWidth: metadata?.sourceWidth || undefined,
       sourceHeight: metadata?.sourceHeight || undefined,

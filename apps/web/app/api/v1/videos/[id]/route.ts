@@ -15,6 +15,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
+  const computedSizeBytes = video.sizeBytes !== null ? Number(video.sizeBytes) : null;
+
   return NextResponse.json({
     id: video.id,
     title: video.title,
@@ -24,6 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     progress: video.progress || 0,
     requireHls: video.requireHls,
     durationSeconds: video.durationSeconds,
+    sizeBytes: computedSizeBytes,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     shareAccessMode: video.shareAccessMode,
     playbackUrl: getPlaybackUrl(video),
@@ -32,6 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
       playlistUrl: getPublicCdnUrl(r.storageKey),
+      sizeBytes: Number(r.sizeBytes || 0),
     })),
     createdAt: video.createdAt,
   });

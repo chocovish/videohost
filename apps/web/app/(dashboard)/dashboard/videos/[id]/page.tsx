@@ -9,6 +9,8 @@ import ShareModal from "@/components/ShareModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+import { formatBytes } from "@/lib/video-utils";
+
 interface VideoDetail {
   id: string;
   title: string;
@@ -18,11 +20,12 @@ interface VideoDetail {
   progress?: number;
   requireHls?: boolean;
   durationSeconds?: number;
+  sizeBytes?: number | null;
   sourceResolution?: string;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
   playbackUrl?: string;
   thumbnailUrl?: string;
-  renditions: { resolution: string; bitrateKbps: number; playlistUrl: string }[];
+  renditions: { resolution: string; bitrateKbps: number; playlistUrl: string; sizeBytes?: number }[];
   createdAt: string;
 }
 
@@ -333,7 +336,7 @@ export default function VideoDetailPage() {
                               {rend.resolution}
                             </span>
                             <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
-                              {rend.bitrateKbps} kbps bitrate
+                              {rend.bitrateKbps} kbps bitrate{rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
                             </span>
                           </div>
                           <button
@@ -430,6 +433,17 @@ export default function VideoDetailPage() {
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Source Resolution</span>
               <span className="font-semibold text-[hsl(var(--foreground))]">{video.sourceResolution || "Probing"}</span>
+            </div>
+            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
+              <span className="text-[hsl(var(--muted-foreground))]">Total File Size</span>
+              <span className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                {formatBytes(video.sizeBytes)}
+                {video.requireHls && video.status !== "READY" && (
+                  <span className="text-[10px] text-amber-600 font-medium bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                    Original File
+                  </span>
+                )}
+              </span>
             </div>
             <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
               <span className="text-[hsl(var(--muted-foreground))]">Uploaded On</span>

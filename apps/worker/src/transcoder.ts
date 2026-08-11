@@ -231,11 +231,50 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const finalUploadProgress = calculateUploadProgress(1.0);
     await reporter.report(finalUploadProgress, "PROCESSING");
 
-    const renditionsResult = targetRenditions.map((r) => ({
-      resolution: r.resolution,
-      bitrateKbps: r.bitrateKbps,
-      storageKey: `${s3HlsPrefix}/${r.resolution}/prog.m3u8`,
-    }));
+    // Get original file size
+    const originalSizeBytes = fs.statSync(inputPath).size;
+
+    const renditionsResult = targetRenditions.map((r) => {
+      const renditionDir = path.join(hlsOutputDir, r.resolution);
+      let renditionSizeBytes = 0;
+      if (fs.existsSync(renditionDir)) {
+        const files = fs.readdirSync(renditionDir);
+        for (const file of files) {
+          const filePath = path.join(renditionDir, file);
+          const stat = fs.statSync(filePath);
+          if (stat.isFile()) renditionSizeBytes += stat.size;
+        }
+      }
+      return {
+        resolution: r.resolution,
+        bitrateKbps: r.bitrateKbps,
+        storageKey: `${s3HlsPrefix}/${r.resolution}/prog.m3u8`,
+        sizeBytes: renditionSizeBytes,
+      };
+    });
+
+    // Helper to calculate total HLS output directory size
+    function calculateDirSize(dirPath: string): number {
+      let total = 0;
+      if (!fs.existsSync(dirPath)) return 0;
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          total += calculateDirSize(fullPath);
+        } else if (entry.isFile()) {
+          total += fs.statSync(fullPath).size;
+        }
+      }
+      return total;
+    }
+
+    const totalHlsSizeBytes = calculateDirSize(hlsOutputDir);
+    const combinedSizeBytes = originalSizeBytes + totalHlsSizeBytes;
+
+    console.log(
+      `[Worker] Size stats for ${videoId}: Original=${originalSizeBytes} B, HLS=${totalHlsSizeBytes} B, Combined=${combinedSizeBytes} B`
+    );
 
     const rawResultPayload = {
       videoId,
@@ -247,6 +286,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       sourceHeight: height,
       thumbnailUrl: s3ThumbKey,
       renditions: renditionsResult,
+      originalSizeBytes,
+      totalHlsSizeBytes,
+      combinedSizeBytes,
     };
 
     const resultPayload = useLocalhostForDockerHost(rawResultPayload);

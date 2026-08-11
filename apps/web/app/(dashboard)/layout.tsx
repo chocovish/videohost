@@ -50,13 +50,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     console.error("Error fetching organization name in layout:", e);
   }
 
-  let usageMinutes = 0;
-  let minutesLimit = 200;
+  let usedBytes = 0;
+  let storageLimitBytes = 2 * 1024 * 1024 * 1024;
+  let storageLimitGb = 2;
 
   try {
     const usage = await getOrganizationUsage(orgId);
-    usageMinutes = usage.usedMinutes;
-    minutesLimit = usage.minutesLimit;
+    usedBytes = usage.usedBytes;
+    storageLimitBytes = usage.storageLimitBytes;
+    storageLimitGb = usage.storageLimitGb;
   } catch (e) {
     console.error("Error fetching usage in layout:", e);
   }
@@ -66,8 +68,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="min-h-screen flex bg-[hsl(var(--background))] overflow-x-hidden">
         <Sidebar
           organizationName={orgName}
-          usageMinutes={usageMinutes}
-          minutesLimit={minutesLimit}
+          usedBytes={usedBytes}
+          storageLimitBytes={storageLimitBytes}
+          storageLimitGb={storageLimitGb}
           currentTheme={themeId}
           initialViewMode={viewMode}
         />

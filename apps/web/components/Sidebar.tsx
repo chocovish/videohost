@@ -20,11 +20,15 @@ import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { formatBytes } from "@/lib/video-utils";
 
 interface SidebarProps {
   organizationName: string;
-  usageMinutes: number;
-  minutesLimit: number;
+  usedBytes?: number;
+  storageLimitBytes?: number;
+  storageLimitGb?: number;
+  usageMinutes?: number;
+  minutesLimit?: number;
   currentTheme: string;
   initialViewMode?: string;
   onThemeChange?: (themeId: string) => void;
@@ -32,6 +36,9 @@ interface SidebarProps {
 
 export default function Sidebar({
   organizationName,
+  usedBytes = 0,
+  storageLimitBytes = 2 * 1024 * 1024 * 1024,
+  storageLimitGb = 2,
   usageMinutes,
   minutesLimit,
   currentTheme,
@@ -50,7 +57,43 @@ export default function Sidebar({
   );
   const [isUpdatingMode, setIsUpdatingMode] = useState(false);
 
-  const percentage = Math.min(100, Math.round((usageMinutes / minutesLimit) * 100));
+  const [currentUsedBytes, setCurrentUsedBytes] = useState(usedBytes);
+  const [currentLimitBytes, setCurrentLimitBytes] = useState(storageLimitBytes);
+
+  useEffect(() => {
+    setCurrentUsedBytes(usedBytes);
+    setCurrentLimitBytes(storageLimitBytes);
+  }, [usedBytes, storageLimitBytes]);
+
+  const refreshUsage = async () => {
+    try {
+      const res = await fetch("/api/v1/usage");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.usage) {
+          setCurrentUsedBytes(data.usage.usedBytes);
+          setCurrentLimitBytes(data.usage.storageLimitBytes);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to refresh usage in sidebar:", e);
+    }
+  };
+
+  useEffect(() => {
+    const handleUsageUpdated = () => {
+      refreshUsage();
+    };
+
+    window.addEventListener("usage-updated", handleUsageUpdated);
+    window.addEventListener("video-uploaded", handleUsageUpdated);
+    return () => {
+      window.removeEventListener("usage-updated", handleUsageUpdated);
+      window.removeEventListener("video-updated", handleUsageUpdated);
+    };
+  }, []);
+
+  const percentage = Math.min(100, Math.round((currentUsedBytes / currentLimitBytes) * 100));
 
   useEffect(() => {
     if ((session?.user as any)?.viewMode) {
@@ -235,7 +278,7 @@ export default function Sidebar({
                     <HardDrive className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Storage Quota
                   </span>
                   <span className="text-[hsl(var(--muted-foreground))] font-medium">
-                    {usageMinutes} / {minutesLimit}m
+                    {formatBytes(currentUsedBytes)} / {formatBytes(currentLimitBytes)}
                   </span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
@@ -246,12 +289,12 @@ export default function Sidebar({
                 </div>
                 {percentage >= 80 && (
                   <p className="text-[10px] text-amber-600 font-medium">
-                    {percentage >= 100 ? "Quota limit reached!" : "Approaching 80% limit"}
+                    {percentage >= 100 ? "Storage limit reached!" : "Approaching 80% limit"}
                   </p>
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center gap-1" title={`Storage: ${usageMinutes}/${minutesLimit}m`}>
+              <div className="flex flex-col items-center gap-1" title={`Storage: ${formatBytes(currentUsedBytes)} / ${formatBytes(currentLimitBytes)}`}>
                 <HardDrive className="w-4 h-4 text-[hsl(var(--primary))]" />
                 <span className="text-[10px] font-bold text-[hsl(var(--foreground))]">{percentage}%</span>
               </div>

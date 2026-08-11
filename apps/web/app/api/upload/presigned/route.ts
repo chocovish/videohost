@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden: insufficient permissions" }, { status: 403 });
     }
 
-    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
+    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sizeBytes, sourceWidth, sourceHeight } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -36,12 +36,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // Check plan quota limits
+    // Check plan quota storage limits
     const usage = await getOrganizationUsage(orgId);
-    if (usage.isLimitReached) {
+    const incomingSize = sizeBytes ? Number(sizeBytes) : 0;
+    if (usage.isLimitReached || (incomingSize > 0 && usage.usedBytes + incomingSize > usage.storageLimitBytes)) {
       return NextResponse.json(
         {
-          error: "Organization video minutes quota limit reached. Upgrade plan or contact support for custom quota.",
+          error: `Organization storage limit reached (${usage.storageLimitGb}GB plan limit). Upgrade plan or delete videos to free space.`,
           code: "QUOTA_EXCEEDED",
           usage,
         },
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create DB Video record
+    const isHls = Boolean(requireHls);
+
+    // Create DB Video record (for non-HLS videos, store sizeBytes immediately upon upload; for HLS videos, store after processing)
     const video = await db.video.create({
       data: {
         organizationId: orgId,
@@ -59,7 +62,8 @@ export async function POST(req: Request) {
         description: description || null,
         status: "UPLOADING",
         originalKey: `temp-key`,
-        requireHls: Boolean(requireHls),
+        requireHls: isHls,
+        sizeBytes: sizeBytes ? BigInt(sizeBytes) : null,
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
         sourceHeight: sourceHeight ? Math.round(Number(sourceHeight)) : null,

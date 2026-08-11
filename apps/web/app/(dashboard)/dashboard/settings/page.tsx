@@ -34,6 +34,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { formatBytes } from "@/lib/video-utils";
 
 interface Member {
   id: string;
@@ -95,6 +96,13 @@ export default function SettingsPage() {
   const [inviteError, setInviteError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
 
+  // Usage state
+  const [usageInfo, setUsageInfo] = useState<{
+    usedBytes: number;
+    storageLimitBytes: number;
+    storageLimitGb: number;
+  } | null>(null);
+
   // Custom limit request state
   const [customLimitInput, setCustomLimitInput] = useState("");
   const [requestSubmitted, setRequestSubmitted] = useState(false);
@@ -114,9 +122,13 @@ export default function SettingsPage() {
 
   const fetchOrgData = async () => {
     try {
-      const res = await fetch("/api/organization");
-      if (res.ok) {
-        const data = await res.json();
+      const [resOrg, resUsage] = await Promise.all([
+        fetch("/api/organization"),
+        fetch("/api/v1/usage"),
+      ]);
+
+      if (resOrg.ok) {
+        const data = await resOrg.json();
         if (data.organization) {
           setOrgName(data.organization.name || "");
           setInitialOrgName(data.organization.name || "");
@@ -126,6 +138,13 @@ export default function SettingsPage() {
           if (data.organization.invitations) {
             setInvitations(data.organization.invitations);
           }
+        }
+      }
+
+      if (resUsage.ok) {
+        const usageData = await resUsage.json();
+        if (usageData.usage) {
+          setUsageInfo(usageData.usage);
         }
       }
     } catch (err) {
@@ -785,32 +804,54 @@ export default function SettingsPage() {
 
             <div className="p-4 rounded-xl bg-[hsl(var(--muted))]/60 space-y-2">
               <div className="flex justify-between text-xs font-semibold">
-                <span>Free Plan Limit</span>
-                <span className="text-[hsl(var(--primary))]">200 Video Minutes</span>
+                <span>Plan Storage Limit</span>
+                <span className="text-[hsl(var(--primary))] font-bold">
+                  {usageInfo ? `${usageInfo.storageLimitGb} GB Storage` : "2 GB Storage"}
+                </span>
               </div>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                Adaptive HLS encoding and original uploads consume stored minute quotas.
+
+              {usageInfo && (
+                <div className="space-y-1 pt-1">
+                  <div className="flex justify-between text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
+                    <span>Current Usage</span>
+                    <span className="font-semibold text-[hsl(var(--foreground))]">
+                      {formatBytes(usageInfo.usedBytes)} / {formatBytes(usageInfo.storageLimitBytes)}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full bg-[hsl(var(--primary))] rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, Math.round((usageInfo.usedBytes / usageInfo.storageLimitBytes) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-[hsl(var(--muted-foreground))] pt-1">
+                Adaptive HLS encoding and original video uploads consume total storage quota.
               </p>
             </div>
 
             {/* Custom Quota Override Request */}
             <div className="pt-2">
               <h4 className="font-bold text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                Need a Custom Minute Limit?
+                Need a Custom Storage Limit?
               </h4>
               <form onSubmit={handleCustomLimitRequest} className="space-y-3">
                 <input
-                  type="number"
-                  placeholder="e.g. 5000 minutes"
+                  type="text"
+                  placeholder="e.g. 50 GB storage"
                   value={customLimitInput}
                   onChange={(e) => setCustomLimitInput(e.target.value)}
                   className="w-full px-3.5 py-2 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none"
                 />
                 <button
                   type="submit"
-                  className="w-full py-2 bg-slate-900 text-white font-semibold text-xs rounded-xl hover:bg-slate-800 transition-colors"
+                  className="w-full py-2 bg-slate-900 text-white font-semibold text-xs rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Request Custom Limit Override
+                  Request Custom Storage Override
                 </button>
               </form>
 

@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const orgId = authCtx.orgId;
 
   try {
-    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sourceWidth, sourceHeight } = await req.json();
+    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sizeBytes, sourceWidth, sourceHeight } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -21,12 +21,15 @@ export async function POST(req: Request) {
     const folderId = !rawFolderId || rawFolderId === "root" || rawFolderId === "null" ? null : rawFolderId;
 
     const usage = await getOrganizationUsage(orgId);
-    if (usage.isLimitReached) {
+    const incomingSize = sizeBytes ? Number(sizeBytes) : 0;
+    if (usage.isLimitReached || (incomingSize > 0 && usage.usedBytes + incomingSize > usage.storageLimitBytes)) {
       return NextResponse.json(
-        { error: "Usage limit reached for organization", code: "QUOTA_EXCEEDED", usage },
+        { error: `Organization storage limit reached (${usage.storageLimitGb}GB limit)`, code: "QUOTA_EXCEEDED", usage },
         { status: 403 }
       );
     }
+
+    const isHls = Boolean(requireHls);
 
     const video = await db.video.create({
       data: {
@@ -38,7 +41,8 @@ export async function POST(req: Request) {
         status: "UPLOADING",
         originalKey: "temp",
         shareAccessMode: "PUBLIC",
-        requireHls: Boolean(requireHls),
+        requireHls: isHls,
+        sizeBytes: sizeBytes ? BigInt(sizeBytes) : null,
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
         sourceHeight: sourceHeight ? Math.round(Number(sourceHeight)) : null,
@@ -105,21 +109,26 @@ export async function GET(req: Request) {
     where: whereCondition,
   });
 
-  const formattedVideos = videos.map((v) => ({
-    id: v.id,
-    title: v.title,
-    description: v.description,
-    status: v.status,
-    progress: v.progress || 0,
-    requireHls: v.requireHls,
-    folderId: v.folderId,
-    folderName: v.folder?.name || null,
-    durationSeconds: v.durationSeconds,
-    shareAccessMode: v.shareAccessMode,
-    playbackUrl: getPlaybackUrl(v),
-    thumbnailUrl: v.thumbnailKey ? getPublicCdnUrl(v.thumbnailKey) : null,
-    createdAt: v.createdAt,
-  }));
+  const formattedVideos = videos.map((v) => {
+    const computedSizeBytes = v.sizeBytes !== null ? Number(v.sizeBytes) : null;
+
+    return {
+      id: v.id,
+      title: v.title,
+      description: v.description,
+      status: v.status,
+      progress: v.progress || 0,
+      requireHls: v.requireHls,
+      folderId: v.folderId,
+      folderName: v.folder?.name || null,
+      durationSeconds: v.durationSeconds,
+      sizeBytes: computedSizeBytes,
+      shareAccessMode: v.shareAccessMode,
+      playbackUrl: getPlaybackUrl(v),
+      thumbnailUrl: v.thumbnailKey ? getPublicCdnUrl(v.thumbnailKey) : null,
+      createdAt: v.createdAt,
+    };
+  });
 
   return NextResponse.json({
     data: formattedVideos,

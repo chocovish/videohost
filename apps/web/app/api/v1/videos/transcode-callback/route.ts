@@ -61,19 +61,27 @@ export async function POST(req: Request) {
     } else if (status === "READY") {
       await db.videoRendition.deleteMany({ where: { videoId } });
 
+      let totalRenditionsSizeBytes = 0;
       if (Array.isArray(renditions)) {
         for (const rend of renditions) {
+          const rSize = Number(rend.sizeBytes || 0);
+          totalRenditionsSizeBytes += rSize;
           await db.videoRendition.create({
             data: {
               videoId,
               resolution: rend.resolution,
               bitrateKbps: rend.bitrateKbps,
               storageKey: rend.storageKey,
-              sizeBytes: BigInt(rend.sizeBytes || 0),
+              sizeBytes: BigInt(rSize),
             },
           });
         }
       }
+
+      const combinedSizeBytes =
+        payload.combinedSizeBytes !== undefined && payload.combinedSizeBytes !== null
+          ? BigInt(payload.combinedSizeBytes)
+          : BigInt(Number(payload.originalSizeBytes || 0) + totalRenditionsSizeBytes);
 
       let thumbnailKey: string | null = null;
       if (incomingThumb) {
@@ -94,6 +102,7 @@ export async function POST(req: Request) {
         data: {
           status: "READY",
           progress: 100,
+          sizeBytes: combinedSizeBytes,
           durationSeconds: durationSeconds || 0,
           sourceWidth: sourceWidth || 1280,
           sourceHeight: sourceHeight || 720,
@@ -101,7 +110,7 @@ export async function POST(req: Request) {
         },
       });
 
-      console.log(`[Transcode Callback] Video ${videoId} marked READY successfully`);
+      console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes`);
 
       // Dispatch Webhooks
       triggerWebhooks(orgId, "video.ready", {

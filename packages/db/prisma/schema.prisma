@@ -123,6 +123,7 @@ model Plan {
   id                String         @id @default(cuid())
   name              String         // "free", "pro", "enterprise"
   minutesLimit      Int            // e.g. 200 for free
+  storageLimitGb    Int            @default(2) // 2GB default for free
   maxResolution     String         // "1080p", "4k", ...
   seatLimit         Int
   priceMonthlyCents Int
@@ -166,6 +167,7 @@ model Video {
   status           VideoStatus @default(UPLOADING)
   progress         Int         @default(0)
   durationSeconds  Int?
+  sizeBytes        BigInt?
   sourceWidth      Int?
   sourceHeight     Int?
   originalKey      String      // R2 object key
