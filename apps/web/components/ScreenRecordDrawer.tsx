@@ -32,6 +32,7 @@ import {
   ChevronDown,
   Timer,
   Zap,
+  Layers,
 } from "lucide-react";
 import {
   formatDuration,
@@ -993,18 +994,50 @@ export default function ScreenRecordDrawer({
                           />
                         </div>
 
-                        <div className="flex items-center gap-2 pt-1">
-                          <input
-                            type="checkbox"
-                            id="drawer-requireHls"
-                            checked={requireHls}
-                            onChange={(e) => setRequireHls(e.target.checked)}
-                            disabled={uploading}
-                            className="rounded border-slate-300 text-lime-500 focus:ring-lime-500 h-4 w-4"
-                          />
-                          <Label htmlFor="drawer-requireHls" className="text-xs font-medium text-slate-600 dark:text-slate-400 cursor-pointer">
-                            Transcode to HLS multi-bitrate ladder (480p to 4K)
-                          </Label>
+                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-all hover:border-slate-300 dark:hover:border-slate-700">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`p-2 rounded-xl shrink-0 transition-colors ${
+                                  requireHls
+                                    ? "bg-lime-500/15 text-lime-600 dark:text-lime-400"
+                                    : "bg-slate-200/60 dark:bg-slate-800 text-slate-400"
+                                }`}
+                              >
+                                <Layers className="w-4 h-4" />
+                              </div>
+                              <div className="space-y-0.5 min-w-0">
+                                <label
+                                  htmlFor="drawer-requireHls-toggle"
+                                  className="text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer block truncate"
+                                >
+                                  HLS Multi-Bitrate Ladder
+                                </label>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                                  {requireHls
+                                    ? "Transcode to adaptive ladder (480p to 4K)"
+                                    : "Store original video without transcoding"}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              id="drawer-requireHls-toggle"
+                              type="button"
+                              role="switch"
+                              aria-checked={requireHls}
+                              disabled={uploading}
+                              onClick={() => setRequireHls(!requireHls)}
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                                  requireHls ? "translate-x-5" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
