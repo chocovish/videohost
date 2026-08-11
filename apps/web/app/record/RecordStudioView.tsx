@@ -46,6 +46,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import PublicHeader from "@/components/PublicHeader";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
 import {
   WebcamCorner,
@@ -154,32 +155,7 @@ export default function RecordStudioView() {
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Header Navigation Bar */}
-      <header className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between relative z-20">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-lg shadow-[hsl(var(--primary))]/30 group-hover:scale-105 transition-transform">
-            <Video className="w-5 h-5" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-lg tracking-tight leading-none">VideoHost</span>
-            <span className="text-[10px] font-semibold text-[hsl(var(--primary))] tracking-wider uppercase">Studio Recorder</span>
-          </div>
-        </Link>
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/auth/login"
-            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/auth/register"
-            className="px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-all flex items-center gap-1.5"
-          >
-            Cloud Account <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      </header>
+      <PublicHeader currentPage="record" />
 
       {/* Main Studio Workstation Section */}
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10 space-y-8 flex-1 flex flex-col justify-center">
