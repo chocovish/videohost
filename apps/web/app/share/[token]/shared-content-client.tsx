@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   Film,
   Folder,
@@ -265,7 +266,7 @@ export default function SharedContentClient() {
 
           <div className="space-y-3 pt-2">
             <button
-              onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+              onClick={() => signOut({ callbackUrl: `/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}` })}
               className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <LogIn className="w-4 h-4 text-lime-400" />

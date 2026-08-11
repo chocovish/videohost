@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import RegisterForm from "./register-form";
 
 export const metadata: Metadata = {
@@ -31,7 +33,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string; redirect?: string }>;
+}) {
+  const session = await auth();
+  const params = await searchParams;
+  const targetUrl = params?.callbackUrl || params?.redirect;
+
+  if (session?.user && (session as any)?.organizationId) {
+    redirect(targetUrl || "/dashboard");
+  }
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-[hsl(var(--background))]" />}>
       <RegisterForm />

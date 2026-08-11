@@ -155,7 +155,7 @@ export default function LoginForm() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() => signIn("google", { callbackUrl })}
             className="w-full py-2.5 px-4 font-semibold mb-6 flex items-center justify-center gap-3 text-sm min-h-[44px]"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
