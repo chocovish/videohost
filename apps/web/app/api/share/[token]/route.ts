@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPlaybackUrl, getPublicCdnUrl } from "@/lib/s3";
+import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
 import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
@@ -126,8 +126,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           description: video.description,
           status: video.status,
           durationSeconds: video.durationSeconds,
-          thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
-          playbackUrl: getPlaybackUrl(video),
+          thumbnailUrl: video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null,
+          playbackUrl: await getPlaybackUrl(video),
           createdAt: video.createdAt,
         },
       });
@@ -160,16 +160,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         orderBy: { createdAt: "desc" },
       });
 
-      const videos = rawVideos.map((v) => ({
+      const videos = await Promise.all(rawVideos.map(async (v) => ({
         id: v.id,
         title: v.title,
         description: v.description,
         status: v.status,
         durationSeconds: v.durationSeconds,
-        thumbnailUrl: v.thumbnailKey ? getPublicCdnUrl(v.thumbnailKey) : null,
-        playbackUrl: getPlaybackUrl(v),
+        thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+        playbackUrl: await getPlaybackUrl(v),
         createdAt: v.createdAt,
-      }));
+      })));
 
       const subfolders = await db.folder.findMany({
         where: { parentId: activeFolderId, organizationId: folder.organizationId },

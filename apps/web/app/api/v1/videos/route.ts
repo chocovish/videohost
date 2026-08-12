@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPlaybackUrl, getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -109,26 +109,28 @@ export async function GET(req: Request) {
     where: whereCondition,
   });
 
-  const formattedVideos = videos.map((v) => {
-    const computedSizeBytes = v.sizeBytes !== null ? Number(v.sizeBytes) : null;
+  const formattedVideos = await Promise.all(
+    videos.map(async (v) => {
+      const computedSizeBytes = v.sizeBytes !== null ? Number(v.sizeBytes) : null;
 
-    return {
-      id: v.id,
-      title: v.title,
-      description: v.description,
-      status: v.status,
-      progress: v.progress || 0,
-      requireHls: v.requireHls,
-      folderId: v.folderId,
-      folderName: v.folder?.name || null,
-      durationSeconds: v.durationSeconds,
-      sizeBytes: computedSizeBytes,
-      shareAccessMode: v.shareAccessMode,
-      playbackUrl: getPlaybackUrl(v),
-      thumbnailUrl: v.thumbnailKey ? getPublicCdnUrl(v.thumbnailKey) : null,
-      createdAt: v.createdAt,
-    };
-  });
+      return {
+        id: v.id,
+        title: v.title,
+        description: v.description,
+        status: v.status,
+        progress: v.progress || 0,
+        requireHls: v.requireHls,
+        folderId: v.folderId,
+        folderName: v.folder?.name || null,
+        durationSeconds: v.durationSeconds,
+        sizeBytes: computedSizeBytes,
+        shareAccessMode: v.shareAccessMode,
+        playbackUrl: await getPlaybackUrl(v),
+        thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+        createdAt: v.createdAt,
+      };
+    })
+  );
 
   return NextResponse.json({
     data: formattedVideos,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPublicCdnUrl, getPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
+import { getPlaybackUrl, getPresignedPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -16,6 +16,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
   const computedSizeBytes = video.sizeBytes !== null ? Number(video.sizeBytes) : null;
+  const playbackUrl = await getPlaybackUrl(video);
+  const thumbnailUrl = video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null;
 
   return NextResponse.json({
     id: video.id,
@@ -29,12 +31,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     sizeBytes: computedSizeBytes,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     shareAccessMode: video.shareAccessMode,
-    playbackUrl: getPlaybackUrl(video),
-    thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
+    playbackUrl,
+    thumbnailUrl,
     renditions: video.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
-      playlistUrl: getPublicCdnUrl(r.storageKey),
+      playlistUrl: `/api/hls/${r.storageKey}`,
       sizeBytes: Number(r.sizeBytes || 0),
     })),
     createdAt: video.createdAt,

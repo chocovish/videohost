@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedUploadUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {

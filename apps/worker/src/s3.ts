@@ -50,10 +50,7 @@ export function getS3ClientAndBucket(config?: S3ConfigContext) {
   const secretAccessKey = cleanEnv(config?.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY, "passpass");
   const bucket = cleanEnv(config?.bucket || process.env.R2_BUCKET_NAME, "videohost");
   const region = getRegionFromEndpoint(rawEndpoint, config?.region);
-  const cdnHost = cleanEnv(
-    config?.cdnHost || process.env.NEXT_PUBLIC_CDN_HOST,
-    `${rawEndpoint.replace(/\/$/, "")}/${bucket}`
-  );
+  const cdnHost = cleanEnv(config?.cdnHost, `${rawEndpoint}/${bucket}`);
 
   const client = new S3Client({
     region,
@@ -83,25 +80,6 @@ export async function ensureBucketExists(config?: S3ConfigContext): Promise<void
   }
 
   try {
-    const publicPolicy = {
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Effect: "Allow",
-          Principal: "*",
-          Action: ["s3:GetObject"],
-          Resource: [`arn:aws:s3:::${BUCKET_NAME}/*`],
-        },
-      ],
-    };
-
-    await s3.send(
-      new PutBucketPolicyCommand({
-        Bucket: BUCKET_NAME,
-        Policy: JSON.stringify(publicPolicy),
-      })
-    );
-
     await s3.send(
       new PutBucketCorsCommand({
         Bucket: BUCKET_NAME,
@@ -118,7 +96,7 @@ export async function ensureBucketExists(config?: S3ConfigContext): Promise<void
         },
       })
     );
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export async function downloadFileFromS3(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedPlaybackUrl } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
         videoId,
         title: video.title,
         durationSeconds,
-        thumbnailUrl: thumbnailKey ? getPublicCdnUrl(thumbnailKey) : null,
+        thumbnailUrl: thumbnailKey ? await getPresignedPlaybackUrl(thumbnailKey) : null,
       });
 
       return NextResponse.json({ success: true, status: "READY", videoId });

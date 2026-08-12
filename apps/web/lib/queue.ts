@@ -33,7 +33,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
 
   const baseUrl = process.env.APP_URL || "http://localhost:3000";
   const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
-  const cdnHost = process.env.NEXT_PUBLIC_CDN_HOST || `${r2Endpoint}/videohost`;
+  const cdnHost = `${r2Endpoint}/${process.env.R2_BUCKET_NAME}`;
 
   let triggeredViaContainer = false;
 

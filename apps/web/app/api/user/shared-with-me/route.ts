@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request) {
@@ -31,9 +31,6 @@ export async function GET(req: Request) {
           },
         },
       },
-      include: {
-        organization: true,
-      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -47,28 +44,25 @@ export async function GET(req: Request) {
           },
         },
       },
-      include: {
-        organization: true,
-      },
       orderBy: { createdAt: "desc" },
     });
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
 
-    const videoItems = sharedVideos.map((video) => ({
-      id: video.id,
-      shareUrl: `${baseUrl}/share/${video.id}`,
-      accessMode: video.shareAccessMode,
-      requireLogin: video.shareAccessMode === "RESTRICTED",
-      type: "video" as const,
-      title: video.title,
-      description: video.description,
-      thumbnailUrl: video.thumbnailKey ? getPublicCdnUrl(video.thumbnailKey) : null,
-      durationSeconds: video.durationSeconds,
-      organizationName: video.organization.name,
-      organizationLogo: video.organization.logoUrl,
-      createdAt: video.createdAt,
-    }));
+    const videoItems = await Promise.all(
+      sharedVideos.map(async (video) => ({
+        id: video.id,
+        shareUrl: `${baseUrl}/share/${video.id}`,
+        accessMode: video.shareAccessMode,
+        requireLogin: video.shareAccessMode === "RESTRICTED",
+        type: "video" as const,
+        title: video.title,
+        description: video.description,
+        thumbnailUrl: video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null,
+        durationSeconds: video.durationSeconds,
+        createdAt: video.createdAt,
+      }))
+    );
 
     const folderItems = sharedFolders.map((folder) => ({
       id: folder.id,
@@ -77,8 +71,6 @@ export async function GET(req: Request) {
       requireLogin: folder.shareAccessMode === "RESTRICTED",
       type: "folder" as const,
       title: folder.name,
-      organizationName: folder.organization.name,
-      organizationLogo: folder.organization.logoUrl,
       createdAt: folder.createdAt,
     }));
 

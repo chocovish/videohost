@@ -61,27 +61,8 @@ export async function ensureBucketExists(): Promise<void> {
     }
   }
 
-  // Ensure public read policy and CORS headers are set on MinIO for HLS streaming & thumbnail rendering
+  // Ensure CORS headers are set on S3/MinIO for playback and segment requests
   try {
-    const publicPolicy = {
-      Version: "2012-10-17",
-      Statement: [
-        {
-          Effect: "Allow",
-          Principal: "*",
-          Action: ["s3:GetObject"],
-          Resource: [`arn:aws:s3:::${BUCKET_NAME}/*`],
-        },
-      ],
-    };
-
-    await s3.send(
-      new PutBucketPolicyCommand({
-        Bucket: BUCKET_NAME,
-        Policy: JSON.stringify(publicPolicy),
-      })
-    );
-
     await s3.send(
       new PutBucketCorsCommand({
         Bucket: BUCKET_NAME,
@@ -99,7 +80,7 @@ export async function ensureBucketExists(): Promise<void> {
       })
     );
   } catch (policyErr) {
-    // Ignore policy errors if bucket already configured or unsupported by provider
+    // Ignore policy errors if CORS already configured or unsupported by provider
   }
 }
 
@@ -115,7 +96,7 @@ export async function getPresignedUploadUrl(key: string, contentType: string = "
   return await getSignedUrl(s3, command, { expiresIn: 3600 });
 }
 
-export async function getPresignedPlaybackUrl(key: string, expiresInSeconds: number = 3600): Promise<string> {
+export async function getPresignedPlaybackUrl(key: string, expiresInSeconds: number = 10000): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -124,24 +105,20 @@ export async function getPresignedPlaybackUrl(key: string, expiresInSeconds: num
   return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 }
 
-export function getPublicCdnUrl(key: string): string {
-  const cdnHost = process.env.NEXT_PUBLIC_CDN_HOST || "http://localhost:9000/videohost";
-  return `${cdnHost}/${key}`;
-}
 
-export function getPlaybackUrl(video: {
+export async function getPlaybackUrl(video: {
   status: string;
   organizationId: string;
   id: string;
   originalKey: string;
   requireHls?: boolean;
   renditions?: any[];
-}): string | null {
+}): Promise<string | null> {
   if (video.status !== "READY") return null;
   if (video.requireHls || (video.renditions && video.renditions.length > 0)) {
-    return getPublicCdnUrl(`${video.organizationId}/${video.id}/hls/master.m3u8`);
+    return `/api/hls/${video.organizationId}/${video.id}/hls/master.m3u8`;
   }
-  return getPublicCdnUrl(video.originalKey);
+  return await getPresignedPlaybackUrl(video.originalKey);
 }
 
 export async function deleteVideoFromS3(

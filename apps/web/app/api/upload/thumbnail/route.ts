@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getPresignedUploadUrl, getPublicCdnUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPresignedPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     });
 
     const uploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/jpeg");
-    const thumbnailUrl = getPublicCdnUrl(thumbnailKey);
+    const thumbnailUrl = await getPresignedPlaybackUrl(thumbnailKey);
 
     return NextResponse.json({ uploadUrl, thumbnailUrl });
   } catch (error: any) {
