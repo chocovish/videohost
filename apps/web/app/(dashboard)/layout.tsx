@@ -15,6 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const userEmail = session.user.email || "";
   let userName = session.user.name || undefined;
+  let userImage = session.user.image || undefined;
   const role = (session as any).role || "MEMBER";
   const orgId = (session as any).organizationId;
   const themeId = (session as any).themeId || "lime";
@@ -26,16 +27,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
   try {
     const userDb = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, viewMode: true },
+      select: { name: true, image: true, viewMode: true },
     });
     if (userDb?.name) {
       userName = userDb.name;
+    }
+    if (userDb?.image) {
+      userImage = userDb.image;
     }
     if (userDb?.viewMode) {
       viewMode = userDb.viewMode;
     }
   } catch (e) {
-    console.error("Error fetching user name & viewMode in layout:", e);
+    console.error("Error fetching user details in layout:", e);
   }
 
   try {
@@ -78,6 +82,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <Navbar
             userEmail={userEmail}
             userName={userName}
+            userImage={userImage}
             role={role}
             organizationName={orgName}
           />

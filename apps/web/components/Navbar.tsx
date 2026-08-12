@@ -1,23 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Video } from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface NavbarProps {
   userEmail: string;
   userName?: string;
+  userImage?: string;
   role: string;
   organizationName: string;
 }
 
-export default function Navbar({ userEmail, userName, role, organizationName }: NavbarProps) {
+export default function Navbar({ userEmail, userName, userImage, role, organizationName }: NavbarProps) {
   const { toggleMobile, toggleCollapse, isCollapsed } = useSidebar();
+  const { data: session } = useSession();
 
+  const activeImage = userImage || session?.user?.image || undefined;
   const userInitial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
 
   return (
@@ -78,6 +81,7 @@ export default function Navbar({ userEmail, userName, role, organizationName }: 
           title="Profile Settings"
         >
           <Avatar className="h-7 w-7">
+            {activeImage && <AvatarImage src={activeImage} alt={userName || userEmail} />}
             <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
           <div className="text-left hidden sm:block max-w-[120px] md:max-w-[160px] truncate">
