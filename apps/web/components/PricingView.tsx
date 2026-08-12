@@ -32,6 +32,9 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
+  const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const [billingMode, setBillingMode] = useState<"ONE_TIME" | "RECURRING">("ONE_TIME");
+  const [orgDetails, setOrgDetails] = useState<any>(null);
   const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -43,11 +46,20 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         return;
       }
       try {
-        const res = await fetch("/api/v1/usage");
-        if (res.ok) {
-          const data = await res.json();
+        const [usageRes, orgRes] = await Promise.all([
+          fetch("/api/v1/usage"),
+          fetch("/api/organization"),
+        ]);
+        if (usageRes.ok) {
+          const data = await usageRes.json();
           if (data.plan) {
             setCurrentPlan(data.plan.toLowerCase());
+          }
+        }
+        if (orgRes.ok) {
+          const orgData = await orgRes.json();
+          if (orgData.organization) {
+            setOrgDetails(orgData.organization);
           }
         }
       } catch (e) {
@@ -58,6 +70,18 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     }
     fetchCurrentPlan();
   }, [session]);
+
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const handleSelectPlan = async (planKey: "free" | "pro" | "enterprise") => {
     if (!session) {
@@ -71,33 +95,123 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     setSuccessMsg("");
     setErrorMsg("");
 
+    // If downgrading/selecting Free plan directly
+    if (planKey === "free") {
+      try {
+        const res = await fetch("/api/organization/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planName: "free" }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to update plan");
+
+        setCurrentPlan("free");
+        setSuccessMsg("Successfully switched workspace to Free plan!");
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("usage-updated"));
+        }
+        router.refresh();
+        setTimeout(() => setSuccessMsg(""), 5000);
+      } catch (err: any) {
+        setErrorMsg(err.message || "Failed to change plan");
+        setTimeout(() => setErrorMsg(""), 5000);
+      } finally {
+        setUpdatingPlan(null);
+      }
+      return;
+    }
+
+    // For Paid Plans (Pro & Enterprise), trigger Razorpay Payment Gateway
     try {
-      const res = await fetch("/api/organization/plan", {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your network connection.");
+      }
+
+      // 1. Create Razorpay Order
+      const res = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planName: planKey }),
+        body: JSON.stringify({ planName: planKey, billingMode, billingCycle }),
       });
 
-      const data = await res.json();
-
+      const orderData = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Failed to update plan");
+        throw new Error(orderData.error || "Failed to initiate payment order");
       }
 
-      setCurrentPlan(planKey);
-      setSuccessMsg(`Successfully updated active workspace plan to ${planKey.toUpperCase()}!`);
-      if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("usage-updated"));
-      }
-      router.refresh();
-      setTimeout(() => setSuccessMsg(""), 5000);
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "VideoHost",
+        description: `Upgrade to ${planKey.toUpperCase()} Plan`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: session.user?.name || "",
+          email: session.user?.email || "",
+          contact: (session.user as any)?.phone || "",
+        },
+        theme: {
+          color: planKey === "pro" ? "#84cc16" : "#9333ea",
+        },
+        handler: async function (response: any) {
+          try {
+            // 3. Verify Payment Signature
+            const verifyRes = await fetch("/api/payments/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok) {
+              throw new Error(verifyData.error || "Payment verification failed");
+            }
+
+            setCurrentPlan(planKey);
+            setSuccessMsg(`Payment verified! Active workspace plan upgraded to ${planKey.toUpperCase()}!`);
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("usage-updated"));
+            }
+            router.refresh();
+            setTimeout(() => setSuccessMsg(""), 5000);
+          } catch (verifyErr: any) {
+            setErrorMsg(verifyErr.message || "Payment verification failed");
+            setTimeout(() => setErrorMsg(""), 5000);
+          } finally {
+            setUpdatingPlan(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setUpdatingPlan(null);
+          },
+        },
+      };
+
+      const razorpayWindow = new (window as any).Razorpay(options);
+      razorpayWindow.on("payment.failed", function (failResponse: any) {
+        console.error("Razorpay Payment Failed:", failResponse.error);
+        setErrorMsg(failResponse.error?.description || "Payment process was not completed.");
+        setUpdatingPlan(null);
+        setTimeout(() => setErrorMsg(""), 5000);
+      });
+
+      razorpayWindow.open();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to change plan");
-      setTimeout(() => setErrorMsg(""), 5000);
-    } finally {
+      setErrorMsg(err.message || "Failed to initiate Razorpay checkout");
       setUpdatingPlan(null);
+      setTimeout(() => setErrorMsg(""), 5000);
     }
   };
+
 
   const plans = [
     {
@@ -111,7 +225,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       accentColor: "border-slate-200 dark:border-slate-800",
       buttonVariant: "outline",
       features: [
-        { title: "Unlimited screen record", icon: Video, highlight: true },
+        { title: "Unlimited screen record with face cam overlay", icon: Video, highlight: true },
         { title: "Unlimited videos upload", icon: Video, highlight: true },
         { title: "2GB cloud storage", icon: HardDrive, highlight: true },
         { title: "Share videos with specific email users or make them publicly accessible.", icon: Share2, highlight: true },
@@ -126,8 +240,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     {
       id: "pro",
       name: "Pro",
-      price: "Rs. 999",
-      period: "per month",
+      price: billingCycle === "YEARLY" ? "₹9,990" : "₹999",
+      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
       tagline: "For professional creators needing adaptive bitrate & high storage",
       popular: true,
       badge: "Most Popular",
@@ -147,8 +261,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     {
       id: "enterprise",
       name: "Enterprise",
-      price: "Rs. 2999",
-      period: "per month",
+      price: billingCycle === "YEARLY" ? "₹29,990" : "₹2,999",
+      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
       tagline: "For teams & multi-org teams requiring unlimited storage & full controls",
       popular: false,
       badge: "Full Access",
@@ -181,6 +295,87 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </p>
         </div>
       )}
+
+      {/* Active Plan Subscription Status Banner */}
+      {orgDetails && orgDetails.planExpiresAt && currentPlan !== "free" && (
+        <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-teal-500/10 border border-lime-500/30 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))]">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-bold text-[hsl(var(--foreground))] flex items-center gap-2">
+                Active Plan: <span className="uppercase text-[hsl(var(--primary))] font-extrabold">{currentPlan}</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase">
+                  {orgDetails.subscriptionStatus || "ACTIVE"}
+                </span>
+              </div>
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                Paid Validity Ends: <span className="font-semibold text-[hsl(var(--foreground))]">{new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span> ({orgDetails.billingMode === "RECURRING" ? "Auto-renewing subscription" : "One-time validity"})
+              </p>
+            </div>
+          </div>
+          {orgDetails.subscriptionStatus === "CANCELLED" && (
+            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+              Subscription cancelled — Plan remains active until expiration date
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Billing Cycle & Mode Toggles */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-2">
+        {/* Monthly / Yearly Cycle */}
+        <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => setBillingCycle("MONTHLY")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingCycle === "MONTHLY"
+              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
+              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+          >
+            Monthly Billing
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingCycle("YEARLY")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === "YEARLY"
+              ? "bg-[hsl(var(--primary))] text-white shadow-md"
+              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+          >
+            Yearly Billing
+            <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] uppercase font-black">
+              2 Months Free
+            </span>
+          </button>
+        </div>
+
+        {/* One-Time vs Recurring Mode */}
+        <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={() => setBillingMode("ONE_TIME")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "ONE_TIME"
+              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
+              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+          >
+            One-Time Payment
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingMode("RECURRING")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "RECURRING"
+              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
+              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              }`}
+          >
+            Auto-Renewing Subscription
+          </button>
+        </div>
+      </div>
 
       {/* Toast Notifications */}
       {successMsg && (
@@ -304,10 +499,10 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                     onClick={() => handleSelectPlan(plan.id as any)}
                     disabled={updatingPlan !== null || loadingPlan}
                     className={`w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${plan.id === "pro"
-                        ? "bg-[hsl(var(--primary))] text-white hover:opacity-90 shadow-[hsl(var(--primary))]/20"
-                        : plan.id === "enterprise"
-                          ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
-                          : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
+                      ? "bg-[hsl(var(--primary))] text-white hover:opacity-90 shadow-[hsl(var(--primary))]/20"
+                      : plan.id === "enterprise"
+                        ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
+                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
                       }`}
                   >
                     {isUpdating ? (

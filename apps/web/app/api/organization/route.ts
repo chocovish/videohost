@@ -44,6 +44,10 @@ export async function GET(req: Request) {
         name: organization.name,
         slug: organization.slug,
         planId: organization.planId,
+        planExpiresAt: organization.planExpiresAt,
+        billingMode: organization.billingMode,
+        billingCycle: organization.billingCycle,
+        subscriptionStatus: organization.subscriptionStatus,
         createdAt: organization.createdAt,
         members: organization.members.map((m) => ({
           id: m.id,

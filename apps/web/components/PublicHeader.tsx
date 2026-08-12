@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Video, Menu, X, ArrowRight, LogIn, UserPlus } from "lucide-react";
 
 interface PublicHeaderProps {
-  currentPage?: "home" | "login" | "register" | "record";
+  currentPage?: "home" | "login" | "register" | "record" | "pricing" | "terms" | "privacy" | "refund" | "contact";
 }
 
 export default function PublicHeader({ currentPage }: PublicHeaderProps) {
@@ -14,8 +14,8 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
   const isAuthPage = currentPage === "login" || currentPage === "register";
 
   return (
-    <header className="w-full bg-transparent sticky top-0 z-40 transition-colors">
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+    <header className="w-full bg-transparent sticky top-0 z-40 transition-colors backdrop-blur-md bg-white/40 dark:bg-slate-950/40 border-b border-[hsl(var(--border))]/40">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
         {/* Brand Logo */}
         <Link
           href="/"
@@ -52,9 +52,24 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
 
           <Link
             href="/pricing"
-            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10 transition-all"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              currentPage === "pricing"
+                ? "text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
+                : "text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10"
+            }`}
           >
             Pricing
+          </Link>
+
+          <Link
+            href="/contact"
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+              currentPage === "contact"
+                ? "text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
+                : "text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10"
+            }`}
+          >
+            Contact
           </Link>
 
           {!isAuthPage && (

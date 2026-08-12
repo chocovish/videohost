@@ -14,6 +14,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
+import PublicFooter from "@/components/PublicFooter";
 
 export const metadata: Metadata = {
   title: "VideoHost — Easily Upload & Share Videos Securely",
@@ -223,27 +224,8 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-[hsl(var(--border))] py-6 text-center text-xs text-[hsl(var(--muted-foreground))] relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Video className="w-4 h-4 text-[hsl(var(--primary))]" />
-            <span className="font-bold text-[hsl(var(--foreground))]">VideoHost Platform</span>
-            <span>— Easily Upload, Record & Share Videos</span>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            <Link href="/record" className="hover:text-[hsl(var(--primary))] transition-colors">
-              Free Studio Recorder
-            </Link>
-            <Link href="/auth/login" className="hover:text-[hsl(var(--primary))] transition-colors">
-              Sign In
-            </Link>
-            <Link href="/auth/register" className="hover:text-[hsl(var(--primary))] transition-colors">
-              Get Started Free
-            </Link>
-          </div>
-        </div>
-      </footer>
+      {/* Public Footer */}
+      <PublicFooter />
     </div>
   );
 }
