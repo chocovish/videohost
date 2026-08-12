@@ -21,7 +21,16 @@ import {
   Mail,
   ArrowRight,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface PricingViewProps {
   isEmbedded?: boolean;
@@ -38,6 +47,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [confirmCancelModalOpen, setConfirmCancelModalOpen] = useState<boolean>(false);
+  const [pendingPlanSwitch, setPendingPlanSwitch] = useState<"free" | "pro" | "enterprise" | null>(null);
 
   useEffect(() => {
     async function fetchCurrentPlan() {
@@ -83,6 +94,75 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     });
   };
 
+  const executeCancelSubscription = async () => {
+    setUpdatingPlan("cancel");
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/payments/cancel-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to cancel recurring subscription");
+
+      setSuccessMsg(
+        data.message ||
+          "Auto-renewal cancelled successfully! Your paid plan remains active in one-time mode until expiration."
+      );
+      if (data.organization) {
+        setOrgDetails((prev: any) => ({ ...prev, ...data.organization }));
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("usage-updated"));
+      }
+      router.refresh();
+      setTimeout(() => setSuccessMsg(""), 7000);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to cancel subscription");
+      setTimeout(() => setErrorMsg(""), 5000);
+    } finally {
+      setUpdatingPlan(null);
+      setConfirmCancelModalOpen(false);
+      setPendingPlanSwitch(null);
+    }
+  };
+
+  const executePlanSwitch = async (planKey: "free" | "pro" | "enterprise") => {
+    setUpdatingPlan(planKey);
+    setSuccessMsg("");
+    setErrorMsg("");
+
+    try {
+      const res = await fetch("/api/organization/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName: planKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update plan");
+
+      setCurrentPlan(planKey);
+      setSuccessMsg(data.message || `Successfully updated workspace plan to ${planKey.toUpperCase()}!`);
+      if (data.organization) {
+        setOrgDetails((prev: any) => ({ ...prev, ...data.organization }));
+      }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("usage-updated"));
+      }
+      router.refresh();
+      setTimeout(() => setSuccessMsg(""), 6000);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to change plan");
+      setTimeout(() => setErrorMsg(""), 5000);
+    } finally {
+      setUpdatingPlan(null);
+      setConfirmCancelModalOpen(false);
+      setPendingPlanSwitch(null);
+    }
+  };
+
   const handleSelectPlan = async (planKey: "free" | "pro" | "enterprise") => {
     if (!session) {
       router.push("/auth/login?callbackUrl=/pricing");
@@ -91,34 +171,19 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
     if (planKey === currentPlan || updatingPlan) return;
 
-    setUpdatingPlan(planKey);
-    setSuccessMsg("");
-    setErrorMsg("");
-
     // If downgrading/selecting Free plan directly
     if (planKey === "free") {
-      try {
-        const res = await fetch("/api/organization/plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planName: "free" }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to update plan");
-
-        setCurrentPlan("free");
-        setSuccessMsg("Successfully switched workspace to Free plan!");
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("usage-updated"));
-        }
-        router.refresh();
-        setTimeout(() => setSuccessMsg(""), 5000);
-      } catch (err: any) {
-        setErrorMsg(err.message || "Failed to change plan");
-        setTimeout(() => setErrorMsg(""), 5000);
-      } finally {
-        setUpdatingPlan(null);
+      // If organization has active recurring subscription or subscription ID, prompt confirmation
+      if (
+        orgDetails?.billingMode === "RECURRING" ||
+        orgDetails?.subscriptionStatus === "ACTIVE" ||
+        orgDetails?.subscriptionId
+      ) {
+        setPendingPlanSwitch("free");
+        setConfirmCancelModalOpen(true);
+        return;
       }
+      await executePlanSwitch("free");
       return;
     }
 
@@ -300,7 +365,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       {orgDetails && orgDetails.planExpiresAt && currentPlan !== "free" && (
         <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-teal-500/10 border border-lime-500/30 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] shrink-0">
               <Zap className="w-5 h-5" />
             </div>
             <div>
@@ -315,11 +380,22 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               </p>
             </div>
           </div>
-          {orgDetails.subscriptionStatus === "CANCELLED" && (
-            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-              Subscription cancelled — Plan remains active until expiration date
+          {orgDetails.billingMode === "RECURRING" && orgDetails.subscriptionStatus !== "CANCELLED" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setPendingPlanSwitch("free");
+                setConfirmCancelModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-extrabold transition-all shadow-xs shrink-0 cursor-pointer"
+            >
+              Cancel Subscription
+            </button>
+          ) : orgDetails.subscriptionStatus === "CANCELLED" ? (
+            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+              Subscription cancelled — Active until {new Date(orgDetails.planExpiresAt).toLocaleDateString()}
             </span>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -488,12 +564,26 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               {/* Action Button */}
               <div>
                 {isCurrent ? (
-                  <button
-                    disabled
-                    className="w-full py-3 px-4 rounded-2xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] font-bold text-sm border border-[hsl(var(--border))] opacity-75 cursor-default flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" /> Active Workspace Plan
-                  </button>
+                  <div className="space-y-2">
+                    <button
+                      disabled
+                      className="w-full py-3 px-4 rounded-2xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] font-bold text-sm border border-[hsl(var(--border))] opacity-75 cursor-default flex items-center justify-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" /> Active Workspace Plan
+                    </button>
+                    {plan.id !== "free" && currentPlan !== "free" && orgDetails?.billingMode === "RECURRING" && orgDetails?.subscriptionStatus !== "CANCELLED" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPendingPlanSwitch("free");
+                          setConfirmCancelModalOpen(true);
+                        }}
+                        className="w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        Cancel Subscription
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <button
                     onClick={() => handleSelectPlan(plan.id as any)}
@@ -564,6 +654,61 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </div>
         </div>
       </div>
+
+      {/* Recurring Subscription Cancellation Confirmation Modal */}
+      <Dialog open={confirmCancelModalOpen} onOpenChange={setConfirmCancelModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold">Cancel Auto-Renewing Subscription?</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Cancel auto-renewal for your <strong className="text-[hsl(var(--foreground))] uppercase">{currentPlan}</strong> plan.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium">
+              ✅ <strong>Keep Paid Features Until Expiry:</strong> You will remain on your paid <strong>{currentPlan.toUpperCase()}</strong> plan in one-time mode with full feature access until <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'expiration'}</strong>.
+            </div>
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 font-medium">
+              ⚠️ <strong>No Future Charges:</strong> Auto-renewal on Razorpay will be cancelled immediately. Once your paid validity ends on <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString() : 'expiration'}</strong>, your workspace will automatically move to the Free plan.
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmCancelModalOpen(false);
+                setPendingPlanSwitch(null);
+              }}
+              className="px-4 py-2.5 rounded-xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] font-bold text-xs hover:bg-[hsl(var(--muted))]/80 transition-all cursor-pointer"
+            >
+              Keep Auto-Renew
+            </button>
+            <button
+              type="button"
+              disabled={updatingPlan !== null}
+              onClick={() => executeCancelSubscription()}
+              className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              {updatingPlan ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Cancelling...
+                </>
+              ) : (
+                "Yes, Cancel Auto-Renew"
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
