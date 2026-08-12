@@ -262,31 +262,28 @@ export default function VideoDetailPage() {
             <div className="flex border-b border-[hsl(var(--border))] gap-4 sm:gap-6 text-sm font-semibold overflow-x-auto whitespace-nowrap">
               <button
                 onClick={() => setActiveTab("player")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
-                  activeTab === "player"
-                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "player"
+                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  }`}
               >
                 <Play className="w-4 h-4" /> Player Preview
               </button>
               <button
                 onClick={() => setActiveTab("embed")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
-                  activeTab === "embed"
-                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "embed"
+                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  }`}
               >
                 <Code className="w-4 h-4" /> Embed Codes
               </button>
               <button
                 onClick={() => setActiveTab("renditions")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${
-                  activeTab === "renditions"
-                    ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                    : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                }`}
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "renditions"
+                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  }`}
               >
                 <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
               </button>
@@ -294,7 +291,7 @@ export default function VideoDetailPage() {
 
             {/* Tab 1: Video Player */}
             {activeTab === "player" && (
-              <div className="aspect-video w-full bg-black rounded-xl overflow-hidden relative flex items-center justify-center">
+              <div className="aspect-video w-full bg-black rounded-3xl overflow-hidden relative flex items-center justify-center">
                 {video.playbackUrl ? (
                   <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
                 ) : video.status === "FAILED" ? (
@@ -496,11 +493,10 @@ export default function VideoDetailPage() {
 
             {thumbnailStatus && (
               <div
-                className={`p-2.5 rounded-xl border text-xs font-medium ${
-                  thumbnailStatus.type === "success"
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                    : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
-                }`}
+                className={`p-2.5 rounded-xl border text-xs font-medium ${thumbnailStatus.type === "success"
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                  : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                  }`}
               >
                 {thumbnailStatus.text}
               </div>
@@ -517,9 +513,8 @@ export default function VideoDetailPage() {
               />
               <label
                 htmlFor="video-detail-thumbnail-input"
-                className={`w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl border border-[hsl(var(--border))] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-[hsl(var(--foreground))] cursor-pointer transition-colors shadow-2xs ${
-                  isUploadingThumbnail ? "opacity-50 pointer-events-none" : ""
-                }`}
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl border border-[hsl(var(--border))] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-[hsl(var(--foreground))] cursor-pointer transition-colors shadow-2xs ${isUploadingThumbnail ? "opacity-50 pointer-events-none" : ""
+                  }`}
               >
                 <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
                 <span>{isUploadingThumbnail ? "Uploading..." : "Upload custom thumbnail"}</span>
