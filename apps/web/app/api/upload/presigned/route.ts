@@ -77,8 +77,9 @@ export async function POST(req: Request) {
       },
     });
 
+    const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
     const originalKey = `${orgId}/${video.id}/original.mp4`;
-    const thumbnailKey = `${orgId}/${video.id}/thumbnail.jpg`;
+    const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
     await db.video.update({
       where: { id: video.id },
@@ -86,7 +87,7 @@ export async function POST(req: Request) {
     });
 
     const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
-    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/jpeg");
+    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
 
     return NextResponse.json({
       videoId: video.id,

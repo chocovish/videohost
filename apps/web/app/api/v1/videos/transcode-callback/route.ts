@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { getPresignedPlaybackUrl, deleteFileFromS3 } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
@@ -97,6 +97,8 @@ export async function POST(req: Request) {
         }
       }
 
+      const oldThumbKey = video.thumbnailKey;
+
       await db.video.update({
         where: { id: videoId },
         data: {
@@ -109,6 +111,12 @@ export async function POST(req: Request) {
           thumbnailKey: thumbnailKey,
         },
       });
+
+      if (oldThumbKey && thumbnailKey && oldThumbKey !== thumbnailKey) {
+        deleteFileFromS3(oldThumbKey).catch((err) =>
+          console.error("[Transcode Callback] Failed to delete old thumbnail from S3:", err)
+        );
+      }
 
       console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes`);
 

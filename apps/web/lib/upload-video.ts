@@ -88,7 +88,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             videoId,
-            contentType: "image/jpeg",
+            contentType: "image/webp",
           }),
         });
         const thumbInitData = await thumbInitRes.json();
@@ -96,10 +96,10 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
       }
 
       if (targetThumbUrl) {
-        onProgress?.(90, "Uploading auto-generated thumbnail...");
+        onProgress?.(90, "Uploading thumbnail...");
         await fetch(targetThumbUrl, {
           method: "PUT",
-          headers: { "Content-Type": "image/jpeg" },
+          headers: { "Content-Type": "image/webp" },
           body: metadata.thumbnailBlob,
         });
       }

@@ -209,3 +209,15 @@ export async function deleteVideoFromS3(
   console.log(`[S3 Delete Complete] Total ${totalDeleted} object(s) deleted from S3 for video ${videoId}`);
 }
 
+export async function deleteFileFromS3(key: string): Promise<void> {
+  if (!key) return;
+  try {
+    console.log(`[S3 Delete] Deleting file from S3: "${key}"...`);
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+    console.log(`[S3 Delete] Successfully deleted file: "${key}"`);
+  } catch (err) {
+    console.error(`[S3 Delete Error] Failed to delete file "${key}" from S3:`, err);
+  }
+}
+
+

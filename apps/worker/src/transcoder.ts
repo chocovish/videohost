@@ -200,25 +200,30 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     }
     fs.writeFileSync(path.join(hlsOutputDir, "master.m3u8"), masterPlaylistContent);
 
-    // 6. Generate Thumbnail (thumbnail.jpg)
-    const thumbnailPath = path.join(tempDir, "thumbnail.jpg");
+    // 6. Generate Thumbnail (thumbnail-{unique}.webp)
+    const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const thumbFileName = `thumbnail-${unique}.webp`;
+    const thumbnailPath = path.join(tempDir, thumbFileName);
     await new Promise<void>((resolve, reject) => {
+      const seekTime = isFinite(duration) && duration > 0 ? Math.min(1.0, duration / 2) : 0;
       ffmpeg(inputPath)
-        .screenshots({
-          count: 1,
-          timestamps: [Math.max(1, Math.floor(duration / 2))],
-          filename: "thumbnail.jpg",
-          folder: tempDir,
-          size: "640x360",
-        })
+        .seekInput(seekTime)
+        .frames(1)
+        .outputOptions([
+          "-vf", "scale='min(1280,iw)':'min(720,ih)':force_original_aspect_ratio=decrease",
+          "-c:v", "libwebp",
+          "-quality", "82",
+        ])
+        .output(thumbnailPath)
         .on("end", () => resolve())
-        .on("error", (err) => reject(err));
+        .on("error", (err) => reject(err))
+        .run();
     });
 
     // 7. Upload HLS structure & thumbnail to R2 (20% of total progress)
     const orgId = organizationId || "default";
     const s3HlsPrefix = `${orgId}/${videoId}/hls`;
-    const s3ThumbKey = `${orgId}/${videoId}/thumbnail.jpg`;
+    const s3ThumbKey = `${orgId}/${videoId}/${thumbFileName}`;
 
     console.log(`[Worker] Uploading HLS renditions to R2 under ${s3HlsPrefix}...`);
     await uploadDirectoryToS3(hlsOutputDir, s3HlsPrefix, payload.s3, (uploadRatio) => {
@@ -226,8 +231,8 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       reporter.report(uploadProgress, "PROCESSING");
     });
 
-    console.log(`[Worker] Uploading thumbnail to R2...`);
-    const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/jpeg", payload.s3);
+    console.log(`[Worker] Uploading thumbnail (${thumbFileName}) to R2...`);
+    const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3);
     const finalUploadProgress = calculateUploadProgress(1.0);
     await reporter.report(finalUploadProgress, "PROCESSING");
 

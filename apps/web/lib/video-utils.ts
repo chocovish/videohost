@@ -8,6 +8,131 @@ export interface VideoMetadata {
   thumbnailUrl: string | null;
 }
 
+export interface ProcessThumbnailOptions {
+  maxWidth?: number; // Default 1280 (720p max width)
+  maxHeight?: number; // Default 720 (720p max height)
+  quality?: number; // Default 0.82 (lossy WebP compression)
+}
+
+export interface ProcessThumbnailResult {
+  blob: Blob;
+  url: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * Reusable client-side helper to process thumbnails (auto-generated or custom uploaded):
+ * 1. Resizes image or video frame so resolution NEVER exceeds 720p (1280x720 max bounds, preserving aspect ratio).
+ * 2. Converts to lossy WebP format (`image/webp`) with configurable quality (default 0.82) for instant loading and small file size.
+ * 3. Does 100% of processing on the client side using Canvas API.
+ */
+export async function processThumbnail(
+  input: File | Blob | HTMLVideoElement | HTMLCanvasElement | HTMLImageElement,
+  options: ProcessThumbnailOptions = {}
+): Promise<ProcessThumbnailResult> {
+  const maxWidth = options.maxWidth ?? 1280;
+  const maxHeight = options.maxHeight ?? 720;
+  const quality = options.quality ?? 0.82;
+
+  let sourceWidth = 0;
+  let sourceHeight = 0;
+  let drawableSource: HTMLCanvasElement | HTMLVideoElement | HTMLImageElement;
+  let cleanupObjectURL: string | null = null;
+
+  if (typeof window !== "undefined" && input instanceof HTMLVideoElement) {
+    sourceWidth = input.videoWidth || 640;
+    sourceHeight = input.videoHeight || 360;
+    drawableSource = input;
+  } else if (typeof window !== "undefined" && input instanceof HTMLCanvasElement) {
+    sourceWidth = input.width || 640;
+    sourceHeight = input.height || 360;
+    drawableSource = input;
+  } else if (typeof window !== "undefined" && input instanceof HTMLImageElement) {
+    sourceWidth = input.naturalWidth || input.width || 640;
+    sourceHeight = input.naturalHeight || input.height || 360;
+    drawableSource = input;
+  } else if (input instanceof File || input instanceof Blob) {
+    const objectUrl = URL.createObjectURL(input);
+    cleanupObjectURL = objectUrl;
+    const img = new Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Failed to load image for thumbnail processing"));
+      img.src = objectUrl;
+    });
+    sourceWidth = img.naturalWidth || img.width || 640;
+    sourceHeight = img.naturalHeight || img.height || 360;
+    drawableSource = img;
+  } else {
+    throw new Error("Unsupported thumbnail input type");
+  }
+
+  try {
+    if (sourceWidth <= 0 || sourceHeight <= 0) {
+      throw new Error("Invalid source dimensions for thumbnail generation");
+    }
+
+    // Resolution should NEVER exceed 720p (1280x720 bounds preserving aspect ratio)
+    let scale = 1;
+    if (sourceWidth > maxWidth || sourceHeight > maxHeight) {
+      scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+    }
+
+    const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+    const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Failed to acquire 2D canvas context");
+    }
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, targetWidth, targetHeight);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    ctx.drawImage(drawableSource, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => {
+          if (b) resolve(b);
+          else reject(new Error("Failed to encode thumbnail to lossy WebP"));
+        },
+        "image/webp",
+        quality
+      );
+    });
+
+    const url = URL.createObjectURL(blob);
+    return {
+      blob,
+      url,
+      width: targetWidth,
+      height: targetHeight,
+    };
+  } finally {
+    if (cleanupObjectURL) {
+      URL.revokeObjectURL(cleanupObjectURL);
+    }
+  }
+}
+
+export async function compressAndResizeImage(
+  fileOrBlob: File | Blob,
+  maxWidth = 1280,
+  maxHeight = 720,
+  quality = 0.82
+): Promise<{ blob: Blob; url: string }> {
+  const result = await processThumbnail(fileOrBlob, { maxWidth, maxHeight, quality });
+  return { blob: result.blob, url: result.url };
+}
+
 export function fixWebmDuration(blob: Blob, durationMs: number): Promise<Blob> {
   return new Promise((resolve) => {
     try {
@@ -80,37 +205,26 @@ export function extractVideoMetadataAndThumbnail(
       });
     }, 4000);
 
-    const captureFrame = () => {
+    const captureFrame = async () => {
       clearTimeout(timeoutId);
       try {
-        const canvas = document.createElement("canvas");
-        const maxDim = 720;
         const originalWidth = video.videoWidth || 640;
         const originalHeight = video.videoHeight || 360;
-        const scale = Math.min(1, maxDim / Math.max(originalWidth, originalHeight));
 
-        canvas.width = Math.round(originalWidth * scale);
-        canvas.height = Math.round(originalHeight * scale);
+        const processed = await processThumbnail(video, {
+          maxWidth: 1280,
+          maxHeight: 720,
+          quality: 0.82,
+        });
 
-        const ctx = canvas.getContext("2d");
-        if (ctx && canvas.width > 0 && canvas.height > 0) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(
-            (blob) => {
-              const thumbUrl = blob ? URL.createObjectURL(blob) : null;
-              cleanupAndResolve({
-                durationSeconds: getValidDuration(),
-                sourceWidth: originalWidth,
-                sourceHeight: originalHeight,
-                thumbnailBlob: blob,
-                thumbnailUrl: thumbUrl,
-              });
-            },
-            "image/jpeg",
-            0.7
-          );
-          return;
-        }
+        cleanupAndResolve({
+          durationSeconds: getValidDuration(),
+          sourceWidth: originalWidth,
+          sourceHeight: originalHeight,
+          thumbnailBlob: processed.blob,
+          thumbnailUrl: processed.url,
+        });
+        return;
       } catch (e) {
         console.warn("Failed canvas thumbnail rendering:", e);
       }

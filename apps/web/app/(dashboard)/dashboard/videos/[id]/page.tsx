@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw, UploadCloud, Image as ImageIcon } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { formatBytes } from "@/lib/video-utils";
+import { formatBytes, processThumbnail, compressAndResizeImage } from "@/lib/video-utils";
 
 interface VideoDetail {
   id: string;
@@ -41,6 +41,8 @@ export default function VideoDetailPage() {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  const [thumbnailStatus, setThumbnailStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const backUrl = video?.folderId ? `/dashboard/uploaded-videos?folderId=${video.folderId}` : "/dashboard/uploaded-videos";
 
@@ -79,6 +81,56 @@ export default function VideoDetailPage() {
       console.error("Retry transcode error", e);
     } finally {
       setIsRetrying(false);
+    }
+  };
+
+  const handleThumbnailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !video) return;
+    const selectedFile = e.target.files[0];
+    if (!selectedFile.type.startsWith("image/")) {
+      setThumbnailStatus({ type: "error", text: "Please select a valid image file." });
+      return;
+    }
+
+    try {
+      setIsUploadingThumbnail(true);
+      setThumbnailStatus(null);
+
+      // 1. Compress and resize image client-side before uploading (max 1280x720 720p lossy WebP quality 0.82)
+      const { blob } = await processThumbnail(selectedFile, { maxWidth: 1280, maxHeight: 720, quality: 0.82 });
+
+      // 2. Request presigned upload URL
+      const res = await fetch("/api/upload/thumbnail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoId: video.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.uploadUrl) {
+        throw new Error(data.error || "Failed to get thumbnail upload URL");
+      }
+
+      // 3. Upload compressed WebP blob to S3
+      const uploadRes = await fetch(data.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "image/webp" },
+        body: blob,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload compressed image to storage");
+      }
+
+      // 4. Update local video state with new thumbnailUrl returned from server
+      const newUrl = data.thumbnailUrl || null;
+      setVideo((prev) => (prev ? { ...prev, thumbnailUrl: newUrl || prev.thumbnailUrl } : prev));
+      setThumbnailStatus({ type: "success", text: "Thumbnail updated successfully!" });
+    } catch (err: any) {
+      console.error("Failed to update thumbnail:", err);
+      setThumbnailStatus({ type: "error", text: err?.message || "Failed to update thumbnail." });
+    } finally {
+      setIsUploadingThumbnail(false);
     }
   };
 
@@ -409,8 +461,72 @@ export default function VideoDetailPage() {
           </div>
         </div>
 
-        {/* Right 1 Col: Metadata Sidebar */}
+        {/* Right 1 Col: Metadata Sidebar & Thumbnail Management */}
         <div className="space-y-6">
+          {/* Thumbnail Management Card */}
+          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-4 text-xs">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-sm text-[hsl(var(--foreground))] uppercase tracking-wider flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-[hsl(var(--primary))]" />
+                Video Thumbnail
+              </h3>
+            </div>
+
+            <div className="relative aspect-video w-full bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs group">
+              {video.thumbnailUrl ? (
+                <img
+                  src={video.thumbnailUrl}
+                  alt={video.title}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
+                  <ImageIcon className="w-8 h-8 text-slate-600" />
+                  <span className="text-[11px] font-medium">No custom thumbnail set</span>
+                </div>
+              )}
+
+              {isUploadingThumbnail && (
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center text-white gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[hsl(var(--primary))]" />
+                  <span className="text-xs font-semibold">Uploading...</span>
+                </div>
+              )}
+            </div>
+
+            {thumbnailStatus && (
+              <div
+                className={`p-2.5 rounded-xl border text-xs font-medium ${
+                  thumbnailStatus.type === "success"
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    : "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+                }`}
+              >
+                {thumbnailStatus.text}
+              </div>
+            )}
+
+            <div>
+              <input
+                type="file"
+                accept="image/*"
+                id="video-detail-thumbnail-input"
+                className="hidden"
+                disabled={isUploadingThumbnail}
+                onChange={handleThumbnailFileChange}
+              />
+              <label
+                htmlFor="video-detail-thumbnail-input"
+                className={`w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-xl border border-[hsl(var(--border))] bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-[hsl(var(--foreground))] cursor-pointer transition-colors shadow-2xs ${
+                  isUploadingThumbnail ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                <span>{isUploadingThumbnail ? "Uploading..." : "Upload custom thumbnail"}</span>
+              </label>
+            </div>
+          </div>
+
           {/* Asset Info Card */}
           <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-3 text-xs">
             <h3 className="font-bold text-sm text-[hsl(var(--foreground))] uppercase tracking-wider mb-2">

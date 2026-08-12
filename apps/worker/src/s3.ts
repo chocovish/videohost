@@ -172,6 +172,7 @@ export async function uploadDirectoryToS3(
     else if (relativePath.endsWith(".ts")) contentType = "video/MP2T";
     else if (relativePath.endsWith(".m4s") || relativePath.endsWith(".mp4")) contentType = "video/mp4";
     else if (relativePath.endsWith(".jpg") || relativePath.endsWith(".jpeg")) contentType = "image/jpeg";
+    else if (relativePath.endsWith(".webp")) contentType = "image/webp";
     else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
 
     await uploadFileToS3(fullPath, s3Key, contentType, config);
