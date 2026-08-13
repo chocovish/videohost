@@ -804,7 +804,7 @@ export default function CustomizeSharePage() {
             </span>
           </div>
 
-          <div className="border border-[hsl(var(--border))] rounded-3xl overflow-hidden shadow-2xl bg-black max-h-[750px] overflow-y-auto">
+          <div className="border border-[hsl(var(--border))] rounded-2xl overflow-hidden shadow-2xl max-h-[750px] overflow-y-auto">
             <SharedContentClient overrideConfig={config} previewData={SAMPLE_PREVIEW_DATA} />
           </div>
         </div>

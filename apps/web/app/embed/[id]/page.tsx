@@ -31,7 +31,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden m-0 p-0 flex items-center justify-center">
-      <VideoPlayer src={srcUrl} poster={posterUrl} className="w-full h-full rounded-none" />
+      <VideoPlayer src={srcUrl} poster={posterUrl} className="w-full h-full" />
     </div>
   );
 }

@@ -291,9 +291,9 @@ export default function VideoDetailPage() {
 
             {/* Tab 1: Video Player */}
             {activeTab === "player" && (
-              <div className="aspect-video w-full bg-black rounded-3xl overflow-hidden relative flex items-center justify-center">
+              <div className="aspect-video w-full rounded-xl overflow-hidden relative flex items-center justify-center">
                 {video.playbackUrl ? (
-                  <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} />
+                  <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-xl" />
                 ) : video.status === "FAILED" ? (
                   <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-md mx-auto">
                     <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
