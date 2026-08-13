@@ -51,6 +51,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     const accessMode = item.shareAccessMode;
     const sharedEmails: Array<{ email: string }> = item.sharedEmails;
 
+    // Fetch customization config for this organization
+    const rawShareConfig = await db.sharePageConfig.findUnique({
+      where: { organizationId: item.organizationId },
+    });
+
+    let sharePageConfig: any = rawShareConfig ? { ...rawShareConfig } : null;
+    if (sharePageConfig) {
+      if (sharePageConfig.customLogoKey) {
+        try {
+          sharePageConfig.customLogoUrl = await getPresignedPlaybackUrl(sharePageConfig.customLogoKey);
+        } catch (e) {
+          console.error("Error signing custom logo URL in share route:", e);
+        }
+      }
+      if (sharePageConfig.welcomeBannerKey) {
+        try {
+          sharePageConfig.welcomeBannerUrl = await getPresignedPlaybackUrl(sharePageConfig.welcomeBannerKey);
+        } catch (e) {
+          console.error("Error signing welcome banner URL in share route:", e);
+        }
+      }
+    }
+
     // 3. Check PRIVATE Access Mode
     if (accessMode === "PRIVATE") {
       return NextResponse.json(
@@ -61,6 +84,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           organization,
           type: targetType,
           itemTitle,
+          sharePageConfig,
         },
         { status: 403 }
       );
@@ -78,6 +102,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
             organization,
             type: targetType,
             itemTitle,
+            sharePageConfig,
           },
           { status: 401 }
         );
@@ -108,6 +133,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
             organization,
             type: targetType,
             itemTitle,
+            sharePageConfig,
           },
           { status: 403 }
         );
@@ -120,6 +146,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         type: "video",
         accessMode,
         organization,
+        sharePageConfig,
         video: {
           id: video.id,
           title: video.title,
@@ -180,6 +207,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         type: "folder",
         accessMode,
         organization,
+        sharePageConfig,
         rootFolder: {
           id: folder.id,
           name: folder.name,

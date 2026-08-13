@@ -220,4 +220,15 @@ export async function deleteFileFromS3(key: string): Promise<void> {
   }
 }
 
+export async function uploadBufferToS3(key: string, body: Buffer, contentType: string = "image/png"): Promise<void> {
+  await ensureBucketExists();
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+  });
+  await s3.send(command);
+}
+
 

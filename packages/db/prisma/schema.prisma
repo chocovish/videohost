@@ -92,6 +92,43 @@ model Organization {
   apiKeys     ApiKey[]
   webhooks    Webhook[]
   paymentOrders PaymentOrder[]
+  sharePageConfig SharePageConfig?
+}
+
+model SharePageConfig {
+  id               String       @id @default(cuid())
+  organizationId   String       @unique
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Appearance & Styling
+  themePreset      String       @default("obsidian") // "obsidian" | "cyberpunk" | "vaporwave" | "gold" | "ocean" | "sunset" | "minimal-light"
+  accentColor      String       @default("#84cc16")
+  backgroundStyle  String       @default("mesh-gradient") // "mesh-gradient" | "obsidian-aura" | "neon-grid" | "glassmorphism" | "minimal-solid"
+  cardRoundness    String       @default("3xl") // "xl" | "3xl" | "pill" | "square"
+
+  // Header & Branding
+  customTitle            String?
+  welcomeTagline         String?
+  welcomeTaglineFontSize String       @default("xl") // "sm" | "md" | "lg" | "xl" | "2xl"
+  showLogo               Boolean      @default(true)
+  customLogoKey          String?      // S3 Key: share-page-customisation/{orgId}/logo-{timestamp}.png
+  welcomeBannerKey       String?      // S3 Key: share-page-customisation/{orgId}/welcome-banner-{timestamp}.png
+
+  // Call To Action (CTA) Button
+  showCta          Boolean      @default(false)
+  ctaText          String?      @default("Learn More")
+  ctaUrl           String?      @default("https://example.com")
+  ctaStyle         String       @default("gradient") // "gradient" | "solid" | "outline"
+
+  // Player & Display Features
+  showShareButton  Boolean      @default(false)
+  showSocialBar    Boolean      @default(false)
+  showDuration     Boolean      @default(true)
+  autoPlayMuted    Boolean      @default(false)
+  footerText       String?
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 }
 
 model OrganizationMember {

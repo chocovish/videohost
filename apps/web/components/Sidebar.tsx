@@ -16,6 +16,7 @@ import {
   Loader2,
   HardDrive,
   Sparkles,
+  Paintbrush,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
@@ -141,6 +142,7 @@ export default function Sidebar({
 
   const creatorNavItems = [
     { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
+    { label: "Customize share page", href: "/dashboard/customize-share-page", icon: Paintbrush },
     { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
     { label: "Organization", href: "/dashboard/settings", icon: Settings },

@@ -21,12 +21,39 @@ import {
   UserX,
   Copy,
   Check,
+  ExternalLink,
+  ArrowUpRight,
+  Mail,
+  Send,
+  Globe,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDuration } from "@/lib/video-utils";
 
-interface SharedData {
+export interface SharePageConfigData {
+  themePreset?: string;
+  accentColor?: string;
+  backgroundStyle?: string;
+  cardRoundness?: string;
+  customTitle?: string | null;
+  welcomeTagline?: string | null;
+  welcomeTaglineFontSize?: string | null;
+  showLogo?: boolean;
+  customLogoUrl?: string | null;
+  welcomeBannerUrl?: string | null;
+  showCta?: boolean;
+  ctaText?: string | null;
+  ctaUrl?: string | null;
+  ctaStyle?: string;
+  showShareButton?: boolean;
+  showSocialBar?: boolean;
+  showDuration?: boolean;
+  autoPlayMuted?: boolean;
+  footerText?: string | null;
+}
+
+export interface SharedData {
   type: "video" | "folder";
   accessMode?: string;
   organization: {
@@ -34,6 +61,7 @@ interface SharedData {
     logoUrl?: string | null;
     slug: string;
   };
+  sharePageConfig?: SharePageConfigData | null;
   video?: {
     id: string;
     title: string;
@@ -69,16 +97,24 @@ interface SharedData {
   }>;
 }
 
-export default function SharedContentClient() {
+interface SharedContentClientProps {
+  overrideConfig?: SharePageConfigData;
+  previewData?: SharedData;
+}
+
+export default function SharedContentClient({
+  overrideConfig,
+  previewData,
+}: SharedContentClientProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const token = params.token as string;
-  const subfolderId = searchParams.get("subfolderId");
+  const token = params?.token as string;
+  const subfolderId = searchParams?.get("subfolderId");
 
-  const [data, setData] = useState<SharedData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<SharedData | null>(previewData || null);
+  const [loading, setLoading] = useState(!previewData);
   const [copied, setCopied] = useState(false);
   const [errorState, setErrorState] = useState<{
     code: string;
@@ -99,6 +135,7 @@ export default function SharedContentClient() {
   } | null>(null);
 
   const fetchSharedContent = async () => {
+    if (previewData) return;
     try {
       setLoading(true);
       setErrorState(null);
@@ -134,8 +171,10 @@ export default function SharedContentClient() {
   };
 
   useEffect(() => {
-    fetchSharedContent();
-  }, [token, subfolderId]);
+    if (!previewData && token) {
+      fetchSharedContent();
+    }
+  }, [token, subfolderId, previewData]);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -146,11 +185,32 @@ export default function SharedContentClient() {
   };
 
   const handleSubfolderClick = (folderId: string) => {
+    if (previewData) return;
     router.push(`/share/${token}?subfolderId=${folderId}`);
   };
 
   const handleBackToRoot = () => {
+    if (previewData) return;
     router.push(`/share/${token}`);
+  };
+
+  // Merge database config with live preview override config
+  const config: SharePageConfigData = {
+    themePreset: "obsidian",
+    accentColor: "#84cc16",
+    backgroundStyle: "mesh-gradient",
+    cardRoundness: "3xl",
+    showLogo: true,
+    showCta: false,
+    ctaText: "Schedule a Call",
+    ctaUrl: "https://example.com",
+    ctaStyle: "gradient",
+    showShareButton: false,
+    showSocialBar: false,
+    showDuration: true,
+    autoPlayMuted: false,
+    ...data?.sharePageConfig,
+    ...overrideConfig,
   };
 
   if (loading) {
@@ -253,7 +313,7 @@ export default function SharedContentClient() {
     );
   }
 
-  // 3. LOGGED IN BUT ACCESS DENIED (EMAIL NOT IN ALLOWED LIST)
+  // 3. LOGGED IN BUT ACCESS DENIED
   if (errorState?.code === "ACCESS_DENIED") {
     const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
     return (
@@ -307,29 +367,122 @@ export default function SharedContentClient() {
   const { organization } = data;
   const isVideo = data.type === "video";
 
+  // Dynamic Theme Preset Class & Style Mapping
+  const preset = config.themePreset || "obsidian";
+
+  let bgClass = "bg-[#030712] text-slate-100";
+  let cardBgClass = "bg-slate-900/80 border-white/10 shadow-2xl";
+  let headerBgClass = "bg-[#030712]/75 border-white/[0.08]";
+  let accentHex = config.accentColor || "#84cc16";
+
+  if (preset === "cyberpunk") {
+    bgClass = "bg-[#070312] text-slate-100";
+    cardBgClass = "bg-[#0f0724]/90 border-cyan-500/30 shadow-[0_0_40px_rgba(6,182,212,0.15)]";
+    headerBgClass = "bg-[#070312]/80 border-cyan-500/20";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#06b6d4";
+  } else if (preset === "vaporwave") {
+    bgClass = "bg-[#0f041c] text-purple-100";
+    cardBgClass = "bg-[#1d0836]/90 border-pink-500/30 shadow-[0_0_40px_rgba(236,72,153,0.15)]";
+    headerBgClass = "bg-[#0f041c]/80 border-pink-500/20";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#ec4899";
+  } else if (preset === "gold") {
+    bgClass = "bg-[#0c0a09] text-stone-100";
+    cardBgClass = "bg-[#1c1917]/90 border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)]";
+    headerBgClass = "bg-[#0c0a09]/80 border-amber-500/20";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#eab308";
+  } else if (preset === "ocean") {
+    bgClass = "bg-[#021124] text-sky-100";
+    cardBgClass = "bg-[#072449]/90 border-sky-400/30 shadow-[0_0_40px_rgba(56,189,248,0.15)]";
+    headerBgClass = "bg-[#021124]/80 border-sky-400/20";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#38bdf8";
+  } else if (preset === "sunset") {
+    bgClass = "bg-[#17050b] text-rose-50";
+    cardBgClass = "bg-[#2d0d17]/90 border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)]";
+    headerBgClass = "bg-[#17050b]/80 border-orange-500/20";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#f97316";
+  } else if (preset === "minimal-light") {
+    bgClass = "bg-slate-50 text-slate-900";
+    cardBgClass = "bg-white border-slate-200/90 shadow-xl shadow-slate-200/50";
+    headerBgClass = "bg-white/80 border-slate-200";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#2563eb";
+  }
+
+  // Card roundness
+  let roundnessClass = "rounded-3xl";
+  if (config.cardRoundness === "xl") roundnessClass = "rounded-xl";
+  if (config.cardRoundness === "pill") roundnessClass = "rounded-[2.5rem]";
+  if (config.cardRoundness === "square") roundnessClass = "rounded-none";
+
+  // Display logo URL
+  const logoUrlToDisplay = config.customLogoUrl || organization.logoUrl;
+  // Display page title
+  const displayTitle = config.customTitle || organization.name;
+
+  // Current page URL for social sharing
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareTitle = data.video?.title ? `${data.video.title} — ${displayTitle}` : displayTitle;
+
   return (
-    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col selection:bg-lime-500 selection:text-black font-sans antialiased">
-      {/* Premium Glass Header */}
-      <header className="sticky top-0 z-50 bg-[#030712]/70 backdrop-blur-2xl border-b border-white/[0.08] shadow-lg shadow-black/40">
+    <div
+      className={`min-h-screen flex flex-col selection:bg-lime-500 selection:text-black font-sans antialiased transition-colors duration-500 relative ${bgClass}`}
+    >
+      {/* Background Aura Effects */}
+      {config.backgroundStyle === "mesh-gradient" && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div
+            className="absolute -top-32 left-1/4 w-[500px] h-[500px] rounded-full blur-[140px] opacity-25 animate-pulse"
+            style={{ backgroundColor: accentHex }}
+          />
+          <div
+            className="absolute top-1/3 -right-20 w-[450px] h-[450px] rounded-full blur-[160px] opacity-20"
+            style={{ backgroundColor: accentHex }}
+          />
+        </div>
+      )}
+
+      {config.backgroundStyle === "obsidian-aura" && (
+        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[180px] opacity-20"
+            style={{ backgroundColor: accentHex }}
+          />
+        </div>
+      )}
+
+      {config.backgroundStyle === "neon-grid" && (
+        <div
+          className="fixed inset-0 pointer-events-none z-0 opacity-15"
+          style={{
+            backgroundImage: `radial-gradient(${accentHex} 1px, transparent 1px)`,
+            backgroundSize: "24px 24px",
+          }}
+        />
+      )}
+
+      {/* Header */}
+      <header className={`sticky top-0 z-50 backdrop-blur-2xl border-b shadow-lg transition-all ${headerBgClass}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          {/* Organization Branding ONLY (Video title removed per explicit instruction) */}
           <div className="flex items-center gap-3">
-            {organization.logoUrl ? (
+            {logoUrlToDisplay ? (
               <img
-                src={organization.logoUrl}
-                alt={organization.name}
+                src={logoUrlToDisplay}
+                alt={displayTitle}
                 className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-md"
               />
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-lime-500/20 ring-1 ring-lime-400/40">
-                {organization.name.substring(0, 2).toUpperCase()}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-950 font-black text-lg shadow-lg ring-1 ring-white/20"
+                style={{ backgroundColor: accentHex }}
+              >
+                {displayTitle.substring(0, 2).toUpperCase()}
               </div>
             )}
+
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-slate-100 tracking-tight flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4 text-lime-400" />
-                  {organization.name}
+                <span className="text-sm font-black tracking-tight flex items-center gap-1.5">
+                  <Building2 className="w-4 h-4" style={{ color: accentHex }} />
+                  {displayTitle}
                 </span>
                 {!isVideo && data.currentFolder && (
                   <span className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
@@ -341,25 +494,34 @@ export default function SharedContentClient() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleCopyLink}
-              className="px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-xs font-bold text-slate-200 transition-all flex items-center gap-1.5 shadow-md active:scale-95"
-              title="Copy link to clipboard"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-lime-400" />
-                  <span className="text-lime-400">Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Copy Link</span>
-                </>
-              )}
-            </button>
+            {config.showShareButton && (
+              <button
+                onClick={handleCopyLink}
+                className="px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-xs font-bold text-slate-200 transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                title="Copy link to clipboard"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" style={{ color: accentHex }} />
+                    <span style={{ color: accentHex }}>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </button>
+            )}
 
-            <div className="hidden sm:flex px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/20 text-xs font-extrabold text-lime-400 items-center gap-1.5">
+            <div
+              className="hidden sm:flex px-3 py-1.5 rounded-full border text-xs font-extrabold items-center gap-1.5"
+              style={{
+                backgroundColor: `${accentHex}15`,
+                borderColor: `${accentHex}30`,
+                color: accentHex,
+              }}
+            >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Shared Portal</span>
             </div>
@@ -367,16 +529,68 @@ export default function SharedContentClient() {
         </div>
       </header>
 
-      {/* Main Content Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
+        {/* Welcome Banner Image & Subtitle Banner */}
+        {(config.welcomeBannerUrl || config.welcomeTagline) && (
+          <div className="max-w-4xl mx-auto space-y-4 text-center">
+            {config.welcomeBannerUrl && (
+              <div className={`w-full overflow-hidden border border-white/10 shadow-2xl max-h-72 bg-slate-900 ${roundnessClass}`}>
+                <img
+                  src={config.welcomeBannerUrl}
+                  alt="Welcome Banner"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            {config.welcomeTagline && (
+              <div className="py-2">
+                {(() => {
+                  const val = config.welcomeTaglineFontSize || "24";
+                  let fontSizePx = "24px";
+                  let weightClass = "font-black";
+
+                  if (val === "sm") { fontSizePx = "14px"; weightClass = "font-semibold"; }
+                  else if (val === "md") { fontSizePx = "16px"; weightClass = "font-bold"; }
+                  else if (val === "lg") { fontSizePx = "18px"; weightClass = "font-extrabold"; }
+                  else if (val === "xl") { fontSizePx = "24px"; weightClass = "font-black"; }
+                  else if (val === "2xl") { fontSizePx = "36px"; weightClass = "font-black"; }
+                  else {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      fontSizePx = `${parsed}px`;
+                      if (parsed <= 14) weightClass = "font-semibold";
+                      else if (parsed <= 18) weightClass = "font-bold";
+                      else if (parsed >= 28) weightClass = "font-black";
+                      else weightClass = "font-extrabold";
+                    }
+                  }
+
+                  return (
+                    <h2
+                      className={`tracking-tight ${weightClass}`}
+                      style={{ fontSize: fontSizePx }}
+                    >
+                      {config.welcomeTagline}
+                    </h2>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SINGLE VIDEO SHARE VIEW */}
         {isVideo && data.video && (
           <div className="relative group max-w-5xl mx-auto space-y-6">
-            {/* Backdrop Ambient Aura */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-lime-500/20 via-emerald-500/10 to-teal-500/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-1000 -z-10 pointer-events-none" />
+            {/* Ambient Backlight */}
+            <div
+              className="absolute -inset-1 rounded-3xl blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-1000 -z-10 pointer-events-none"
+              style={{ backgroundColor: accentHex }}
+            />
 
             {/* Video Player Card */}
-            <div className="bg-slate-900/90 border border-white/10 rounded-3xl overflow-hidden p-2 sm:p-3 shadow-2xl shadow-black/80 backdrop-blur-xl ring-1 ring-white/10">
+            <div className={`p-2 sm:p-3 backdrop-blur-xl ring-1 ring-white/10 ${cardBgClass} ${roundnessClass}`}>
               <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 shadow-inner">
                 {data.video.playbackUrl ? (
                   <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} />
@@ -389,42 +603,51 @@ export default function SharedContentClient() {
               </div>
             </div>
 
-            {/* Video Detail Card */}
-            <div className="bg-slate-900/60 border border-white/[0.08] backdrop-blur-2xl rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
+            {/* Video Detail & Controls Card */}
+            <div className={`p-6 sm:p-8 space-y-6 backdrop-blur-2xl ${cardBgClass} ${roundnessClass}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1 bg-lime-500/10 border border-lime-500/20 text-lime-400 text-xs font-extrabold rounded-full flex items-center gap-1.5">
+                    <span
+                      className="px-3 py-1 text-xs font-extrabold rounded-full flex items-center gap-1.5 border"
+                      style={{
+                        backgroundColor: `${accentHex}15`,
+                        borderColor: `${accentHex}30`,
+                        color: accentHex,
+                      }}
+                    >
                       <Film className="w-3.5 h-3.5" /> Shared Video
                     </span>
-                    {data.video.durationSeconds && (
+                    {config.showDuration && data.video.durationSeconds && (
                       <span className="px-3 py-1 bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-semibold rounded-full flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-lime-400" />
+                        <Clock className="w-3.5 h-3.5" style={{ color: accentHex }} />
                         {formatDuration(data.video.durationSeconds)}
                       </span>
                     )}
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight leading-snug">
+                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
                     {data.video.title}
                   </h1>
                 </div>
 
-                <button
-                  onClick={handleCopyLink}
-                  className="self-start sm:self-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold rounded-xl border border-slate-700/80 transition-all flex items-center gap-2 text-xs shadow-md active:scale-95 shrink-0"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4 text-lime-400" />
-                      <span>Link Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4 text-lime-400" />
-                      <span>Share Video</span>
-                    </>
-                  )}
-                </button>
+                {config.showShareButton && (
+                  <button
+                    onClick={handleCopyLink}
+                    className="self-start sm:self-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold rounded-xl border border-slate-700/80 transition-all flex items-center gap-2 text-xs shadow-md active:scale-95 shrink-0 cursor-pointer"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4" style={{ color: accentHex }} />
+                        <span>Link Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4" style={{ color: accentHex }} />
+                        <span>Share Video</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {data.video.description && (
@@ -434,15 +657,84 @@ export default function SharedContentClient() {
                 </div>
               )}
 
+              {/* Call-to-Action (CTA) Card (if enabled) */}
+              {config.showCta && config.ctaUrl && (
+                <div
+                  className="p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-all shadow-lg"
+                  style={{
+                    backgroundColor: `${accentHex}10`,
+                    borderColor: `${accentHex}40`,
+                  }}
+                >
+                  <div className="space-y-1 text-center sm:text-left">
+                    <h4 className="font-extrabold text-base tracking-tight">Interested in learning more?</h4>
+                    <p className="text-xs text-slate-300">Click below to take the next step with {displayTitle}.</p>
+                  </div>
+                  <a
+                    href={config.ctaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 rounded-xl text-slate-950 font-black text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
+                    style={{ backgroundColor: accentHex }}
+                  >
+                    <span>{config.ctaText || "Learn More"}</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+
+              {/* Social Sharing Bar */}
+              {config.showSocialBar && (
+                <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Share video to</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-sky-400" />
+                      <span>X / Twitter</span>
+                    </a>
+                    <a
+                      href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                    >
+                      <Globe className="w-3.5 h-3.5 text-blue-500" />
+                      <span>LinkedIn</span>
+                    </a>
+                    <a
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareTitle + " " + shareUrl)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                    >
+                      <Send className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>WhatsApp</span>
+                    </a>
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareUrl)}`}
+                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Email</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-800/60 gap-3">
                 <div className="flex items-center gap-2">
                   <span>Hosted by</span>
-                  <span className="font-bold text-slate-200 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/40">
-                    {organization.name}
+                  <span className="font-bold bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/40">
+                    {displayTitle}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-slate-400">
-                  <ShieldCheck className="w-4 h-4 text-lime-400" />
+                  <ShieldCheck className="w-4 h-4" style={{ color: accentHex }} />
                   <span>Encrypted Link Access</span>
                 </div>
               </div>
@@ -454,12 +746,18 @@ export default function SharedContentClient() {
         {!isVideo && data.currentFolder && (
           <div className="space-y-6">
             {/* Floating Breadcrumb Bar */}
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 bg-slate-900/60 backdrop-blur-xl border border-white/[0.08] px-4 py-3 rounded-2xl shadow-md">
+            <div className={`flex items-center gap-2 text-xs sm:text-sm text-slate-400 backdrop-blur-xl px-4 py-3 border ${cardBgClass} ${roundnessClass}`}>
               <button
                 onClick={handleBackToRoot}
-                className="hover:text-lime-400 font-bold flex items-center gap-2 transition-colors group"
+                className="hover:text-lime-400 font-bold flex items-center gap-2 transition-colors group cursor-pointer"
               >
-                <div className="p-1.5 bg-lime-500/10 text-lime-400 rounded-lg group-hover:scale-110 transition-transform">
+                <div
+                  className="p-1.5 rounded-lg group-hover:scale-110 transition-transform"
+                  style={{
+                    backgroundColor: `${accentHex}15`,
+                    color: accentHex,
+                  }}
+                >
                   <Folder className="w-4 h-4" />
                 </div>
                 <span>{data.rootFolder?.name || "Shared Folder"}</span>
@@ -485,18 +783,18 @@ export default function SharedContentClient() {
                     <button
                       key={sf.id}
                       onClick={() => handleSubfolderClick(sf.id)}
-                      className="flex items-center gap-3.5 p-4 bg-slate-900/70 hover:bg-slate-800/80 border border-white/[0.08] hover:border-lime-500/40 rounded-2xl transition-all duration-300 text-left group shadow-lg hover:-translate-y-1 hover:shadow-xl hover:shadow-lime-500/5 backdrop-blur-md"
+                      className={`flex items-center gap-3.5 p-4 border transition-all duration-300 text-left group shadow-lg hover:-translate-y-1 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
                     >
                       <div className="p-3 bg-gradient-to-br from-amber-500/20 to-amber-600/10 text-amber-400 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300">
                         <Folder className="w-5 h-5 fill-amber-500/30" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-slate-200 group-hover:text-lime-400 transition-colors truncate">
+                        <p className="text-sm font-bold group-hover:text-lime-400 transition-colors truncate">
                           {sf.name}
                         </p>
                         <p className="text-[11px] text-slate-400 font-semibold">Folder</p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-lime-400 group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all" />
                     </button>
                   ))}
                 </div>
@@ -510,7 +808,7 @@ export default function SharedContentClient() {
               </h2>
 
               {!data.videos || data.videos.length === 0 ? (
-                <div className="py-16 text-center bg-slate-900/40 border border-white/[0.08] rounded-3xl backdrop-blur-md">
+                <div className={`py-16 text-center border backdrop-blur-md ${cardBgClass} ${roundnessClass}`}>
                   <Film className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
                   <p className="text-sm font-bold text-slate-300">No videos in this folder</p>
                   <p className="text-xs text-slate-400 mt-1">Check back later for new updates.</p>
@@ -521,7 +819,7 @@ export default function SharedContentClient() {
                     <div
                       key={vid.id}
                       onClick={() => vid.playbackUrl && setSelectedVideo(vid)}
-                      className={`group relative bg-slate-900/70 border border-white/[0.08] rounded-2xl overflow-hidden shadow-xl transition-all duration-300 hover:-translate-y-1.5 hover:border-lime-500/40 hover:shadow-2xl hover:shadow-lime-500/10 backdrop-blur-md ${
+                      className={`group relative border overflow-hidden shadow-xl transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-md ${cardBgClass} ${roundnessClass} ${
                         vid.playbackUrl ? "cursor-pointer" : "opacity-60 cursor-not-allowed"
                       }`}
                     >
@@ -539,13 +837,16 @@ export default function SharedContentClient() {
 
                         {vid.playbackUrl && (
                           <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
-                            <div className="p-3.5 bg-lime-500 text-slate-950 rounded-full shadow-xl shadow-lime-500/30 scale-90 group-hover:scale-100 transition-transform duration-300">
+                            <div
+                              className="p-3.5 text-slate-950 rounded-full shadow-xl scale-90 group-hover:scale-100 transition-transform duration-300"
+                              style={{ backgroundColor: accentHex }}
+                            >
                               <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
                             </div>
                           </div>
                         )}
 
-                        {vid.durationSeconds && (
+                        {config.showDuration && vid.durationSeconds && (
                           <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-[11px] font-extrabold text-slate-200 rounded-md border border-slate-800/80 shadow-md">
                             {formatDuration(vid.durationSeconds)}
                           </span>
@@ -554,7 +855,7 @@ export default function SharedContentClient() {
 
                       {/* Content Info */}
                       <div className="p-4 space-y-1.5">
-                        <h3 className="text-sm font-bold text-slate-200 group-hover:text-lime-400 transition-colors line-clamp-1">
+                        <h3 className="text-sm font-bold group-hover:opacity-90 transition-colors line-clamp-1">
                           {vid.title}
                         </h3>
                         {vid.description ? (
@@ -571,6 +872,11 @@ export default function SharedContentClient() {
           </div>
         )}
       </main>
+
+      {/* Footer Text */}
+      <footer className="py-6 border-t border-slate-800/40 text-center text-xs text-slate-400 relative z-10">
+        <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}. Powered by VideoHost.`}</p>
+      </footer>
 
       {/* Video Modal Player for Shared Folder View */}
       <Dialog open={!!(selectedVideo && selectedVideo.playbackUrl)} onOpenChange={(open) => !open && setSelectedVideo(null)}>
