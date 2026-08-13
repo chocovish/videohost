@@ -589,18 +589,16 @@ export default function SharedContentClient({
               style={{ backgroundColor: accentHex }}
             />
 
-            {/* Video Player Card */}
-            <div className={`p-2 sm:p-3 backdrop-blur-xl ring-1 ring-white/10 ${cardBgClass} ${roundnessClass}`}>
-              <div className="aspect-video w-full rounded-xl overflow-hidden shadow-inner">
-                {data.video.playbackUrl ? (
-                  <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-xl" />
-                ) : (
-                  <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6 border border-slate-800">
-                    <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
-                    <p className="text-sm font-semibold">Video is processing or unplayable.</p>
-                  </div>
-                )}
-              </div>
+            {/* Video Player */}
+            <div className="aspect-video w-full rounded-xl overflow-hidden shadow-2xl">
+              {data.video.playbackUrl ? (
+                <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-xl" />
+              ) : (
+                <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6 border border-slate-800">
+                  <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
+                  <p className="text-sm font-semibold">Video is processing or unplayable.</p>
+                </div>
+              )}
             </div>
 
             {/* Video Detail & Controls Card */}
@@ -887,12 +885,10 @@ export default function SharedContentClient({
               <span className="truncate">{selectedVideo?.title}</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="p-2 sm:p-4">
-            <div className="aspect-video w-full rounded-xl overflow-hidden ring-1 ring-white/10 shadow-2xl">
-              {selectedVideo && selectedVideo.playbackUrl && (
-                <VideoPlayer src={selectedVideo.playbackUrl} poster={selectedVideo.thumbnailUrl} className="w-full h-full rounded-xl" />
-              )}
-            </div>
+          <div className="aspect-video w-full overflow-hidden">
+            {selectedVideo && selectedVideo.playbackUrl && (
+              <VideoPlayer src={selectedVideo.playbackUrl} poster={selectedVideo.thumbnailUrl} className="w-full h-full" />
+            )}
           </div>
           {selectedVideo?.description && (
             <div className="p-4 sm:p-5 bg-slate-900/90 border-t border-slate-800/80">

@@ -256,22 +256,54 @@ export default function VideoDetailPage() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Col: Player and Tabs */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Video Player (Standalone, no card wrapping it) */}
+          <div className="aspect-video w-full rounded-2xl overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
+            {video.playbackUrl ? (
+              <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-2xl" />
+            ) : video.status === "FAILED" ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-md mx-auto">
+                <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-base font-bold text-slate-100">Transcoding Failed</p>
+                  <p className="text-xs text-slate-400">
+                    HLS adaptive bitrate encoding encountered an issue during processing.
+                  </p>
+                </div>
+                <button
+                  onClick={handleRetryTranscode}
+                  disabled={isRetrying}
+                  className="mt-2 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors shadow-md disabled:opacity-50"
+                >
+                  <RotateCcw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
+                  {isRetrying ? "Requeueing Job..." : "Retry Transcoding"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
+                <Clock className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
+                <div className="space-y-2 w-full">
+                  <p className="text-sm font-semibold text-slate-200">Video Transcoding in Progress</p>
+                  <p className="text-xs text-slate-400 font-medium">Progress: {video.progress || 0}%</p>
+                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                    <div
+                      className="bg-[hsl(var(--primary))] h-2 transition-all duration-500 rounded-full"
+                      style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="border border-[hsl(var(--border))] rounded-2xl bg-white p-4 sm:p-6 shadow-xs space-y-4">
             {/* Tabs */}
             <div className="flex border-b border-[hsl(var(--border))] gap-4 sm:gap-6 text-sm font-semibold overflow-x-auto whitespace-nowrap">
               <button
-                onClick={() => setActiveTab("player")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "player"
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                  }`}
-              >
-                <Play className="w-4 h-4" /> Player Preview
-              </button>
-              <button
                 onClick={() => setActiveTab("embed")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "embed"
+                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "embed" || activeTab === "player"
                   ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
                   : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
                   }`}
@@ -288,49 +320,6 @@ export default function VideoDetailPage() {
                 <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
               </button>
             </div>
-
-            {/* Tab 1: Video Player */}
-            {activeTab === "player" && (
-              <div className="aspect-video w-full rounded-xl overflow-hidden relative flex items-center justify-center">
-                {video.playbackUrl ? (
-                  <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-xl" />
-                ) : video.status === "FAILED" ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-md mx-auto">
-                    <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
-                      <AlertTriangle className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-bold text-slate-100">Transcoding Failed</p>
-                      <p className="text-xs text-slate-400">
-                        HLS adaptive bitrate encoding encountered an issue during processing.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleRetryTranscode}
-                      disabled={isRetrying}
-                      className="mt-2 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors shadow-md disabled:opacity-50"
-                    >
-                      <RotateCcw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
-                      {isRetrying ? "Requeueing Job..." : "Retry Transcoding"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
-                    <Clock className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
-                    <div className="space-y-2 w-full">
-                      <p className="text-sm font-semibold text-slate-200">Video Transcoding in Progress</p>
-                      <p className="text-xs text-slate-400 font-medium">Progress: {video.progress || 0}%</p>
-                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-                        <div
-                          className="bg-[hsl(var(--primary))] h-2 transition-all duration-500 rounded-full"
-                          style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Tab 2: Embed Code */}
             {activeTab === "embed" && (
