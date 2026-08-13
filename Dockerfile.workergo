@@ -1,0 +1,38 @@
+# Stage 1: Build the Go worker binary
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+
+# Copy Go module dependency files
+COPY apps/worker/go/go.mod apps/worker/go/go.sum ./
+
+# Download Go dependencies
+RUN go mod download
+
+# Copy the Go source files
+COPY apps/worker/go/ ./
+
+# Build a statically linked Go binary for Linux
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o worker-go .
+
+# Stage 2: Runtime environment with FFmpeg
+FROM alpine:3.19 AS runner
+
+# Install runtime dependencies: FFmpeg, OpenSSL, CA certificates, and timezone data
+RUN apk add --no-cache \
+    ffmpeg \
+    ca-certificates \
+    openssl \
+    tzdata
+
+WORKDIR /app
+
+ENV PORT=8080
+ENV IS_DOCKER=true
+
+# Copy built Go binary from builder stage
+COPY --from=builder /app/worker-go /app/worker-go
+
+EXPOSE 8080
+
+CMD ["/app/worker-go"]

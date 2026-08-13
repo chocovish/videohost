@@ -176,7 +176,7 @@ export default function VideoDetailPage() {
     );
   }
 
-  const isHls = video.playbackUrl?.includes(".m3u8");
+  const isHls = video.playbackUrl ? (video.playbackUrl.includes(".m3u8") || video.playbackUrl.includes("/hls/")) : false;
   const mimeType = isHls ? "application/x-mpegURL" : "video/mp4";
 
   const iframeEmbedCode = `<iframe src="${window.location.origin}/embed/${video.id}" width="100%" height="450" frameborder="0" allowfullscreen></iframe>`;

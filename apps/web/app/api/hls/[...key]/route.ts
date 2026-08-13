@@ -13,9 +13,14 @@ export async function GET(
       return NextResponse.json({ error: "Invalid path" }, { status: 400 });
     }
 
-    const objectKey = keyParts.join("/");
+    let objectKey = keyParts.join("/");
 
-    // 1. If requesting an HLS playlist (.m3u8): fetch from private bucket, rewrite URLs, return playlist
+    // 1. If requesting an HLS master playlist without .m3u8 extension (ends with "master"), append ".m3u8" back
+    if (objectKey.endsWith("master")) {
+      objectKey = `${objectKey}.m3u8`;
+    }
+
+    // 2. If requesting an HLS playlist (.m3u8): fetch from private bucket, rewrite URLs, return playlist
     if (objectKey.endsWith(".m3u8")) {
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,

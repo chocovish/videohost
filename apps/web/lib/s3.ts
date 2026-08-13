@@ -116,7 +116,7 @@ export async function getPlaybackUrl(video: {
 }): Promise<string | null> {
   if (video.status !== "READY") return null;
   if (video.requireHls || (video.renditions && video.renditions.length > 0)) {
-    return `/api/hls/${video.organizationId}/${video.id}/hls/master.m3u8`;
+    return `/api/hls/${video.organizationId}/${video.id}/hls/master`;
   }
   return await getPresignedPlaybackUrl(video.originalKey);
 }

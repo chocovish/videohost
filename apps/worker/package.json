@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "dev:go": "cd go && go run .",
+    "build:go": "cd go && go build ."
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.587.0",
