@@ -133,17 +133,47 @@ export async function compressAndResizeImage(
   return { blob: result.blob, url: result.url };
 }
 
-export function fixWebmDuration(blob: Blob, durationMs: number): Promise<Blob> {
-  return new Promise((resolve) => {
-    try {
-      ysFixWebmDuration(blob, durationMs, (fixedBlob: Blob) => {
-        resolve(fixedBlob);
-      });
-    } catch (err) {
-      console.warn("Failed to fix WebM duration header:", err);
-      resolve(blob);
+export async function fixWebmDuration(blob: Blob, durationMs?: number): Promise<Blob> {
+  try {
+    const { Input, Output, WebMOutputFormat, BufferTarget, BlobSource, ALL_FORMATS, Conversion } = await import("mediabunny");
+
+    const input = new Input({
+      source: new BlobSource(blob),
+      formats: ALL_FORMATS,
+    });
+
+    const output = new Output({
+      format: new WebMOutputFormat(),
+      target: new BufferTarget(),
+    });
+
+    const conversion = await Conversion.init({ input, output });
+    if (conversion.isValid) {
+      await conversion.execute();
+      const buffer = output.target.buffer;
+      if (buffer && buffer.byteLength > 0) {
+        return new Blob([buffer], { type: blob.type || "video/webm" });
+      }
     }
-  });
+  } catch (err) {
+    console.warn("Mediabunny WebM remuxing encountered an issue, trying duration fallback:", err);
+  }
+
+  // Fallback to basic duration header injection if transmuxing fails
+  if (typeof durationMs === "number" && durationMs > 0) {
+    return new Promise((resolve) => {
+      try {
+        ysFixWebmDuration(blob, durationMs, (fixedBlob: Blob) => {
+          resolve(fixedBlob || blob);
+        });
+      } catch (fallbackErr) {
+        console.warn("Fallback WebM duration injection failed:", fallbackErr);
+        resolve(blob);
+      }
+    });
+  }
+
+  return blob;
 }
 
 export function extractVideoMetadataAndThumbnail(
