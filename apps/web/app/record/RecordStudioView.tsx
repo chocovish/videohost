@@ -796,7 +796,7 @@ export default function RecordStudioView() {
                       className="w-full bg-[hsl(var(--primary))] hover:opacity-95 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-[hsl(var(--primary))]/25 text-sm gap-2"
                     >
                       <Download className="w-5 h-5" />
-                      Download Recording (.webm)
+                      Download Recording ({recordedFile?.name?.endsWith(".mp4") ? ".mp4" : ".webm"})
                     </Button>
 
                     <Button

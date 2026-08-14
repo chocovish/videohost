@@ -1,5 +1,3 @@
-import ysFixWebmDuration from "fix-webm-duration";
-
 export interface VideoMetadata {
   durationSeconds: number;
   sourceWidth: number;
@@ -133,44 +131,50 @@ export async function compressAndResizeImage(
   return { blob: result.blob, url: result.url };
 }
 
-export async function fixWebmDuration(blob: Blob, durationMs?: number): Promise<Blob> {
+export async function fixWebmDuration(blob: Blob, targetMimeType?: string): Promise<Blob> {
+  return repairVideoContainer(blob, targetMimeType);
+}
+
+export async function repairVideoContainer(blob: Blob, targetMimeType?: string): Promise<Blob> {
+  const mime = (targetMimeType || blob.type || "video/webm").toLowerCase();
+  const isMp4 = mime.includes("mp4") || mime.includes("avc") || mime.includes("h264") || mime.includes("isom");
+  const outMime = isMp4 ? "video/mp4" : "video/webm";
+
   try {
-    const { Input, Output, WebMOutputFormat, BufferTarget, BlobSource, ALL_FORMATS, Conversion } = await import("mediabunny");
+    const {
+      Input,
+      Output,
+      WebMOutputFormat,
+      Mp4OutputFormat,
+      BufferTarget,
+      BlobSource,
+      ALL_FORMATS,
+      Conversion,
+    } = await import("mediabunny");
 
     const input = new Input({
       source: new BlobSource(blob),
       formats: ALL_FORMATS,
     });
 
+    const outputFormat = isMp4 ? new Mp4OutputFormat() : new WebMOutputFormat();
+    const target = new BufferTarget();
+
     const output = new Output({
-      format: new WebMOutputFormat(),
-      target: new BufferTarget(),
+      format: outputFormat,
+      target,
     });
 
     const conversion = await Conversion.init({ input, output });
     if (conversion.isValid) {
       await conversion.execute();
-      const buffer = output.target.buffer;
+      const buffer = target.buffer;
       if (buffer && buffer.byteLength > 0) {
-        return new Blob([buffer], { type: blob.type || "video/webm" });
+        return new Blob([buffer], { type: outMime });
       }
     }
   } catch (err) {
-    console.warn("Mediabunny WebM remuxing encountered an issue, trying duration fallback:", err);
-  }
-
-  // Fallback to basic duration header injection if transmuxing fails
-  if (typeof durationMs === "number" && durationMs > 0) {
-    return new Promise((resolve) => {
-      try {
-        ysFixWebmDuration(blob, durationMs, (fixedBlob: Blob) => {
-          resolve(fixedBlob || blob);
-        });
-      } catch (fallbackErr) {
-        console.warn("Fallback WebM duration injection failed:", fallbackErr);
-        resolve(blob);
-      }
-    });
+    console.warn("Mediabunny video container indexing encountered an issue:", err);
   }
 
   return blob;

@@ -390,20 +390,21 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         const durationSec = Math.max(1, Math.round(elapsedMs / 1000));
 
         let finalBlob = rawBlob;
-        if (mimeType.includes("webm")) {
-          try {
-            finalBlob = await fixWebmDuration(rawBlob, elapsedMs);
-          } catch (e) {
-            console.warn("WebM duration patching failed:", e);
-          }
+        try {
+          finalBlob = await fixWebmDuration(rawBlob, mimeType);
+        } catch (e) {
+          console.warn("Container transmuxing/indexing failed:", e);
         }
 
         const now = new Date();
         const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
           now.getDate()
         ).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-        const fileName = `Studio Recording ${formattedDate}.webm`;
-        const file = new File([finalBlob], fileName, { type: mimeType });
+        const isMp4 = (finalBlob.type || mimeType).includes("mp4");
+        const ext = isMp4 ? "mp4" : "webm";
+        const fileName = `Studio Recording ${formattedDate}.${ext}`;
+        const outputMime = finalBlob.type || (isMp4 ? "video/mp4" : "video/webm");
+        const file = new File([finalBlob], fileName, { type: outputMime });
 
         setRecordedFile(file);
         setTitle(`Studio Recording ${formattedDate}`);
@@ -506,7 +507,9 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     const a = document.createElement("a");
     a.href = previewUrl || URL.createObjectURL(recordedFile!);
     const nameToUse = customFilename?.trim() || title.trim() || "Studio Recording";
-    a.download = nameToUse.endsWith(".webm") || nameToUse.endsWith(".mp4") ? nameToUse : `${nameToUse}.webm`;
+    const isMp4 = recordedFile?.name?.endsWith(".mp4") || recordedFile?.type?.includes("mp4");
+    const defaultExt = isMp4 ? ".mp4" : ".webm";
+    a.download = nameToUse.endsWith(".webm") || nameToUse.endsWith(".mp4") ? nameToUse : `${nameToUse}${defaultExt}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
