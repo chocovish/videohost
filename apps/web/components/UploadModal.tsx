@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon } from "lucide-react";
+import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon, Sparkles, Check } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { uploadVideoFile } from "@/lib/upload-video";
 import {
   VideoMetadata,
+  ThumbnailOption,
   extractVideoMetadataAndThumbnail,
   processThumbnail,
   compressAndResizeImage,
@@ -47,6 +48,7 @@ export default function UploadModal({
   const [statusText, setStatusText] = useState("");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+  const [selectedThumbnailIndex, setSelectedThumbnailIndex] = useState<number>(0);
   const [customThumbBlob, setCustomThumbBlob] = useState<Blob | null>(null);
   const [customThumbUrl, setCustomThumbUrl] = useState<string | null>(null);
   const [compressingThumb, setCompressingThumb] = useState(false);
@@ -64,7 +66,10 @@ export default function UploadModal({
     setStatusText("");
     setCheckingQuota(false);
     setIsQuotaExceeded(false);
-    if (metadata?.thumbnailUrl) {
+    setSelectedThumbnailIndex(0);
+    if (metadata?.thumbnails) {
+      metadata.thumbnails.forEach((t) => URL.revokeObjectURL(t.url));
+    } else if (metadata?.thumbnailUrl) {
       URL.revokeObjectURL(metadata.thumbnailUrl);
     }
     if (customThumbUrl) {
@@ -73,6 +78,26 @@ export default function UploadModal({
     setMetadata(null);
     setCustomThumbBlob(null);
     setCustomThumbUrl(null);
+  };
+
+  const handleSelectThumbnail = (index: number) => {
+    if (!metadata?.thumbnails?.[index]) return;
+    setSelectedThumbnailIndex(index);
+    if (customThumbUrl) {
+      URL.revokeObjectURL(customThumbUrl);
+    }
+    setCustomThumbBlob(null);
+    setCustomThumbUrl(null);
+    const selected = metadata.thumbnails[index];
+    setMetadata((prev) =>
+      prev
+        ? {
+            ...prev,
+            thumbnailBlob: selected.blob,
+            thumbnailUrl: selected.url,
+          }
+        : null
+    );
   };
 
   const handleCustomThumbChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,6 +109,7 @@ export default function UploadModal({
         if (customThumbUrl) {
           URL.revokeObjectURL(customThumbUrl);
         }
+        setSelectedThumbnailIndex(-1);
         setCustomThumbBlob(blob);
         setCustomThumbUrl(url);
       } catch (err: any) {
@@ -101,6 +127,18 @@ export default function UploadModal({
     }
     setCustomThumbBlob(null);
     setCustomThumbUrl(null);
+    setSelectedThumbnailIndex(0);
+    if (metadata?.thumbnails?.[0]) {
+      setMetadata((prev) =>
+        prev
+          ? {
+              ...prev,
+              thumbnailBlob: prev.thumbnails![0].blob,
+              thumbnailUrl: prev.thumbnails![0].url,
+            }
+          : null
+      );
+    }
   };
 
   const handleClose = () => {
@@ -150,6 +188,10 @@ export default function UploadModal({
       } finally {
         setCheckingQuota(false);
       }
+
+      setSelectedThumbnailIndex(0);
+      setCustomThumbBlob(null);
+      setCustomThumbUrl(null);
 
       const meta = await extractVideoMetadataAndThumbnail(selectedFile);
       setMetadata(meta);
@@ -292,7 +334,7 @@ export default function UploadModal({
                     {(file.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                   {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
-                    <div className="flex items-center justify-center gap-3 pt-1 text-[11px] font-medium text-[hsl(var(--primary))]">
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-[hsl(var(--primary))]">
                       {metadata.durationSeconds > 0 && (
                         <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
                           <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
@@ -301,6 +343,16 @@ export default function UploadModal({
                       {metadata.sourceWidth > 0 && (
                         <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
                           <Maximize2 className="w-3 h-3" /> {metadata.sourceWidth}x{metadata.sourceHeight}
+                        </span>
+                      )}
+                      {metadata.fps && (
+                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                          {metadata.fps} FPS
+                        </span>
+                      )}
+                      {metadata.codec && (
+                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md uppercase">
+                          {metadata.codec}
                         </span>
                       )}
                     </div>
@@ -317,41 +369,97 @@ export default function UploadModal({
             </label>
           </div>
 
-          {/* Custom Thumbnail Picker Row */}
+          {/* 4-Thumbnail Selection Section */}
           {file && (
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))] flex items-center justify-between gap-2">
-              <span className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                Video Thumbnail
-              </span>
-              <div className="flex items-center gap-2">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))] space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                  Select Video Thumbnail
+                  {metadata?.thumbnails && metadata.thumbnails.length > 0 && (
+                    <span className="text-[10px] font-normal text-[hsl(var(--muted-foreground))]">
+                      ({metadata.thumbnails.length} frames generated)
+                    </span>
+                  )}
+                </span>
                 {customThumbUrl && (
                   <button
                     type="button"
                     onClick={handleRemoveCustomThumb}
                     disabled={uploading}
-                    className="text-[11px] text-red-600 hover:underline font-semibold mr-1"
+                    className="text-[11px] text-red-600 hover:underline font-semibold"
                   >
-                    Reset
+                    Reset to auto
                   </button>
                 )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={uploading || compressingThumb}
-                  onChange={handleCustomThumbChange}
-                  className="hidden"
-                  id="custom-thumbnail-modal-input"
-                />
-                <label
-                  htmlFor="custom-thumbnail-modal-input"
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[hsl(var(--border))] bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-2xs shrink-0 ${
-                    uploading || compressingThumb ? "opacity-50 pointer-events-none" : ""
-                  }`}
-                >
-                  <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                  <span>{compressingThumb ? "Processing..." : "Upload custom thumbnail"}</span>
-                </label>
+              </div>
+
+              {/* 4 Thumbnails Grid */}
+              {metadata?.thumbnails && metadata.thumbnails.length > 0 ? (
+                <div className="grid grid-cols-4 gap-2">
+                  {metadata.thumbnails.map((thumb, idx) => {
+                    const isSelected = selectedThumbnailIndex === idx && !customThumbUrl;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={uploading}
+                        onClick={() => handleSelectThumbnail(idx)}
+                        className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all cursor-pointer group ${
+                          isSelected
+                            ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 scale-[1.02] shadow-sm"
+                            : "border-[hsl(var(--border))] opacity-75 hover:opacity-100 hover:border-slate-400"
+                        }`}
+                      >
+                        <img
+                          src={thumb.url}
+                          alt={`Thumbnail option ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-[9px] font-mono font-medium text-white px-1 py-0.2 rounded">
+                          {formatDuration(thumb.timestampSeconds)}
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-1 left-1 bg-[hsl(var(--primary))] text-white p-0.5 rounded-full shadow-xs">
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+
+              {/* Custom Thumbnail Row */}
+              <div className="pt-2 flex items-center justify-between border-t border-[hsl(var(--border))]/60">
+                <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                  {customThumbUrl ? "Using custom uploaded image" : "Or upload a custom image"}
+                </span>
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={uploading || compressingThumb}
+                    onChange={handleCustomThumbChange}
+                    className="hidden"
+                    id="custom-thumbnail-modal-input"
+                  />
+                  <label
+                    htmlFor="custom-thumbnail-modal-input"
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-[hsl(var(--border))] bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-2xs shrink-0 ${
+                      uploading || compressingThumb ? "opacity-50 pointer-events-none" : ""
+                    }`}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                    <span>
+                      {compressingThumb
+                        ? "Processing..."
+                        : customThumbUrl
+                        ? "Change custom..."
+                        : "Upload custom image"}
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
           )}
