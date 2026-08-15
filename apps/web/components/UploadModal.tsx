@@ -465,44 +465,49 @@ export default function UploadModal({
           )}
 
           {/* Require HLS Switch */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))]">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
-                  Require HLS (Adaptive Bitrate)
-                </label>
-                {userPlan === "free" && (
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30">
-                    PRO FEATURE
-                  </span>
-                )}
+          {(() => {
+            const canUseHls = ["pro", "enterprise"].includes(userPlan.toLowerCase());
+            return (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))]">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
+                      Require HLS (Adaptive Bitrate)
+                    </label>
+                    {!canUseHls && (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30">
+                        PRO FEATURE
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                    {!canUseHls
+                      ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
+                      : requireHls
+                      ? "Transcode video into adaptive HLS stream (480p-4K)"
+                      : "Store original video & play directly without transcoding"}
+                  </p>
+                </div>
+                <button
+                  id="require-hls-toggle"
+                  type="button"
+                  role="switch"
+                  aria-checked={canUseHls && requireHls}
+                  disabled={uploading || !canUseHls}
+                  onClick={() => canUseHls && setRequireHls(!requireHls)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${
+                    canUseHls && requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300 opacity-60"
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                      canUseHls && requireHls ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
-              <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
-                {userPlan === "free"
-                  ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
-                  : requireHls
-                  ? "Transcode video into adaptive HLS stream (480p-4K)"
-                  : "Store original video & play directly without transcoding"}
-              </p>
-            </div>
-            <button
-              id="require-hls-toggle"
-              type="button"
-              role="switch"
-              aria-checked={userPlan !== "free" && requireHls}
-              disabled={uploading || userPlan === "free"}
-              onClick={() => userPlan !== "free" && setRequireHls(!requireHls)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${
-                userPlan !== "free" && requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300 opacity-60"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  userPlan !== "free" && requireHls ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
+            );
+          })()}
 
           {/* Destination Folder Info Banner */}
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium">

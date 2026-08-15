@@ -48,7 +48,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const [successMsg, setSuccessMsg] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [confirmCancelModalOpen, setConfirmCancelModalOpen] = useState<boolean>(false);
-  const [pendingPlanSwitch, setPendingPlanSwitch] = useState<"free" | "pro" | "enterprise" | null>(null);
+  const [pendingPlanSwitch, setPendingPlanSwitch] = useState<"free" | "basic" | "pro" | "enterprise" | null>(null);
 
   useEffect(() => {
     async function fetchCurrentPlan() {
@@ -129,7 +129,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     }
   };
 
-  const executePlanSwitch = async (planKey: "free" | "pro" | "enterprise") => {
+  const executePlanSwitch = async (planKey: "free" | "basic" | "pro" | "enterprise") => {
     setUpdatingPlan(planKey);
     setSuccessMsg("");
     setErrorMsg("");
@@ -163,7 +163,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     }
   };
 
-  const handleSelectPlan = async (planKey: "free" | "pro" | "enterprise") => {
+  const handleSelectPlan = async (planKey: "free" | "basic" | "pro" | "enterprise") => {
     if (!session) {
       router.push("/auth/login?callbackUrl=/pricing");
       return;
@@ -187,7 +187,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       return;
     }
 
-    // For Paid Plans (Pro & Enterprise), trigger Razorpay Payment Gateway
+    // For Paid Plans (Basic, Pro & Enterprise), trigger Razorpay Payment Gateway
     try {
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
@@ -220,7 +220,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           contact: (session.user as any)?.phone || "",
         },
         theme: {
-          color: planKey === "pro" ? "#84cc16" : "#9333ea",
+          color: planKey === "pro" ? "#84cc16" : planKey === "enterprise" ? "#9333ea" : "#0284c7",
         },
         handler: async function (response: any) {
           try {
@@ -303,6 +303,29 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       ],
     },
     {
+      id: "basic",
+      name: "Basic",
+      price: billingCycle === "YEARLY" ? "₹3,990" : "₹399",
+      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
+      tagline: "Expanded 50GB cloud storage on top of Free plan for active creators",
+      popular: false,
+      badge: "Budget Friendly",
+      accentColor: "border-sky-500/40 dark:border-sky-500/30 hover:border-sky-500 shadow-md",
+      buttonVariant: "basic",
+      features: [
+        { title: "All in Free plan +", icon: Sparkles, highlight: true },
+        { title: "50GB cloud storage", icon: HardDrive, highlight: true },
+        { title: "Unlimited screen recordings & uploads", icon: Video, highlight: true },
+        { title: "Granular email-restricted & public sharing", icon: Share2, highlight: true },
+        { title: "Standard email support", icon: Mail, highlight: false },
+      ],
+      notIncluded: [
+        "Adaptive bitrate HLS conversion",
+        "Multiple organizations creation",
+        "Team member invitations",
+      ],
+    },
+    {
       id: "pro",
       name: "Pro",
       price: billingCycle === "YEARLY" ? "₹9,990" : "₹999",
@@ -313,7 +336,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       accentColor: "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 shadow-xl",
       buttonVariant: "primary",
       features: [
-        { title: "All in Free plan +", icon: Sparkles, highlight: true },
+        { title: "All in Basic plan +", icon: Sparkles, highlight: true },
         { title: "200GB cloud storage", icon: HardDrive, highlight: true },
         { title: "Store videos in adaptive bitrate (multi-quality HLS for weak connections)", icon: Zap, highlight: true },
         { title: "Live chat support", icon: MessageSquare, highlight: true },
@@ -356,7 +379,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             Simple plans for creators & teams.
           </h1>
           <p className="text-base sm:text-lg text-[hsl(var(--muted-foreground))]">
-            Start free with 2GB storage, or upgrade to unlock 200GB+, adaptive bitrate video streaming, multiple organizations, and team invites.
+            Start free with 2GB storage, or upgrade to 50GB Basic, 200GB Pro with adaptive bitrate streaming, or Enterprise for unlimited storage and team collaboration.
           </p>
         </div>
       )}
@@ -485,7 +508,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       )}
 
       {/* Pricing Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch pt-4">
         {plans.map((plan) => {
           const isCurrent = session && currentPlan === plan.id;
           const isUpdating = updatingPlan === plan.id;
@@ -493,7 +516,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col justify-between p-6 sm:p-8 rounded-3xl bg-[hsl(var(--card))] border transition-all duration-300 hover:shadow-2xl ${plan.accentColor
+              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-3xl bg-[hsl(var(--card))] border transition-all duration-300 hover:shadow-2xl ${plan.accentColor
                 } ${plan.popular ? "scale-[1.02] bg-gradient-to-b from-white via-white to-lime-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/40" : ""}`}
             >
               {/* Popular / Badge Ribbon */}
@@ -592,7 +615,9 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                       ? "bg-[hsl(var(--primary))] text-white hover:opacity-90 shadow-[hsl(var(--primary))]/20"
                       : plan.id === "enterprise"
                         ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
-                        : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
+                        : plan.id === "basic"
+                          ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/20"
+                          : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
                       }`}
                   >
                     {isUpdating ? (
@@ -633,16 +658,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </div>
 
           <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
-            <h4 className="font-bold text-[hsl(var(--foreground))]">What video sharing options are available on the Free plan?</h4>
+            <h4 className="font-bold text-[hsl(var(--foreground))]">What video sharing options are available on Free and Basic plans?</h4>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Free plan users enjoy both public link sharing (anyone with link can watch) and email-restricted sharing (only specified authenticated emails can access).
+              Both Free and Basic plan users enjoy full public link sharing (anyone with link can watch) and granular email-restricted sharing (only specified authenticated emails can access).
             </p>
           </div>
 
           <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
             <h4 className="font-bold text-[hsl(var(--foreground))]">Can I switch plans at any time?</h4>
             <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Yes! Organization owners can switch between Free, Pro, and Enterprise plans at any time. Your limits and feature entitlements update instantly.
+              Yes! Organization owners can switch between Free, Basic, Pro, and Enterprise plans at any time. Your limits and feature entitlements update instantly.
             </p>
           </div>
 

@@ -19,9 +19,9 @@ export async function POST(req: Request) {
 
   try {
     const { planName } = await req.json();
-    if (!planName || !["free", "pro", "enterprise"].includes(planName.toLowerCase())) {
+    if (!planName || !["free", "basic", "pro", "enterprise"].includes(planName.toLowerCase())) {
       return NextResponse.json(
-        { error: "Invalid plan. Valid options: 'free', 'pro', 'enterprise'" },
+        { error: "Invalid plan. Valid options: 'free', 'basic', 'pro', 'enterprise'" },
         { status: 400 }
       );
     }

@@ -6,7 +6,7 @@ import PricingView from "@/components/PricingView";
 export const metadata: Metadata = {
   title: "Pricing Plans — VideoHost",
   description:
-    "Compare VideoHost plans: Free (2GB storage & email-restricted sharing), Pro (200GB storage & adaptive bitrate streaming), and Enterprise (Unlimited storage & multi-organizations).",
+    "Compare VideoHost plans: Free (2GB storage & email-restricted sharing), Basic (50GB storage for creators), Pro (200GB storage & adaptive bitrate streaming), and Enterprise (Unlimited storage & multi-organizations).",
 };
 
 export default function PricingPage() {

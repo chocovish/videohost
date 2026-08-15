@@ -26,6 +26,24 @@ async function main() {
     },
   });
 
+  const basicPlan = await db.plan.upsert({
+    where: { id: "plan_basic" },
+    update: {
+      storageLimitGb: 50,
+      priceMonthlyCents: 39900,
+    },
+    create: {
+      id: "plan_basic",
+      name: "basic",
+      minutesLimit: 1000,
+      storageLimitGb: 50,
+      maxResolution: "1080p",
+      seatLimit: 1,
+      priceMonthlyCents: 39900,
+      isCustom: false,
+    },
+  });
+
   const proPlan = await db.plan.upsert({
     where: { id: "plan_pro" },
     update: {
@@ -62,7 +80,12 @@ async function main() {
     },
   });
 
-  console.log("Plans seeded:", { freePlan: freePlan.name, proPlan: proPlan.name, enterprisePlan: enterprisePlan.name });
+  console.log("Plans seeded:", {
+    freePlan: freePlan.name,
+    basicPlan: basicPlan.name,
+    proPlan: proPlan.name,
+    enterprisePlan: enterprisePlan.name,
+  });
 }
 
 main()

@@ -19,9 +19,9 @@ export async function POST(req: Request) {
 
   try {
     const { planName, billingMode = "ONE_TIME", billingCycle = "MONTHLY" } = await req.json();
-    if (!planName || !["pro", "enterprise"].includes(planName.toLowerCase())) {
+    if (!planName || !["basic", "pro", "enterprise"].includes(planName.toLowerCase())) {
       return NextResponse.json(
-        { error: "Invalid paid plan specified. Choose 'pro' or 'enterprise'." },
+        { error: "Invalid paid plan specified. Choose 'basic', 'pro', or 'enterprise'." },
         { status: 400 }
       );
     }
