@@ -775,7 +775,7 @@ export default function RecordStudioView() {
                         <CheckCircle2 className="w-4 h-4" /> Recording Complete
                       </div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-                        Your video has been recorded successfully in high quality. You can download the file directly to your device or save it to your VideoHost cloud account.
+                        Your video has been recorded successfully in high quality. You can download the file directly to your device or save it to your Taped cloud account.
                       </p>
                     </div>
 
@@ -886,7 +886,7 @@ export default function RecordStudioView() {
 
       {/* Footer */}
       <footer className="border-t border-[hsl(var(--border))] py-6 text-center text-xs text-[hsl(var(--muted-foreground))] relative z-10">
-        © 2026 VideoHost Platform. Professional Web Studio Screen Recorder.
+        © 2026 Taped Platform. Professional Web Studio Screen Recorder.
       </footer>
 
       {/* High File Size Confirmation Modal */}

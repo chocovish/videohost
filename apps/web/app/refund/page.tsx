@@ -4,9 +4,9 @@ import PublicFooter from "@/components/PublicFooter";
 import { RefreshCcw, CheckCircle2, Clock, HelpCircle, Phone, Mail, MessageCircle, AlertTriangle, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Refund & Cancellation Policy — VideoHost",
+  title: "Refund & Cancellation Policy — Taped",
   description:
-    "Review VideoHost's 7-day money-back guarantee, refund eligibility rules, subscription cancellation process, and contact instructions for payment refunds.",
+    "Review Taped's 7-day money-back guarantee, refund eligibility rules, subscription cancellation process, and contact instructions for payment refunds.",
 };
 
 export default function RefundPage() {
@@ -41,7 +41,7 @@ export default function RefundPage() {
             <div>
               <p className="font-semibold text-[hsl(var(--foreground))]">7-Day Money-Back Guarantee</p>
               <p className="text-[hsl(var(--muted-foreground))]">
-                We stand behind VideoHost's performance. If you upgrade to a paid plan and are not completely satisfied with our service, you can request a full refund within 7 days of your initial purchase.
+                We stand behind Taped's performance. If you upgrade to a paid plan and are not completely satisfied with our service, you can request a full refund within 7 days of your initial purchase.
               </p>
             </div>
           </div>
@@ -55,7 +55,7 @@ export default function RefundPage() {
               <h2 className="text-lg font-bold tracking-tight">2GB Free Plan (No Credit Card Required)</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] pl-10">
-              VideoHost offers a perpetual Free Plan featuring 2GB of cloud video storage, email access controls, and access to our free browser screen recorder studio. You are encouraged to test our platform thoroughly using the free tier prior to upgrading to a paid subscription plan.
+              Taped offers a perpetual Free Plan featuring 2GB of cloud video storage, email access controls, and access to our free browser screen recorder studio. You are encouraged to test our platform thoroughly using the free tier prior to upgrading to a paid subscription plan.
             </p>
           </section>
 

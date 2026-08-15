@@ -17,7 +17,7 @@ import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 
 export const metadata: Metadata = {
-  title: "VideoHost — Easily Upload & Share Videos Securely",
+  title: "Taped — Easily Upload & Share Videos Securely",
   description:
     "Easily upload, record, and share videos with granular email access control and 2GB free storage. Includes developer APIs, webhooks, and a free browser screen recorder.",
   keywords: [
@@ -31,24 +31,24 @@ export const metadata: Metadata = {
     "hd video streaming",
   ],
   openGraph: {
-    title: "VideoHost — Easily Upload & Share Videos Securely",
+    title: "Taped — Easily Upload & Share Videos Securely",
     description:
       "Host and share videos securely with email access controls, enjoy 2GB free cloud storage, developer APIs & webhooks, plus a free built-in screen recorder.",
     url: "/",
-    siteName: "VideoHost",
+    siteName: "Taped",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "VideoHost - Easily Upload & Share Videos",
+        alt: "Taped - Easily Upload & Share Videos",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "VideoHost — Easily Upload & Share Videos Securely",
+    title: "Taped — Easily Upload & Share Videos Securely",
     description:
       "Host and share videos securely with email access controls, enjoy 2GB free cloud storage, developer APIs & webhooks, plus a free built-in screen recorder.",
     images: ["/og-image.png"],
@@ -59,8 +59,8 @@ export default function LandingPage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "VideoHost",
-    "url": "https://videohost.app",
+    "name": "Taped",
+    "url": "https://taped.app",
     "description":
       "Easily upload, record, and share videos with email access control, 2GB free cloud storage, developer APIs, webhooks, and free screen recorder.",
     "applicationCategory": "MultimediaApplication",

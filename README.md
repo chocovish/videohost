@@ -1,4 +1,4 @@
-# Videohost Monorepo
+# Taped Monorepo
 
 An enterprise-grade, multi-tenant video hosting, studio screen recording, transcoding, and adaptive HLS streaming platform built with Next.js, Node.js, FFmpeg, Prisma, and Cloud Storage.
 
@@ -289,4 +289,4 @@ This triggers `scripts/test-worker.js`, which sends a sample transcoding payload
 
 ## 📄 License
 
-[MIT](LICENSE) © Videohost Team
+[MIT](LICENSE) © Taped Team

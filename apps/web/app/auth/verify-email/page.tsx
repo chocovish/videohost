@@ -3,7 +3,7 @@ import VerifyEmailClient from "./verify-email-client";
 
 export const metadata: Metadata = {
   title: "Verify Email",
-  description: "Confirm your email address to activate your VideoHost organization account.",
+  description: "Confirm your email address to activate your Taped organization account.",
   robots: {
     index: false,
     follow: false,

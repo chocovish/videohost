@@ -7,28 +7,28 @@ import LoginForm from "./login-form";
 export const metadata: Metadata = {
   title: "Sign In",
   description:
-    "Sign in to your VideoHost organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
+    "Sign in to your Taped organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
   openGraph: {
-    title: "Sign In | VideoHost",
+    title: "Sign In | Taped",
     description:
-      "Sign in to your VideoHost organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
+      "Sign in to your Taped organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
     url: "/auth/login",
-    siteName: "VideoHost",
+    siteName: "Taped",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Sign In to VideoHost",
+        alt: "Sign In to Taped",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sign In | VideoHost",
+    title: "Sign In | Taped",
     description:
-      "Sign in to your VideoHost organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
+      "Sign in to your Taped organization dashboard to manage your video library, presigned uploads, API keys, and custom player embeds.",
     images: ["/og-image.png"],
   },
 };

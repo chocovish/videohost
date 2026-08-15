@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import PricingView from "@/components/PricingView";
 
 export const metadata: Metadata = {
-  title: "Plans & Subscription — VideoHost Dashboard",
+  title: "Plans & Subscription — Taped Dashboard",
   description: "Manage your active workspace subscription plan and view storage entitlements.",
 };
 

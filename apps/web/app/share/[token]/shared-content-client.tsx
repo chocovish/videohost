@@ -252,7 +252,7 @@ export default function SharedContentClient({
 
           <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-4 border-t border-slate-800/80">
             <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>VideoHost Protected Portal</span>
+            <span>Taped Protected Portal</span>
           </div>
         </div>
       </div>
@@ -306,7 +306,7 @@ export default function SharedContentClient({
 
           <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-3 border-t border-slate-800/80">
             <ShieldCheck className="w-4 h-4 text-lime-400" />
-            <span>Secure VideoHost Sharing Portal</span>
+            <span>Secure Taped Sharing Portal</span>
           </div>
         </div>
       </div>
@@ -873,7 +873,7 @@ export default function SharedContentClient({
 
       {/* Footer Text */}
       <footer className="py-6 border-t border-slate-800/40 text-center text-xs text-slate-400 relative z-10">
-        <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}. Powered by VideoHost.`}</p>
+        <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}. Powered by Taped.`}</p>
       </footer>
 
       {/* Video Modal Player for Shared Folder View */}

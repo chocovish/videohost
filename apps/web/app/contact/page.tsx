@@ -6,9 +6,9 @@ import { Phone, Mail, MessageCircle, Clock, MapPin, Sparkles, HelpCircle, ArrowR
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Contact Us — VideoHost Support",
+  title: "Contact Us — Taped Support",
   description:
-    "Get in touch with VideoHost customer support, technical assistance, or business inquiries via phone (+91 7278765456), WhatsApp (+91 7278765456), or email (support@tool4.in).",
+    "Get in touch with Taped customer support, technical assistance, or business inquiries via phone (+91 7278765456), WhatsApp (+91 7278765456), or email (support@tool4.in).",
 };
 
 export default function ContactPage() {
@@ -127,7 +127,7 @@ export default function ContactPage() {
           <div className="text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight">Frequently Asked Questions</h2>
             <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))]">
-              Quick answers to common questions about VideoHost
+              Quick answers to common questions about Taped
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 {
-  "name": "VideoHost — Adaptive HLS Video Hosting Platform",
-  "short_name": "VideoHost",
+  "name": "Taped — Adaptive HLS Video Hosting Platform",
+  "short_name": "Taped",
   "description": "High performance video hosting and adaptive HLS transcoding platform",
   "start_url": "/",
   "display": "standalone",

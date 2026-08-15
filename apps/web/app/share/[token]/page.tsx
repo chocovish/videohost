@@ -20,7 +20,7 @@ export async function generateMetadata({
       const title = `${video.title} — ${video.organization.name}`;
       const description =
         video.description ||
-        `Watch "${video.title}" shared by ${video.organization.name} on VideoHost.`;
+        `Watch "${video.title}" shared by ${video.organization.name} on Taped.`;
       const imageUrl = video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : "/og-image.png";
 
       return {
@@ -57,7 +57,7 @@ export async function generateMetadata({
 
     if (folder) {
       const title = `${folder.name} (Folder) — ${folder.organization.name}`;
-      const description = `Browse shared video collection "${folder.name}" from ${folder.organization.name} on VideoHost.`;
+      const description = `Browse shared video collection "${folder.name}" from ${folder.organization.name} on Taped.`;
 
       return {
         title,
@@ -90,8 +90,8 @@ export async function generateMetadata({
   }
 
   return {
-    title: "Shared Content | VideoHost",
-    description: "View shared videos and collections on VideoHost.",
+    title: "Shared Content | Taped",
+    description: "View shared videos and collections on Taped.",
   };
 }
 

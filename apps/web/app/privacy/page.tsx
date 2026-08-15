@@ -4,9 +4,9 @@ import PublicFooter from "@/components/PublicFooter";
 import { ShieldCheck, Lock, Eye, Server, Cookie, UserX, Phone, Mail, MessageCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — VideoHost",
+  title: "Privacy Policy — Taped",
   description:
-    "Learn how VideoHost protects your privacy, secures uploaded video files with zero-egress cloud storage, enforces email access restrictions, and handles personal data.",
+    "Learn how Taped protects your privacy, secures uploaded video files with zero-egress cloud storage, enforces email access restrictions, and handles personal data.",
 };
 
 export default function PrivacyPage() {
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
             <div>
               <p className="font-semibold text-[hsl(var(--foreground))]">Your Privacy Matters to Us</p>
               <p className="text-[hsl(var(--muted-foreground))]">
-                VideoHost is designed from the ground up to empower creators and organizations with total privacy and access control over their video content. We never sell your personal information or video content to third parties.
+                Taped is designed from the ground up to empower creators and organizations with total privacy and access control over their video content. We never sell your personal information or video content to third parties.
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function PrivacyPage() {
               <h2 className="text-lg font-bold tracking-tight">How We Use Your Data</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] pl-10">
-              We use your information exclusively to provide, maintain, and optimize VideoHost services:
+              We use your information exclusively to provide, maintain, and optimize Taped services:
               transcoding uploaded videos into multi-bitrate HLS streams, verifying viewer access permissions (such as OTP email verifications for private videos), processing billing transactions via Razorpay, and delivering customer support.
             </p>
           </section>

@@ -87,7 +87,7 @@ export default function RegisterForm() {
             <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-lg mb-4">
               <Video className="w-8 h-8" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Create your VideoHost Account</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Create your Taped Account</h1>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
               Get started instantly with 2GB free video cloud storage
             </p>

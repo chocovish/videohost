@@ -7,28 +7,28 @@ import RegisterForm from "./register-form";
 export const metadata: Metadata = {
   title: "Create an Account",
   description:
-    "Create your VideoHost organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
+    "Create your Taped organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
   openGraph: {
-    title: "Create a VideoHost Account | 200 Free Video Mins",
+    title: "Create a Taped Account | 200 Free Video Mins",
     description:
-      "Create your VideoHost organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
+      "Create your Taped organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
     url: "/auth/register",
-    siteName: "VideoHost",
+    siteName: "Taped",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Create your VideoHost Account",
+        alt: "Create your Taped Account",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Create a VideoHost Account | 200 Free Video Mins",
+    title: "Create a Taped Account | 200 Free Video Mins",
     description:
-      "Create your VideoHost organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
+      "Create your Taped organization account and get 200 free video storage minutes with zero-egress Cloudflare R2 storage and developer API access.",
     images: ["/og-image.png"],
   },
 };

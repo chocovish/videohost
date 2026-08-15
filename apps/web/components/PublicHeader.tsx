@@ -35,7 +35,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
           </div>
           <div className="flex flex-col">
             <span className="font-extrabold text-lg sm:text-xl tracking-tight leading-none text-[hsl(var(--foreground))]">
-              VideoHost
+              Taped
             </span>
             <span className="text-[10px] font-bold text-[hsl(var(--primary))] tracking-wider uppercase">
               Secure Video Hosting

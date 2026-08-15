@@ -4,9 +4,9 @@ import PublicFooter from "@/components/PublicFooter";
 import { FileText, ShieldCheck, Scale, Lock, UserCheck, AlertCircle, Phone, Mail, HelpCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions — VideoHost",
+  title: "Terms & Conditions — Taped",
   description:
-    "Read VideoHost's Terms and Conditions regarding account creation, video hosting, 2GB free storage limits, email access controls, acceptable use policies, and user ownership rights.",
+    "Read Taped's Terms and Conditions regarding account creation, video hosting, 2GB free storage limits, email access controls, acceptable use policies, and user ownership rights.",
 };
 
 export default function TermsPage() {
@@ -39,9 +39,9 @@ export default function TermsPage() {
           <div className="p-4 sm:p-5 rounded-2xl bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20 flex items-start gap-3 text-xs sm:text-sm">
             <Scale className="w-5 h-5 text-[hsl(var(--primary))] shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-[hsl(var(--foreground))]">Welcome to VideoHost</p>
+              <p className="font-semibold text-[hsl(var(--foreground))]">Welcome to Taped</p>
               <p className="text-[hsl(var(--muted-foreground))]">
-                Please review these Terms & Conditions carefully before using our video hosting platform, screen recording tools, or developer APIs. By accessing or using VideoHost, you agree to be bound by these terms.
+                Please review these Terms & Conditions carefully before using our video hosting platform, screen recording tools, or developer APIs. By accessing or using Taped, you agree to be bound by these terms.
               </p>
             </div>
           </div>
@@ -55,7 +55,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-bold tracking-tight">Acceptance of Terms</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] pl-10">
-              By registering an account, uploading media, or using any service offered by VideoHost ("Platform", "we", "us"), you confirm that you are at least 18 years of age (or legal age of majority in your jurisdiction) and possess the legal authority to enter into this agreement.
+              By registering an account, uploading media, or using any service offered by Taped ("Platform", "we", "us"), you confirm that you are at least 18 years of age (or legal age of majority in your jurisdiction) and possess the legal authority to enter into this agreement.
             </p>
           </section>
 
@@ -68,7 +68,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-bold tracking-tight">User Account & Security</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] pl-10">
-              You are responsible for maintaining the confidentiality of your login credentials and for all activities occurring under your account. You agree to notify us immediately of any unauthorized access or security breach. VideoHost cannot and will not be liable for losses resulting from lost passwords or unauthorized account access.
+              You are responsible for maintaining the confidentiality of your login credentials and for all activities occurring under your account. You agree to notify us immediately of any unauthorized access or security breach. Taped cannot and will not be liable for losses resulting from lost passwords or unauthorized account access.
             </p>
           </section>
 
@@ -113,7 +113,7 @@ export default function TermsPage() {
               <h2 className="text-lg font-bold tracking-tight">User Content Ownership</h2>
             </div>
             <p className="text-[hsl(var(--muted-foreground))] pl-10">
-              You retain full ownership and copyright of all videos, audio files, and thumbnails uploaded to your account. VideoHost does not claim ownership over your content. By uploading media, you grant VideoHost a non-exclusive license solely to host, transcode, store, and stream the media to authorized viewers designated by your privacy settings.
+              You retain full ownership and copyright of all videos, audio files, and thumbnails uploaded to your account. Taped does not claim ownership over your content. By uploading media, you grant Taped a non-exclusive license solely to host, transcode, store, and stream the media to authorized viewers designated by your privacy settings.
             </p>
           </section>
 

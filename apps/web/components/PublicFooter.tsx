@@ -25,7 +25,7 @@ export default function PublicFooter() {
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-xl tracking-tight leading-none">
-                  VideoHost
+                  Taped
                 </span>
                 <span className="text-[10px] font-bold text-[hsl(var(--primary))] tracking-wider uppercase">
                   Secure Video Hosting
@@ -176,7 +176,7 @@ export default function PublicFooter() {
 
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[hsl(var(--muted-foreground))]">
-          <p>© {currentYear} VideoHost. All rights reserved.</p>
+          <p>© {currentYear} Taped. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="/terms" className="hover:underline">Terms</Link>
             <Link href="/privacy" className="hover:underline">Privacy</Link>

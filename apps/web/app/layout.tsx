@@ -2,18 +2,18 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://videohost.app";
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://taped.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
-    template: "%s | VideoHost",
+    default: "Taped — Video Hosting & Adaptive HLS Transcoding Platform",
+    template: "%s | Taped",
   },
   description:
     "High-performance video hosting and adaptive HLS transcoding platform powered by Cloudflare R2 zero-egress storage, BullMQ queue transcoding, and Video.js.",
-  applicationName: "VideoHost",
-  authors: [{ name: "VideoHost Team" }],
+  applicationName: "Taped",
+  authors: [{ name: "Taped Team" }],
   generator: "Next.js",
   keywords: [
     "video hosting",
@@ -28,25 +28,25 @@ export const metadata: Metadata = {
     "Video.js",
   ],
   referrer: "origin-when-cross-origin",
-  creator: "VideoHost",
-  publisher: "VideoHost",
+  creator: "Taped",
+  publisher: "Taped",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+    title: "Taped — Video Hosting & Adaptive HLS Transcoding Platform",
     description:
       "Upload, transcode, and stream HLS videos anywhere with zero egress fees, automated FFmpeg pipelines, and customizable embeds.",
     url: "/",
-    siteName: "VideoHost",
+    siteName: "Taped",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+        alt: "Taped — Video Hosting & Adaptive HLS Transcoding Platform",
       },
     ],
     locale: "en_US",
@@ -54,11 +54,11 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VideoHost — Video Hosting & Adaptive HLS Transcoding Platform",
+    title: "Taped — Video Hosting & Adaptive HLS Transcoding Platform",
     description:
       "Upload, transcode, and stream HLS videos anywhere with zero egress fees, automated FFmpeg pipelines, and customizable embeds.",
     images: ["/og-image.png"],
-    creator: "@videohost",
+    creator: "@taped",
   },
   robots: {
     index: true,

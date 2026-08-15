@@ -211,7 +211,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         key: orderData.key,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "VideoHost",
+        name: "Taped",
         description: `Upgrade to ${planKey.toUpperCase()} Plan`,
         order_id: orderData.orderId,
         prefill: {

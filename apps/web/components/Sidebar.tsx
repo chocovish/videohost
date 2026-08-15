@@ -166,7 +166,7 @@ export default function Sidebar({
             {(!isCollapsed || isMobile) && (
               <div className="overflow-hidden transition-all duration-300">
                 <h2 className="font-bold text-base tracking-tight text-[hsl(var(--foreground))] whitespace-nowrap">
-                  VideoHost
+                  Taped
                 </h2>
                 <Link
                   href="/dashboard/settings"
