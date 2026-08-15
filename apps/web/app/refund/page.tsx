@@ -138,13 +138,13 @@ export default function RefundPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <a
-                href="mailto:support@tool4.in"
+                href="mailto:support@taped.in"
                 className="p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] transition-all flex flex-col items-start gap-1"
               >
                 <div className="flex items-center gap-2 text-xs font-bold text-[hsl(var(--primary))]">
                   <Mail className="w-4 h-4" /> Email Support
                 </div>
-                <span className="text-xs font-semibold">support@tool4.in</span>
+                <span className="text-xs font-semibold">support@taped.in</span>
                 <span className="text-[11px] text-[hsl(var(--muted-foreground))]">Fast response within 24h</span>
               </a>
 

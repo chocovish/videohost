@@ -8,7 +8,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Contact Us — Taped Support",
   description:
-    "Get in touch with Taped customer support, technical assistance, or business inquiries via phone (+91 7278765456), WhatsApp (+91 7278765456), or email (support@tool4.in).",
+    "Get in touch with Taped customer support, technical assistance, or business inquiries via phone (+91 7278765456), WhatsApp (+91 7278765456), or email (support@taped.in).",
 };
 
 export default function ContactPage() {
@@ -106,10 +106,10 @@ export default function ContactPage() {
             </div>
             <div className="pt-2 space-y-2">
               <a
-                href="mailto:support@tool4.in"
+                href="mailto:support@taped.in"
                 className="text-base sm:text-lg font-extrabold text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors block"
               >
-                support@tool4.in
+                support@taped.in
               </a>
               <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--muted-foreground))]">
                 <Clock className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
@@ -155,7 +155,7 @@ export default function ContactPage() {
                 <HelpCircle className="w-4 h-4 text-[hsl(var(--primary))]" /> Can I request a refund if I upgrade?
               </h4>
               <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
-                Yes! We offer a 7-day money-back guarantee for initial plan upgrades. Contact support@tool4.in or call +91 7278765456.
+                Yes! We offer a 7-day money-back guarantee for initial plan upgrades. Contact support@taped.in or call +91 7278765456.
               </p>
             </div>
 

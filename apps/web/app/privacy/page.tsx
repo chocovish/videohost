@@ -147,11 +147,11 @@ export default function PrivacyPage() {
             </p>
             <div className="flex flex-wrap gap-3 text-xs font-semibold pt-2">
               <a
-                href="mailto:support@tool4.in"
+                href="mailto:support@taped.in"
                 className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))]"
               >
                 <Mail className="w-4 h-4 text-[hsl(var(--primary))]" />
-                <span>support@tool4.in</span>
+                <span>support@taped.in</span>
               </a>
               <a
                 href="tel:+917278765456"

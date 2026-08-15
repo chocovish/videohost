@@ -58,11 +58,11 @@ export default function PublicFooter() {
               </a>
 
               <a
-                href="mailto:support@tool4.in"
+                href="mailto:support@taped.in"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] text-xs font-semibold hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))] transition-all"
               >
                 <Mail className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                <span>support@tool4.in</span>
+                <span>support@taped.in</span>
               </a>
             </div> */}
           </div>
@@ -164,7 +164,7 @@ export default function PublicFooter() {
               </li>
               <li className="text-xs text-[hsl(var(--muted-foreground))] pt-1">
                 <span className="font-semibold block text-[hsl(var(--foreground))]">Support Email</span>
-                <a href="mailto:support@tool4.in" className="hover:underline">support@tool4.in</a>
+                <a href="mailto:support@taped.in" className="hover:underline">support@taped.in</a>
               </li>
               <li className="text-xs text-[hsl(var(--muted-foreground))]">
                 <span className="font-semibold block text-[hsl(var(--foreground))]">Phone & WhatsApp</span>

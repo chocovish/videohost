@@ -44,7 +44,7 @@ export default function ContactForm() {
       <div className="space-y-1">
         <h3 className="text-xl font-black tracking-tight">Send Us a Direct Message</h3>
         <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))]">
-          Fill out the form below and our team will get back to you at support@tool4.in within 24 hours.
+          Fill out the form below and our team will get back to you at support@taped.in within 24 hours.
         </p>
       </div>
 
