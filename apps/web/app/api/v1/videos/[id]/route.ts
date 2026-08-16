@@ -55,16 +55,33 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
+  const dataToUpdate: any = {};
+  if (body.title !== undefined) dataToUpdate.title = body.title;
+  if (body.description !== undefined) dataToUpdate.description = body.description;
+  if (body.shareAccessMode !== undefined) dataToUpdate.shareAccessMode = body.shareAccessMode;
+
+  if (body.folderId !== undefined) {
+    const newFolderId = !body.folderId || body.folderId === "root" || body.folderId === "null" ? null : body.folderId;
+    if (newFolderId) {
+      const targetFolder = await db.folder.findFirst({
+        where: { id: newFolderId, organizationId: authCtx.orgId },
+      });
+      if (!targetFolder) {
+        return NextResponse.json({ error: "Destination folder not found" }, { status: 404 });
+      }
+    }
+    dataToUpdate.folderId = newFolderId;
+  }
+
   const updated = await db.video.update({
     where: { id },
-    data: {
-      title: body.title ?? video.title,
-      description: body.description ?? video.description,
-      shareAccessMode: body.shareAccessMode ?? video.shareAccessMode,
-    },
+    data: dataToUpdate,
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({
+    ...updated,
+    sizeBytes: updated.sizeBytes !== null ? Number(updated.sizeBytes) : null,
+  });
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {

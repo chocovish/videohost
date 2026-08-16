@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw, UploadCloud, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Play, Copy, Check, Trash2, Code, Clock, Layers, Share2, RefreshCw, AlertTriangle, RotateCcw, UploadCloud, Image as ImageIcon, FolderInput } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
+import MoveItemModal from "@/components/MoveItemModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,6 +42,7 @@ export default function VideoDetailPage() {
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"player" | "embed" | "renditions">("player");
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [thumbnailStatus, setThumbnailStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -222,6 +224,16 @@ export default function VideoDetailPage() {
             <span>Refresh</span>
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsMoveOpen(true)}
+            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+            title="Move video to another folder"
+          >
+            <FolderInput className="w-4 h-4" />
+            <span>Move Video</span>
+          </Button>
+          <Button
             size="sm"
             onClick={() => setIsShareOpen(true)}
             className="flex-1 sm:flex-none font-semibold min-h-[40px]"
@@ -239,6 +251,18 @@ export default function VideoDetailPage() {
           </Button>
         </div>
       </div>
+
+      {video && (
+        <MoveItemModal
+          isOpen={isMoveOpen}
+          onClose={() => setIsMoveOpen(false)}
+          onSuccess={fetchVideoDetail}
+          itemType="video"
+          itemId={video.id}
+          itemName={video.title}
+          currentFolderId={video.folderId || null}
+        />
+      )}
 
       {video && (
         <ShareModal

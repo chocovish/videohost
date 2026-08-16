@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -159,18 +160,36 @@ export default function Sidebar({
       <div className="space-y-5">
         {/* Brand Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 px-1 py-1">
-            <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-md shrink-0">
-              <Video className="w-6 h-6" />
-            </div>
-            {(!isCollapsed || isMobile) && (
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            {isCollapsed && !isMobile ? (
+              <Link
+                href="/dashboard"
+                className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] flex items-center justify-center p-1.5 shadow-sm overflow-hidden shrink-0"
+              >
+                <Image
+                  src="/taped-in-logo.webp"
+                  alt="Taped"
+                  width={36}
+                  height={36}
+                  className="w-full h-full object-contain"
+                  priority
+                />
+              </Link>
+            ) : (
               <div className="overflow-hidden transition-all duration-300">
-                <h2 className="font-bold text-base tracking-tight text-[hsl(var(--foreground))] whitespace-nowrap">
-                  Taped
-                </h2>
+                <Link href="/dashboard" className="block">
+                  <Image
+                    src="/taped-in-logo.webp"
+                    alt="Taped"
+                    width={130}
+                    height={44}
+                    className="h-8 w-auto object-contain"
+                    priority
+                  />
+                </Link>
                 <Link
                   href="/dashboard/settings"
-                  className="text-xs font-medium text-[hsl(var(--primary))] hover:underline truncate max-w-[130px] block"
+                  className="text-xs font-medium text-[hsl(var(--primary))] hover:underline truncate max-w-[150px] block mt-1 px-0.5"
                   title="Switch active organization or manage settings"
                 >
                   {organizationName}

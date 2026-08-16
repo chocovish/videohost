@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
-  Video,
   Phone,
   Mail,
   MessageCircle,
@@ -19,18 +19,14 @@ export default function PublicFooter() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-[hsl(var(--border))]/60">
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="inline-flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                <Video className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-xl tracking-tight leading-none">
-                  Taped
-                </span>
-                <span className="text-[10px] font-bold text-[hsl(var(--primary))] tracking-wider uppercase">
-                  Secure Video Hosting
-                </span>
-              </div>
+            <Link href="/" className="inline-flex items-center group">
+              <Image
+                src="/taped-in-logo.webp"
+                alt="Taped"
+                width={140}
+                height={48}
+                className="h-8 sm:h-9 w-auto object-contain"
+              />
             </Link>
 
             <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed max-w-md">

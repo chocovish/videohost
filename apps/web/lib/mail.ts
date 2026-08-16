@@ -32,17 +32,17 @@ export async function sendVerificationEmail(email: string, token: string) {
       </head>
       <body>
         <div class="container">
-          <div class="logo-box">Video Host</div>
+          <div class="logo-box">Taped</div>
           <h1>Confirm your email address</h1>
-          <p>Thank you for registering with Video Host! Please click the button below to verify your email address and activate your account.</p>
+          <p>Thank you for registering with Taped! Please click the button below to verify your email address and activate your account.</p>
           <div style="text-align: center; margin: 28px 0;">
             <a href="${confirmLink}" class="button" target="_blank">Confirm Email Address</a>
           </div>
           <p>Or copy and paste this link into your browser:</p>
           <div class="link-box">${confirmLink}</div>
-          <p style="margin-top: 20px;">This verification link will expire in 24 hours. If you did not sign up for Video Host, you can safely ignore this email.</p>
+          <p style="margin-top: 20px;">This verification link will expire in 24 hours. If you did not sign up for Taped, you can safely ignore this email.</p>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} Video Host Inc. All rights reserved.
+            &copy; ${new Date().getFullYear()} Taped. All rights reserved.
           </div>
         </div>
       </body>
@@ -50,9 +50,9 @@ export async function sendVerificationEmail(email: string, token: string) {
   `;
 
   await transporter.sendMail({
-    from: `"Video Host" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: `"Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
     to: email,
-    subject: "Confirm your Video Host email address",
+    subject: "Confirm your Taped email address",
     html,
   });
 }
@@ -112,7 +112,7 @@ export async function sendShareEmail(options: SendShareEmailOptions) {
           <div class="link-box">${shareUrl}</div>
 
           <div class="footer">
-            Shared via <strong>${organizationName}</strong> on Video Host.<br/>
+            Shared via <strong>${organizationName}</strong> on Taped.<br/>
             &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
           </div>
         </div>
@@ -121,7 +121,7 @@ export async function sendShareEmail(options: SendShareEmailOptions) {
   `;
 
   await transporter.sendMail({
-    from: `"${organizationName} via Video Host" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: `"${organizationName} via Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
     to: toEmail,
     subject: `${senderName} shared a ${itemTypeName} with you - ${organizationName}`,
     html,
@@ -161,7 +161,7 @@ export async function sendOrgInviteEmail(options: SendOrgInviteEmailOptions) {
       <body>
         <div class="container">
           <div class="org-badge">${organizationName}</div>
-          <h1>Join ${organizationName} on Video Host</h1>
+          <h1>Join ${organizationName} on Taped</h1>
           <p><strong>${senderName}</strong> has invited you to join <strong>${organizationName}</strong> as a <span class="role-badge">${formattedRole}</span>.</p>
           
           <div class="button-wrap">
@@ -172,7 +172,7 @@ export async function sendOrgInviteEmail(options: SendOrgInviteEmailOptions) {
           <div class="link-box">${inviteUrl}</div>
 
           <div class="footer">
-            Invited to <strong>${organizationName}</strong> on Video Host.<br/>
+            Invited to <strong>${organizationName}</strong> on Taped.<br/>
             &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
           </div>
         </div>
@@ -181,9 +181,9 @@ export async function sendOrgInviteEmail(options: SendOrgInviteEmailOptions) {
   `;
 
   await transporter.sendMail({
-    from: `"${organizationName} via Video Host" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: `"${organizationName} via Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
     to: toEmail,
-    subject: `Invitation to join ${organizationName} on Video Host`,
+    subject: `Invitation to join ${organizationName} on Taped`,
     html,
   });
 }

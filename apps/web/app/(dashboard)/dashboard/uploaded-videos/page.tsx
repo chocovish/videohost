@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   FolderPlus,
   Folder,
+  FolderInput,
   ChevronRight,
   Home,
   Trash2,
@@ -25,6 +26,7 @@ import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
 import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
+import MoveItemModal from "@/components/MoveItemModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
@@ -73,6 +75,12 @@ function UploadedVideosContent() {
     type: "video" | "folder";
     id: string;
     name: string;
+  } | null>(null);
+  const [moveTarget, setMoveTarget] = useState<{
+    type: "video" | "folder";
+    id: string;
+    name: string;
+    currentFolderId: string | null;
   } | null>(null);
 
   const navigateToFolder = (folderId: string | null) => {
@@ -330,11 +338,27 @@ function UploadedVideosContent() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      setMoveTarget({
+                        type: "folder",
+                        id: folder.id,
+                        name: folder.name,
+                        currentFolderId: folder.parentId,
+                      });
+                    }}
+                    title="Move folder to another folder"
+                    aria-label="Move folder"
+                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  >
+                    <FolderInput className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShareTarget({ type: "folder", id: folder.id, name: folder.name });
                     }}
                     title="Share folder via email"
                     aria-label="Share folder"
-                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
@@ -342,7 +366,7 @@ function UploadedVideosContent() {
                     onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
                     title="Delete folder"
                     aria-label="Delete folder"
-                    className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -459,7 +483,24 @@ function UploadedVideosContent() {
                 {/* Card Footer */}
                 <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
                   <span>{new Date(video.createdAt).toLocaleDateString()}</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMoveTarget({
+                          type: "video",
+                          id: video.id,
+                          name: video.title,
+                          currentFolderId: video.folderId || null,
+                        });
+                      }}
+                      title="Move video to another folder"
+                      aria-label="Move video"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <FolderInput className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -467,7 +508,8 @@ function UploadedVideosContent() {
                         setShareTarget({ type: "video", id: video.id, name: video.title });
                       }}
                       title="Share video via email"
-                      className="p-1 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 transition-colors"
+                      aria-label="Share video"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
                       <Share2 className="w-4 h-4" />
                     </button>
@@ -479,6 +521,19 @@ function UploadedVideosContent() {
           </div>
         )}
       </div>
+
+      {/* Move Item Modal */}
+      {moveTarget && (
+        <MoveItemModal
+          isOpen={!!moveTarget}
+          onClose={() => setMoveTarget(null)}
+          onSuccess={refreshAll}
+          itemType={moveTarget.type}
+          itemId={moveTarget.id}
+          itemName={moveTarget.name}
+          currentFolderId={moveTarget.currentFolderId}
+        />
+      )}
 
       {/* Share Modal */}
       {shareTarget && (

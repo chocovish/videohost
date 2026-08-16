@@ -9,10 +9,38 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
+  const isAll = searchParams.get("all") === "true" || searchParams.get("parentId") === "all";
   const rawParentId = searchParams.get("parentId");
   const parentId = !rawParentId || rawParentId === "root" || rawParentId === "null" ? null : rawParentId;
 
   try {
+    if (isAll) {
+      const allFolders = await db.folder.findMany({
+        where: {
+          organizationId: authCtx.orgId,
+        },
+        include: {
+          _count: {
+            select: {
+              children: true,
+              videos: true,
+            },
+          },
+        },
+        orderBy: { name: "asc" },
+      });
+
+      const formatted = allFolders.map((f) => ({
+        id: f.id,
+        name: f.name,
+        parentId: f.parentId,
+        itemCount: f._count.children + f._count.videos,
+        createdAt: f.createdAt,
+      }));
+
+      return NextResponse.json({ folders: formatted });
+    }
+
     let currentFolder = null;
     const breadcrumbs: { id: string; name: string }[] = [];
 

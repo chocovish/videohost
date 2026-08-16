@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { Video, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import PublicHeader from "@/components/PublicHeader";
 
@@ -84,9 +85,16 @@ export default function RegisterForm() {
       <main className="flex-1 flex items-center justify-center p-4 relative z-10 my-auto">
         <div className="w-full max-w-lg glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))]">
           <div className="flex flex-col items-center text-center mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-lg mb-4">
-              <Video className="w-8 h-8" />
-            </div>
+            <Link href="/" className="mb-4 inline-block transform hover:scale-105 transition-transform">
+              <Image
+                src="/taped-in-logo.webp"
+                alt="Taped"
+                width={150}
+                height={50}
+                className="h-10 sm:h-11 w-auto object-contain mx-auto"
+                priority
+              />
+            </Link>
             <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Create your Taped Account</h1>
             <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
               Get started instantly with 2GB free video cloud storage

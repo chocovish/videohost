@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Video, CheckCircle2, AlertCircle, Loader2, ArrowRight, Mail } from "lucide-react";
+import Image from "next/image";
+import { CheckCircle2, AlertCircle, Loader2, ArrowRight, Mail } from "lucide-react";
 
 function VerifyEmailInner() {
   const searchParams = useSearchParams();
@@ -78,9 +79,16 @@ function VerifyEmailInner() {
 
       <div className="w-full max-w-md glass-card rounded-2xl p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))] text-center">
         <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-lg mb-4">
-            <Video className="w-8 h-8" />
-          </div>
+          <Link href="/" className="mb-4 inline-block transform hover:scale-105 transition-transform">
+            <Image
+              src="/taped-in-logo.webp"
+              alt="Taped"
+              width={150}
+              height={50}
+              className="h-10 sm:h-11 w-auto object-contain mx-auto"
+              priority
+            />
+          </Link>
           <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Email Verification</h1>
         </div>
 

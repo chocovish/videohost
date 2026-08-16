@@ -32,9 +32,59 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (rawParentId !== undefined) {
       const newParentId = !rawParentId || rawParentId === "root" || rawParentId === "null" ? null : rawParentId;
       if (newParentId === folderId) {
-        return NextResponse.json({ error: "Cannot set folder as its own parent" }, { status: 400 });
+        return NextResponse.json({ error: "Cannot move folder into itself" }, { status: 400 });
       }
+
+      if (newParentId) {
+        // Validate target parent exists in organization
+        const targetParent = await db.folder.findFirst({
+          where: { id: newParentId, organizationId: authCtx.orgId },
+        });
+
+        if (!targetParent) {
+          return NextResponse.json({ error: "Destination folder not found" }, { status: 404 });
+        }
+
+        // Circular reference check: traverse up from newParentId to make sure folderId is not in the ancestor path
+        let currAncestor: typeof targetParent | null = targetParent;
+        while (currAncestor) {
+          if (currAncestor.id === folderId) {
+            return NextResponse.json(
+              { error: "Cannot move folder into one of its own subfolders" },
+              { status: 400 }
+            );
+          }
+          if (currAncestor.parentId) {
+            currAncestor = await db.folder.findFirst({
+              where: { id: currAncestor.parentId, organizationId: authCtx.orgId },
+            });
+          } else {
+            currAncestor = null;
+          }
+        }
+      }
+
       dataToUpdate.parentId = newParentId;
+    }
+
+    // Check duplicate folder name in target parent
+    const targetParentId = rawParentId !== undefined ? dataToUpdate.parentId : folder.parentId;
+    const targetName = dataToUpdate.name ?? folder.name;
+
+    const existingNameInDest = await db.folder.findFirst({
+      where: {
+        organizationId: authCtx.orgId,
+        parentId: targetParentId,
+        name: targetName,
+        NOT: { id: folderId },
+      },
+    });
+
+    if (existingNameInDest) {
+      return NextResponse.json(
+        { error: "A folder with this name already exists in the destination" },
+        { status: 400 }
+      );
     }
 
     const updatedFolder = await db.folder.update({
@@ -45,7 +95,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ folder: updatedFolder });
   } catch (error: any) {
     console.error("Error updating folder:", error);
-    return NextResponse.json({ error: "Failed to update folder" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to update folder" }, { status: 500 });
   }
 }
 

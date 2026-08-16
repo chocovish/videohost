@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Video, Menu, X, ArrowRight, LogIn, UserPlus } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,20 +28,17 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
         {/* Brand Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 group transition-transform active:scale-95"
+          className="flex items-center group transition-transform active:scale-95 py-0.5"
           onClick={() => setMobileMenuOpen(false)}
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shadow-sm group-hover:scale-105 transition-transform">
-            <Video className="w-5 h-5 sm:w-6 sm:h-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-extrabold text-lg sm:text-xl tracking-tight leading-none text-[hsl(var(--foreground))]">
-              Taped
-            </span>
-            <span className="text-[10px] font-bold text-[hsl(var(--primary))] tracking-wider uppercase">
-              Secure Video Hosting
-            </span>
-          </div>
+          <Image
+            src="/taped-in-logo.webp"
+            alt="Taped"
+            width={140}
+            height={48}
+            className="h-8 sm:h-9 w-auto object-contain"
+            priority
+          />
         </Link>
 
         {/* Desktop Navigation Links */}

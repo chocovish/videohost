@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Building2, Check, AlertCircle, Loader2, UserPlus, LogIn, ArrowRight, UserCheck } from "lucide-react";
 
 interface InviteInfo {
@@ -87,9 +88,16 @@ export default function AcceptInvitePage({ params }: { params: Promise<{ token: 
     <div className="min-h-screen bg-[#090d16] text-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-[#131c2e] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
         {/* Header Logo */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-lime-500 to-emerald-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider">
-          <Building2 className="w-4 h-4" /> Video Host
-        </div>
+        <Link href="/" className="inline-block transform hover:scale-105 transition-transform mb-2">
+          <Image
+            src="/taped-in-logo.webp"
+            alt="Taped"
+            width={140}
+            height={44}
+            className="h-9 w-auto object-contain mx-auto"
+            priority
+          />
+        </Link>
 
         {loading ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-3">
