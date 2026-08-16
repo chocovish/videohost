@@ -56,9 +56,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
   const dataToUpdate: any = {};
-  if (body.title !== undefined) dataToUpdate.title = body.title;
-  if (body.description !== undefined) dataToUpdate.description = body.description;
+  if (body.title !== undefined) dataToUpdate.title = body.title.trim();
+  if (body.description !== undefined) dataToUpdate.description = body.description ? body.description.trim() : null;
   if (body.shareAccessMode !== undefined) dataToUpdate.shareAccessMode = body.shareAccessMode;
+
+  if (body.removeThumbnail === true || body.thumbnailKey === null) {
+    if (video.thumbnailKey) {
+      deleteVideoFromS3(video.organizationId, video.id, video.thumbnailKey).catch(() => {
+        // Best-effort cleanup of standalone thumbnail
+      });
+    }
+    dataToUpdate.thumbnailKey = null;
+  }
 
   if (body.folderId !== undefined) {
     const newFolderId = !body.folderId || body.folderId === "root" || body.folderId === "null" ? null : body.folderId;
@@ -76,11 +85,34 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const updated = await db.video.update({
     where: { id },
     data: dataToUpdate,
+    include: { renditions: true },
   });
 
+  const computedSizeBytes = updated.sizeBytes !== null ? Number(updated.sizeBytes) : null;
+  const playbackUrl = await getPlaybackUrl(updated);
+  const thumbnailUrl = updated.thumbnailKey ? await getPresignedPlaybackUrl(updated.thumbnailKey) : null;
+
   return NextResponse.json({
-    ...updated,
-    sizeBytes: updated.sizeBytes !== null ? Number(updated.sizeBytes) : null,
+    id: updated.id,
+    title: updated.title,
+    description: updated.description,
+    folderId: updated.folderId,
+    status: updated.status,
+    progress: updated.progress || 0,
+    requireHls: updated.requireHls,
+    durationSeconds: updated.durationSeconds,
+    sizeBytes: computedSizeBytes,
+    sourceResolution: updated.sourceWidth ? `${updated.sourceWidth}x${updated.sourceHeight}` : null,
+    shareAccessMode: updated.shareAccessMode,
+    playbackUrl,
+    thumbnailUrl,
+    renditions: updated.renditions.map((r) => ({
+      resolution: r.resolution,
+      bitrateKbps: r.bitrateKbps,
+      playlistUrl: `/api/hls/${r.storageKey}`,
+      sizeBytes: Number(r.sizeBytes || 0),
+    })),
+    createdAt: updated.createdAt,
   });
 }
 

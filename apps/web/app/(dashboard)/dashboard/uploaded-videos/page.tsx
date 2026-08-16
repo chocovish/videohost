@@ -21,12 +21,14 @@ import {
   Share2,
   Video,
   HardDrive,
+  Pencil,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
 import CreateFolderModal from "@/components/CreateFolderModal";
 import ShareModal from "@/components/ShareModal";
 import MoveItemModal from "@/components/MoveItemModal";
+import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
@@ -82,6 +84,7 @@ function UploadedVideosContent() {
     name: string;
     currentFolderId: string | null;
   } | null>(null);
+  const [editTarget, setEditTarget] = useState<VideoItem | null>(null);
 
   const navigateToFolder = (folderId: string | null) => {
     if (folderId) {
@@ -488,6 +491,18 @@ function UploadedVideosContent() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        setEditTarget(video);
+                      }}
+                      title="Edit video details"
+                      aria-label="Edit video"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setMoveTarget({
                           type: "video",
                           id: video.id,
@@ -532,6 +547,16 @@ function UploadedVideosContent() {
           itemId={moveTarget.id}
           itemName={moveTarget.name}
           currentFolderId={moveTarget.currentFolderId}
+        />
+      )}
+
+      {/* Edit Video Modal */}
+      {editTarget && (
+        <EditVideoModal
+          isOpen={!!editTarget}
+          onClose={() => setEditTarget(null)}
+          onSuccess={refreshAll}
+          video={editTarget}
         />
       )}
 
