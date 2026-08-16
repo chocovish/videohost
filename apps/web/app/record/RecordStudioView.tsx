@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import {
   Video,
@@ -28,6 +28,7 @@ import {
   Layers,
   ChevronDown,
   Loader2,
+  Scissors,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,7 @@ import {
   WebcamSize,
   ResolutionPreset,
 } from "@/lib/recording-compositor";
+import { VideoTrimmer } from "@/components/VideoTrimmer";
 import { useScreenRecorder, CompressionPreset, TargetFps } from "@/hooks/useScreenRecorder";
 
 export default function RecordStudioView() {
@@ -74,6 +76,11 @@ export default function RecordStudioView() {
     recordingTime,
     recordedFile,
     previewUrl,
+    originalRecordedFile,
+    originalMetadata,
+    isTrimmed,
+    applyTrimmedVideo,
+    revertToOriginalRecording,
     isWebcamEnabled,
     handleToggleWebcam,
     cameraDevices,
@@ -112,6 +119,8 @@ export default function RecordStudioView() {
 
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [downloadFilename, setDownloadFilename] = useState("");
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const recordedVideoRef = useRef<HTMLVideoElement | null>(null);
   const [highQualityConfirm, setHighQualityConfirm] = useState<{
     isOpen: boolean;
     settingLabel: string;
@@ -779,35 +788,93 @@ export default function RecordStudioView() {
           {recordState === "recorded" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                {/* Left Column: Preview Video Player */}
+                {/* Left Column: Preview Video Player & Trimmer */}
                 <div className="md:col-span-3 space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-2xl">
+                  <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-2xl group">
                     {previewUrl && (
                       <video
+                        key={previewUrl}
+                        ref={recordedVideoRef}
                         src={previewUrl}
                         controls
-                        autoPlay
                         className="w-full h-full object-contain"
                       />
                     )}
+
+                    {/* Trimmed Badge */}
+                    {isTrimmed && (
+                      <div className="absolute top-3 left-3 bg-lime-500/90 backdrop-blur-md text-slate-950 px-2.5 py-1 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 z-10 animate-in fade-in">
+                        <Scissors className="w-3.5 h-3.5" />
+                        Trimmed Video
+                      </div>
+                    )}
                   </div>
 
-                  {/* Video Metadata Badges */}
-                  {metadata && (
-                    <div className="grid grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-xs">
-                      <div>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Duration</p>
-                        <p className="font-extrabold text-sm">{formatDuration(metadata.durationSeconds)}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">Resolution</p>
-                        <p className="font-extrabold text-sm">{metadata.sourceWidth}x{metadata.sourceHeight}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-semibold">File Size</p>
-                        <p className="font-extrabold text-sm">{recordedFile ? formatBytes(recordedFile.size) : "-"}</p>
-                      </div>
+                  {/* Video Trimmer Toggle & Metadata Bar */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          if (!showTrimmer) {
+                            recordedVideoRef.current?.pause();
+                          }
+                          setShowTrimmer(!showTrimmer);
+                        }}
+                        className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${
+                          showTrimmer
+                            ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
+                            : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
+                        }`}
+                      >
+                        <Scissors className="w-3.5 h-3.5" />
+                        {showTrimmer ? "Close Trimmer" : isTrimmed ? "Re-trim Video" : "Trim Video"}
+                      </Button>
+
+                      {isTrimmed && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            revertToOriginalRecording();
+                            setShowTrimmer(false);
+                          }}
+                          className="rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 gap-1 hover:bg-red-500/10"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          Revert to Original
+                        </Button>
+                      )}
                     </div>
+
+                    {metadata && (
+                      <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 pr-1">
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {formatDuration(metadata.durationSeconds)}
+                        </span>
+                        <span>•</span>
+                        <span>{metadata.sourceWidth}x{metadata.sourceHeight}</span>
+                        <span>•</span>
+                        <span>{recordedFile ? formatBytes(recordedFile.size) : "-"}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Video Trimmer Engine Panel */}
+                  {showTrimmer && recordedFile && previewUrl && (
+                    <VideoTrimmer
+                      videoFile={recordedFile}
+                      previewUrl={previewUrl}
+                      metadata={metadata}
+                      videoElementRef={recordedVideoRef}
+                      onTrimSuccess={(newFile, newUrl, newMeta) => {
+                        applyTrimmedVideo(newFile, newMeta, newUrl);
+                        setShowTrimmer(false);
+                      }}
+                      onCancel={() => setShowTrimmer(false)}
+                    />
                   )}
                 </div>
 

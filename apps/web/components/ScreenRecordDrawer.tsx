@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Video,
   Mic,
@@ -34,6 +34,7 @@ import {
   Timer,
   Zap,
   Layers,
+  Scissors,
 } from "lucide-react";
 import {
   formatDuration,
@@ -80,6 +81,7 @@ import {
 import { uploadVideoFile } from "@/lib/upload-video";
 import { processThumbnail } from "@/lib/video-utils";
 import { ThumbnailSelector } from "@/components/ThumbnailSelector";
+import { VideoTrimmer } from "@/components/VideoTrimmer";
 import { useScreenRecorder, CompressionPreset, TargetFps } from "@/hooks/useScreenRecorder";
 
 interface ScreenRecordDrawerProps {
@@ -108,6 +110,11 @@ export default function ScreenRecordDrawer({
     recordingTime,
     recordedFile,
     previewUrl,
+    originalRecordedFile,
+    originalMetadata,
+    isTrimmed,
+    applyTrimmedVideo,
+    revertToOriginalRecording,
     isWebcamEnabled,
     handleToggleWebcam,
     cameraDevices,
@@ -149,6 +156,8 @@ export default function ScreenRecordDrawer({
   const [description, setDescription] = useState("");
   const [requireHls, setRequireHls] = useState(false);
   const [showStudioSettings, setShowStudioSettings] = useState(false);
+  const [showTrimmer, setShowTrimmer] = useState(false);
+  const recordedVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -299,6 +308,7 @@ export default function ScreenRecordDrawer({
     setCheckingQuota(false);
     setIsQuotaExceeded(false);
     setShowConfirmClose(false);
+    setShowTrimmer(false);
     setUploading(false);
     setProgress(0);
     setStatusText("");
@@ -1028,41 +1038,97 @@ export default function ScreenRecordDrawer({
               {(recordState === "recorded" || recordState === "uploading") && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                    {/* Left Column: Video Preview Player */}
+                    {/* Left Column: Video Preview Player & Trimmer */}
                     <div className="md:col-span-3 space-y-3">
-                      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-xl">
+                      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-xl group">
                         {previewUrl && (
                           <video
+                            key={previewUrl}
+                            ref={recordedVideoRef}
                             src={previewUrl}
                             controls
-                            autoPlay
                             className="w-full h-full object-contain"
                           />
                         )}
+
+                        {/* Trimmed Badge */}
+                        {isTrimmed && (
+                          <div className="absolute top-3 left-3 bg-lime-500/90 backdrop-blur-md text-slate-950 px-2.5 py-1 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 z-10 animate-in fade-in">
+                            <Scissors className="w-3.5 h-3.5" />
+                            Trimmed Video
+                          </div>
+                        )}
                       </div>
 
-                      {/* Video Stats Summary Bar */}
-                      {metadata && (
-                        <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-xs">
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-medium">Duration</p>
-                            <p className="font-bold text-slate-800 dark:text-slate-200">
-                              {formatDuration(metadata.durationSeconds)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-medium">Resolution</p>
-                            <p className="font-bold text-slate-800 dark:text-slate-200">
-                              {metadata.sourceWidth}x{metadata.sourceHeight}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[10px] text-slate-400 font-medium">File Size</p>
-                            <p className="font-bold text-slate-800 dark:text-slate-200">
-                              {recordedFile ? formatBytes(recordedFile.size) : "-"}
-                            </p>
-                          </div>
+                      {/* Video Trimmer Toggle & Stats Bar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              if (!showTrimmer) {
+                                recordedVideoRef.current?.pause();
+                              }
+                              setShowTrimmer(!showTrimmer);
+                            }}
+                            disabled={uploading}
+                            className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${
+                              showTrimmer
+                                ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
+                                : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
+                            }`}
+                          >
+                            <Scissors className="w-3.5 h-3.5" />
+                            {showTrimmer ? "Close Trimmer" : isTrimmed ? "Re-trim Video" : "Trim Video"}
+                          </Button>
+
+                          {isTrimmed && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                revertToOriginalRecording();
+                                setSelectedThumbnailIndex(0);
+                                setShowTrimmer(false);
+                              }}
+                              disabled={uploading}
+                              className="rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 gap-1 hover:bg-red-500/10"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              Revert to Original
+                            </Button>
+                          )}
                         </div>
+
+                        {metadata && (
+                          <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 pr-1">
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {formatDuration(metadata.durationSeconds)}
+                            </span>
+                            <span>•</span>
+                            <span>{metadata.sourceWidth}x{metadata.sourceHeight}</span>
+                            <span>•</span>
+                            <span>{recordedFile ? formatBytes(recordedFile.size) : "-"}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Video Trimmer Studio Engine Panel */}
+                      {showTrimmer && recordedFile && previewUrl && (
+                        <VideoTrimmer
+                          videoFile={recordedFile}
+                          previewUrl={previewUrl}
+                          metadata={metadata}
+                          videoElementRef={recordedVideoRef}
+                          onTrimSuccess={(newFile, newUrl, newMeta) => {
+                            applyTrimmedVideo(newFile, newMeta, newUrl);
+                            setSelectedThumbnailIndex(0);
+                            setShowTrimmer(false);
+                          }}
+                          onCancel={() => setShowTrimmer(false)}
+                        />
                       )}
                     </div>
 

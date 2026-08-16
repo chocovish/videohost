@@ -29,6 +29,10 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [recordedFile, setRecordedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [originalRecordedFile, setOriginalRecordedFile] = useState<File | null>(null);
+  const [originalPreviewUrl, setOriginalPreviewUrl] = useState<string | null>(null);
+  const [originalMetadata, setOriginalMetadata] = useState<VideoMetadata | null>(null);
+  const [isTrimmed, setIsTrimmed] = useState<boolean>(false);
 
   // Webcam & Recording Studio Controls
   const [isWebcamEnabled, setIsWebcamEnabled] = useState(false);
@@ -237,6 +241,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     setRecordingTime(0);
     recordingTimeRef.current = 0;
     setRecordedFile(null);
+    setOriginalRecordedFile(null);
+    setIsTrimmed(false);
     setIsWebcamEnabled(false);
     setIsMicEnabled(false);
     setWasMicEnabledOnStart(false);
@@ -244,6 +250,10 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
+    }
+    if (originalPreviewUrl && originalPreviewUrl !== previewUrl) {
+      URL.revokeObjectURL(originalPreviewUrl);
+      setOriginalPreviewUrl(null);
     }
     setTitle("");
     setError("");
@@ -253,7 +263,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       URL.revokeObjectURL(metadata.thumbnailUrl);
     }
     setMetadata(null);
-  }, [cleanupStreams, previewUrl, metadata]);
+    setOriginalMetadata(null);
+  }, [cleanupStreams, previewUrl, originalPreviewUrl, metadata]);
 
   // Cancel Countdown during delay phase
   const cancelCountdown = () => {
@@ -414,15 +425,19 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         const file = new File([finalBlob], fileName, { type: outputMime });
 
         setRecordedFile(file);
+        setOriginalRecordedFile(file);
+        setIsTrimmed(false);
         setTitle(`Studio Recording ${formattedDate}`);
 
         const url = URL.createObjectURL(finalBlob);
         setPreviewUrl(url);
+        setOriginalPreviewUrl(url);
 
         let meta: VideoMetadata | null = null;
         try {
           meta = await extractVideoMetadataAndThumbnail(file, durationSec);
           setMetadata(meta);
+          setOriginalMetadata(meta);
         } catch (metaErr) {
           console.warn("Metadata extraction warning:", metaErr);
         } finally {
@@ -531,12 +546,48 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     document.body.removeChild(a);
   };
 
+  const applyTrimmedVideo = (
+    newFile: File,
+    newMetadata: VideoMetadata,
+    newPreviewUrl: string
+  ) => {
+    if (previewUrl && previewUrl !== originalPreviewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setRecordedFile(newFile);
+    setMetadata(newMetadata);
+    setPreviewUrl(newPreviewUrl);
+    setIsTrimmed(true);
+  };
+
+  const revertToOriginalRecording = () => {
+    if (!originalRecordedFile || !originalMetadata) return;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    if (originalPreviewUrl && originalPreviewUrl !== previewUrl) {
+      URL.revokeObjectURL(originalPreviewUrl);
+    }
+    const freshUrl = URL.createObjectURL(originalRecordedFile);
+    setRecordedFile(originalRecordedFile);
+    setMetadata(originalMetadata);
+    setPreviewUrl(freshUrl);
+    setOriginalPreviewUrl(freshUrl);
+    setIsTrimmed(false);
+  };
+
   // Cleanup component unmount
   useEffect(() => {
     return () => {
       cleanupStreams();
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      if (originalPreviewUrl && originalPreviewUrl !== previewUrl) {
+        URL.revokeObjectURL(originalPreviewUrl);
+      }
     };
-  }, [cleanupStreams]);
+  }, [cleanupStreams, previewUrl, originalPreviewUrl]);
 
   return {
     recordState,
@@ -550,6 +601,12 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     recordingTime,
     recordedFile,
     previewUrl,
+    originalRecordedFile,
+    originalPreviewUrl,
+    originalMetadata,
+    isTrimmed,
+    applyTrimmedVideo,
+    revertToOriginalRecording,
     isWebcamEnabled,
     setIsWebcamEnabled,
     handleToggleWebcam,
