@@ -13,7 +13,18 @@ export async function POST(req: Request) {
   const orgId = authCtx.orgId;
 
   try {
-    const { title, description, folderId: rawFolderId, requireHls = false, durationSeconds, sizeBytes, sourceWidth, sourceHeight } = await req.json();
+    const {
+      title,
+      description,
+      folderId: rawFolderId,
+      requireHls = false,
+      durationSeconds,
+      sizeBytes,
+      sourceWidth,
+      sourceHeight,
+      fileName,
+      contentType,
+    } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
@@ -49,8 +60,20 @@ export async function POST(req: Request) {
       },
     });
 
+    let ext = "mp4";
+    if (fileName && typeof fileName === "string" && fileName.includes(".")) {
+      const parts = fileName.split(".");
+      const extractedExt = parts.pop()?.toLowerCase();
+      if (extractedExt && ["mp4", "mkv", "webm", "mov", "avi"].includes(extractedExt)) {
+        ext = extractedExt;
+      }
+    } else if (contentType?.includes("matroska") || contentType?.includes("mkv")) {
+      ext = "mkv";
+    }
+
+    const resolvedContentType = contentType || (ext === "mkv" ? "video/x-matroska" : "video/mp4");
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const originalKey = `${orgId}/${video.id}/original.mp4`;
+    const originalKey = `${orgId}/${video.id}/original.${ext}`;
     const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
     await db.video.update({
@@ -58,7 +81,7 @@ export async function POST(req: Request) {
       data: { originalKey, thumbnailKey },
     });
 
-    const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
+    const uploadUrl = await getPresignedUploadUrl(originalKey, resolvedContentType);
     const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
 
     return NextResponse.json({

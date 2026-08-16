@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon, Sparkles, Check } from "lucide-react";
+import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon, Sparkles, Check, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,13 @@ import {
   formatDuration,
   formatBytes,
 } from "@/lib/video-utils";
+import {
+  remuxVideoToMkvStrictCopy,
+  validateTracksStrictCopy,
+  UnsupportedTracksError,
+  UnsupportedTrackInfo,
+} from "@/lib/mediabunny-remux";
+import UnsupportedVideoModal from "@/components/UnsupportedVideoModal";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -55,6 +62,10 @@ export default function UploadModal({
   const [checkingQuota, setCheckingQuota] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [unsupportedModalOpen, setUnsupportedModalOpen] = useState(false);
+  const [unsupportedTracks, setUnsupportedTracks] = useState<UnsupportedTrackInfo[]>([]);
+  const [unsupportedFileName, setUnsupportedFileName] = useState("");
+  const [validatingTracks, setValidatingTracks] = useState(false);
 
   const resetForm = () => {
     setFile(null);
@@ -67,6 +78,10 @@ export default function UploadModal({
     setCheckingQuota(false);
     setIsQuotaExceeded(false);
     setSelectedThumbnailIndex(0);
+    setUnsupportedModalOpen(false);
+    setUnsupportedTracks([]);
+    setUnsupportedFileName("");
+    setValidatingTracks(false);
     if (metadata?.thumbnails) {
       metadata.thumbnails.forEach((t) => URL.revokeObjectURL(t.url));
     } else if (metadata?.thumbnailUrl) {
@@ -152,6 +167,8 @@ export default function UploadModal({
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
+      setUnsupportedTracks([]);
+      setUnsupportedFileName(selectedFile.name);
       if (!title) {
         const nameWithoutExt = selectedFile.name.replace(/\.[^/.]+$/, "");
         setTitle(nameWithoutExt);
@@ -193,14 +210,36 @@ export default function UploadModal({
       setCustomThumbBlob(null);
       setCustomThumbUrl(null);
 
-      const meta = await extractVideoMetadataAndThumbnail(selectedFile);
-      setMetadata(meta);
+      // Extract video metadata and check browser playback & MKV stream compatibility in parallel
+      setValidatingTracks(true);
+      try {
+        const [meta, validation] = await Promise.all([
+          extractVideoMetadataAndThumbnail(selectedFile),
+          validateTracksStrictCopy(selectedFile),
+        ]);
+        setMetadata(meta);
+        if (!validation.isValid && validation.unsupportedTracks.length > 0) {
+          setUnsupportedTracks(validation.unsupportedTracks);
+          setUnsupportedModalOpen(true);
+          setError("Video contains tracks that cannot be played in web browsers or copied to MKV.");
+        }
+      } catch (validationErr) {
+        console.warn("Video stream probing warning:", validationErr);
+      } finally {
+        setValidatingTracks(false);
+      }
     }
   };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title.trim() || checkingQuota || isQuotaExceeded) return;
+    if (!file || !title.trim() || checkingQuota || isQuotaExceeded || validatingTracks) return;
+
+    if (unsupportedTracks.length > 0) {
+      setUnsupportedModalOpen(true);
+      setError("Video contains tracks that cannot be played in web browsers or copied to MKV.");
+      return;
+    }
 
     setError("");
     setCheckingQuota(true);
@@ -230,10 +269,39 @@ export default function UploadModal({
     }
 
     setUploading(true);
+    setProgress(5);
+    setStatusText("Checking whether the tracks can be played and copied to MKV...");
+
+    // --------------------------------------------------------
+    // STRICT -c copy via Mediabunny before upload
+    // If tracks cannot be decoded/played or copied as-is, show popup and halt upload
+    // --------------------------------------------------------
+    let convertedFile: File = file;
+    try {
+      convertedFile = await remuxVideoToMkvStrictCopy(file, (remuxPct, status) => {
+        // 5% - 25% progress during client-side stream copy
+        const scaled = Math.max(5, Math.round(remuxPct * 0.25));
+        setProgress(scaled);
+        setStatusText(status);
+      });
+    } catch (remuxErr: any) {
+      console.error("Client-side stream copy failed:", remuxErr);
+      if (remuxErr instanceof UnsupportedTracksError) {
+        setUnsupportedTracks(remuxErr.unsupportedTracks);
+        setUnsupportedFileName(file.name);
+        setUnsupportedModalOpen(true);
+        setError("Video file not supported: Contains tracks that cannot be played by web browsers or copied to MKV.");
+        setUploading(false);
+        return;
+      }
+      setError(remuxErr?.message || "Failed to process video streams before upload.");
+      setUploading(false);
+      return;
+    }
 
     try {
       await uploadVideoFile({
-        file,
+        file: convertedFile,
         title: title.trim(),
         description: description.trim() || undefined,
         requireHls,
@@ -243,7 +311,9 @@ export default function UploadModal({
           thumbnailBlob: customThumbBlob || metadata?.thumbnailBlob,
         },
         onProgress: (percent, status) => {
-          setProgress(percent);
+          // 25% - 100% progress during S3 upload & finalize
+          const scaled = 25 + Math.round(percent * 0.75);
+          setProgress(Math.min(100, scaled));
           setStatusText(status);
         },
       });
@@ -283,9 +353,29 @@ export default function UploadModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {unsupportedTracks.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setUnsupportedModalOpen(true)}
+                className="h-7 text-[11px] px-2.5 bg-white dark:bg-slate-800 border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-50 shrink-0"
+              >
+                View Details
+              </Button>
+            )}
+          </div>
+        )}
+
+        {validatingTracks && (
+          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+            <span>Probing video streams for strict stream copy (-c copy → MKV)...</span>
           </div>
         )}
 
@@ -571,11 +661,15 @@ export default function UploadModal({
             </Button>
             <Button
               type="submit"
-              disabled={uploading || !file || checkingQuota || isQuotaExceeded}
+              disabled={uploading || !file || checkingQuota || isQuotaExceeded || validatingTracks || unsupportedTracks.length > 0}
               className="w-full sm:w-auto min-w-[140px]"
             >
               {uploading
                 ? "Processing..."
+                : validatingTracks
+                ? "Validating Tracks..."
+                : unsupportedTracks.length > 0
+                ? "Incompatible Video"
                 : checkingQuota
                 ? "Checking Quota..."
                 : isQuotaExceeded
@@ -587,6 +681,18 @@ export default function UploadModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <UnsupportedVideoModal
+        isOpen={unsupportedModalOpen}
+        onClose={() => setUnsupportedModalOpen(false)}
+        fileName={unsupportedFileName || file?.name}
+        unsupportedTracks={unsupportedTracks}
+        onSelectAnotherFile={() => {
+          resetForm();
+          const fileInput = document.getElementById("video-file-input") as HTMLInputElement | null;
+          fileInput?.click();
+        }}
+      />
     </Dialog>
   );
 }

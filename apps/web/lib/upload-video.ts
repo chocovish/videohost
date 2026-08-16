@@ -26,7 +26,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
       title: title.trim(),
       description: description?.trim() || undefined,
       fileName: file.name,
-      contentType: file.type || "video/mp4",
+      contentType: file.type || (file.name.endsWith(".mkv") ? "video/x-matroska" : "video/mp4"),
       requireHls,
       sizeBytes: file.size,
       durationSeconds: metadata?.durationSeconds || undefined,
@@ -72,7 +72,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
     xhr.onerror = () => reject(new Error("Network error during S3 upload"));
 
     xhr.open("PUT", uploadUrl);
-    xhr.setRequestHeader("Content-Type", file.type || "video/mp4");
+    xhr.setRequestHeader("Content-Type", file.type || (file.name.endsWith(".mkv") ? "video/x-matroska" : "video/mp4"));
     xhr.send(file);
   });
 
