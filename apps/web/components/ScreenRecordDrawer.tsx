@@ -17,6 +17,7 @@ import {
   Maximize2,
   Image as ImageIcon,
   CheckCircle2,
+  Loader2,
   X,
   Disc,
   Download,
@@ -99,6 +100,8 @@ export default function ScreenRecordDrawer({
   const {
     recordState,
     setRecordState,
+    isProcessing,
+    processingStatus,
     isMicEnabled,
     wasMicEnabledOnStart,
     handleToggleMic,
@@ -552,6 +555,23 @@ export default function ScreenRecordDrawer({
                             </div>
                           </div>
                         )}
+
+                        {/* Processing Video Overlay */}
+                        {isProcessing && (
+                          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
+                            <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xl shadow-red-500/20">
+                              <Loader2 className="w-7 h-7 animate-spin text-red-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-extrabold text-white">
+                                {processingStatus || "Processing Recording..."}
+                              </h4>
+                              <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
+                                Transmuxing container, fixing timeline duration, and generating 4 thumbnail previews.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -941,6 +961,7 @@ export default function ScreenRecordDrawer({
                               size="lg"
                               variant="outline"
                               onClick={pauseRecording}
+                              disabled={isProcessing}
                               className="font-bold rounded-2xl py-6 border-slate-300 dark:border-slate-700 gap-2"
                             >
                               <Pause className="w-5 h-5 text-amber-500 fill-current" /> Pause
@@ -949,9 +970,20 @@ export default function ScreenRecordDrawer({
                             <Button
                               size="lg"
                               onClick={stopRecording}
-                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
+                              disabled={isProcessing}
+                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2 disabled:opacity-75"
                             >
-                              <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
+                              {isProcessing ? (
+                                <>
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                  <span>Processing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <SquareIcon className="w-5 h-5 fill-current" />
+                                  <span>Stop & Finish</span>
+                                </>
+                              )}
                             </Button>
                           </div>
                         )}
@@ -961,6 +993,7 @@ export default function ScreenRecordDrawer({
                             <Button
                               size="lg"
                               onClick={resumeRecording}
+                              disabled={isProcessing}
                               className="bg-lime-600 hover:bg-lime-700 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
                             >
                               <Play className="w-5 h-5 fill-current" /> Resume
@@ -969,9 +1002,20 @@ export default function ScreenRecordDrawer({
                             <Button
                               size="lg"
                               onClick={stopRecording}
-                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2"
+                              disabled={isProcessing}
+                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2 disabled:opacity-75"
                             >
-                              <SquareIcon className="w-5 h-5 fill-current" /> Stop & Finish
+                              {isProcessing ? (
+                                <>
+                                  <Loader2 className="w-5 h-5 animate-spin" />
+                                  <span>Processing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <SquareIcon className="w-5 h-5 fill-current" />
+                                  <span>Stop & Finish</span>
+                                </>
+                              )}
                             </Button>
                           </div>
                         )}

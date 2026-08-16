@@ -46,6 +46,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState("");
 
   // Stream & Recorder references
   const displayStreamRef = useRef<MediaStream | null>(null);
@@ -245,6 +247,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     }
     setTitle("");
     setError("");
+    setIsProcessing(false);
+    setProcessingStatus("");
     if (metadata?.thumbnailUrl) {
       URL.revokeObjectURL(metadata.thumbnailUrl);
     }
@@ -385,6 +389,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       };
 
       recorder.onstop = async () => {
+        setIsProcessing(true);
+        setProcessingStatus("Repairing video container & duration...");
         const rawBlob = new Blob(recordedChunksRef.current, { type: mimeType });
         const elapsedMs = Math.max(1000, Date.now() - (recordingStartTimeRef.current || Date.now()));
         const durationSec = Math.max(1, Math.round(elapsedMs / 1000));
@@ -396,6 +402,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
           console.warn("Container transmuxing/indexing failed:", e);
         }
 
+        setProcessingStatus("Generating 4 thumbnails & metadata...");
         const now = new Date();
         const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
           now.getDate()
@@ -412,12 +419,19 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         const url = URL.createObjectURL(finalBlob);
         setPreviewUrl(url);
 
-        const meta = await extractVideoMetadataAndThumbnail(file, durationSec);
-        setMetadata(meta);
+        let meta: VideoMetadata | null = null;
+        try {
+          meta = await extractVideoMetadataAndThumbnail(file, durationSec);
+          setMetadata(meta);
+        } catch (metaErr) {
+          console.warn("Metadata extraction warning:", metaErr);
+        } finally {
+          setIsProcessing(false);
+          setProcessingStatus("");
+          setRecordState("recorded");
+        }
 
-        setRecordState("recorded");
-
-        if (options?.onRecordingComplete) {
+        if (options?.onRecordingComplete && meta) {
           options.onRecordingComplete(file, meta);
         }
       };
@@ -495,6 +509,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   };
 
   const stopRecording = () => {
+    setIsProcessing(true);
+    setProcessingStatus("Finalizing recording & indexing cues...");
     cleanupStreams();
   };
 
@@ -525,6 +541,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   return {
     recordState,
     setRecordState,
+    isProcessing,
+    processingStatus,
     isMicEnabled,
     wasMicEnabledOnStart,
     setIsMicEnabled,
