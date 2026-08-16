@@ -30,6 +30,7 @@ import {
   UnsupportedTrackInfo,
 } from "@/lib/mediabunny-remux";
 import UnsupportedVideoModal from "@/components/UnsupportedVideoModal";
+import { ThumbnailSelector } from "@/components/ThumbnailSelector";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -461,97 +462,17 @@ export default function UploadModal({
 
           {/* 4-Thumbnail Selection Section */}
           {file && (
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))] space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                  Select Video Thumbnail
-                  {metadata?.thumbnails && metadata.thumbnails.length > 0 && (
-                    <span className="text-[10px] font-normal text-[hsl(var(--muted-foreground))]">
-                      ({metadata.thumbnails.length} frames generated)
-                    </span>
-                  )}
-                </span>
-                {customThumbUrl && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveCustomThumb}
-                    disabled={uploading}
-                    className="text-[11px] text-red-600 hover:underline font-semibold"
-                  >
-                    Reset to auto
-                  </button>
-                )}
-              </div>
-
-              {/* 4 Thumbnails Grid */}
-              {metadata?.thumbnails && metadata.thumbnails.length > 0 ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {metadata.thumbnails.map((thumb, idx) => {
-                    const isSelected = selectedThumbnailIndex === idx && !customThumbUrl;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        disabled={uploading}
-                        onClick={() => handleSelectThumbnail(idx)}
-                        className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all cursor-pointer group ${
-                          isSelected
-                            ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 scale-[1.02] shadow-sm"
-                            : "border-[hsl(var(--border))] opacity-75 hover:opacity-100 hover:border-slate-400"
-                        }`}
-                      >
-                        <img
-                          src={thumb.url}
-                          alt={`Thumbnail option ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-[9px] font-mono font-medium text-white px-1 py-0.2 rounded">
-                          {formatDuration(thumb.timestampSeconds)}
-                        </div>
-                        {isSelected && (
-                          <div className="absolute top-1 left-1 bg-[hsl(var(--primary))] text-white p-0.5 rounded-full shadow-xs">
-                            <Check className="w-2.5 h-2.5" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {/* Custom Thumbnail Row */}
-              <div className="pt-2 flex items-center justify-between border-t border-[hsl(var(--border))]/60">
-                <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
-                  {customThumbUrl ? "Using custom uploaded image" : "Or upload a custom image"}
-                </span>
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading || compressingThumb}
-                    onChange={handleCustomThumbChange}
-                    className="hidden"
-                    id="custom-thumbnail-modal-input"
-                  />
-                  <label
-                    htmlFor="custom-thumbnail-modal-input"
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg border border-[hsl(var(--border))] bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors shadow-2xs shrink-0 ${
-                      uploading || compressingThumb ? "opacity-50 pointer-events-none" : ""
-                    }`}
-                  >
-                    <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                    <span>
-                      {compressingThumb
-                        ? "Processing..."
-                        : customThumbUrl
-                        ? "Change custom..."
-                        : "Upload custom image"}
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
+            <ThumbnailSelector
+              thumbnails={metadata?.thumbnails}
+              selectedThumbnailIndex={selectedThumbnailIndex}
+              onSelectThumbnail={handleSelectThumbnail}
+              customThumbUrl={customThumbUrl}
+              onCustomThumbChange={handleCustomThumbChange}
+              onRemoveCustomThumb={handleRemoveCustomThumb}
+              compressingThumb={compressingThumb}
+              disabled={uploading}
+              inputId="custom-thumbnail-modal-input"
+            />
           )}
 
           {/* Require HLS Switch */}

@@ -77,6 +77,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { uploadVideoFile } from "@/lib/upload-video";
+import { processThumbnail } from "@/lib/video-utils";
+import { ThumbnailSelector } from "@/components/ThumbnailSelector";
 import { useScreenRecorder, CompressionPreset, TargetFps } from "@/hooks/useScreenRecorder";
 
 interface ScreenRecordDrawerProps {
@@ -152,6 +154,12 @@ export default function ScreenRecordDrawer({
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
   const [showConfirmClose, setShowConfirmClose] = useState(false);
 
+  // 4 Suggested Thumbnails + Custom Upload State
+  const [selectedThumbnailIndex, setSelectedThumbnailIndex] = useState(0);
+  const [customThumbBlob, setCustomThumbBlob] = useState<Blob | null>(null);
+  const [customThumbUrl, setCustomThumbUrl] = useState<string | null>(null);
+  const [compressingThumb, setCompressingThumb] = useState(false);
+
   const [highQualityConfirm, setHighQualityConfirm] = useState<{
     isOpen: boolean;
     settingLabel: string;
@@ -196,6 +204,51 @@ export default function ScreenRecordDrawer({
     } else {
       setCompressionMode(selectedMode);
     }
+  };
+
+  // Thumbnail Handlers
+  const handleSelectThumbnail = (index: number) => {
+    if (!metadata?.thumbnails?.[index]) return;
+    setSelectedThumbnailIndex(index);
+    if (customThumbUrl) {
+      URL.revokeObjectURL(customThumbUrl);
+    }
+    setCustomThumbBlob(null);
+    setCustomThumbUrl(null);
+  };
+
+  const handleCustomThumbChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedImage = e.target.files[0];
+      try {
+        setCompressingThumb(true);
+        const { blob, url } = await processThumbnail(selectedImage, {
+          maxWidth: 1280,
+          maxHeight: 720,
+          quality: 0.82,
+        });
+        if (customThumbUrl) {
+          URL.revokeObjectURL(customThumbUrl);
+        }
+        setSelectedThumbnailIndex(-1);
+        setCustomThumbBlob(blob);
+        setCustomThumbUrl(url);
+      } catch (err: any) {
+        console.error("Failed to compress thumbnail image:", err);
+        setError("Failed to compress selected thumbnail image");
+      } finally {
+        setCompressingThumb(false);
+      }
+    }
+  };
+
+  const handleRemoveCustomThumb = () => {
+    if (customThumbUrl) {
+      URL.revokeObjectURL(customThumbUrl);
+    }
+    setCustomThumbBlob(null);
+    setCustomThumbUrl(null);
+    setSelectedThumbnailIndex(0);
   };
 
   // Quota checking on recorded file change
@@ -246,7 +299,14 @@ export default function ScreenRecordDrawer({
     setUploading(false);
     setProgress(0);
     setStatusText("");
-  }, [resetAll]);
+    setSelectedThumbnailIndex(0);
+    if (customThumbUrl) {
+      URL.revokeObjectURL(customThumbUrl);
+    }
+    setCustomThumbBlob(null);
+    setCustomThumbUrl(null);
+    setCompressingThumb(false);
+  }, [resetAll, customThumbUrl]);
 
   // Handle drawer close attempt
   const handleAttemptClose = () => {
@@ -303,6 +363,12 @@ export default function ScreenRecordDrawer({
     setUploading(true);
     setRecordState("uploading");
 
+    const effectiveThumbnailBlob = customThumbBlob || (
+      selectedThumbnailIndex >= 0 && metadata?.thumbnails?.[selectedThumbnailIndex]
+        ? metadata.thumbnails[selectedThumbnailIndex].blob
+        : metadata?.thumbnailBlob
+    );
+
     try {
       await uploadVideoFile({
         file: recordedFile,
@@ -310,7 +376,10 @@ export default function ScreenRecordDrawer({
         description: description.trim() || undefined,
         requireHls,
         currentFolderId,
-        metadata,
+        metadata: metadata ? {
+          ...metadata,
+          thumbnailBlob: effectiveThumbnailBlob,
+        } : null,
         onProgress: (percent, status) => {
           setProgress(percent);
           setStatusText(status);
@@ -983,6 +1052,19 @@ export default function ScreenRecordDrawer({
                             className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-lime-500 font-medium"
                           />
                         </div>
+
+                        {/* 4 Suggested Thumbnails + Custom Upload */}
+                        <ThumbnailSelector
+                          thumbnails={metadata?.thumbnails}
+                          selectedThumbnailIndex={selectedThumbnailIndex}
+                          onSelectThumbnail={handleSelectThumbnail}
+                          customThumbUrl={customThumbUrl}
+                          onCustomThumbChange={handleCustomThumbChange}
+                          onRemoveCustomThumb={handleRemoveCustomThumb}
+                          compressingThumb={compressingThumb}
+                          disabled={uploading}
+                          inputId="custom-thumbnail-drawer-input"
+                        />
 
                         <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-all hover:border-slate-300 dark:hover:border-slate-700">
                           <div className="flex items-center justify-between gap-3">
