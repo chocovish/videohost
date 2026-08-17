@@ -142,11 +142,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
 
     // 5. Return Video Response
     if (isVideo && video) {
+      const folderIdParam = url.searchParams.get("folderId") || url.searchParams.get("fromFolder") || url.searchParams.get("fromFolderId");
+      const targetFolderId = folderIdParam || video.folderId;
+      let parentFolder: { id: string; name: string } | null = null;
+
+      if (targetFolderId) {
+        const folderDoc = await db.folder.findUnique({
+          where: { id: targetFolderId },
+          select: { id: true, name: true },
+        });
+        if (folderDoc) {
+          parentFolder = {
+            id: folderDoc.id,
+            name: folderDoc.name,
+          };
+        }
+      }
+
       return NextResponse.json({
         type: "video",
         accessMode,
         organization,
         sharePageConfig,
+        parentFolder,
         video: {
           id: video.id,
           title: video.title,

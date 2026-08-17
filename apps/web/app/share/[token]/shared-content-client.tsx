@@ -23,12 +23,12 @@ import {
   Check,
   ExternalLink,
   ArrowUpRight,
+  ArrowLeft,
   Mail,
   Send,
   Globe,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatDuration } from "@/lib/video-utils";
 
 export interface SharePageConfigData {
@@ -62,6 +62,10 @@ export interface SharedData {
     slug: string;
   };
   sharePageConfig?: SharePageConfigData | null;
+  parentFolder?: {
+    id: string;
+    name: string;
+  } | null;
   video?: {
     id: string;
     title: string;
@@ -112,6 +116,8 @@ export default function SharedContentClient({
 
   const token = params?.token as string;
   const subfolderId = searchParams?.get("subfolderId");
+  const folderIdParam = searchParams?.get("folderId") || searchParams?.get("fromFolder") || searchParams?.get("fromFolderId");
+  const rootFolderIdParam = searchParams?.get("rootFolderId");
 
   const [data, setData] = useState<SharedData | null>(previewData || null);
   const [loading, setLoading] = useState(!previewData);
@@ -125,24 +131,19 @@ export default function SharedContentClient({
     type?: string;
   } | null>(null);
 
-  // Selected video for folder preview modal
-  const [selectedVideo, setSelectedVideo] = useState<{
-    id: string;
-    title: string;
-    description?: string;
-    playbackUrl?: string | null;
-    thumbnailUrl?: string;
-  } | null>(null);
-
   const fetchSharedContent = async () => {
     if (previewData) return;
     try {
       setLoading(true);
       setErrorState(null);
 
-      const url = subfolderId
-        ? `/api/share/${token}?subfolderId=${subfolderId}`
-        : `/api/share/${token}`;
+      const qp = new URLSearchParams();
+      if (subfolderId) qp.set("subfolderId", subfolderId);
+      if (folderIdParam) qp.set("folderId", folderIdParam);
+      if (rootFolderIdParam) qp.set("rootFolderId", rootFolderIdParam);
+      const qStr = qp.toString();
+
+      const url = qStr ? `/api/share/${token}?${qStr}` : `/api/share/${token}`;
 
       const res = await fetch(url);
       const result = await res.json();
@@ -174,7 +175,7 @@ export default function SharedContentClient({
     if (!previewData && token) {
       fetchSharedContent();
     }
-  }, [token, subfolderId, previewData]);
+  }, [token, subfolderId, folderIdParam, rootFolderIdParam, previewData]);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
@@ -192,6 +193,30 @@ export default function SharedContentClient({
   const handleBackToRoot = () => {
     if (previewData) return;
     router.push(`/share/${token}`);
+  };
+
+  const handleVideoClick = (videoId: string) => {
+    if (previewData) return;
+    const currentFid = data?.currentFolder?.id || token;
+    const rootFid = data?.rootFolder?.id;
+    const query = new URLSearchParams();
+    if (currentFid) query.set("folderId", currentFid);
+    if (rootFid && rootFid !== currentFid) query.set("rootFolderId", rootFid);
+    const qStr = query.toString();
+    router.push(`/share/${videoId}${qStr ? `?${qStr}` : ""}`);
+  };
+
+  const handleBackToFolder = () => {
+    if (previewData) return;
+    if (rootFolderIdParam && folderIdParam && rootFolderIdParam !== folderIdParam) {
+      router.push(`/share/${rootFolderIdParam}?subfolderId=${folderIdParam}`);
+    } else if (folderIdParam) {
+      router.push(`/share/${folderIdParam}`);
+    } else if (data?.parentFolder?.id) {
+      router.push(`/share/${data.parentFolder.id}`);
+    } else {
+      router.back();
+    }
   };
 
   // Merge database config with live preview override config
@@ -589,6 +614,37 @@ export default function SharedContentClient({
               style={{ backgroundColor: accentHex }}
             />
 
+            {/* Back to Folder Navigation */}
+            {data.parentFolder && (
+              <div className={`flex items-center justify-between gap-3 text-xs sm:text-sm backdrop-blur-xl px-4 py-3 border transition-all ${cardBgClass} ${roundnessClass}`}>
+                <button
+                  onClick={handleBackToFolder}
+                  className="font-bold flex items-center gap-2 transition-all group cursor-pointer hover:opacity-90 active:scale-98 text-slate-200"
+                >
+                  <div
+                    className="p-1.5 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center shadow-sm"
+                    style={{
+                      backgroundColor: `${accentHex}15`,
+                      color: accentHex,
+                    }}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </div>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-slate-400 font-medium">Back to</span>
+                    <span className="font-extrabold" style={{ color: accentHex }}>
+                      {data.parentFolder.name}
+                    </span>
+                  </span>
+                </button>
+
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-semibold bg-slate-800/50 px-2.5 py-1 rounded-lg border border-slate-700/40">
+                  <Folder className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Folder Collection</span>
+                </div>
+              </div>
+            )}
+
             {/* Video Player */}
             <div className="aspect-video w-full rounded-xl overflow-hidden shadow-2xl">
               {data.video.playbackUrl ? (
@@ -816,10 +872,8 @@ export default function SharedContentClient({
                   {data.videos.map((vid) => (
                     <div
                       key={vid.id}
-                      onClick={() => vid.playbackUrl && setSelectedVideo(vid)}
-                      className={`group relative border overflow-hidden shadow-xl transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-md ${cardBgClass} ${roundnessClass} ${
-                        vid.playbackUrl ? "cursor-pointer" : "opacity-60 cursor-not-allowed"
-                      }`}
+                      onClick={() => handleVideoClick(vid.id)}
+                      className={`group relative border overflow-hidden shadow-xl transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
                     >
                       {/* Thumbnail Box */}
                       <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
@@ -833,16 +887,14 @@ export default function SharedContentClient({
                           <Film className="w-10 h-10 text-slate-700" />
                         )}
 
-                        {vid.playbackUrl && (
-                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
-                            <div
-                              className="p-3.5 text-slate-950 rounded-full shadow-xl scale-90 group-hover:scale-100 transition-transform duration-300"
-                              style={{ backgroundColor: accentHex }}
-                            >
-                              <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
-                            </div>
+                        <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
+                          <div
+                            className="p-3.5 text-slate-950 rounded-full shadow-xl scale-90 group-hover:scale-100 transition-transform duration-300"
+                            style={{ backgroundColor: accentHex }}
+                          >
+                            <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
                           </div>
-                        )}
+                        </div>
 
                         {config.showDuration && vid.durationSeconds && (
                           <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-[11px] font-extrabold text-slate-200 rounded-md border border-slate-800/80 shadow-md">
@@ -875,29 +927,6 @@ export default function SharedContentClient({
       <footer className="py-6 border-t border-slate-800/40 text-center text-xs text-slate-400 relative z-10">
         <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}. Powered by Taped.`}</p>
       </footer>
-
-      {/* Video Modal Player for Shared Folder View */}
-      <Dialog open={!!(selectedVideo && selectedVideo.playbackUrl)} onOpenChange={(open) => !open && setSelectedVideo(null)}>
-        <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden bg-slate-900/95 border-white/10 text-slate-100 backdrop-blur-2xl rounded-3xl shadow-2xl">
-          <DialogHeader className="p-4 sm:p-5 border-b border-slate-800/80 text-left bg-slate-900/80 flex items-center justify-between">
-            <DialogTitle className="text-base text-slate-100 font-extrabold truncate pr-6 flex items-center gap-2">
-              <Film className="w-4 h-4 text-lime-400 shrink-0" />
-              <span className="truncate">{selectedVideo?.title}</span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="aspect-video w-full overflow-hidden">
-            {selectedVideo && selectedVideo.playbackUrl && (
-              <VideoPlayer src={selectedVideo.playbackUrl} poster={selectedVideo.thumbnailUrl} className="w-full h-full" />
-            )}
-          </div>
-          {selectedVideo?.description && (
-            <div className="p-4 sm:p-5 bg-slate-900/90 border-t border-slate-800/80">
-              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-1">Description</h4>
-              <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{selectedVideo.description}</p>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
