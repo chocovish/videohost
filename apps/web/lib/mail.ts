@@ -188,4 +188,113 @@ export async function sendOrgInviteEmail(options: SendOrgInviteEmailOptions) {
   });
 }
 
+export interface SendMeetingInvitationEmailOptions {
+  toEmail: string;
+  hostName: string;
+  meetingTitle: string;
+  meetingDescription?: string | null;
+  scheduledStart?: Date | null;
+  scheduledEnd?: Date | null;
+  joinUrl: string;
+  meetingCode: string;
+  organizationName: string;
+}
+
+export async function sendMeetingInvitationEmail(options: SendMeetingInvitationEmailOptions) {
+  const {
+    toEmail,
+    hostName,
+    meetingTitle,
+    meetingDescription,
+    scheduledStart,
+    scheduledEnd,
+    joinUrl,
+    meetingCode,
+    organizationName,
+  } = options;
+
+  const formattedTime = scheduledStart
+    ? new Intl.DateTimeFormat("en-US", {
+        dateStyle: "full",
+        timeStyle: "short",
+      }).format(new Date(scheduledStart))
+    : "Instant Meeting (Happening Now)";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 580px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); color: #000; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 8px; color: #ffffff; }
+          .host-sub { font-size: 14px; color: #94a3b8; margin: 0 0 24px; }
+          .details-card { background-color: #0b1324; border: 1px solid #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 28px; }
+          .detail-row { margin-bottom: 12px; }
+          .detail-row:last-child { margin-bottom: 0; }
+          .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+          .detail-val { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+          .code-tag { display: inline-block; background-color: rgba(132, 204, 22, 0.15); color: #84cc16; font-family: monospace; font-size: 14px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+          .button-wrap { text-align: center; margin: 28px 0; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 700; font-size: 15px; padding: 14px 36px; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(132, 204, 22, 0.4); }
+          .link-box { background-color: #0b1324; padding: 12px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .footer { margin-top: 36px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="badge">LiveKit Video Meeting</div>
+          <h1>${meetingTitle}</h1>
+          <p class="host-sub"><strong>${hostName}</strong> invited you to join a video conference on <strong>${organizationName}</strong>.</p>
+          
+          <div class="details-card">
+            <div class="detail-row">
+              <div class="detail-label">When</div>
+              <div class="detail-val">${formattedTime}</div>
+            </div>
+            ${
+              meetingDescription
+                ? `
+            <div class="detail-row" style="margin-top: 14px;">
+              <div class="detail-label">Agenda / Description</div>
+              <div class="detail-val" style="font-weight: 400; color: #cbd5e1;">${meetingDescription}</div>
+            </div>`
+                : ""
+            }
+            <div class="detail-row" style="margin-top: 14px;">
+              <div class="detail-label">Meeting Code</div>
+              <div class="detail-val"><span class="code-tag">${meetingCode}</span></div>
+            </div>
+          </div>
+
+          <div class="button-wrap">
+            <a href="${joinUrl}" class="button" target="_blank">Join Video Meeting</a>
+          </div>
+
+          <p style="font-size: 13px; color: #94a3b8; margin: 20px 0 8px;">Or copy and paste this link to join:</p>
+          <div class="link-box">${joinUrl}</div>
+
+          <div class="footer">
+            Powered by <strong>Taped</strong> HD Video Conferencing.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: `"${hostName} via Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+      to: toEmail,
+      subject: `Meeting Invitation: ${meetingTitle}`,
+      html,
+    });
+  } catch (err) {
+    console.error("Failed to send meeting invitation email to", toEmail, err);
+  }
+}
+
 

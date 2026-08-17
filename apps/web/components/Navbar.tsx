@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Video } from "lucide-react";
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Video, Users } from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,15 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        <Link
+          href="/dashboard/meetings"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors text-xs font-semibold"
+          title="Open Video Meetings"
+        >
+          <Users className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+          Meetings
+        </Link>
+
         <Link
           href="/record"
           target="_blank"

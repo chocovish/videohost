@@ -11,6 +11,7 @@ dotenv.config();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@videohost/ui", "@videohost/db"],
+  allowedDevOrigins: ['192.168.0.100', 'b0b7-103-42-174-80.ngrok-free.app'],
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

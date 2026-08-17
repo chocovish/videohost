@@ -24,6 +24,7 @@ model User {
   memberships   OrganizationMember[]
   createdApiKeys ApiKey[]
   paymentOrders PaymentOrder[]
+  createdMeetings Meeting[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -93,6 +94,7 @@ model Organization {
   webhooks    Webhook[]
   paymentOrders PaymentOrder[]
   sharePageConfig SharePageConfig?
+  meetings    Meeting[]
 }
 
 model SharePageConfig {
@@ -227,6 +229,7 @@ model Video {
   renditions      VideoRendition[]
   shareAccessMode ShareAccessMode  @default(PUBLIC)
   sharedEmails    SharedEmail[]
+  meetingRecordings Meeting[]      @relation("MeetingRecordedVideo")
 }
 
 enum VideoStatus {
@@ -335,6 +338,61 @@ model PaymentOrder {
 
   @@index([organizationId])
   @@index([userId])
+}
+
+// --------------------------------------------------------
+// Meetings & Video Conferencing (LiveKit)
+// --------------------------------------------------------
+
+model Meeting {
+  id              String        @id @default(cuid())
+  organizationId  String
+  createdById     String
+  code            String        @unique
+  title           String
+  description     String?
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  status          MeetingStatus @default(SCHEDULED)
+  isInstant       Boolean       @default(false)
+  recordOnStart   Boolean       @default(false)
+  allowGuests     Boolean       @default(true)
+  isRecording     Boolean       @default(false)
+  recordingId     String?       // Egress ID or session recording ID
+  recordedVideoId String?
+  endedAt         DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  invites         MeetingInvite[]
+  recordedVideo   Video?        @relation("MeetingRecordedVideo", fields: [recordedVideoId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([createdById])
+  @@index([code])
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+model MeetingInvite {
+  id        String   @id @default(cuid())
+  meetingId String
+  email     String
+  role      String   @default("attendee") // "host" | "co-host" | "attendee"
+  status    String   @default("pending")  // "pending" | "accepted" | "declined"
+  sentAt    DateTime @default(now())
+
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, email])
+  @@index([email])
 }
 
 
