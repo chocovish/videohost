@@ -13,7 +13,7 @@ export default function MeetPage() {
   const router = useRouter();
   const { data: session, status: authStatus } = useSession();
 
-  const code = Array.isArray(params?.code) ? params.code[0] : (params?.code as string);
+  const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +31,7 @@ export default function MeetPage() {
 
   // Fetch initial meeting info
   useEffect(() => {
-    if (!code) return;
+    if (!id) return;
 
     async function loadMeeting() {
       try {
@@ -39,7 +39,7 @@ export default function MeetPage() {
         setError(null);
         setRequiresAuth(false);
 
-        const res = await fetch(`/api/meetings/${code}`);
+        const res = await fetch(`/api/meetings/${id}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -62,7 +62,7 @@ export default function MeetPage() {
     if (authStatus !== "loading") {
       loadMeeting();
     }
-  }, [code, session?.user?.id, authStatus]);
+  }, [id, session?.user?.id, authStatus]);
 
   // Handle Joining from Lobby
   const handleJoinFromLobby = async (options: {
@@ -75,7 +75,7 @@ export default function MeetPage() {
       setError(null);
       setRequiresAuth(false);
 
-      const res = await fetch(`/api/meetings/${code}/token`, {
+      const res = await fetch(`/api/meetings/${id}/token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function MeetPage() {
           <div className="space-y-2 pt-2">
             {requiresAuth ? (
               <Button
-                onClick={() => router.push(`/auth/login?callbackUrl=/meet/${code}`)}
+                onClick={() => router.push(`/auth/login?callbackUrl=/meet/${id}`)}
                 className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold"
               >
                 Sign In to Join Call
@@ -157,7 +157,6 @@ export default function MeetPage() {
         serverUrl={livekitUrl}
         meeting={{
           id: meeting.id,
-          code: meeting.code,
           title: meeting.title,
           description: meeting.description,
           isRecording: meeting.isRecording,

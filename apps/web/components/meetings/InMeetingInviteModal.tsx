@@ -18,14 +18,14 @@ import { Button } from "@/components/ui/button";
 interface InMeetingInviteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  meetingCode: string;
+  meetingId: string;
   meetingTitle: string;
 }
 
 export default function InMeetingInviteModal({
   isOpen,
   onClose,
-  meetingCode,
+  meetingId,
   meetingTitle,
 }: InMeetingInviteModalProps) {
   const [copiedLink, setCopiedLink] = useState(false);
@@ -38,7 +38,7 @@ export default function InMeetingInviteModal({
 
   if (!isOpen) return null;
 
-  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/meet/${meetingCode}` : `/meet/${meetingCode}`;
+  const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/meet/${meetingId}` : `/meet/${meetingId}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(joinUrl);
@@ -47,7 +47,7 @@ export default function InMeetingInviteModal({
   };
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(meetingCode);
+    navigator.clipboard.writeText(meetingId);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
   };
@@ -96,7 +96,7 @@ export default function InMeetingInviteModal({
     setSuccessMsg(null);
 
     try {
-      const res = await fetch(`/api/meetings/${meetingCode}/invite`, {
+      const res = await fetch(`/api/meetings/${meetingId}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emails: allEmails }),
@@ -182,9 +182,9 @@ export default function InMeetingInviteModal({
           {/* Quick Copy Code */}
           <div className="flex items-center justify-between p-3.5 bg-slate-950/40 border border-slate-800/80 rounded-xl">
             <div>
-              <span className="text-xs text-slate-400">Meeting Room Code:</span>
+              <span className="text-xs text-slate-400">Meeting Room ID:</span>
               <p className="text-sm font-mono font-bold text-[hsl(var(--primary))] tracking-wider mt-0.5">
-                {meetingCode}
+                {meetingId}
               </p>
             </div>
             <Button

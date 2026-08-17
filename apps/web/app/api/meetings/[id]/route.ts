@@ -9,11 +9,9 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Find by either id or code
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    // Find by id
+    const meeting = await db.meeting.findUnique({
+      where: { id },
       include: {
         organization: {
           select: { id: true, name: true, logoUrl: true, themeId: true },
@@ -52,10 +50,8 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
     });
 
     if (!meeting) {
@@ -107,10 +103,8 @@ export async function DELETE(
 
     const { id } = await params;
 
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
     });
 
     if (!meeting) {

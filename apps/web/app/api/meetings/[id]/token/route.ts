@@ -12,10 +12,8 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
 
     // Find meeting by either id or code
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
       include: {
         organization: {
           select: { id: true, name: true, logoUrl: true, themeId: true },
@@ -88,7 +86,7 @@ export async function POST(
     }
 
     const token = await createMeetingAccessToken({
-      roomName: meeting.code,
+      roomName: meeting.id,
       identity,
       name: participantName,
       image,
@@ -108,7 +106,6 @@ export async function POST(
       identity,
       meeting: {
         id: meeting.id,
-        code: meeting.code,
         title: meeting.title,
         description: meeting.description,
         status: meeting.status,

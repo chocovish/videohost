@@ -11,10 +11,8 @@ export async function POST(
     const { id } = await params;
     const body = await req.json();
 
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
       include: {
         organization: { select: { id: true, name: true } },
         createdBy: { select: { id: true, name: true, email: true } },
@@ -45,7 +43,7 @@ export async function POST(
 
     const createdInvites = [];
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
-    const joinUrl = `${baseUrl}/meet/${meeting.code}`;
+    const joinUrl = `${baseUrl}/meet/${meeting.id}`;
 
     for (const email of validEmails) {
       const invite = await db.meetingInvite.upsert({
@@ -76,7 +74,7 @@ export async function POST(
         scheduledStart: meeting.scheduledStart,
         scheduledEnd: meeting.scheduledEnd,
         joinUrl,
-        meetingCode: meeting.code,
+        meetingId: meeting.id,
         organizationName: meeting.organization?.name || "Taped",
       }).catch((err) => console.error("Error sending invite email to", email, err));
     }

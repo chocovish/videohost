@@ -415,7 +415,7 @@ export default function MeetingLobby({
             {meeting.title}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 font-mono">
-            Room Code: <span className="text-[hsl(var(--primary))] font-semibold">{meeting.code}</span>
+            Room ID: <span className="text-[hsl(var(--primary))] font-semibold">{meeting.id}</span>
             {meeting.hostName && ` • Hosted by ${meeting.hostName}`}
           </p>
         </div>

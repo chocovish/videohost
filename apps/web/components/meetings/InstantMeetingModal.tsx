@@ -48,7 +48,7 @@ export default function InstantMeetingModal({
       }
 
       // Navigate straight to meeting room
-      router.push(`/meet/${data.meeting.code}`);
+      router.push(`/meet/${data.meeting.id}`);
     } catch (err: any) {
       setError(err.message || "Failed to create instant meeting");
       setIsLoading(false);

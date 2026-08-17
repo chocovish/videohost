@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getEgressClient } from "@/lib/livekit";
+import { EncodedFileOutput, EncodedFileType, S3Upload } from "livekit-server-sdk";
 
 export async function POST(
   req: NextRequest,
@@ -12,10 +13,8 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const { action = "toggle" } = body; // "start" | "stop" | "toggle"
 
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
     });
 
     if (!meeting) {
@@ -54,18 +53,65 @@ export async function POST(
 
     let egressId = meeting.recordingId;
 
-    // Optional LiveKit Egress Server Integration:
-    if (process.env.LIVEKIT_EGRESS_ENDPOINT) {
+    // LiveKit Egress Server Integration:
+    if (process.env.LIVEKIT_EGRESS_ENDPOINT || process.env.LIVEKIT_URL) {
       try {
         const egressClient = getEgressClient();
         if (nextRecordingState && !meeting.isRecording) {
-          // start room composite egress if configured
-          // Note: In self-hosted setups without egress, client-side recorder handles capture
+          let fileOutput: EncodedFileOutput;
+
+          if (process.env.R2_ENDPOINT && process.env.R2_ACCESS_KEY_ID) {
+            fileOutput = new EncodedFileOutput({
+              fileType: EncodedFileType.MP4,
+              filepath: `recordings/${meeting.organizationId}/${meeting.id}/{room_name}-{time}.mp4`,
+              output: {
+                case: "s3",
+                value: new S3Upload({
+                  accessKey: process.env.R2_ACCESS_KEY_ID,
+                  secret: process.env.R2_SECRET_ACCESS_KEY,
+                  region: "auto",
+                  endpoint: process.env.R2_ENDPOINT,
+                  bucket: process.env.R2_BUCKET_NAME,
+                  forcePathStyle: true,
+                }),
+              },
+            });
+          } else {
+            fileOutput = new EncodedFileOutput({
+              fileType: EncodedFileType.MP4,
+              filepath: `recordings/${meeting.id}-${Date.now()}.mp4`,
+            });
+          }
+
+          const egressInfo = await egressClient.startRoomCompositeEgress(
+            meeting.id,
+            fileOutput,
+            { layout: "grid" }
+          );
+
+          if (egressInfo?.egressId) {
+            egressId = egressInfo.egressId;
+          }
         } else if (!nextRecordingState && meeting.recordingId) {
           await egressClient.stopEgress(meeting.recordingId);
+          egressId = null;
         }
-      } catch (egressErr) {
-        console.warn("LiveKit Egress warning (falling back to client recording):", egressErr);
+      } catch (egressErr: any) {
+        console.error("LiveKit Egress error:", egressErr);
+        const host = req.headers.get("host") || "localhost:3000";
+        const protocol = req.headers.get("x-forwarded-proto") || "http";
+        const hostUrl = `${protocol}://${host}`;
+        const fallbackUrl = `${hostUrl}/record`;
+        const errorMessage = `Recording start failed: ${egressErr?.message || "Egress service unavailable"}. You may use client-side recording at ${fallbackUrl}`;
+
+        return NextResponse.json(
+          {
+            error: errorMessage,
+            fallbackUrl,
+            egressFailed: true,
+          },
+          { status: 500 }
+        );
       }
     }
 

@@ -10,10 +10,8 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const meeting = await db.meeting.findFirst({
-      where: {
-        OR: [{ id }, { code: id }],
-      },
+    const meeting = await db.meeting.findUnique({
+      where: { id },
     });
 
     if (!meeting) {
@@ -100,7 +98,7 @@ export async function POST(
           organizationId: orgId,
           uploadedByUserId: userId,
           title: title || `Recording: ${meeting.title}`,
-          description: `Recorded meeting session (${meeting.code}).`,
+          description: `Recorded meeting session (${meeting.id}).`,
           status: "READY",
           progress: 100,
           originalKey: "temp",

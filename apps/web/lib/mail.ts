@@ -196,7 +196,7 @@ export interface SendMeetingInvitationEmailOptions {
   scheduledStart?: Date | null;
   scheduledEnd?: Date | null;
   joinUrl: string;
-  meetingCode: string;
+  meetingId: string;
   organizationName: string;
 }
 
@@ -209,7 +209,7 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
     scheduledStart,
     scheduledEnd,
     joinUrl,
-    meetingCode,
+    meetingId,
     organizationName,
   } = options;
 
@@ -264,8 +264,8 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
                 : ""
             }
             <div class="detail-row" style="margin-top: 14px;">
-              <div class="detail-label">Meeting Code</div>
-              <div class="detail-val"><span class="code-tag">${meetingCode}</span></div>
+              <div class="detail-label">Meeting ID</div>
+              <div class="detail-val"><span class="code-tag">${meetingId}</span></div>
             </div>
           </div>
 

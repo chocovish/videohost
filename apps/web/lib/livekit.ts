@@ -22,8 +22,11 @@ export function getRoomServiceClient() {
 
 export function getEgressClient() {
   const { httpUrl, apiKey, apiSecret } = getLiveKitCredentials();
-  return new EgressClient(httpUrl, apiKey, apiSecret);
+  const egressUrl = process.env.LIVEKIT_EGRESS_ENDPOINT || httpUrl;
+  const httpEgressUrl = egressUrl.replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://");
+  return new EgressClient(httpEgressUrl, apiKey, apiSecret);
 }
+
 
 export interface CreateAccessTokenParams {
   roomName: string;
@@ -69,12 +72,4 @@ export async function createMeetingAccessToken({
   });
 
   return await at.toJwt();
-}
-
-export function generateMeetingCode(): string {
-  // Generate pleasant 3-part code like "tap-k9x-w42"
-  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
-  const part1 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  const part2 = Array.from({ length: 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `tap-${part1}-${part2}`;
 }

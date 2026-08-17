@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { generateMeetingCode } from "@/lib/livekit";
 import { sendMeetingInvitationEmail } from "@/lib/mail";
 
 export async function GET(req: NextRequest) {
@@ -87,16 +86,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Meeting title is required" }, { status: 400 });
     }
 
-    // Generate unique code
-    let code = generateMeetingCode();
-    let codeExists = await db.meeting.findUnique({ where: { code } });
-    let attempts = 0;
-    while (codeExists && attempts < 5) {
-      code = generateMeetingCode();
-      codeExists = await db.meeting.findUnique({ where: { code } });
-      attempts++;
-    }
-
     const organization = await db.organization.findUnique({
       where: { id: orgId },
       select: { name: true },
@@ -108,7 +97,6 @@ export async function POST(req: NextRequest) {
       data: {
         organizationId: orgId,
         createdById: userId!,
-        code,
         title: title.trim(),
         description: description?.trim() || null,
         scheduledStart: scheduledStart ? new Date(scheduledStart) : (isInstant ? new Date() : null),
@@ -139,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     // Send invitation emails asynchronously
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
-    const joinUrl = `${baseUrl}/meet/${meeting.code}`;
+    const joinUrl = `${baseUrl}/meet/${meeting.id}`;
 
     if (Array.isArray(inviteEmails) && inviteEmails.length > 0) {
       for (const rawEmail of inviteEmails) {
@@ -153,7 +141,7 @@ export async function POST(req: NextRequest) {
             scheduledStart: meeting.scheduledStart,
             scheduledEnd: meeting.scheduledEnd,
             joinUrl,
-            meetingCode: meeting.code,
+            meetingId: meeting.id,
             organizationName: orgName,
           }).catch((e) => console.error("Error sending invite email:", e));
         }

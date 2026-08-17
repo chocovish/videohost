@@ -75,7 +75,7 @@ export default function MeetingsDashboardPage() {
 
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isInstantOpen, setIsInstantOpen] = useState(false);
-  const [inviteModalData, setInviteModalData] = useState<{ code: string; title: string } | null>(null);
+  const [inviteModalData, setInviteModalData] = useState<{ id: string; title: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -110,18 +110,18 @@ export default function MeetingsDashboardPage() {
     fetchMeetings();
   }, []);
 
-  const handleCopyLink = (code: string) => {
-    const url = `${window.location.origin}/meet/${code}`;
+  const handleCopyLink = (id: string) => {
+    const url = `${window.location.origin}/meet/${id}`;
     navigator.clipboard.writeText(url);
-    setCopiedCode(code);
+    setCopiedCode(id);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const handleJoinWithCode = (e: React.FormEvent) => {
     e.preventDefault();
-    const code = joinCodeInput.trim().replace(/^https?:\/\/[^\/]+\/meet\//, "");
-    if (!code) return;
-    router.push(`/meet/${code}`);
+    const id = joinCodeInput.trim().replace(/^https?:\/\/[^\/]+\/meet\//, "");
+    if (!id) return;
+    router.push(`/meet/${id}`);
   };
 
   const handleDeleteMeeting = async (id: string) => {
@@ -349,14 +349,14 @@ export default function MeetingsDashboardPage() {
                       )}
                     </div>
 
-                    {/* Room Code pill */}
+                    {/* Room ID pill */}
                     <div className="flex items-center justify-between py-2 px-3 bg-slate-100/70 dark:bg-slate-900/60 rounded-xl border border-[hsl(var(--border))] text-xs">
-                      <span className="text-[hsl(var(--muted-foreground))] font-mono font-medium">Code: {meeting.code}</span>
+                      <span className="text-[hsl(var(--muted-foreground))] font-mono font-medium truncate max-w-[180px]">ID: {meeting.id}</span>
                       <button
-                        onClick={() => handleCopyLink(meeting.code)}
-                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors flex items-center gap-1 text-[11px] cursor-pointer"
+                        onClick={() => handleCopyLink(meeting.id)}
+                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors flex items-center gap-1 text-[11px] cursor-pointer shrink-0"
                       >
-                        {copiedCode === meeting.code ? (
+                        {copiedCode === meeting.id ? (
                           <>
                             <Check className="w-3.5 h-3.5 text-emerald-500" />
                             <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied</span>
@@ -385,7 +385,7 @@ export default function MeetingsDashboardPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setInviteModalData({ code: meeting.code, title: meeting.title })}
+                        onClick={() => setInviteModalData({ id: meeting.id, title: meeting.title })}
                         className="h-8 px-2.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg gap-1 cursor-pointer"
                         title="Invite participants"
                       >
@@ -403,7 +403,7 @@ export default function MeetingsDashboardPage() {
                       </Button>
                     </div>
 
-                    <Link href={`/meet/${meeting.code}`}>
+                    <Link href={`/meet/${meeting.id}`}>
                       <Button
                         size="sm"
                         className={`h-8 px-4 text-xs font-bold rounded-lg gap-1.5 cursor-pointer ${
@@ -487,7 +487,7 @@ export default function MeetingsDashboardPage() {
                       </Button>
                     </Link>
                   ) : (
-                    <Link href={`/meet/${meeting.code}`}>
+                    <Link href={`/meet/${meeting.id}`}>
                       <Button
                         size="sm"
                         variant="outline"
@@ -531,7 +531,7 @@ export default function MeetingsDashboardPage() {
         <InMeetingInviteModal
           isOpen={Boolean(inviteModalData)}
           onClose={() => setInviteModalData(null)}
-          meetingCode={inviteModalData.code}
+          meetingId={inviteModalData.id}
           meetingTitle={inviteModalData.title}
         />
       )}

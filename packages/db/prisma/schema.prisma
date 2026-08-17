@@ -348,7 +348,6 @@ model Meeting {
   id              String        @id @default(cuid())
   organizationId  String
   createdById     String
-  code            String        @unique
   title           String
   description     String?
   scheduledStart  DateTime?
@@ -371,7 +370,6 @@ model Meeting {
 
   @@index([organizationId])
   @@index([createdById])
-  @@index([code])
 }
 
 enum MeetingStatus {

@@ -26,6 +26,8 @@ import {
   Radio,
   Loader2,
   Plus,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
@@ -36,7 +38,6 @@ interface MeetingRoomProps {
   serverUrl: string;
   meeting: {
     id: string;
-    code: string;
     title: string;
     description?: string | null;
     isRecording?: boolean;
@@ -105,6 +106,8 @@ function RoomContent({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [meetingSeconds, setMeetingSeconds] = useState(0);
   const [isUpdatingRecord, setIsUpdatingRecord] = useState(false);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [recordingFallbackUrl, setRecordingFallbackUrl] = useState<string | null>(null);
 
   // Track meeting duration
   useEffect(() => {
@@ -148,10 +151,11 @@ function RoomContent({
   const handleToggleRecording = async () => {
     if (isUpdatingRecord) return;
     setIsUpdatingRecord(true);
+    setRecordingError(null);
 
     try {
       const nextAction = isRecording ? "stop" : "start";
-      const res = await fetch(`/api/meetings/${meeting.code}/record`, {
+      const res = await fetch(`/api/meetings/${meeting.id}/record`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: nextAction }),
@@ -160,9 +164,19 @@ function RoomContent({
       const data = await res.json();
       if (res.ok) {
         setIsRecording(data.isRecording);
+      } else {
+        const hostUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const fallback = data.fallbackUrl || `${hostUrl}/record`;
+        const msg = data.error || `Recording start failed. You may use client-side recording at ${fallback}`;
+        setRecordingError(msg);
+        setRecordingFallbackUrl(fallback);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to toggle recording:", err);
+      const hostUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const fallback = `${hostUrl}/record`;
+      setRecordingError(`Recording start failed. You may use client-side recording at ${fallback}`);
+      setRecordingFallbackUrl(fallback);
     } finally {
       setIsUpdatingRecord(false);
     }
@@ -183,7 +197,7 @@ function RoomContent({
   const handleEndMeetingForAll = async () => {
     if (!confirm("Are you sure you want to end this meeting for everyone?")) return;
     try {
-      await fetch(`/api/meetings/${meeting.code}`, {
+      await fetch(`/api/meetings/${meeting.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "ENDED" }),
@@ -199,7 +213,41 @@ function RoomContent({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-slate-950">
+    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-slate-950 relative">
+      {/* Recording Error Alert Banner */}
+      {recordingError && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="bg-rose-950/95 border border-rose-500/50 text-rose-100 p-4 rounded-xl shadow-2xl backdrop-blur-xl flex items-start justify-between gap-3">
+            <div className="flex gap-3 min-w-0">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <div className="text-xs space-y-1.5 min-w-0">
+                <p className="font-bold text-white text-sm">Recording Start Failed</p>
+                <p className="text-rose-200/90 leading-relaxed">{recordingError}</p>
+                {recordingFallbackUrl && (
+                  <div className="pt-1">
+                    <a
+                      href={recordingFallbackUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/30 text-xs font-semibold transition-colors"
+                    >
+                      Open Client Recording ({recordingFallbackUrl})
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setRecordingError(null)}
+              className="text-rose-400 hover:text-white p-1 rounded-lg hover:bg-rose-900/50 transition-colors shrink-0"
+              title="Dismiss error"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Navigation / Status Header Bar */}
       <header className="h-14 px-3 sm:px-6 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between z-20 backdrop-blur-md gap-2">
         {/* Left: Meeting title & code pill */}
@@ -216,7 +264,7 @@ function RoomContent({
             className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-xs font-mono text-slate-300 hover:border-slate-700 hover:text-white transition-colors shrink-0"
             title="Click to copy meeting link"
           >
-            <span>{meeting.code}</span>
+            <span>{meeting.id}</span>
             {copiedCode ? (
               <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
@@ -399,7 +447,7 @@ function RoomContent({
         <InMeetingInviteModal
           isOpen={isInviteOpen}
           onClose={() => setIsInviteOpen(false)}
-          meetingCode={meeting.code}
+          meetingId={meeting.id}
           meetingTitle={meeting.title}
         />
       )}
