@@ -681,7 +681,7 @@ export default function ScreenRecordDrawer({
                                   PIP Position Corner
                                 </Label>
                                 <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                                  {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
+                                  {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
                                     <button
                                       key={c}
                                       type="button"
@@ -911,7 +911,7 @@ export default function ScreenRecordDrawer({
                                   PIP Corner Position
                                 </Label>
                                 <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                                  {(["bottom-left", "bottom-right", "top-left", "top-right"] as WebcamCorner[]).map((c) => (
+                                  {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
                                     <button
                                       key={c}
                                       type="button"
@@ -1073,11 +1073,10 @@ export default function ScreenRecordDrawer({
                               setShowTrimmer(!showTrimmer);
                             }}
                             disabled={uploading}
-                            className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${
-                              showTrimmer
-                                ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
-                                : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
-                            }`}
+                            className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${showTrimmer
+                              ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
+                              : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
+                              }`}
                           >
                             <Scissors className="w-3.5 h-3.5" />
                             {showTrimmer ? "Close Trimmer" : isTrimmed ? "Re-trim Video" : "Trim Video"}
