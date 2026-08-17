@@ -26,6 +26,7 @@ import {
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
 import CreateFolderModal from "@/components/CreateFolderModal";
+import RenameFolderModal from "@/components/RenameFolderModal";
 import ShareModal from "@/components/ShareModal";
 import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
@@ -63,7 +64,7 @@ function UploadedVideosContent() {
 
   const [folders, setFolders] = useState<FolderItem[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
-  const [currentFolder, setCurrentFolder] = useState<{ id: string; name: string } | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<{ id: string; name: string; createdAt?: string } | null>(null);
 
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,8 @@ function UploadedVideosContent() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
+  const [renameFolderTarget, setRenameFolderTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isDeletingCurrentFolder, setIsDeletingCurrentFolder] = useState(false);
   const [shareTarget, setShareTarget] = useState<{
     type: "video" | "folder";
     id: string;
@@ -167,13 +170,46 @@ function UploadedVideosContent() {
     }
   };
 
+  const handleDeleteCurrentFolder = async () => {
+    if (!currentFolder) return;
+    if (
+      !confirm(
+        `Are you sure you want to delete folder "${currentFolder.name}"? Contained videos will be moved to Root.`
+      )
+    ) {
+      return;
+    }
+    setIsDeletingCurrentFolder(true);
+    try {
+      const res = await fetch(`/api/folders/${currentFolder.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        const parentId = breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null;
+        navigateToFolder(parentId);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete folder");
+      }
+    } catch (err) {
+      console.error("Error deleting current folder:", err);
+    } finally {
+      setIsDeletingCurrentFolder(false);
+    }
+  };
+
+  const handleFolderRenamed = (newName?: string) => {
+    if (currentFolder && newName && renameFolderTarget?.id === currentFolder.id) {
+      setCurrentFolder({ ...currentFolder, name: newName });
+    }
+    refreshAll();
+  };
+
   const filteredVideos = videos.filter((v) => {
     const matchesSearch = v.title.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "ALL" || v.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
-
-
 
   const getStatusBadge = (status: string, progress?: number) => {
     switch (status) {
@@ -284,6 +320,97 @@ function UploadedVideosContent() {
         ))}
       </div>
 
+      {/* Current Folder Details Header Banner */}
+      {currentFolder && (
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 border border-amber-500/20 backdrop-blur-md shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/20 shrink-0 shadow-xs">
+                <Folder className="w-7 h-7 sm:w-8 sm:h-8 fill-amber-500/20" />
+              </div>
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[hsl(var(--foreground))] truncate">
+                    {currentFolder.name}
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                    Folder
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-2.5">
+                  <span>
+                    {videos.length} {videos.length === 1 ? "video" : "videos"}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    {folders.length} {folders.length === 1 ? "subfolder" : "subfolders"}
+                  </span>
+                  {currentFolder.createdAt && (
+                    <>
+                      <span>•</span>
+                      <span>Created {new Date(currentFolder.createdAt).toLocaleDateString()}</span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRenameFolderTarget(currentFolder)}
+                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <Pencil className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <span>Rename</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setMoveTarget({
+                    type: "folder",
+                    id: currentFolder.id,
+                    name: currentFolder.name,
+                    currentFolderId: breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null,
+                  })
+                }
+                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <FolderInput className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <span>Move</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setShareTarget({
+                    type: "folder",
+                    id: currentFolder.id,
+                    name: currentFolder.name,
+                  })
+                }
+                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <Share2 className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <span>Share</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDeleteCurrentFolder}
+                disabled={isDeletingCurrentFolder}
+                className="font-semibold text-xs h-9 border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                <span>{isDeletingCurrentFolder ? "Deleting..." : "Delete Folder"}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Controls Bar: Search & Status Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-3 rounded-2xl border border-[hsl(var(--border))] shadow-sm">
         <div className="relative w-full sm:w-80">
@@ -321,58 +448,79 @@ function UploadedVideosContent() {
               <div
                 key={folder.id}
                 onClick={() => navigateToFolder(folder.id)}
-                className="group cursor-pointer glass-card bg-white p-4 rounded-2xl border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50 hover:shadow-md transition-all flex items-center justify-between"
+                className="group cursor-pointer glass-card rounded-2xl overflow-hidden border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
-                    <Folder className="w-6 h-6 fill-amber-500/20" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-sm text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors truncate">
-                      {folder.name}
-                    </h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                      {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
-                    </p>
+                {/* Folder Content */}
+                <div className="p-4 space-y-2">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
+                      <Folder className="w-6 h-6 fill-amber-500/20" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3
+                        className="font-bold text-sm text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors truncate"
+                        title={folder.name}
+                      >
+                        {folder.name}
+                      </h3>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                        {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMoveTarget({
-                        type: "folder",
-                        id: folder.id,
-                        name: folder.name,
-                        currentFolderId: folder.parentId,
-                      });
-                    }}
-                    title="Move folder to another folder"
-                    aria-label="Move folder"
-                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <FolderInput className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShareTarget({ type: "folder", id: folder.id, name: folder.name });
-                    }}
-                    title="Share folder via email"
-                    aria-label="Share folder"
-                    className="p-2 rounded-lg text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
-                    title="Delete folder"
-                    aria-label="Delete folder"
-                    className="p-2 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                {/* Card Footer matching videos */}
+                <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                  <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRenameFolderTarget({ id: folder.id, name: folder.name });
+                      }}
+                      title="Rename folder"
+                      aria-label="Rename folder"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMoveTarget({
+                          type: "folder",
+                          id: folder.id,
+                          name: folder.name,
+                          currentFolderId: folder.parentId,
+                        });
+                      }}
+                      title="Move folder to another folder"
+                      aria-label="Move folder"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <FolderInput className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareTarget({ type: "folder", id: folder.id, name: folder.name });
+                      }}
+                      title="Share folder via email"
+                      aria-label="Share folder"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                      title="Delete folder"
+                      aria-label="Delete folder"
+                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -536,6 +684,16 @@ function UploadedVideosContent() {
           </div>
         )}
       </div>
+
+      {/* Rename Folder Modal */}
+      {renameFolderTarget && (
+        <RenameFolderModal
+          isOpen={!!renameFolderTarget}
+          onClose={() => setRenameFolderTarget(null)}
+          onSuccess={handleFolderRenamed}
+          folder={renameFolderTarget}
+        />
+      )}
 
       {/* Move Item Modal */}
       {moveTarget && (
