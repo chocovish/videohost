@@ -295,11 +295,10 @@ function UploadedVideosContent() {
       <div className="flex items-center gap-2 px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
         <button
           onClick={() => navigateToFolder(null)}
-          className={`flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${
-            currentFolderId === null
+          className={`flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${currentFolderId === null
               ? "text-[hsl(var(--primary))]"
               : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-          }`}
+            }`}
         >
           <Home className="w-4 h-4" /> Root
         </button>
@@ -308,11 +307,10 @@ function UploadedVideosContent() {
             <ChevronRight className="w-4 h-4 text-slate-400" />
             <button
               onClick={() => navigateToFolder(b.id)}
-              className={`font-semibold transition-colors cursor-pointer ${
-                currentFolderId === b.id
+              className={`font-semibold transition-colors cursor-pointer ${currentFolderId === b.id
                   ? "text-[hsl(var(--primary))]"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              }`}
+                }`}
             >
               {b.name}
             </button>
@@ -570,7 +568,7 @@ function UploadedVideosContent() {
             {filteredVideos.map((video) => (
               <Link
                 key={video.id}
-                href={`/dashboard/videos/${video.id}`}
+                href={`/dashboard/uploaded-videos/${video.id}`}
                 className="group glass-card rounded-2xl overflow-hidden border border-[hsl(var(--border))] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div>

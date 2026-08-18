@@ -7,6 +7,8 @@ import {
   useMaybeLayoutContext,
   useConnectionState,
   useParticipants,
+  useMediaDeviceSelect,
+  VideoTrack,
 } from "@livekit/components-react";
 import { Track, ConnectionState } from "livekit-client";
 import {
@@ -15,9 +17,7 @@ import {
   Video as VideoIcon,
   VideoOff,
   Volume2,
-  VolumeX,
   Settings as SettingsIcon,
-  Sliders,
   ShieldCheck,
   Check,
   Copy,
@@ -26,8 +26,6 @@ import {
   Info,
   Play,
   RotateCw,
-  Sparkles,
-  Layers,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,33 +37,52 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface DeviceOption {
-  deviceId: string;
-  label: string;
-}
-
 export default function MeetingSettingsModal() {
   const room = useRoomContext();
   const layoutContext = useMaybeLayoutContext();
-  const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+  const {
+    localParticipant,
+    isMicrophoneEnabled,
+    isCameraEnabled,
+    cameraTrack,
+    microphoneTrack,
+  } = useLocalParticipant();
   const participants = useParticipants();
   const connectionState = useConnectionState();
 
   const [activeTab, setActiveTab] = useState<"audio" | "video" | "general">("audio");
 
-  // Device lists
-  const [audioInputDevices, setAudioInputDevices] = useState<DeviceOption[]>([]);
-  const [audioOutputDevices, setAudioOutputDevices] = useState<DeviceOption[]>([]);
-  const [videoInputDevices, setVideoInputDevices] = useState<DeviceOption[]>([]);
+  // Device lists & management via LiveKit hooks
+  const {
+    devices: audioInputDevices,
+    activeDeviceId: activeAudioInputDeviceId,
+    setActiveMediaDevice: setActiveAudioInputDevice,
+  } = useMediaDeviceSelect({
+    kind: "audioinput",
+    requestPermissions: true,
+  });
 
-  const [activeAudioInput, setActiveAudioInput] = useState<string>("");
-  const [activeAudioOutput, setActiveAudioOutput] = useState<string>("");
-  const [activeVideoInput, setActiveVideoInput] = useState<string>("");
+  const {
+    devices: audioOutputDevices,
+    activeDeviceId: activeAudioOutputDeviceId,
+    setActiveMediaDevice: setActiveAudioOutputDevice,
+  } = useMediaDeviceSelect({
+    kind: "audiooutput",
+    requestPermissions: true,
+  });
+
+  const {
+    devices: videoDevices,
+    activeDeviceId: activeVideoDeviceId,
+    setActiveMediaDevice: setActiveVideoDevice,
+  } = useMediaDeviceSelect({
+    kind: "videoinput",
+    requestPermissions: true,
+  });
 
   // Video Preview & Mirror
   const [isMirrored, setIsMirrored] = useState(true);
   const [videoQuality, setVideoQuality] = useState<"auto" | "1080p" | "720p" | "480p">("auto");
-  const videoPreviewRef = useRef<HTMLVideoElement>(null);
 
   // Audio Testing (VU meter)
   const [audioLevel, setAudioLevel] = useState<number>(0);
@@ -108,111 +125,9 @@ export default function MeetingSettingsModal() {
     };
   }, [handleClose]);
 
-  // Load and refresh devices
-  const loadDevices = useCallback(async () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) {
-      return;
-    }
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-
-      const aInputs: DeviceOption[] = devices
-        .filter((d) => d.kind === "audioinput")
-        .map((d, i) => ({
-          deviceId: d.deviceId,
-          label: d.label || `Microphone ${i + 1}`,
-        }));
-
-      const aOutputs: DeviceOption[] = devices
-        .filter((d) => d.kind === "audiooutput")
-        .map((d, i) => ({
-          deviceId: d.deviceId,
-          label: d.label || `Speaker ${i + 1}`,
-        }));
-
-      const vInputs: DeviceOption[] = devices
-        .filter((d) => d.kind === "videoinput")
-        .map((d, i) => ({
-          deviceId: d.deviceId,
-          label: d.label || `Camera ${i + 1}`,
-        }));
-
-      setAudioInputDevices(aInputs);
-      setAudioOutputDevices(aOutputs);
-      setVideoInputDevices(vInputs);
-
-      if (room) {
-        setActiveAudioInput(room.getActiveDevice("audioinput") || (aInputs[0]?.deviceId ?? ""));
-        setActiveAudioOutput(room.getActiveDevice("audiooutput") || (aOutputs[0]?.deviceId ?? ""));
-        setActiveVideoInput(room.getActiveDevice("videoinput") || (vInputs[0]?.deviceId ?? ""));
-      }
-    } catch (e) {
-      console.warn("Error enumerating devices:", e);
-    }
-  }, [room]);
-
-  useEffect(() => {
-    loadDevices();
-    if (navigator.mediaDevices?.addEventListener) {
-      navigator.mediaDevices.addEventListener("devicechange", loadDevices);
-      return () => {
-        navigator.mediaDevices.removeEventListener("devicechange", loadDevices);
-      };
-    }
-  }, [loadDevices]);
-
-  // Switch Audio Input
-  const handleAudioInputChange = async (deviceId: string) => {
-    setActiveAudioInput(deviceId);
-    if (room) {
-      try {
-        await room.switchActiveDevice("audioinput", deviceId);
-      } catch (err) {
-        console.error("Failed to switch audio input device:", err);
-      }
-    }
-  };
-
-  // Switch Audio Output
-  const handleAudioOutputChange = async (deviceId: string) => {
-    setActiveAudioOutput(deviceId);
-    if (room) {
-      try {
-        await room.switchActiveDevice("audiooutput", deviceId);
-      } catch (err) {
-        console.error("Failed to switch audio output device:", err);
-      }
-    }
-  };
-
-  // Switch Video Input
-  const handleVideoInputChange = async (deviceId: string) => {
-    setActiveVideoInput(deviceId);
-    if (room) {
-      try {
-        await room.switchActiveDevice("videoinput", deviceId);
-      } catch (err) {
-        console.error("Failed to switch video input device:", err);
-      }
-    }
-  };
-
-  // Attach local camera preview to video element
-  useEffect(() => {
-    const camPub = localParticipant?.getTrackPublication(Track.Source.Camera);
-    const videoElem = videoPreviewRef.current;
-    if (camPub?.track && videoElem) {
-      camPub.track.attach(videoElem);
-      return () => {
-        camPub.track?.detach(videoElem);
-      };
-    }
-  }, [localParticipant, isCameraEnabled, activeVideoInput]);
-
   // Live Microphone Audio Level Meter
   useEffect(() => {
-    const micPub = localParticipant?.getTrackPublication(Track.Source.Microphone);
-    const mediaStreamTrack = micPub?.track?.mediaStreamTrack;
+    const mediaStreamTrack = microphoneTrack?.track?.mediaStreamTrack;
 
     if (!mediaStreamTrack || !isMicrophoneEnabled || mediaStreamTrack.readyState !== "live") {
       setAudioLevel(0);
@@ -256,7 +171,7 @@ export default function MeetingSettingsModal() {
     } catch (e) {
       console.warn("Audio meter setup error:", e);
     }
-  }, [localParticipant, isMicrophoneEnabled, activeAudioInput]);
+  }, [microphoneTrack, isMicrophoneEnabled, activeAudioInputDeviceId]);
 
   // Test Speaker Chime
   const handleTestSpeaker = () => {
@@ -307,6 +222,19 @@ export default function MeetingSettingsModal() {
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  // Determine current active device selection values safely
+  const selectedAudioInputValue =
+    activeAudioInputDeviceId ||
+    (audioInputDevices.length > 0 ? audioInputDevices[0].deviceId : "default");
+
+  const selectedAudioOutputValue =
+    activeAudioOutputDeviceId ||
+    (audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : "default");
+
+  const selectedVideoInputValue =
+    activeVideoDeviceId ||
+    (videoDevices.length > 0 ? videoDevices[0].deviceId : "default");
+
   return (
     <div
       className="w-full max-w-2xl bg-slate-900/95 border border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-2xl flex flex-col max-h-[90vh] text-slate-100 animate-in fade-in zoom-in-95 duration-150 select-none"
@@ -326,7 +254,7 @@ export default function MeetingSettingsModal() {
 
         <button
           onClick={handleClose}
-          className="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           title="Close Settings"
         >
           <X className="w-4 h-4" />
@@ -337,7 +265,7 @@ export default function MeetingSettingsModal() {
       <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-6 gap-2">
         <button
           onClick={() => setActiveTab("audio")}
-          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "audio"
               ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
               : "border-transparent text-slate-400 hover:text-slate-200"
@@ -349,7 +277,7 @@ export default function MeetingSettingsModal() {
 
         <button
           onClick={() => setActiveTab("video")}
-          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "video"
               ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
               : "border-transparent text-slate-400 hover:text-slate-200"
@@ -361,7 +289,7 @@ export default function MeetingSettingsModal() {
 
         <button
           onClick={() => setActiveTab("general")}
-          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
+          className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "general"
               ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
               : "border-transparent text-slate-400 hover:text-slate-200"
@@ -384,29 +312,44 @@ export default function MeetingSettingsModal() {
                   <Mic className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
                   Microphone Input
                 </label>
-                <span className="text-[11px] text-slate-400">
-                  {isMicrophoneEnabled ? "Microphone Unmuted" : "Microphone Muted"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-medium ${isMicrophoneEnabled ? "text-emerald-400" : "text-amber-400"}`}>
+                    {isMicrophoneEnabled ? "Microphone Unmuted" : "Microphone Muted"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled)}
+                    className="text-[11px] font-bold text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                  >
+                    {isMicrophoneEnabled ? "Mute" : "Unmute"}
+                  </button>
+                </div>
               </div>
 
               <Select
-                value={activeAudioInput || (audioInputDevices.length > 0 ? audioInputDevices[0].deviceId : "default")}
-                onValueChange={(val) => handleAudioInputChange(val === "default" ? "" : val)}
+                value={selectedAudioInputValue}
+                onValueChange={(val) => {
+                  if (val) setActiveAudioInputDevice(val);
+                }}
               >
                 <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
                   <SelectValue placeholder="Select microphone" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
                   {audioInputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default Microphone
                     </SelectItem>
                   ) : (
-                    audioInputDevices.map((d) => (
-                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
-                        {d.label}
-                      </SelectItem>
-                    ))
+                    audioInputDevices.map((d, i) => {
+                      const val = d.deviceId || `audioinput-${i}`;
+                      const label = d.label || `Microphone ${i + 1}`;
+                      return (
+                        <SelectItem key={val} value={val} className="text-xs">
+                          {label}
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
@@ -425,7 +368,7 @@ export default function MeetingSettingsModal() {
                 </div>
                 {!isMicrophoneEnabled && (
                   <p className="text-[11px] text-amber-400/90 flex items-center gap-1.5 pt-1">
-                    <MicOff className="w-3 h-3" /> Unmute your microphone on the main control bar to test input
+                    <MicOff className="w-3 h-3" /> Click "Unmute" above to test your microphone input level
                   </p>
                 )}
               </div>
@@ -450,23 +393,29 @@ export default function MeetingSettingsModal() {
               </div>
 
               <Select
-                value={activeAudioOutput || (audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : "default")}
-                onValueChange={(val) => handleAudioOutputChange(val === "default" ? "" : val)}
+                value={selectedAudioOutputValue}
+                onValueChange={(val) => {
+                  if (val) setActiveAudioOutputDevice(val);
+                }}
               >
                 <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
                   <SelectValue placeholder="Select speaker" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
                   {audioOutputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default System Speaker
                     </SelectItem>
                   ) : (
-                    audioOutputDevices.map((d) => (
-                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
-                        {d.label}
-                      </SelectItem>
-                    ))
+                    audioOutputDevices.map((d, i) => {
+                      const val = d.deviceId || `audiooutput-${i}`;
+                      const label = d.label || `Speaker ${i + 1}`;
+                      return (
+                        <SelectItem key={val} value={val} className="text-xs">
+                          {label}
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
@@ -516,29 +465,44 @@ export default function MeetingSettingsModal() {
                   <VideoIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
                   Camera Device
                 </label>
-                <span className="text-[11px] text-slate-400">
-                  {isCameraEnabled ? "Camera Active" : "Camera Off"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-medium ${isCameraEnabled ? "text-emerald-400" : "text-amber-400"}`}>
+                    {isCameraEnabled ? "Camera Active" : "Camera Off"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => localParticipant?.setCameraEnabled(!isCameraEnabled)}
+                    className="text-[11px] font-bold text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                  >
+                    {isCameraEnabled ? "Turn Off" : "Turn On"}
+                  </button>
+                </div>
               </div>
 
               <Select
-                value={activeVideoInput || (videoInputDevices.length > 0 ? videoInputDevices[0].deviceId : "default")}
-                onValueChange={(val) => handleVideoInputChange(val === "default" ? "" : val)}
+                value={selectedVideoInputValue}
+                onValueChange={(val) => {
+                  if (val) setActiveVideoDevice(val);
+                }}
               >
                 <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
                   <SelectValue placeholder="Select camera" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                  {videoInputDevices.length === 0 ? (
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  {videoDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default Camera
                     </SelectItem>
                   ) : (
-                    videoInputDevices.map((d) => (
-                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
-                        {d.label}
-                      </SelectItem>
-                    ))
+                    videoDevices.map((d, i) => {
+                      const val = d.deviceId || `videoinput-${i}`;
+                      const label = d.label || `Camera ${i + 1}`;
+                      return (
+                        <SelectItem key={val} value={val} className="text-xs">
+                          {label}
+                        </SelectItem>
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
@@ -551,7 +515,7 @@ export default function MeetingSettingsModal() {
                 <button
                   type="button"
                   onClick={() => setIsMirrored(!isMirrored)}
-                  className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors"
+                  className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer"
                 >
                   <RotateCw className="w-3 h-3" />
                   <span>{isMirrored ? "Mirrored" : "Normal"}</span>
@@ -559,30 +523,40 @@ export default function MeetingSettingsModal() {
               </div>
 
               <div className="relative aspect-video w-full max-w-md mx-auto rounded-2xl bg-black border border-slate-800 overflow-hidden flex items-center justify-center shadow-inner">
-                <video
-                  ref={videoPreviewRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`w-full h-full object-cover transition-transform ${
-                    isMirrored ? "scale-x-[-1]" : ""
-                  } ${!isCameraEnabled ? "hidden" : "block"}`}
-                />
-
-                {!isCameraEnabled && (
-                  <div className="flex flex-col items-center justify-center p-6 text-center space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-400">
+                {isCameraEnabled && cameraTrack && localParticipant ? (
+                  <>
+                    <VideoTrack
+                      trackRef={{
+                        participant: localParticipant,
+                        source: Track.Source.Camera,
+                        publication: cameraTrack,
+                      }}
+                      className={`w-full h-full object-cover transition-transform ${
+                        isMirrored ? "scale-x-[-1]" : ""
+                      }`}
+                    />
+                    <div className="absolute bottom-2.5 left-2.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 backdrop-blur-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>Active Live Preview</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
                       <VideoOff className="w-6 h-6" />
                     </div>
-                    <p className="text-xs font-semibold text-slate-300">Camera is currently turned off</p>
-                    <p className="text-[11px] text-slate-500">Enable camera in the meeting controls below</p>
-                  </div>
-                )}
-
-                {isCameraEnabled && (
-                  <div className="absolute bottom-2 left-2 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Active Preview</span>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-slate-300">Camera is currently turned off</p>
+                      <p className="text-[11px] text-slate-500">Enable camera to see your live preview</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => localParticipant?.setCameraEnabled(true)}
+                      className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-8 px-4 rounded-xl gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <VideoIcon className="w-3.5 h-3.5" />
+                      <span>Turn On Camera</span>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -605,7 +579,7 @@ export default function MeetingSettingsModal() {
                     key={item.id}
                     type="button"
                     onClick={() => setVideoQuality(item.id as any)}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       videoQuality === item.id
                         ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))] text-white"
                         : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
@@ -630,7 +604,7 @@ export default function MeetingSettingsModal() {
                 <Button
                   size="sm"
                   onClick={handleCopyLink}
-                  className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-7 px-2.5 rounded-lg gap-1"
+                  className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-7 px-2.5 rounded-lg gap-1 cursor-pointer"
                 >
                   {copiedLink ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
@@ -668,17 +642,6 @@ export default function MeetingSettingsModal() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Modal Footer */}
-      <div className="px-6 py-3.5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
-        <span className="text-xs text-slate-500 hidden sm:inline">Preferences are saved automatically for this session</span>
-        <Button
-          onClick={handleClose}
-          className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-9 px-5 rounded-xl ml-auto"
-        >
-          Done
-        </Button>
       </div>
     </div>
   );

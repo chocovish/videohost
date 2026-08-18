@@ -11,8 +11,8 @@ import {
   useLocalParticipant,
   useConnectionState,
 } from "@livekit/components-react";
-import "@livekit/components-styles";
 import { Track, ConnectionState, DisconnectReason } from "livekit-client";
+import "@/styles/livekit.css";
 import {
   Mic,
   MicOff,
@@ -212,17 +212,13 @@ function RoomContent({
       if (res.ok) {
         setIsRecording(data.isRecording);
       } else {
-        const hostUrl = typeof window !== "undefined" ? window.location.origin : "";
-        const fallback = data.fallbackUrl || `${hostUrl}/record`;
-        const msg = data.error || `Recording start failed. You may use client-side recording at ${fallback}`;
-        setRecordingError(msg);
-        setRecordingFallbackUrl(fallback);
+        throw new Error(data.error || "Recording start failed.");
       }
     } catch (err: any) {
       console.error("Failed to toggle recording:", err);
       const hostUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const fallback = `${hostUrl}/record`;
-      setRecordingError(`Recording start failed. You may use client-side recording at ${fallback}`);
+      const fallback = `${hostUrl}/dashboard/uploaded-videos`;
+      setRecordingError(`Recording start failed. You may use screen recording`);
       setRecordingFallbackUrl(fallback);
     } finally {
       setIsUpdatingRecord(false);
@@ -280,7 +276,7 @@ function RoomContent({
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/30 text-xs font-semibold transition-colors"
                     >
-                      Open Client Recording ({recordingFallbackUrl})
+                      Open Screen Recording
                     </a>
                   </div>
                 )}
@@ -346,11 +342,10 @@ function RoomContent({
             <button
               onClick={handleToggleRecording}
               disabled={isUpdatingRecord}
-              className={`hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                isRecording
-                  ? "bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30"
-                  : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
-              }`}
+              className={`hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${isRecording
+                ? "bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30"
+                : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
+                }`}
               title={isRecording ? "Stop Recording" : "Record Meeting"}
             >
               {isUpdatingRecord ? (
@@ -375,11 +370,10 @@ function RoomContent({
           {/* Participants Drawer Toggle Button */}
           <button
             onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
-            className={`p-2 rounded-lg border text-xs transition-colors relative ${
-              isParticipantsOpen
-                ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))]"
-                : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
-            }`}
+            className={`p-2 rounded-lg border text-xs transition-colors relative ${isParticipantsOpen
+              ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))]"
+              : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
+              }`}
             title="Participants list"
           >
             <Users className="w-4 h-4" />

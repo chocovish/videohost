@@ -56,8 +56,8 @@ export default function Sidebar({
   const [activeTheme, setActiveTheme] = useState(currentTheme || "lime");
   const [viewMode, setViewMode] = useState<"CREATOR" | "VIEWER">(
     ((session?.user as any)?.viewMode as "CREATOR" | "VIEWER") ||
-      (initialViewMode as "CREATOR" | "VIEWER") ||
-      "CREATOR"
+    (initialViewMode as "CREATOR" | "VIEWER") ||
+    "CREATOR"
   );
   const [isUpdatingMode, setIsUpdatingMode] = useState(false);
 
@@ -223,19 +223,17 @@ export default function Sidebar({
             </div>
           )}
           <div
-            className={`p-1 bg-slate-100/90 dark:bg-slate-800/90 border border-[hsl(var(--border))] rounded-xl flex items-center gap-1 ${
-              isCollapsed && !isMobile ? "flex-col" : ""
-            }`}
+            className={`p-1 bg-slate-100/90 dark:bg-slate-800/90 border border-[hsl(var(--border))] rounded-xl flex items-center gap-1 ${isCollapsed && !isMobile ? "flex-col" : ""
+              }`}
           >
             <button
               onClick={() => handleModeSwitch("CREATOR")}
               disabled={isUpdatingMode}
               title="Creator Mode: Manage uploads & library"
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                viewMode === "CREATOR"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${viewMode === "CREATOR"
                   ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-xs"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              }`}
+                }`}
             >
               <Video className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
               {(!isCollapsed || isMobile) && <span>Creator</span>}
@@ -244,11 +242,10 @@ export default function Sidebar({
               onClick={() => handleModeSwitch("VIEWER")}
               disabled={isUpdatingMode}
               title="Viewer Mode: Access content shared with you"
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                viewMode === "VIEWER"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${viewMode === "VIEWER"
                   ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-xs"
                   : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-              }`}
+                }`}
             >
               <Eye className="w-3.5 h-3.5 text-indigo-500" />
               {(!isCollapsed || isMobile) && <span>Viewer</span>}
@@ -263,7 +260,7 @@ export default function Sidebar({
             const isActive =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
-              (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/videos"));
+              (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/uploaded-videos"));
             return (
               <Link
                 key={item.href}
@@ -272,13 +269,11 @@ export default function Sidebar({
                   if (isMobile) closeMobile();
                 }}
                 title={isCollapsed && !isMobile ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isCollapsed && !isMobile ? "justify-center px-2" : ""
-                } ${
-                  isActive
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isCollapsed && !isMobile ? "justify-center px-2" : ""
+                  } ${isActive
                     ? "bg-[hsl(var(--primary))] text-white shadow-sm font-semibold"
                     : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
                 {(!isCollapsed || isMobile) && <span className="truncate">{item.label}</span>}
@@ -293,9 +288,8 @@ export default function Sidebar({
         {/* Quota Progress Meter */}
         {viewMode === "CREATOR" && (
           <div
-            className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${
-              isCollapsed && !isMobile ? "p-2 text-center" : ""
-            }`}
+            className={`p-3.5 rounded-xl bg-[hsl(var(--muted))]/50 border border-[hsl(var(--border))] space-y-2 ${isCollapsed && !isMobile ? "p-2 text-center" : ""
+              }`}
           >
             {!isCollapsed || isMobile ? (
               <>
@@ -341,11 +335,10 @@ export default function Sidebar({
                 key={theme.id}
                 onClick={() => applyTheme(theme.id)}
                 title={theme.name}
-                className={`py-1 px-1.5 rounded-md text-[10px] font-medium transition-all flex items-center justify-center gap-1 border cursor-pointer ${
-                  activeTheme === theme.id
+                className={`py-1 px-1.5 rounded-md text-[10px] font-medium transition-all flex items-center justify-center gap-1 border cursor-pointer ${activeTheme === theme.id
                     ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--foreground))]"
                     : "border-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[hsl(var(--muted-foreground))]"
-                }`}
+                  }`}
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full inline-block shrink-0"
@@ -396,9 +389,8 @@ export default function Sidebar({
 
       {/* Desktop Sticky Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl h-full sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${
-          isCollapsed ? "w-20" : "w-64"
-        }`}
+        className={`hidden md:flex flex-col border-r border-[hsl(var(--border))] bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl h-full sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${isCollapsed ? "w-20" : "w-64"
+          }`}
       >
         <SidebarInner isMobile={false} />
       </aside>
