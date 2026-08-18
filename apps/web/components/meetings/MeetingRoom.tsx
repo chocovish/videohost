@@ -12,7 +12,7 @@ import {
   useConnectionState,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, ConnectionState } from "livekit-client";
+import { Track, ConnectionState, DisconnectReason } from "livekit-client";
 import {
   Mic,
   MicOff,
@@ -49,7 +49,7 @@ interface MeetingRoomProps {
   };
   audioEnabled?: boolean;
   videoEnabled?: boolean;
-  onLeave?: () => void;
+  onLeave?: (reason: "user_left" | "meeting_ended" | "network_error", customMessage?: string) => void;
 }
 
 export default function MeetingRoom({
@@ -61,6 +61,7 @@ export default function MeetingRoom({
   onLeave,
 }: MeetingRoomProps) {
   const router = useRouter();
+  const userIntentionalLeave = useRef(false);
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none">
@@ -72,12 +73,56 @@ export default function MeetingRoom({
         audio={audioEnabled}
         data-lk-theme="default"
         className="flex-1 flex flex-col h-full overflow-hidden"
-        onDisconnected={() => {
-          if (onLeave) onLeave();
-          else router.push("/dashboard/meetings");
+        onError={(err) => {
+          console.error("LiveKit connection error:", err);
+          if (!userIntentionalLeave.current && onLeave) {
+            onLeave(
+              "network_error",
+              "Network Connection Issue: Unable to connect to the meeting video server. Please check your internet connection or network firewall."
+            );
+          }
+        }}
+        onDisconnected={(reason) => {
+          if (userIntentionalLeave.current) return;
+
+          if (
+            reason === DisconnectReason.ROOM_DELETED ||
+            reason === DisconnectReason.SERVER_SHUTDOWN ||
+            reason === DisconnectReason.ROOM_CLOSED
+          ) {
+            if (onLeave) onLeave("meeting_ended", "This meeting has ended.");
+            else router.push("/dashboard/meetings");
+          } else if (
+            reason === DisconnectReason.CLIENT_INITIATED ||
+            reason === DisconnectReason.UNKNOWN_REASON ||
+            reason === undefined
+          ) {
+            if (onLeave) onLeave("user_left", "You have left the meeting.");
+            else router.push("/dashboard/meetings");
+          } else if (
+            reason === DisconnectReason.JOIN_FAILURE ||
+            reason === DisconnectReason.STATE_MISMATCH ||
+            reason === DisconnectReason.DUPLICATE_IDENTITY
+          ) {
+            if (onLeave) {
+              onLeave(
+                "network_error",
+                "Network Connection Issue: Disconnected from the meeting server. Please check your internet connection and try again."
+              );
+            } else {
+              router.push("/dashboard/meetings");
+            }
+          } else {
+            if (onLeave) onLeave("user_left", "You have left the meeting.");
+            else router.push("/dashboard/meetings");
+          }
         }}
       >
-        <RoomContent meeting={meeting} onLeave={onLeave} />
+        <RoomContent
+          meeting={meeting}
+          onLeave={onLeave}
+          userIntentionalLeave={userIntentionalLeave}
+        />
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
@@ -87,9 +132,11 @@ export default function MeetingRoom({
 function RoomContent({
   meeting,
   onLeave,
+  userIntentionalLeave,
 }: {
   meeting: MeetingRoomProps["meeting"];
-  onLeave?: () => void;
+  onLeave?: MeetingRoomProps["onLeave"];
+  userIntentionalLeave: React.MutableRefObject<boolean>;
 }) {
   const router = useRouter();
   const room = useRoomContext();
@@ -183,6 +230,7 @@ function RoomContent({
   };
 
   const handleLeaveMeeting = async () => {
+    userIntentionalLeave.current = true;
     try {
       if (room) {
         await room.disconnect();
@@ -190,12 +238,13 @@ function RoomContent({
     } catch (e) {
       console.error("Error disconnecting from room:", e);
     }
-    if (onLeave) onLeave();
+    if (onLeave) onLeave("user_left", "You have left the meeting.");
     else router.push("/dashboard/meetings");
   };
 
   const handleEndMeetingForAll = async () => {
     if (!confirm("Are you sure you want to end this meeting for everyone?")) return;
+    userIntentionalLeave.current = true;
     try {
       await fetch(`/api/meetings/${meeting.id}`, {
         method: "PATCH",
@@ -208,7 +257,7 @@ function RoomContent({
     } catch (e) {
       console.error("Error ending meeting:", e);
     }
-    if (onLeave) onLeave();
+    if (onLeave) onLeave("meeting_ended", "The meeting was ended for everyone.");
     else router.push("/dashboard/meetings");
   };
 

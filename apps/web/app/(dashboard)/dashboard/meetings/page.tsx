@@ -246,22 +246,20 @@ export default function MeetingsDashboardPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab("upcoming")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === "upcoming"
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === "upcoming"
                 ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/30"
                 : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
+              }`}
           >
             <Calendar className="w-4 h-4" />
             Upcoming & Live ({upcomingMeetings.length})
           </button>
           <button
             onClick={() => setActiveTab("past")}
-            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === "past"
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${activeTab === "past"
                 ? "bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/30"
                 : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-slate-100 dark:hover:bg-slate-800"
-            }`}
+              }`}
           >
             <Clock className="w-4 h-4" />
             Past & Recorded ({pastMeetings.length})
@@ -307,11 +305,10 @@ export default function MeetingsDashboardPage() {
               return (
                 <div
                   key={meeting.id}
-                  className={`group glass-card rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden hover:shadow-xl ${
-                    isLive
+                  className={`group glass-card rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden hover:shadow-xl ${isLive
                       ? "border-emerald-500/50 shadow-emerald-500/5 ring-2 ring-emerald-500/20"
                       : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50"
-                  }`}
+                    }`}
                 >
                   {/* Card Body */}
                   <div className="p-5 pb-4 space-y-3">
@@ -406,11 +403,10 @@ export default function MeetingsDashboardPage() {
                     <Link href={`/meet/${meeting.id}`}>
                       <Button
                         size="sm"
-                        className={`h-8 px-4 text-xs font-bold rounded-lg gap-1.5 cursor-pointer ${
-                          isLive
+                        className={`h-8 px-4 text-xs font-bold rounded-lg gap-1.5 cursor-pointer ${isLive
                             ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
                             : "bg-[hsl(var(--primary))] text-white hover:opacity-90"
-                        }`}
+                          }`}
                       >
                         <span>Join Room</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -454,7 +450,7 @@ export default function MeetingsDashboardPage() {
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <h4 className="font-bold text-[hsl(var(--foreground))] text-base">{meeting.title}</h4>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[hsl(var(--muted-foreground))] border border-[hsl(var(--border))]">
-                      {meeting.code}
+                      {meeting.id}
                     </span>
                     {meeting.recordedVideoId && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/15 border border-rose-500/30 px-2 py-0.5 rounded-full">

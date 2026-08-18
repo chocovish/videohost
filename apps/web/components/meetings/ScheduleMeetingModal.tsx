@@ -17,6 +17,13 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -194,18 +201,22 @@ export default function ScheduleMeetingModal({
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-400" /> Duration
               </label>
-              <select
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all [color-scheme:dark]"
+              <Select
+                value={String(durationMinutes)}
+                onValueChange={(val) => setDurationMinutes(Number(val))}
               >
-                <option value={15}>15 Minutes</option>
-                <option value={30}>30 Minutes</option>
-                <option value={45}>45 Minutes</option>
-                <option value={60}>1 Hour</option>
-                <option value={90}>1.5 Hours</option>
-                <option value={120}>2 Hours</option>
-              </select>
+                <SelectTrigger className="w-full h-11 px-3.5 bg-slate-950/80 border-slate-700/80 rounded-xl text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] shadow-sm">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  <SelectItem value="15" className="text-xs">15 Minutes</SelectItem>
+                  <SelectItem value="30" className="text-xs">30 Minutes</SelectItem>
+                  <SelectItem value="45" className="text-xs">45 Minutes</SelectItem>
+                  <SelectItem value="60" className="text-xs">1 Hour</SelectItem>
+                  <SelectItem value="90" className="text-xs">1.5 Hours</SelectItem>
+                  <SelectItem value="120" className="text-xs">2 Hours</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

@@ -3,10 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Loader2, AlertCircle, Radio, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  Radio,
+  ArrowLeft,
+  WifiOff,
+  CheckCircle2,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MeetingLobby from "@/components/meetings/MeetingLobby";
 import MeetingRoom from "@/components/meetings/MeetingRoom";
+
+export type LeaveReason = "user_left" | "meeting_ended" | "network_error";
 
 export default function MeetPage() {
   const params = useParams();
@@ -29,6 +39,12 @@ export default function MeetPage() {
   const [canRecord, setCanRecord] = useState(false);
   const [requiresAuth, setRequiresAuth] = useState(false);
 
+  // Distinguish exit / disconnect states
+  const [leaveState, setLeaveState] = useState<{
+    reason: LeaveReason;
+    message: string;
+  } | null>(null);
+
   // Fetch initial meeting info
   useEffect(() => {
     if (!id) return;
@@ -37,20 +53,33 @@ export default function MeetPage() {
       try {
         setIsLoading(true);
         setError(null);
+        setLeaveState(null);
         setRequiresAuth(false);
 
         const res = await fetch(`/api/meetings/${id}`);
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
+          if (res.status === 410 || data?.error?.includes("ended")) {
+            setLeaveState({
+              reason: "meeting_ended",
+              message: data.error || "This meeting has already ended.",
+            });
+            return;
+          }
           throw new Error(data.error || "Meeting not found or has ended");
         }
 
         if (data.meeting?.status === "ENDED") {
-          throw new Error("This meeting has ended.");
+          setLeaveState({
+            reason: "meeting_ended",
+            message: "This meeting has ended.",
+          });
+          return;
         }
         if (data.meeting?.status === "CANCELLED") {
-          throw new Error("This meeting has been cancelled.");
+          setError("This meeting has been cancelled.");
+          return;
         }
 
         setMeeting(data.meeting);
@@ -60,7 +89,15 @@ export default function MeetPage() {
           setIsHost(true);
         }
       } catch (err: any) {
-        setError(err.message || "Failed to load meeting details");
+        if (err.name === "TypeError" || err.message?.includes("fetch")) {
+          setLeaveState({
+            reason: "network_error",
+            message:
+              "Network Connection Issue: Failed to reach the meeting server. Please check your internet connection or network setup.",
+          });
+        } else {
+          setError(err.message || "Failed to load meeting details");
+        }
       } finally {
         setIsLoading(false);
       }
@@ -80,6 +117,7 @@ export default function MeetPage() {
     try {
       setIsLoading(true);
       setError(null);
+      setLeaveState(null);
       setRequiresAuth(false);
 
       const res = await fetch(`/api/meetings/${id}/token`, {
@@ -90,10 +128,17 @@ export default function MeetPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (data.requireAuth) {
           setRequiresAuth(true);
+        }
+        if (res.status === 410 || data?.error?.includes("ended")) {
+          setLeaveState({
+            reason: "meeting_ended",
+            message: data.error || "This meeting has ended.",
+          });
+          return;
         }
         throw new Error(data.error || "Failed to join meeting");
       }
@@ -106,17 +151,95 @@ export default function MeetPage() {
       setVideoEnabled(options.videoEnabled);
       setIsInRoom(true);
     } catch (err: any) {
-      setError(err.message || "Failed to generate meeting token");
+      if (err.name === "TypeError" || err.message?.includes("fetch")) {
+        setLeaveState({
+          reason: "network_error",
+          message:
+            "Network Connection Issue: Failed to connect to video services. Please check your internet connection.",
+        });
+      } else {
+        setError(err.message || "Failed to generate meeting token");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading && !meeting && !isInRoom) {
+  if (isLoading && !meeting && !isInRoom && !leaveState) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
         <Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--primary))] mb-4" />
         <p className="text-sm font-medium text-slate-400">Connecting to meeting room...</p>
+      </div>
+    );
+  }
+
+  // Render Leave/Ended/Network Error Screen
+  if (leaveState && !isInRoom) {
+    const isNetwork = leaveState.reason === "network_error";
+    const isEnded = leaveState.reason === "meeting_ended";
+    const isUserLeft = leaveState.reason === "user_left";
+
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div
+            className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center border ${
+              isNetwork
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                : isEnded
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+            }`}
+          >
+            {isNetwork ? (
+              <WifiOff className="w-7 h-7" />
+            ) : isEnded ? (
+              <Radio className="w-7 h-7" />
+            ) : (
+              <CheckCircle2 className="w-7 h-7" />
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-xl font-bold text-white">
+              {isNetwork
+                ? "Network Connection Issue"
+                : isEnded
+                ? "Meeting Has Ended"
+                : "You Left the Meeting"}
+            </h2>
+            <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+              {leaveState.message}
+            </p>
+          </div>
+
+          <div className="space-y-2.5 pt-2">
+            {isUserLeft || isNetwork ? (
+              <Button
+                onClick={() => {
+                  setLeaveState(null);
+                }}
+                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                {isNetwork ? "Retry Connection" : "Rejoin Meeting"}
+              </Button>
+            ) : null}
+
+            <Button
+              onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
+              className={`w-full h-11 font-bold rounded-xl gap-2 transition-all cursor-pointer ${
+                !isUserLeft && !isNetwork
+                  ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black shadow-lg shadow-[hsl(var(--primary))]/10"
+                  : "bg-slate-800/90 hover:bg-slate-800 text-slate-100 hover:text-white border border-slate-700/80 shadow-sm"
+              }`}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {session?.user ? "Back to Dashboard" : "Go to Home"}
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -138,17 +261,17 @@ export default function MeetPage() {
             {requiresAuth ? (
               <Button
                 onClick={() => router.push(`/auth/login?callbackUrl=/meet/${id}`)}
-                className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold"
+                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
               >
                 Sign In to Join Call
               </Button>
             ) : (
               <Button
-                onClick={() => router.push("/dashboard/meetings")}
-                className="w-full bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold gap-2"
+                onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
+                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
+                {session?.user ? "Back to Dashboard" : "Go to Home"}
               </Button>
             )}
           </div>
@@ -175,13 +298,23 @@ export default function MeetPage() {
         }}
         audioEnabled={audioEnabled}
         videoEnabled={videoEnabled}
-        onLeave={() => {
+        onLeave={(reason, customMessage) => {
           setIsInRoom(false);
-          if (session?.user) {
-            router.push("/dashboard/meetings");
-          } else {
-            setError("This meeting has ended.");
-          }
+          setLeaveState((prev) => {
+            if (prev?.reason === "user_left" || prev?.reason === "meeting_ended") {
+              return prev;
+            }
+            return {
+              reason: reason || "user_left",
+              message:
+                customMessage ||
+                (reason === "meeting_ended"
+                  ? "This meeting has ended."
+                  : reason === "network_error"
+                  ? "Network Connection Issue: Disconnected from the meeting server."
+                  : "You have left the meeting."),
+            };
+          });
         }}
       />
     );

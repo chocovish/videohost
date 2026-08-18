@@ -31,6 +31,13 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DeviceOption {
   deviceId: string;
@@ -382,18 +389,27 @@ export default function MeetingSettingsModal() {
                 </span>
               </div>
 
-              <select
-                value={activeAudioInput}
-                onChange={(e) => handleAudioInputChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
+              <Select
+                value={activeAudioInput || (audioInputDevices.length > 0 ? audioInputDevices[0].deviceId : "default")}
+                onValueChange={(val) => handleAudioInputChange(val === "default" ? "" : val)}
               >
-                {audioInputDevices.length === 0 && <option value="">Default Microphone</option>}
-                {audioInputDevices.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                  <SelectValue placeholder="Select microphone" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  {audioInputDevices.length === 0 ? (
+                    <SelectItem value="default" className="text-xs">
+                      Default Microphone
+                    </SelectItem>
+                  ) : (
+                    audioInputDevices.map((d) => (
+                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
+                        {d.label}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
 
               {/* Real-time Mic Level Indicator */}
               <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-xl space-y-1.5">
@@ -433,18 +449,27 @@ export default function MeetingSettingsModal() {
                 </button>
               </div>
 
-              <select
-                value={activeAudioOutput}
-                onChange={(e) => handleAudioOutputChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
+              <Select
+                value={activeAudioOutput || (audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : "default")}
+                onValueChange={(val) => handleAudioOutputChange(val === "default" ? "" : val)}
               >
-                {audioOutputDevices.length === 0 && <option value="">Default System Speaker</option>}
-                {audioOutputDevices.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                  <SelectValue placeholder="Select speaker" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  {audioOutputDevices.length === 0 ? (
+                    <SelectItem value="default" className="text-xs">
+                      Default System Speaker
+                    </SelectItem>
+                  ) : (
+                    audioOutputDevices.map((d) => (
+                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
+                        {d.label}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Audio Enhancements */}
@@ -496,18 +521,27 @@ export default function MeetingSettingsModal() {
                 </span>
               </div>
 
-              <select
-                value={activeVideoInput}
-                onChange={(e) => handleVideoInputChange(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
+              <Select
+                value={activeVideoInput || (videoInputDevices.length > 0 ? videoInputDevices[0].deviceId : "default")}
+                onValueChange={(val) => handleVideoInputChange(val === "default" ? "" : val)}
               >
-                {videoInputDevices.length === 0 && <option value="">Default Camera</option>}
-                {videoInputDevices.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                  <SelectValue placeholder="Select camera" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
+                  {videoInputDevices.length === 0 ? (
+                    <SelectItem value="default" className="text-xs">
+                      Default Camera
+                    </SelectItem>
+                  ) : (
+                    videoInputDevices.map((d) => (
+                      <SelectItem key={d.deviceId || "default"} value={d.deviceId || "default"} className="text-xs">
+                        {d.label}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Camera Live Preview Box */}
