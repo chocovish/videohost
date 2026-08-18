@@ -46,6 +46,13 @@ export default function MeetPage() {
           throw new Error(data.error || "Meeting not found or has ended");
         }
 
+        if (data.meeting?.status === "ENDED") {
+          throw new Error("This meeting has ended.");
+        }
+        if (data.meeting?.status === "CANCELLED") {
+          throw new Error("This meeting has been cancelled.");
+        }
+
         setMeeting(data.meeting);
 
         const currentUserId = session?.user?.id;
@@ -170,7 +177,11 @@ export default function MeetPage() {
         videoEnabled={videoEnabled}
         onLeave={() => {
           setIsInRoom(false);
-          router.push("/dashboard/meetings");
+          if (session?.user) {
+            router.push("/dashboard/meetings");
+          } else {
+            setError("This meeting has ended.");
+          }
         }}
       />
     );

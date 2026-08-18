@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
+import { getRoomServiceClient, getEgressClient } from "@/lib/livekit";
 
 export async function GET(
   req: NextRequest,
@@ -68,6 +69,24 @@ export async function PATCH(
       if (body.status === "ENDED") {
         updateData.endedAt = new Date();
         updateData.isRecording = false;
+
+        // Stop active egress recording if applicable
+        if (meeting.recordingId) {
+          try {
+            const egressClient = getEgressClient();
+            await egressClient.stopEgress(meeting.recordingId);
+          } catch (egressErr: any) {
+            console.warn("Could not stop egress on meeting end:", egressErr?.message || egressErr);
+          }
+        }
+
+        // Delete LiveKit room to disconnect all connected participants immediately
+        try {
+          const roomServiceClient = getRoomServiceClient();
+          await roomServiceClient.deleteRoom(id);
+        } catch (lkErr: any) {
+          console.warn("Could not delete LiveKit room on meeting end:", lkErr?.message || lkErr);
+        }
       }
     }
     if (typeof body.isRecording === "boolean") updateData.isRecording = body.isRecording;
@@ -112,6 +131,13 @@ export async function DELETE(
     }
 
     // Only host or organization member can delete
+    try {
+      const roomServiceClient = getRoomServiceClient();
+      await roomServiceClient.deleteRoom(id);
+    } catch (lkErr: any) {
+      console.warn("Could not delete LiveKit room on meeting DELETE:", lkErr?.message || lkErr);
+    }
+
     await db.meeting.delete({
       where: { id: meeting.id },
     });

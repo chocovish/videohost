@@ -32,6 +32,10 @@ export async function POST(
       return NextResponse.json({ error: "This meeting has been cancelled." }, { status: 410 });
     }
 
+    if (meeting.status === "ENDED") {
+      return NextResponse.json({ error: "This meeting has ended." }, { status: 410 });
+    }
+
     const session = await auth();
     const isAuthUser = Boolean(session?.user?.id);
     const userId = session?.user?.id;
