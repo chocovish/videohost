@@ -8,7 +8,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ token: string }>;
 }): Promise<Metadata> {
-  const { token } = await params; // token is video ID or folder ID
+  const { token } = await params; // token is video ID, folder ID, or playlist ID
 
   try {
     const video = await db.video.findUnique({
@@ -82,6 +82,53 @@ export async function generateMetadata({
           title,
           description,
           images: ["/og-image.png"],
+        },
+      };
+    }
+
+    const playlist = await db.playlist.findUnique({
+      where: { id: token },
+      include: {
+        organization: true,
+        items: {
+          orderBy: { order: "asc" },
+          take: 1,
+          include: { video: true },
+        },
+      },
+    });
+
+    if (playlist) {
+      const title = `${playlist.title} (Playlist) — ${playlist.organization.name}`;
+      const description =
+        playlist.description ||
+        `Watch playlist "${playlist.title}" from ${playlist.organization.name} on Taped.`;
+      const firstThumb = playlist.items[0]?.video?.thumbnailKey;
+      const imageUrl = firstThumb ? await getPresignedPlaybackUrl(firstThumb) : "/og-image.png";
+
+      return {
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: `/share/${token}`,
+          siteName: playlist.organization.name,
+          images: [
+            {
+              url: imageUrl,
+              width: 1200,
+              height: 630,
+              alt: playlist.title,
+            },
+          ],
+          type: "video.other",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: [imageUrl],
         },
       };
     }

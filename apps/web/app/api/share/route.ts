@@ -11,12 +11,12 @@ export async function GET(req: Request) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const targetType = searchParams.get("targetType") as "video" | "folder" | null;
+    const targetType = searchParams.get("targetType") as "video" | "folder" | "playlist" | null;
     const targetId = searchParams.get("targetId");
 
-    if (!targetType || !["video", "folder"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "folder", "playlist"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'folder') and targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'folder'|'playlist') and targetId." },
         { status: 400 }
       );
     }
@@ -36,6 +36,17 @@ export async function GET(req: Request) {
       targetTitle = video.title;
       accessMode = video.shareAccessMode;
       allowedEmails = video.sharedEmails;
+    } else if (targetType === "playlist") {
+      const playlist = await db.playlist.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      if (!playlist) {
+        return NextResponse.json({ error: "Playlist not found in organization" }, { status: 404 });
+      }
+      targetTitle = playlist.title;
+      accessMode = playlist.shareAccessMode;
+      allowedEmails = playlist.sharedEmails;
     } else {
       const folder = await db.folder.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
@@ -78,9 +89,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, targetType, targetId, accessMode, email, emailId, message } = body;
 
-    if (!targetType || !["video", "folder"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "folder", "playlist"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'folder'), targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'folder'|'playlist'), targetId." },
         { status: 400 }
       );
     }
@@ -103,6 +114,13 @@ export async function POST(req: Request) {
       if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
       targetTitle = video.title;
       currentAccessMode = video.shareAccessMode;
+    } else if (targetType === "playlist") {
+      const playlist = await db.playlist.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+      });
+      if (!playlist) return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
+      targetTitle = playlist.title;
+      currentAccessMode = playlist.shareAccessMode;
     } else {
       const folder = await db.folder.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
@@ -122,6 +140,11 @@ export async function POST(req: Request) {
 
       if (targetType === "video") {
         await db.video.update({
+          where: { id: targetId },
+          data: { shareAccessMode: newMode },
+        });
+      } else if (targetType === "playlist") {
+        await db.playlist.update({
           where: { id: targetId },
           data: { shareAccessMode: newMode },
         });
@@ -146,9 +169,12 @@ export async function POST(req: Request) {
         where:
           targetType === "video"
             ? { videoId_email: { videoId: targetId, email: cleanEmail } }
+            : targetType === "playlist"
+            ? { playlistId_email: { playlistId: targetId, email: cleanEmail } }
             : { folderId_email: { folderId: targetId, email: cleanEmail } },
         create: {
           videoId: targetType === "video" ? targetId : null,
+          playlistId: targetType === "playlist" ? targetId : null,
           folderId: targetType === "folder" ? targetId : null,
           email: cleanEmail,
         },
@@ -160,6 +186,11 @@ export async function POST(req: Request) {
         currentAccessMode = "RESTRICTED";
         if (targetType === "video") {
           await db.video.update({
+            where: { id: targetId },
+            data: { shareAccessMode: "RESTRICTED" },
+          });
+        } else if (targetType === "playlist") {
+          await db.playlist.update({
             where: { id: targetId },
             data: { shareAccessMode: "RESTRICTED" },
           });
@@ -182,7 +213,7 @@ export async function POST(req: Request) {
           toEmail: cleanEmail,
           senderName,
           organizationName: org.name,
-          targetType: targetType as "video" | "folder",
+          targetType: targetType as "video" | "folder" | "playlist",
           targetTitle,
           shareUrl,
           message: message || undefined,
@@ -204,6 +235,8 @@ export async function POST(req: Request) {
           where:
             targetType === "video"
               ? { videoId: targetId, email: cleanEmail }
+              : targetType === "playlist"
+              ? { playlistId: targetId, email: cleanEmail }
               : { folderId: targetId, email: cleanEmail },
         });
       }
@@ -217,6 +250,12 @@ export async function POST(req: Request) {
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
       });
       allowedEmails = v?.sharedEmails || [];
+    } else if (targetType === "playlist") {
+      const p = await db.playlist.findUnique({
+        where: { id: targetId },
+        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
+      });
+      allowedEmails = p?.sharedEmails || [];
     } else {
       const f = await db.folder.findUnique({
         where: { id: targetId },

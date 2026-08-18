@@ -7,6 +7,7 @@ import {
   Film,
   Folder,
   ChevronRight,
+  ChevronLeft,
   Clock,
   Play,
   Share2,
@@ -27,6 +28,10 @@ import {
   Mail,
   Send,
   Globe,
+  ListVideo,
+  SkipBack,
+  SkipForward,
+  Search,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
@@ -54,7 +59,7 @@ export interface SharePageConfigData {
 }
 
 export interface SharedData {
-  type: "video" | "folder";
+  type: "video" | "folder" | "playlist";
   accessMode?: string;
   organization: {
     name: string;
@@ -76,6 +81,14 @@ export interface SharedData {
     playbackUrl?: string;
     createdAt: string;
   };
+  playlist?: {
+    id: string;
+    title: string;
+    description?: string;
+    itemCount: number;
+    totalDurationSeconds: number;
+    createdAt: string;
+  };
   rootFolder?: {
     id: string;
     name: string;
@@ -87,6 +100,8 @@ export interface SharedData {
   };
   videos?: Array<{
     id: string;
+    itemId?: string;
+    order?: number;
     title: string;
     description?: string;
     status: string;
@@ -122,6 +137,8 @@ export default function SharedContentClient({
   const [data, setData] = useState<SharedData | null>(previewData || null);
   const [loading, setLoading] = useState(!previewData);
   const [copied, setCopied] = useState(false);
+  const [activePlaylistIndex, setActivePlaylistIndex] = useState(0);
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState("");
   const [errorState, setErrorState] = useState<{
     code: string;
     message?: string;
@@ -391,6 +408,8 @@ export default function SharedContentClient({
 
   const { organization } = data;
   const isVideo = data.type === "video";
+  const isPlaylist = data.type === "playlist";
+  const isFolder = data.type === "folder";
 
   // Dynamic Theme Preset Class & Style Mapping
   const preset = config.themePreset || "obsidian";
@@ -445,7 +464,11 @@ export default function SharedContentClient({
 
   // Current page URL for social sharing
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
-  const shareTitle = data.video?.title ? `${data.video.title} — ${displayTitle}` : displayTitle;
+  const shareTitle = data.video?.title
+    ? `${data.video.title} — ${displayTitle}`
+    : data.playlist?.title
+    ? `${data.playlist.title} (Playlist) — ${displayTitle}`
+    : displayTitle;
 
   return (
     <div
@@ -509,9 +532,14 @@ export default function SharedContentClient({
                   <Building2 className="w-4 h-4" style={{ color: accentHex }} />
                   {displayTitle}
                 </span>
-                {!isVideo && data.currentFolder && (
+                {isFolder && data.currentFolder && (
                   <span className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
                     {data.currentFolder.name}
+                  </span>
+                )}
+                {isPlaylist && data.playlist && (
+                  <span className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+                    {data.playlist.title}
                   </span>
                 )}
               </div>
@@ -748,8 +776,10 @@ export default function SharedContentClient({
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
                     >
-                      <Globe className="w-3.5 h-3.5 text-sky-400" />
-                      <span>X / Twitter</span>
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      Twitter / X
                     </a>
                     <a
                       href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
@@ -757,31 +787,26 @@ export default function SharedContentClient({
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
                     >
-                      <Globe className="w-3.5 h-3.5 text-blue-500" />
-                      <span>LinkedIn</span>
+                      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                      </svg>
+                      LinkedIn
                     </a>
                     <a
-                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareTitle + " " + shareUrl)}`}
+                      href={`https://wa.me/?text=${encodeURIComponent(`${shareTitle} ${shareUrl}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
                     >
-                      <Send className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>WhatsApp</span>
-                    </a>
-                    <a
-                      href={`mailto:?subject=${encodeURIComponent(shareTitle)}&body=${encodeURIComponent(shareUrl)}`}
-                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
-                    >
-                      <Mail className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Email</span>
+                      <Send className="w-3.5 h-3.5" /> WhatsApp
                     </a>
                   </div>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-800/60 gap-3">
-                <div className="flex items-center gap-2">
+              {/* Portal Security Badge */}
+              <div className="pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center gap-1.5">
                   <span>Hosted by</span>
                   <span className="font-bold bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/40">
                     {displayTitle}
@@ -793,6 +818,311 @@ export default function SharedContentClient({
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* PLAYLIST SHARE VIEW */}
+        {isPlaylist && data.playlist && (
+          <div className="space-y-6">
+            {/* Top Playlist Header Banner */}
+            <div className={`p-5 backdrop-blur-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${cardBgClass} ${roundnessClass}`}>
+              <div className="flex items-center gap-3.5">
+                <div
+                  className="p-3 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"
+                  style={{
+                    backgroundColor: `${accentHex}20`,
+                    color: accentHex,
+                  }}
+                >
+                  <ListVideo className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                      Shared Playlist
+                    </span>
+                    {data.playlist.totalDurationSeconds > 0 && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/50 flex items-center gap-1">
+                        <Clock className="w-3 h-3" style={{ color: accentHex }} />
+                        {formatDuration(data.playlist.totalDurationSeconds)}
+                      </span>
+                    )}
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100">
+                    {data.playlist.title}
+                  </h1>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span
+                  className="px-3 py-1.5 rounded-full text-xs font-black border flex items-center gap-1.5"
+                  style={{
+                    backgroundColor: `${accentHex}15`,
+                    borderColor: `${accentHex}30`,
+                    color: accentHex,
+                  }}
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  {data.videos?.length || 0} {(data.videos?.length || 0) === 1 ? "Video" : "Videos"}
+                </span>
+
+                {config.showShareButton && (
+                  <button
+                    onClick={handleCopyLink}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer border border-slate-700"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-lime-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                    <span>{copied ? "Link Copied" : "Share"}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 2-Column Main View: Video Player + Playlist Tracklist Queue */}
+            {!data.videos || data.videos.length === 0 ? (
+              <div className={`py-16 text-center border backdrop-blur-md ${cardBgClass} ${roundnessClass}`}>
+                <ListVideo className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
+                <p className="text-sm font-bold text-slate-300">This playlist is currently empty</p>
+                <p className="text-xs text-slate-400 mt-1">Check back later for new videos.</p>
+              </div>
+            ) : (
+              (() => {
+                const currentVideo = data.videos[activePlaylistIndex] || data.videos[0];
+                const filteredQueue = data.videos.filter((v) =>
+                  v.title.toLowerCase().includes(playlistSearchQuery.toLowerCase())
+                );
+
+                return (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    {/* Left Column (2 cols): Video Player & Info */}
+                    <div className="lg:col-span-2 space-y-5">
+                      {/* Video Player Box */}
+                      <div className="relative group/player rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800">
+                        <div className="aspect-video w-full">
+                          {currentVideo?.playbackUrl ? (
+                            <VideoPlayer
+                              key={currentVideo.id}
+                              src={currentVideo.playbackUrl}
+                              poster={currentVideo.thumbnailUrl}
+                              autoplay={activePlaylistIndex > 0 || config.autoPlayMuted}
+                              className="w-full h-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6">
+                              <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
+                              <p className="text-sm font-semibold">Video is processing or unplayable.</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Player Controls Bar */}
+                        <div className="p-3 bg-slate-950/95 border-t border-slate-800 flex items-center justify-between gap-3 text-xs text-slate-300">
+                          <button
+                            onClick={() => setActivePlaylistIndex((prev) => Math.max(0, prev - 1))}
+                            disabled={activePlaylistIndex === 0}
+                            className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-slate-800/80 font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                          >
+                            <SkipBack className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Previous</span>
+                          </button>
+
+                          <div className="flex items-center gap-2 font-bold text-xs">
+                            <span className="text-slate-400 font-mono">
+                              Track {activePlaylistIndex + 1} of {data.videos.length}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              setActivePlaylistIndex((prev) => Math.min((data.videos?.length || 1) - 1, prev + 1))
+                            }
+                            disabled={activePlaylistIndex >= (data.videos.length - 1)}
+                            className="px-3 py-1.5 font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                            style={{
+                              backgroundColor:
+                                activePlaylistIndex < data.videos.length - 1 ? accentHex : "rgba(30,41,59,0.8)",
+                              color: activePlaylistIndex < data.videos.length - 1 ? "#020617" : "#94a3b8",
+                              opacity: activePlaylistIndex >= data.videos.length - 1 ? 0.3 : 1,
+                            }}
+                          >
+                            <span className="hidden sm:inline">Next Video</span>
+                            <SkipForward className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Video Details Card */}
+                      <div className={`p-6 space-y-4 backdrop-blur-2xl ${cardBgClass} ${roundnessClass}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="px-2.5 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider"
+                                style={{
+                                  backgroundColor: `${accentHex}20`,
+                                  color: accentHex,
+                                }}
+                              >
+                                Now Playing #{activePlaylistIndex + 1}
+                              </span>
+                              {config.showDuration && currentVideo?.durationSeconds && (
+                                <span className="px-2.5 py-0.5 bg-slate-800/80 border border-slate-700/60 text-slate-300 text-[11px] font-semibold rounded-md flex items-center gap-1">
+                                  <Clock className="w-3 h-3" style={{ color: accentHex }} />
+                                  {formatDuration(currentVideo.durationSeconds)}
+                                </span>
+                              )}
+                            </div>
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+                              {currentVideo?.title}
+                            </h2>
+                          </div>
+                        </div>
+
+                        {currentVideo?.description && (
+                          <div className="space-y-1">
+                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                              About this video
+                            </h3>
+                            <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                              {currentVideo.description}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Call-to-Action (CTA) Card (if enabled) */}
+                        {config.showCta && config.ctaUrl && (
+                          <div
+                            className="p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-all shadow-lg"
+                            style={{
+                              backgroundColor: `${accentHex}10`,
+                              borderColor: `${accentHex}40`,
+                            }}
+                          >
+                            <div className="space-y-1 text-center sm:text-left">
+                              <h4 className="font-extrabold text-base tracking-tight">
+                                Interested in learning more?
+                              </h4>
+                              <p className="text-xs text-slate-300">
+                                Click below to take the next step with {displayTitle}.
+                              </p>
+                            </div>
+                            <a
+                              href={config.ctaUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-6 py-3 rounded-xl text-slate-950 font-black text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
+                              style={{ backgroundColor: accentHex }}
+                            >
+                              <span>{config.ctaText || "Learn More"}</span>
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Column (1 col): Playlist Tracklist Queue */}
+                    <div className={`p-4 space-y-3 backdrop-blur-2xl sticky top-24 ${cardBgClass} ${roundnessClass}`}>
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <ListVideo className="w-4 h-4" style={{ color: accentHex }} />
+                          <h3 className="font-bold text-sm text-slate-100">Playlist Queue</h3>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-slate-400">
+                          {activePlaylistIndex + 1}/{data.videos.length}
+                        </span>
+                      </div>
+
+                      {/* Search Filter for Playlist Tracks */}
+                      {data.videos.length > 3 && (
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Filter queue..."
+                            value={playlistSearchQuery}
+                            onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-950/60 border border-slate-800 rounded-xl outline-none focus:ring-1 focus:ring-lime-400 text-slate-200"
+                          />
+                        </div>
+                      )}
+
+                      {/* Scrollable Track Queue */}
+                      <div className="space-y-2 max-h-[560px] overflow-y-auto pr-1">
+                        {filteredQueue.map((video) => {
+                          const originalIdx = data.videos!.findIndex((v) => v.id === video.id);
+                          const isActive = originalIdx === activePlaylistIndex;
+
+                          return (
+                            <div
+                              key={video.id}
+                              onClick={() => setActivePlaylistIndex(originalIdx)}
+                              className={`p-2 rounded-xl border flex items-center gap-3 transition-all cursor-pointer group ${
+                                isActive
+                                  ? "border-2 shadow-lg"
+                                  : "border-slate-800/80 hover:border-slate-700 bg-slate-950/40 hover:bg-slate-950/80"
+                              }`}
+                              style={{
+                                borderColor: isActive ? accentHex : undefined,
+                                backgroundColor: isActive ? `${accentHex}15` : undefined,
+                              }}
+                            >
+                              {/* Track Number / Play Indicator */}
+                              <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-bold shrink-0">
+                                {isActive ? (
+                                  <Play className="w-3.5 h-3.5 fill-current" style={{ color: accentHex }} />
+                                ) : (
+                                  <span className="text-slate-500 group-hover:text-slate-300 font-mono text-[11px]">
+                                    {originalIdx + 1}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Thumbnail */}
+                              <div className="relative w-16 aspect-video rounded-lg overflow-hidden bg-slate-950 shrink-0">
+                                {video.thumbnailUrl ? (
+                                  <img
+                                    src={video.thumbnailUrl}
+                                    alt={video.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-slate-700">
+                                    <Film className="w-3 h-3" />
+                                  </div>
+                                )}
+                                {video.durationSeconds && (
+                                  <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 bg-black/80 text-[8px] font-bold text-slate-200 rounded">
+                                    {formatDuration(video.durationSeconds)}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Title & Info */}
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className="text-xs font-bold truncate transition-colors"
+                                  style={{ color: isActive ? accentHex : "#f1f5f9" }}
+                                >
+                                  {video.title}
+                                </p>
+                                {video.durationSeconds && (
+                                  <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <Clock className="w-2.5 h-2.5" />
+                                    {formatDuration(video.durationSeconds)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
+            )}
           </div>
         )}
 

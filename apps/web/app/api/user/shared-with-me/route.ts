@@ -31,6 +31,9 @@ export async function GET(req: Request) {
           },
         },
       },
+      include: {
+        organization: { select: { name: true, logoUrl: true } },
+      },
       orderBy: { createdAt: "desc" },
     });
 
@@ -43,6 +46,33 @@ export async function GET(req: Request) {
             email: { equals: userEmail, mode: "insensitive" },
           },
         },
+      },
+      include: {
+        organization: { select: { name: true, logoUrl: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Fetch shared playlists
+    const sharedPlaylists = await db.playlist.findMany({
+      where: {
+        shareAccessMode: { not: "PRIVATE" },
+        sharedEmails: {
+          some: {
+            email: { equals: userEmail, mode: "insensitive" },
+          },
+        },
+      },
+      include: {
+        organization: { select: { name: true, logoUrl: true } },
+        items: {
+          orderBy: { order: "asc" },
+          take: 1,
+          include: {
+            video: { select: { thumbnailKey: true, durationSeconds: true } },
+          },
+        },
+        _count: { select: { items: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -60,6 +90,8 @@ export async function GET(req: Request) {
         description: video.description,
         thumbnailUrl: video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null,
         durationSeconds: video.durationSeconds,
+        organizationName: video.organization.name,
+        organizationLogo: video.organization.logoUrl,
         createdAt: video.createdAt,
       }))
     );
@@ -71,10 +103,33 @@ export async function GET(req: Request) {
       requireLogin: folder.shareAccessMode === "RESTRICTED",
       type: "folder" as const,
       title: folder.name,
+      organizationName: folder.organization.name,
+      organizationLogo: folder.organization.logoUrl,
       createdAt: folder.createdAt,
     }));
 
-    const items = [...videoItems, ...folderItems].sort(
+    const playlistItems = await Promise.all(
+      sharedPlaylists.map(async (pl) => {
+        const firstThumbKey = pl.items[0]?.video?.thumbnailKey;
+        const thumbnailUrl = firstThumbKey ? await getPresignedPlaybackUrl(firstThumbKey) : null;
+        return {
+          id: pl.id,
+          shareUrl: `${baseUrl}/share/${pl.id}`,
+          accessMode: pl.shareAccessMode,
+          requireLogin: pl.shareAccessMode === "RESTRICTED",
+          type: "playlist" as const,
+          title: pl.title,
+          description: pl.description,
+          thumbnailUrl,
+          itemCount: pl._count.items,
+          organizationName: pl.organization.name,
+          organizationLogo: pl.organization.logoUrl,
+          createdAt: pl.createdAt,
+        };
+      })
+    );
+
+    const items = [...videoItems, ...folderItems, ...playlistItems].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 

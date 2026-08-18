@@ -19,6 +19,7 @@ import {
   Sparkles,
   Paintbrush,
   Users2,
+  ListVideo,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES } from "@videohost/ui";
@@ -144,6 +145,7 @@ export default function Sidebar({
 
   const creatorNavItems = [
     { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
+    { label: "Playlists", href: "/dashboard/playlists", icon: ListVideo },
     { label: "Meetings", href: "/dashboard/meetings", icon: Users2 },
     { label: "Customize share page", href: "/dashboard/customize-share-page", icon: Paintbrush },
     { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },

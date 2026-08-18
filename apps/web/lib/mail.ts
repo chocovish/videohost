@@ -61,7 +61,7 @@ export interface SendShareEmailOptions {
   toEmail: string;
   senderName: string;
   organizationName: string;
-  targetType: "video" | "folder";
+  targetType: "video" | "folder" | "playlist";
   targetTitle: string;
   shareUrl: string;
   message?: string;
@@ -70,7 +70,7 @@ export interface SendShareEmailOptions {
 export async function sendShareEmail(options: SendShareEmailOptions) {
   const { toEmail, senderName, organizationName, targetType, targetTitle, shareUrl, message } = options;
   const isVideo = targetType === "video";
-  const itemTypeName = isVideo ? "video" : "folder";
+  const itemTypeName = targetType === "video" ? "video" : targetType === "playlist" ? "playlist" : "folder";
 
   const html = `
     <!DOCTYPE html>
@@ -105,7 +105,7 @@ export async function sendShareEmail(options: SendShareEmailOptions) {
           </div>
 
           <div class="button-wrap">
-            <a href="${shareUrl}" class="button" target="_blank">View Shared ${isVideo ? 'Video' : 'Folder'}</a>
+            <a href="${shareUrl}" class="button" target="_blank">View Shared ${targetType === "video" ? 'Video' : targetType === "playlist" ? 'Playlist' : 'Folder'}</a>
           </div>
 
           <p>Or copy and paste this link into your browser:</p>
@@ -215,9 +215,9 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
 
   const formattedTime = scheduledStart
     ? new Intl.DateTimeFormat("en-US", {
-        dateStyle: "full",
-        timeStyle: "short",
-      }).format(new Date(scheduledStart))
+      dateStyle: "full",
+      timeStyle: "short",
+    }).format(new Date(scheduledStart))
     : "Instant Meeting (Happening Now)";
 
   const html = `
@@ -254,15 +254,14 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
               <div class="detail-label">When</div>
               <div class="detail-val">${formattedTime}</div>
             </div>
-            ${
-              meetingDescription
-                ? `
+            ${meetingDescription
+      ? `
             <div class="detail-row" style="margin-top: 14px;">
               <div class="detail-label">Agenda / Description</div>
               <div class="detail-val" style="font-weight: 400; color: #cbd5e1;">${meetingDescription}</div>
             </div>`
-                : ""
-            }
+      : ""
+    }
             <div class="detail-row" style="margin-top: 14px;">
               <div class="detail-label">Meeting ID</div>
               <div class="detail-val"><span class="code-tag">${meetingId}</span></div>

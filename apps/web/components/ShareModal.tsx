@@ -18,6 +18,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  ListVideo,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,7 +42,7 @@ interface SharedEmailItem {
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: "video" | "folder";
+  targetType: "video" | "folder" | "playlist";
   targetId: string;
   targetName: string;
   onAccessModeChange?: (newMode: "PUBLIC" | "RESTRICTED" | "PRIVATE") => void;
@@ -222,10 +223,18 @@ export default function ShareModal({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
-              {targetType === "video" ? <Film className="w-5 h-5" /> : <Folder className="w-5 h-5" />}
+              {targetType === "video" ? (
+                <Film className="w-5 h-5" />
+              ) : targetType === "playlist" ? (
+                <ListVideo className="w-5 h-5" />
+              ) : (
+                <Folder className="w-5 h-5" />
+              )}
             </div>
             <div className="min-w-0">
-              <DialogTitle>Share {targetType === "video" ? "Video" : "Folder"}</DialogTitle>
+              <DialogTitle>
+                Share {targetType === "video" ? "Video" : targetType === "playlist" ? "Playlist" : "Folder"}
+              </DialogTitle>
               <DialogDescription className="truncate max-w-xs sm:max-w-sm">{targetName}</DialogDescription>
             </div>
           </div>

@@ -22,6 +22,7 @@ import {
   Video,
   HardDrive,
   Pencil,
+  MoreVertical,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
@@ -32,6 +33,13 @@ import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
 
 interface FolderItem {
@@ -203,6 +211,27 @@ function UploadedVideosContent() {
       setCurrentFolder({ ...currentFolder, name: newName });
     }
     refreshAll();
+  };
+
+  const handleDeleteVideo = async (e: React.MouseEvent, videoId: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete video "${title}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/v1/videos/${videoId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        refreshAll();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete video");
+      }
+    } catch (err) {
+      console.error("Error deleting video:", err);
+    }
   };
 
   const filteredVideos = videos.filter((v) => {
@@ -450,75 +479,81 @@ function UploadedVideosContent() {
               >
                 {/* Folder Content */}
                 <div className="p-4 space-y-2">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
-                      <Folder className="w-6 h-6 fill-amber-500/20" />
+                  <div className="flex items-start justify-between gap-3 min-w-0">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
+                        <Folder className="w-6 h-6 fill-amber-500/20" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3
+                          className="font-bold text-sm text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors truncate"
+                          title={folder.name}
+                        >
+                          {folder.name}
+                        </h3>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                          {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <h3
-                        className="font-bold text-sm text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors truncate"
-                        title={folder.name}
-                      >
-                        {folder.name}
-                      </h3>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                        {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
-                      </p>
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            aria-label="Folder actions"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => setRenameFolderTarget({ id: folder.id, name: folder.name })}
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4 text-slate-500" />
+                            Rename Folder
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setMoveTarget({
+                                type: "folder",
+                                id: folder.id,
+                                name: folder.name,
+                                currentFolderId: folder.parentId,
+                              })
+                            }
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <FolderInput className="w-4 h-4 text-slate-500" />
+                            Move Folder
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setShareTarget({ type: "folder", id: folder.id, name: folder.name })}
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <Share2 className="w-4 h-4 text-slate-500" />
+                            Share Folder
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                            className="gap-2 font-medium text-red-600 focus:text-red-600 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Folder
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
 
-                {/* Card Footer matching videos */}
+                {/* Card Footer */}
                 <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
                   <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setRenameFolderTarget({ id: folder.id, name: folder.name });
-                      }}
-                      title="Rename folder"
-                      aria-label="Rename folder"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setMoveTarget({
-                          type: "folder",
-                          id: folder.id,
-                          name: folder.name,
-                          currentFolderId: folder.parentId,
-                        });
-                      }}
-                      title="Move folder to another folder"
-                      aria-label="Move folder"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <FolderInput className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShareTarget({ type: "folder", id: folder.id, name: folder.name });
-                      }}
-                      title="Share folder via email"
-                      aria-label="Share folder"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
-                      title="Delete folder"
-                      aria-label="Delete folder"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <span className="text-[11px] font-medium text-slate-400">Folder</span>
                 </div>
               </div>
             ))}
@@ -566,14 +601,16 @@ function UploadedVideosContent() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredVideos.map((video) => (
-              <Link
+              <div
                 key={video.id}
-                href={`/dashboard/uploaded-videos/${video.id}`}
                 className="group glass-card rounded-2xl overflow-hidden border border-[hsl(var(--border))] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Thumbnail Container */}
-                  <div className="aspect-video bg-slate-900 relative overflow-hidden flex items-center justify-center">
+                  <Link
+                    href={`/dashboard/videos/${video.id}`}
+                    className="block aspect-video bg-slate-900 relative overflow-hidden flex items-center justify-center cursor-pointer"
+                  >
                     {video.thumbnailUrl ? (
                       <img
                         src={video.thumbnailUrl}
@@ -607,77 +644,97 @@ function UploadedVideosContent() {
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold uppercase backdrop-blur-xs">
                       {video.shareAccessMode}
                     </span>
-                  </div>
+                  </Link>
 
                   {/* Content */}
                   <div className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-base text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors line-clamp-1">
+                      <Link
+                        href={`/dashboard/videos/${video.id}`}
+                        className="font-bold text-base text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors line-clamp-1 flex-1"
+                      >
                         {video.title}
-                      </h3>
+                      </Link>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            aria-label="Video actions"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => setEditTarget(video)}
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4 text-slate-500" />
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setMoveTarget({
+                                type: "video",
+                                id: video.id,
+                                name: video.title,
+                                currentFolderId: video.folderId || null,
+                              })
+                            }
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <FolderInput className="w-4 h-4 text-slate-500" />
+                            Move Video
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setShareTarget({ type: "video", id: video.id, name: video.title })}
+                            className="gap-2 font-medium cursor-pointer"
+                          >
+                            <Share2 className="w-4 h-4 text-slate-500" />
+                            Share Video
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => handleDeleteVideo(e, video.id, video.title)}
+                            className="gap-2 font-medium text-red-600 focus:text-red-600 cursor-pointer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete Video
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
+
                     {video.description && (
                       <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-2">{video.description}</p>
                     )}
-                    <div className="flex items-center gap-2 pt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                      <span className="inline-flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px]" title="Video file size">
-                        <HardDrive className="w-3 h-3 text-slate-400" />
-                        {formatBytes(video.sizeBytes)}
-                        {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
-                      </span>
-                    </div>
                   </div>
                 </div>
 
                 {/* Card Footer */}
                 <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
-                  <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                    <span
+                      className="inline-flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px]"
+                      title="Video file size"
+                    >
+                      <HardDrive className="w-3 h-3 text-slate-400" />
+                      {formatBytes(video.sizeBytes)}
+                      {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEditTarget(video);
-                      }}
-                      title="Edit video details"
-                      aria-label="Edit video"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setMoveTarget({
-                          type: "video",
-                          id: video.id,
-                          name: video.title,
-                          currentFolderId: video.folderId || null,
-                        });
-                      }}
-                      title="Move video to another folder"
-                      aria-label="Move video"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <FolderInput className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShareTarget({ type: "video", id: video.id, name: video.title });
-                      }}
-                      title="Share video via email"
-                      aria-label="Share video"
-                      className="p-1.5 rounded-md text-slate-400 hover:text-[hsl(var(--primary))] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
                     {getStatusBadge(video.status, video.progress)}
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

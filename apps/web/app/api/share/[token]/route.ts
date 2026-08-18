@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
-    const { token } = await params; // token is video ID or folder ID
+    const { token } = await params; // token is video ID, folder ID, or playlist ID
     const url = new URL(req.url);
     const subfolderId = url.searchParams.get("subfolderId");
     const session = await auth();
@@ -21,6 +21,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     });
 
     let folder: any = null;
+    let playlist: any = null;
 
     if (!video) {
       // 2. Try finding as Folder
@@ -34,13 +35,37 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     }
 
     if (!video && !folder) {
+      // 3. Try finding as Playlist
+      playlist = await db.playlist.findUnique({
+        where: { id: token },
+        include: {
+          organization: true,
+          sharedEmails: true,
+          items: {
+            orderBy: { order: "asc" },
+            include: {
+              video: {
+                include: {
+                  renditions: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+
+    if (!video && !folder && !playlist) {
       return NextResponse.json({ error: "Shared item not found or has expired." }, { status: 404 });
     }
 
-    const item = video || folder;
+    const item = video || folder || playlist;
     const isVideo = Boolean(video);
-    const targetType = isVideo ? "video" : "folder";
-    const itemTitle = isVideo ? video!.title : folder!.name;
+    const isFolder = Boolean(folder);
+    const isPlaylist = Boolean(playlist);
+
+    const targetType: "video" | "folder" | "playlist" = isVideo ? "video" : isPlaylist ? "playlist" : "folder";
+    const itemTitle = isVideo ? video!.title : isPlaylist ? playlist!.title : folder!.name;
 
     const organization = {
       name: item.organization.name,
@@ -74,7 +99,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       }
     }
 
-    // 3. Check PRIVATE Access Mode
+    // 4. Check PRIVATE Access Mode
     if (accessMode === "PRIVATE") {
       return NextResponse.json(
         {
@@ -90,7 +115,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       );
     }
 
-    // 4. Check RESTRICTED Access Mode (Specific Emails)
+    // 5. Check RESTRICTED Access Mode (Specific Emails)
     if (accessMode === "RESTRICTED") {
       if (!session || !session.user || !session.user.id) {
         return NextResponse.json(
@@ -140,7 +165,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       }
     }
 
-    // 5. Return Video Response
+    // 6. Return Video Response
     if (isVideo && video) {
       const folderIdParam = url.searchParams.get("folderId") || url.searchParams.get("fromFolder") || url.searchParams.get("fromFolderId");
       const targetFolderId = folderIdParam || video.folderId;
@@ -178,8 +203,49 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       });
     }
 
-    // 6. Return Folder Response
-    if (!isVideo && folder) {
+    // 7. Return Playlist Response
+    if (isPlaylist && playlist) {
+      let totalDurationSeconds = 0;
+      const videos = await Promise.all(
+        playlist.items.map(async (item: any) => {
+          const v = item.video;
+          if (v.durationSeconds) {
+            totalDurationSeconds += v.durationSeconds;
+          }
+          return {
+            id: v.id,
+            itemId: item.id,
+            order: item.order,
+            title: v.title,
+            description: v.description,
+            status: v.status,
+            durationSeconds: v.durationSeconds,
+            thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+            playbackUrl: await getPlaybackUrl(v),
+            createdAt: v.createdAt,
+          };
+        })
+      );
+
+      return NextResponse.json({
+        type: "playlist",
+        accessMode,
+        organization,
+        sharePageConfig,
+        playlist: {
+          id: playlist.id,
+          title: playlist.title,
+          description: playlist.description,
+          itemCount: playlist.items.length,
+          totalDurationSeconds,
+          createdAt: playlist.createdAt,
+        },
+        videos,
+      });
+    }
+
+    // 8. Return Folder Response
+    if (isFolder && folder) {
       let activeFolderId = folder.id;
 
       if (subfolderId) {
