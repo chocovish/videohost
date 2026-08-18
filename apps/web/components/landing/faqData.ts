@@ -1,0 +1,42 @@
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+export const FAQ_DATA: FaqItem[] = [
+  {
+    question: "What is included in the free tier of Taped?",
+    answer:
+      "Every new account receives 2GB of free cloud video storage forever with zero credit card required. This includes unlimited access to our in-browser studio screen & webcam recorder, multi-video playlists, granular email access controls, WebRTC conference rooms, and white-label share page customizer.",
+  },
+  {
+    question: "How does selective email-based access control work?",
+    answer:
+      "Unlike ordinary video links that anyone can forward, Taped allows you to restrict playback strictly to authorized email addresses. Viewers authenticate seamlessly using a one-time passcode (OTP) sent to their inbox, ensuring only verified recipients can stream your sensitive videos.",
+  },
+  {
+    question: "Do I need to install any desktop software or browser extensions to record?",
+    answer:
+      "No! Taped features a native, in-browser studio screen recorder. You can capture your entire desktop, specific application windows, or browser tabs alongside microphone audio and a customizable webcam bubble overlay directly in Chrome, Edge, Brave, Safari, or Firefox.",
+  },
+  {
+    question: "How do the conference rooms and webinar features work?",
+    answer:
+      "Taped includes built-in real-time video conference rooms powered by LiveKit WebRTC. You can host scheduled or instant meetings with crystal-clear audio, HD video, and screen sharing. When you enable cloud recording, the entire session is automatically saved directly into your Taped video library.",
+  },
+  {
+    question: "Can I customize the video share page with my own company branding?",
+    answer:
+      "Yes! Taped gives you complete white-label customization. You can upload your custom organization logo, attach a welcome banner image, select luxury theme presets (such as Obsidian Dark, Neon Cyberpunk, Vaporwave Glow, or Ocean Breeze), and configure a custom Call-to-Action button directing viewers to your demo calendar or website.",
+  },
+  {
+    question: "Can I create and embed multi-video playlists?",
+    answer:
+      "Yes. You can organize videos into sequential playlists ideal for onboarding modules, online courses, and video documentation. Playlists can be shared via single URLs or embedded directly onto your website, blog, or Notion workspace with automated continuous playback.",
+  },
+  {
+    question: "Can I integrate Taped with my own applications via API and webhooks?",
+    answer:
+      "Yes! Taped provides standard REST API endpoints for uploading and managing videos programmatically, along with real-time webhooks that notify your backend system whenever video processing completes.",
+  },
+];

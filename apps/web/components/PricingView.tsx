@@ -109,7 +109,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
       setSuccessMsg(
         data.message ||
-          "Auto-renewal cancelled successfully! Your paid plan remains active in one-time mode until expiration."
+        "Auto-renewal cancelled successfully! Your paid plan remains active in one-time mode until expiration."
       );
       if (data.organization) {
         setOrgDetails((prev: any) => ({ ...prev, ...data.organization }));
@@ -332,7 +332,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
       tagline: "For professional creators needing adaptive bitrate & high storage",
       popular: true,
-      badge: "Most Popular",
+      badge: "Popular",
       accentColor: "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 shadow-xl",
       buttonVariant: "primary",
       features: [

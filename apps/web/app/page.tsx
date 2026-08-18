@@ -12,216 +12,298 @@ import {
   Share2,
   Code2,
   CheckCircle2,
+  Users,
+  Layers,
+  Palette,
+  ShieldCheck,
+  Radio,
+  Tv,
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import InteractiveHeroMockup from "@/components/landing/InteractiveHeroMockup";
+import LandingFeaturesBento from "@/components/landing/LandingFeaturesBento";
+import LandingWorkflow from "@/components/landing/LandingWorkflow";
+import LandingComparison from "@/components/landing/LandingComparison";
+import LandingUseCases from "@/components/landing/LandingUseCases";
+import LandingFaq from "@/components/landing/LandingFaq";
+import { FAQ_DATA } from "@/components/landing/faqData";
+
 
 export const metadata: Metadata = {
-  title: "Taped — Easily Upload & Share Videos Securely",
+  title: "Taped — All-in-One Video Platform: Record, Playlists, Email Gate & Meet",
   description:
-    "Easily upload, record, and share videos with granular email access control and 2GB free storage. Includes developer APIs, webhooks, and a free browser screen recorder.",
+    "The one-stop solution for all your video needs. In-browser screen recording studio, curated playlists, granular email access control, WebRTC conference rooms, and 100% white-label customizable share pages with 2GB free storage.",
   keywords: [
-    "video hosting platform",
-    "secure video sharing",
+    "all in one video platform",
+    "free video hosting 2gb",
+    "screen recorder online no download",
     "email access control video",
-    "2gb free video hosting",
-    "developer video api",
-    "video processing webhooks",
-    "free screen recorder",
-    "hd video streaming",
+    "custom video playlist embed",
+    "white label video share page",
+    "video conference webinar",
+    "developer video api webhooks",
+    "secure private video sharing",
   ],
+  alternates: {
+    canonical: "https://taped.app",
+  },
   openGraph: {
-    title: "Taped — Easily Upload & Share Videos Securely",
+    title: "Taped — All-in-One Video Platform: Record, Playlists, Email Gate & Meet",
     description:
-      "Host and share videos securely with email access controls, enjoy 2GB free cloud storage, developer APIs & webhooks, plus a free built-in screen recorder.",
-    url: "/",
+      "Record in-browser, curate playlists, restrict view access strictly by email whitelist, host live webinars, and brand your share pages. Join now with 2GB free cloud storage.",
+    url: "https://taped.app",
     siteName: "Taped",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Taped - Easily Upload & Share Videos",
+        alt: "Taped All-in-One Video Platform",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Taped — Easily Upload & Share Videos Securely",
+    title: "Taped — All-in-One Video Platform",
     description:
-      "Host and share videos securely with email access controls, enjoy 2GB free cloud storage, developer APIs & webhooks, plus a free built-in screen recorder.",
+      "Record, create playlists, email-gate views, host live webinars, and white-label share pages with 2GB free cloud storage.",
     images: ["/og-image.png"],
   },
 };
 
 export default function LandingPage() {
-  const jsonLd = {
+  // Rich Structured JSON-LD Data for SEO
+  const jsonLdApp = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Taped",
     "url": "https://taped.app",
     "description":
-      "Easily upload, record, and share videos with email access control, 2GB free cloud storage, developer APIs, webhooks, and free screen recorder.",
+      "All-in-one video suite: in-browser screen & webcam recorder, playlists, email access control, WebRTC conference rooms, and customizable share pages.",
     "applicationCategory": "MultimediaApplication",
-    "operatingSystem": "All",
+    "operatingSystem": "Web, All",
+    "browserRequirements": "Requires HTML5/WebRTC capable modern browser",
     "offers": {
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "USD",
+      "description": "2GB Free Forever Cloud Storage Tier",
     },
+    "featureList": [
+      "In-Browser Screen & Webcam Recording Studio",
+      "Curated Multi-Video Playlists & Embeddable Player",
+      "Granular Selective Email Access Control with One-Time Passcodes",
+      "Built-in WebRTC Conference Rooms and Webinars with Cloud Recording",
+      "White-Label Branded Video Share Pages with Custom Logo, Banner & CTA",
+      "Developer REST APIs & Real-time Webhooks",
+      "2GB Free Cloud Storage Included",
+    ],
+  };
+
+  const jsonLdFaq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": FAQ_DATA.map((faq) => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer,
+      },
+    })),
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] relative overflow-hidden flex flex-col justify-between selection:bg-[hsl(var(--primary))]/30">
-      {/* JSON-LD for SEO */}
+    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] relative overflow-x-hidden flex flex-col justify-between selection:bg-[hsl(var(--primary))]/30">
+      {/* JSON-LD for Search Engine Microdata */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdApp) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }}
       />
 
-      {/* Dynamic Lime Glow Background Effects */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] sm:w-[50rem] h-[36rem] sm:h-[50rem] bg-[hsl(var(--primary))] opacity-20 blur-3xl rounded-full pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-[20rem] h-[20rem] bg-emerald-500 opacity-15 blur-3xl rounded-full pointer-events-none" />
+      {/* Dynamic Background Radial Glow Effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[45rem] sm:w-[65rem] h-[30rem] sm:h-[45rem] bg-[hsl(var(--primary))] opacity-15 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[800px] -right-20 w-[25rem] h-[25rem] bg-emerald-500 opacity-10 blur-[100px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[1800px] -left-20 w-[30rem] h-[30rem] bg-cyan-500 opacity-10 blur-[120px] rounded-full pointer-events-none -z-10" />
 
-      {/* Brand Header Navigation with Mobile Responsiveness */}
+      {/* Brand Header Navigation */}
       <PublicHeader currentPage="home" />
 
       {/* Hero Section */}
-      <main className="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-16 text-center relative z-10 space-y-6 sm:space-y-8 my-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs sm:text-sm font-bold uppercase tracking-wider shadow-sm animate-in fade-in slide-in-from-top-2">
-          <Sparkles className="w-4 h-4" /> Easily Upload, Record & Share Videos
-        </div>
-
-        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-[1.15]">
-          Dead simple video hosting. <br />
-          <span className="text-[hsl(var(--primary))] underline decoration-[hsl(var(--primary))]/40">
-            Total control on who can view.
-          </span>
-        </h1>
-
-        <p className="text-sm sm:text-lg text-[hsl(var(--muted-foreground))] max-w-2xl mx-auto leading-relaxed">
-          Host, stream with adaptive resolution, and share videos securely with granular email-based access permissions and 2GB free cloud storage. Includes a free built-in screen & webcam recorder.
-        </p>
-
-        {/* Primary Call to Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 pt-2">
-          <Link
-            href="/auth/register"
-            className="w-full sm:w-auto px-8 py-4 bg-[hsl(var(--primary))] text-white font-extrabold text-base rounded-2xl shadow-xl shadow-[hsl(var(--primary))]/20 hover:opacity-95 transition-all flex items-center justify-center gap-2.5 group active:scale-95"
-          >
-            <span>Start Hosting Free</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-
-          <Link
-            href="/record"
-            className="w-full sm:w-auto px-7 py-4 border-2 border-[hsl(var(--primary))]/50 text-[hsl(var(--primary))] font-extrabold text-base rounded-2xl hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 active:scale-95"
-          >
-            <Video className="w-5 h-5" />
-            <span>Free Studio Recorder</span>
-            <span className="px-1.5 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[10px] uppercase tracking-wider font-black ml-1">
-              Bonus
-            </span>
-          </Link>
-
-          <Link
-            href="/auth/login"
-            className="w-full sm:w-auto px-6 py-4 glass-card font-bold text-base rounded-2xl border border-[hsl(var(--border))] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-          >
-            <Play className="w-4 h-4 fill-current text-[hsl(var(--primary))]" />
-            <span>Sign In</span>
-          </Link>
-        </div>
-
-        {/* Quick Feature Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-4 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
-            <span>2GB Free Cloud Storage</span>
+      <main className="w-full flex-1 relative z-10">
+        <section className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-12 text-center space-y-8">
+          {/* Top Announcement Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-sm animate-in fade-in slide-in-from-top-2">
+            <Sparkles className="w-4 h-4 animate-spin [animation-duration:8s]" />
+            <span>One-Stop Solution for All Your Video Needs • 2GB Free</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
-            <span>Email & Passcode Controls</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
-            <span>Developer APIs & Webhooks</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
-            <span>Free Built-in Recorder</span>
-          </div>
-        </div>
 
-        {/* User-Friendly & SEO Feature Highlights Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 text-left">
-          {/* Feature 1: 2GB Storage & Hosting */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <HardDrive className="w-6 h-6" />
+          {/* Primary High-Impact Headline */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] max-w-5xl mx-auto">
+            Record, organize, <br className="hidden sm:inline" />
+            <span className="shimmer-text">share & meet in one place.</span>
+          </h1>
+
+          {/* Value Proposition Description */}
+          <p className="text-base sm:text-xl text-[hsl(var(--muted-foreground))] max-w-3xl mx-auto leading-relaxed font-medium">
+            The all-in-one video suite with in-browser studio recording, curated playlists, selective email access control, conference rooms, and custom branded share pages.
+          </p>
+
+          {/* Call to Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 pt-2">
+            <Link
+              href="/auth/register"
+              className="w-full sm:w-auto px-8 py-4 bg-[hsl(var(--primary))] text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-[hsl(var(--primary))]/25 hover:opacity-95 hover:scale-[1.02] transition-all flex items-center justify-center gap-2.5 group active:scale-95 cursor-pointer"
+            >
+              <span>Get Started Free — 2GB Included</span>
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+
+            <Link
+              href="/record"
+              className="w-full sm:w-auto px-7 py-4 border-2 border-[hsl(var(--primary))]/50 text-[hsl(var(--primary))] font-extrabold text-base rounded-2xl hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 active:scale-95 cursor-pointer"
+            >
+              <Video className="w-5 h-5" />
+              <span>Try Studio Recorder</span>
+              <span className="px-2 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[10px] uppercase tracking-wider font-black ml-1">
+                Free
+              </span>
+            </Link>
+
+            <Link
+              href="/auth/login"
+              className="w-full sm:w-auto px-6 py-4 glass-card font-bold text-base rounded-2xl border border-[hsl(var(--border))] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-[hsl(var(--foreground))]"
+            >
+              <Play className="w-4 h-4 fill-current text-[hsl(var(--primary))]" />
+              <span>Sign In</span>
+            </Link>
+          </div>
+
+          {/* Trust Value Proof Checkpoints */}
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-3 text-xs sm:text-sm font-bold text-[hsl(var(--muted-foreground))]">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <span>2GB Free Cloud Storage</span>
             </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Seamless Cloud Video Hosting</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Upload and organize all your videos, screen captures, and demos in high quality with 2GB of free cloud hosting space included.
-            </p>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <span>Email Whitelist & Passcodes</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <span>Curated Playlists & Embeds</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <span>Video Conference Rooms</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <span>White Label Share Pages</span>
+            </div>
           </div>
 
-          {/* Feature 2: Email Access Control */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Lock className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Granular Access Control</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Take full control over who can view your shared videos. Restrict video playback by email addresses or passcodes so sensitive content stays private.
-            </p>
+          {/* Interactive Hero SaaS Product Showcase */}
+          <div className="pt-8 sm:pt-12">
+            <InteractiveHeroMockup />
           </div>
+        </section>
 
-          {/* Feature 3: Developer APIs & Webhooks */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Code2 className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Developer APIs & Webhooks</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Easily upload videos programmatically via REST APIs and subscribe to webhooks to get real-time status updates on video processing.
-            </p>
-          </div>
+        {/* Metric Proof / Key Stats Strip */}
+        <section className="w-full border-y border-[hsl(var(--border))] bg-slate-100/50 dark:bg-slate-900/50 py-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              <div className="space-y-1">
+                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">2 GB</span>
+                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">Free Storage Included</p>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Zero credit card required</p>
+              </div>
 
-          {/* Feature 4: Adaptive Resolution Streaming */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Zap className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Adaptive Resolution Streaming</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Smart multi-bitrate HLS streaming automatically adjusts video resolution to match network conditions, ensuring instant buffer-free playback even on the slowest download speeds.
-            </p>
-          </div>
+              <div className="space-y-1">
+                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">100%</span>
+                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">In-Browser Recording</p>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Screen, audio & camera bubble</p>
+              </div>
 
-          {/* Feature 5: 1-Click Sharing & Embeds */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Share2 className="w-6 h-6" />
-            </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Instant Share Links & Embeds</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Copy short shareable links in 1-click or embed sleek, custom HTML video players straight into your blog posts, documentation, or websites.
-            </p>
-          </div>
+              <div className="space-y-1">
+                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">100%</span>
+                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">White-Label Pages</p>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Your logo, banner & CTAs</p>
+              </div>
 
-          {/* Feature 6: Free Screen Recording Studio (Additional Feature) */}
-          <div className="glass-card p-6 rounded-2xl border border-[hsl(var(--border))] space-y-3 hover:border-[hsl(var(--primary))]/50 transition-colors group shadow-lg">
-            <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Camera className="w-6 h-6" />
+              <div className="space-y-1">
+                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">0</span>
+                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">Context Switching</p>
+                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Record, host, gate & meet here</p>
+              </div>
             </div>
-            <h3 className="font-extrabold text-lg tracking-tight">Free Screen Recording Studio</h3>
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-              Included free of charge — record your screen with webcam face overlay directly in your browser with zero watermark or software downloads.
-            </p>
           </div>
-        </div>
+        </section>
+
+        {/* 6 Core Pillars Bento Grid */}
+        <LandingFeaturesBento />
+
+        {/* 5-Step Visual Workflow */}
+        <LandingWorkflow />
+
+        {/* Stack Comparison Matrix */}
+        <LandingComparison />
+
+        {/* Persona Use Cases */}
+        <LandingUseCases />
+
+        {/* Frequently Asked Questions */}
+        <LandingFaq />
+
+        {/* High Converting Bottom CTA Banner */}
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+          <div className="rounded-3xl border border-[hsl(var(--primary))]/30 bg-gradient-to-br from-[hsl(var(--primary))]/15 via-slate-900/90 to-slate-950 text-white p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
+            <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[hsl(var(--primary))] opacity-25 blur-3xl rounded-full pointer-events-none" />
+
+            <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/20 text-lime-400 text-xs font-black uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" /> Stop switching between 5 different tools
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                Join now and get <span className="text-lime-400">2 GB of free storage.</span>
+              </h2>
+
+              <p className="text-sm sm:text-lg text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
+                Record in seconds, host multi-bitrate video, organize playlists, gate by email, and host live conference rooms — all with your custom branding. You never need to step outside of our app.
+              </p>
+            </div>
+
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Link
+                href="/auth/register"
+                className="w-full sm:w-auto px-8 py-4 bg-lime-500 text-black font-black text-base rounded-2xl shadow-xl shadow-lime-500/25 hover:bg-lime-400 hover:scale-[1.02] transition-all flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span>Create Your Free Account</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
+                href="/record"
+                className="w-full sm:w-auto px-7 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold text-base rounded-2xl transition-all flex items-center justify-center gap-2"
+              >
+                <Video className="w-4 h-4 text-lime-400" />
+                <span>Launch Studio Recorder</span>
+              </Link>
+            </div>
+
+            <div className="relative z-10 pt-2 text-xs text-slate-400 font-semibold">
+              <span>Free forever plan • No credit card required • Instant access</span>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Public Footer */}
