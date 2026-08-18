@@ -252,13 +252,14 @@ export default function MeetingSettingsModal() {
           </div>
         </div>
 
-        <button
+        <Button
+          variant="darkGhost"
+          size="icon-xs"
           onClick={handleClose}
-          className="w-8 h-8 rounded-lg bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           title="Close Settings"
         >
           <X className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
 
       {/* Tabs Navigation */}
@@ -550,9 +551,10 @@ export default function MeetingSettingsModal() {
                       <p className="text-[11px] text-slate-500">Enable camera to see your live preview</p>
                     </div>
                     <Button
+                      variant="lime"
                       size="sm"
                       onClick={() => localParticipant?.setCameraEnabled(true)}
-                      className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-8 px-4 rounded-xl gap-1.5 shadow-sm cursor-pointer"
+                      className="px-4 rounded-xl gap-1.5"
                     >
                       <VideoIcon className="w-3.5 h-3.5" />
                       <span>Turn On Camera</span>
@@ -602,9 +604,10 @@ export default function MeetingSettingsModal() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Meeting Room Link</span>
                 <Button
-                  size="sm"
+                  variant="lime"
+                  size="xs"
                   onClick={handleCopyLink}
-                  className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-7 px-2.5 rounded-lg gap-1 cursor-pointer"
+                  className="gap-1 font-bold"
                 >
                   {copiedLink ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedLink ? "Copied!" : "Copy Link"}</span>

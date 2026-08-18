@@ -11,7 +11,7 @@ import {
   useLocalParticipant,
   useConnectionState,
 } from "@livekit/components-react";
-import { Track, ConnectionState, DisconnectReason } from "livekit-client";
+import { Track, ConnectionState, DisconnectReason, RoomEvent } from "livekit-client";
 import "@/styles/livekit.css";
 import {
   Mic,
@@ -27,11 +27,14 @@ import {
   Loader2,
   Plus,
   AlertTriangle,
+  Info,
+  ShieldAlert,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
 import MeetingSettingsModal from "@/components/meetings/MeetingSettingsModal";
+import ParticipantsPanel from "@/components/meetings/ParticipantsPanel";
 
 interface MeetingRoomProps {
   token: string;
@@ -45,11 +48,13 @@ interface MeetingRoomProps {
     organizationName?: string;
     themeId?: string;
     isHost?: boolean;
+    isOrgMember?: boolean;
+    canModerate?: boolean;
     canRecord?: boolean;
   };
   audioEnabled?: boolean;
   videoEnabled?: boolean;
-  onLeave?: (reason: "user_left" | "meeting_ended" | "network_error", customMessage?: string) => void;
+  onLeave?: (reason: "user_left" | "meeting_ended" | "network_error" | "removed_by_host", customMessage?: string) => void;
 }
 
 export default function MeetingRoom({
@@ -147,6 +152,100 @@ function RoomContent({
   const [copiedCode, setCopiedCode] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+
+  // In-Meeting Notification Toast State
+  const [inMeetingToast, setInMeetingToast] = useState<{
+    message: string;
+    type: "info" | "success" | "warning" | "error";
+  } | null>(null);
+
+  const showToast = useCallback(
+    (message: string, type: "info" | "success" | "warning" | "error" = "info") => {
+      setInMeetingToast({ message, type });
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!inMeetingToast) return;
+    const timer = setTimeout(() => setInMeetingToast(null), 4500);
+    return () => clearTimeout(timer);
+  }, [inMeetingToast]);
+
+  // Listen for incoming realtime moderation events via LiveKit Data Channel
+  useEffect(() => {
+    if (!room) return;
+
+    const handleDataReceived = async (
+      payload: Uint8Array,
+      participant?: any
+    ) => {
+      try {
+        const text = new TextDecoder().decode(payload);
+        const data = JSON.parse(text);
+
+        if (data?.type === "MODERATION_EVENT") {
+          const myIdentity = room.localParticipant.identity;
+          const isForMe = data.targetIdentity === myIdentity;
+          const moderatorName = data.moderatorName || "An organization moderator";
+
+          if (data.action === "MUTE_ALL") {
+            if (!meeting.isHost && myIdentity !== data.moderatorIdentity) {
+              await room.localParticipant.setMicrophoneEnabled(false);
+              showToast(
+                `Your microphone was muted by ${moderatorName} (Mute All).`,
+                "warning"
+              );
+            }
+            return;
+          }
+
+          if (!isForMe) return;
+
+          if (data.action === "MUTE_MIC") {
+            await room.localParticipant.setMicrophoneEnabled(false);
+            showToast(
+              `Your microphone was muted by ${moderatorName}.`,
+              "warning"
+            );
+          } else if (data.action === "STOP_VIDEO") {
+            await room.localParticipant.setCameraEnabled(false);
+            showToast(
+              `Your camera was turned off by ${moderatorName}.`,
+              "warning"
+            );
+          } else if (data.action === "STOP_SCREENSHARE") {
+            await room.localParticipant.setScreenShareEnabled(false);
+            showToast(
+              `Your screen share was stopped by ${moderatorName}.`,
+              "warning"
+            );
+          } else if (data.action === "KICK") {
+            userIntentionalLeave.current = true;
+            try {
+              await room.disconnect();
+            } catch (dcErr) {
+              console.warn("Disconnect error after kick:", dcErr);
+            }
+            if (onLeave) {
+              onLeave(
+                "user_left",
+                data.reason ||
+                  `You were removed from the meeting by ${moderatorName}.`
+              );
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not decode LiveKit data packet:", err);
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleDataReceived);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleDataReceived);
+    };
+  }, [room, meeting.isHost, onLeave, showToast, userIntentionalLeave]);
 
   // Recording State & Timer
   const [isRecording, setIsRecording] = useState(Boolean(meeting.isRecording || meeting.recordOnStart));
@@ -259,6 +358,42 @@ function RoomContent({
 
   return (
     <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-slate-950 relative">
+      {/* Moderation Toast Alert Notification */}
+      {inMeetingToast && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4 animate-in fade-in slide-in-from-top-3 duration-200 pointer-events-none">
+          <div
+            className={`pointer-events-auto p-3.5 rounded-xl shadow-2xl backdrop-blur-xl border flex items-center justify-between gap-3 text-xs font-medium ${
+              inMeetingToast.type === "error"
+                ? "bg-rose-950/95 border-rose-500/50 text-rose-100"
+                : inMeetingToast.type === "warning"
+                ? "bg-amber-950/95 border-amber-500/50 text-amber-100"
+                : inMeetingToast.type === "success"
+                ? "bg-emerald-950/95 border-emerald-500/50 text-emerald-100"
+                : "bg-slate-900/95 border-slate-700 text-slate-100"
+            }`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              {inMeetingToast.type === "error" ? (
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+              ) : inMeetingToast.type === "warning" ? (
+                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              ) : inMeetingToast.type === "success" ? (
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              ) : (
+                <Info className="w-4 h-4 text-sky-400 shrink-0" />
+              )}
+              <span className="truncate">{inMeetingToast.message}</span>
+            </div>
+            <button
+              onClick={() => setInMeetingToast(null)}
+              className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Recording Error Alert Banner */}
       {recordingError && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 max-w-xl w-full px-4 animate-in fade-in slide-in-from-top-4 duration-200">
@@ -304,9 +439,11 @@ function RoomContent({
             </h2>
           </div>
 
-          <button
+          <Button
+            variant="darkOutline"
+            size="xs"
             onClick={handleCopyLink}
-            className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 text-xs font-mono text-slate-300 hover:border-slate-700 hover:text-white transition-colors shrink-0"
+            className="hidden sm:inline-flex font-mono text-slate-300 hover:text-white"
             title="Click to copy meeting link"
           >
             <span>{meeting.id}</span>
@@ -315,7 +452,7 @@ function RoomContent({
             ) : (
               <Copy className="w-3.5 h-3.5 text-slate-400" />
             )}
-          </button>
+          </Button>
         </div>
 
         {/* Center: Live Timer & Recording Status Indicator */}
@@ -339,13 +476,12 @@ function RoomContent({
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Optional Record Toggle Button for Host */}
           {(meeting.canRecord || meeting.isHost) && (
-            <button
+            <Button
+              variant={isRecording ? "dangerOutline" : "dark"}
+              size="sm"
               onClick={handleToggleRecording}
               disabled={isUpdatingRecord}
-              className={`hidden md:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${isRecording
-                ? "bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30"
-                : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
-                }`}
+              className="hidden md:inline-flex gap-1.5"
               title={isRecording ? "Stop Recording" : "Record Meeting"}
             >
               {isUpdatingRecord ? (
@@ -354,40 +490,42 @@ function RoomContent({
                 <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
               )}
               <span>{isRecording ? "Stop REC" : "Record"}</span>
-            </button>
+            </Button>
           )}
 
           {/* Invite Button */}
           <Button
+            variant="lime"
             size="sm"
             onClick={() => setIsInviteOpen(true)}
-            className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold text-xs h-8 px-2.5 sm:px-3.5 rounded-lg gap-1.5 shadow-sm"
+            className="gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Invite</span>
           </Button>
 
           {/* Participants Drawer Toggle Button */}
-          <button
+          <Button
+            variant={isParticipantsOpen ? "dark" : "darkOutline"}
+            size="icon-sm"
             onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
-            className={`p-2 rounded-lg border text-xs transition-colors relative ${isParticipantsOpen
-              ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))]"
-              : "bg-slate-950 border-slate-800 text-slate-300 hover:text-white"
-              }`}
+            className={`relative transition-colors ${
+              isParticipantsOpen ? "text-[hsl(var(--primary))] border-[hsl(var(--primary))]/40" : ""
+            }`}
             title="Participants list"
           >
             <Users className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 bg-slate-800 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-slate-700">
+            <span className="absolute -top-1 -right-1 bg-slate-800 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-slate-700 text-slate-200">
               {participants.length}
             </span>
-          </button>
+          </Button>
 
           {/* End / Leave Button */}
           {meeting.isHost ? (
             <Button
+              variant="danger"
               size="sm"
               onClick={handleEndMeetingForAll}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs h-8 px-2.5 sm:px-3 rounded-lg gap-1.5 shadow-md shadow-rose-600/20 cursor-pointer"
               title="End meeting for everyone"
             >
               <PhoneOff className="w-3.5 h-3.5" />
@@ -395,9 +533,9 @@ function RoomContent({
             </Button>
           ) : (
             <Button
+              variant="danger"
               size="sm"
               onClick={handleLeaveMeeting}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs h-8 px-2.5 sm:px-3 rounded-lg gap-1.5 cursor-pointer"
               title="Leave meeting"
             >
               <PhoneOff className="w-3.5 h-3.5" />
@@ -418,71 +556,15 @@ function RoomContent({
         </div>
 
         {/* In-Meeting Participants Drawer */}
-        {isParticipantsOpen && (
-          <aside className="w-80 border-l border-slate-800 bg-slate-900/95 flex flex-col h-full z-20 backdrop-blur-xl animate-in slide-in-from-right duration-200">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2 font-bold text-sm text-white">
-                <Users className="w-4 h-4 text-[hsl(var(--primary))]" />
-                <span>Participants ({participants.length})</span>
-              </div>
-              <button
-                onClick={() => setIsParticipantsOpen(false)}
-                className="text-slate-400 hover:text-white text-xs"
-              >
-                Close
-              </button>
-            </div>
-            <div className="flex-1 p-4 overflow-y-auto space-y-2">
-              {participants.map((p) => {
-                const isLocal = p.isLocal;
-                return (
-                  <div
-                    key={p.identity}
-                    className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between gap-3 text-xs"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] font-bold flex items-center justify-center shrink-0">
-                        {p.name?.charAt(0).toUpperCase() || "U"}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white truncate">
-                          {p.name || p.identity}
-                          {isLocal && " (You)"}
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          {p.isSpeaking ? "Speaking..." : "Connected"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-slate-400">
-                      {p.isMicrophoneEnabled ? (
-                        <Mic className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
-                        <MicOff className="w-3.5 h-3.5 text-rose-400" />
-                      )}
-                      {p.isCameraEnabled ? (
-                        <VideoIcon className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
-                        <VideoOff className="w-3.5 h-3.5 text-rose-400" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="p-3 border-t border-slate-800">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsInviteOpen(true)}
-                className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 text-xs gap-1.5"
-              >
-                <Plus className="w-3.5 h-3.5" /> Invite More People
-              </Button>
-            </div>
-          </aside>
-        )}
+        <ParticipantsPanel
+          isOpen={isParticipantsOpen}
+          onClose={() => setIsParticipantsOpen(false)}
+          meetingId={meeting.id}
+          canModerate={Boolean(meeting.canModerate || meeting.isHost || meeting.isOrgMember)}
+          isHost={Boolean(meeting.isHost)}
+          onOpenInvite={() => setIsInviteOpen(true)}
+          onToast={showToast}
+        />
       </div>
 
       {/* In-Meeting Invite Modal */}

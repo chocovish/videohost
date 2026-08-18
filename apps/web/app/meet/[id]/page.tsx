@@ -11,12 +11,13 @@ import {
   WifiOff,
   CheckCircle2,
   RotateCcw,
+  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MeetingLobby from "@/components/meetings/MeetingLobby";
 import MeetingRoom from "@/components/meetings/MeetingRoom";
 
-export type LeaveReason = "user_left" | "meeting_ended" | "network_error";
+export type LeaveReason = "user_left" | "meeting_ended" | "network_error" | "removed_by_host";
 
 export default function MeetPage() {
   const params = useParams();
@@ -36,6 +37,8 @@ export default function MeetPage() {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [isHost, setIsHost] = useState(false);
+  const [isOrgMember, setIsOrgMember] = useState(false);
+  const [canModerate, setCanModerate] = useState(false);
   const [canRecord, setCanRecord] = useState(false);
   const [requiresAuth, setRequiresAuth] = useState(false);
 
@@ -147,6 +150,8 @@ export default function MeetPage() {
       setLivekitUrl(data.url);
       setIsHost(Boolean(data.isHost));
       setCanRecord(Boolean(data.canRecord));
+      setIsOrgMember(Boolean(data.isOrgMember || data.isHost));
+      setCanModerate(Boolean(data.canModerate || data.isHost || data.isOrgMember));
       setAudioEnabled(options.audioEnabled);
       setVideoEnabled(options.videoEnabled);
       setIsInRoom(true);
@@ -174,10 +179,11 @@ export default function MeetPage() {
     );
   }
 
-  // Render Leave/Ended/Network Error Screen
+  // Render Leave/Ended/Network Error/Removed Screen
   if (leaveState && !isInRoom) {
     const isNetwork = leaveState.reason === "network_error";
     const isEnded = leaveState.reason === "meeting_ended";
+    const isRemoved = leaveState.reason === "removed_by_host";
     const isUserLeft = leaveState.reason === "user_left";
 
     return (
@@ -189,6 +195,8 @@ export default function MeetPage() {
                 ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
                 : isEnded
                 ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                : isRemoved
+                ? "bg-rose-500/15 border-rose-500/40 text-rose-400"
                 : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
             }`}
           >
@@ -196,6 +204,8 @@ export default function MeetPage() {
               <WifiOff className="w-7 h-7" />
             ) : isEnded ? (
               <Radio className="w-7 h-7" />
+            ) : isRemoved ? (
+              <ShieldAlert className="w-7 h-7" />
             ) : (
               <CheckCircle2 className="w-7 h-7" />
             )}
@@ -207,6 +217,8 @@ export default function MeetPage() {
                 ? "Network Connection Issue"
                 : isEnded
                 ? "Meeting Has Ended"
+                : isRemoved
+                ? "Removed from Meeting"
                 : "You Left the Meeting"}
             </h2>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">
@@ -217,26 +229,26 @@ export default function MeetPage() {
           <div className="space-y-2.5 pt-2">
             {isUserLeft || isNetwork ? (
               <Button
+                variant="lime"
+                size="lg"
                 onClick={() => {
                   setLeaveState(null);
                 }}
-                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
+                className="w-full gap-2 font-bold"
               >
                 <RotateCcw className="w-4 h-4" />
-                {isNetwork ? "Retry Connection" : "Rejoin Meeting"}
+                <span>{isNetwork ? "Retry Connection" : "Rejoin Meeting"}</span>
               </Button>
             ) : null}
 
             <Button
+              variant={!isUserLeft && !isNetwork ? "lime" : "dark"}
+              size="lg"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className={`w-full h-11 font-bold rounded-xl gap-2 transition-all cursor-pointer ${
-                !isUserLeft && !isNetwork
-                  ? "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black shadow-lg shadow-[hsl(var(--primary))]/10"
-                  : "bg-slate-800/90 hover:bg-slate-800 text-slate-100 hover:text-white border border-slate-700/80 shadow-sm"
-              }`}
+              className="w-full gap-2 font-bold"
             >
               <ArrowLeft className="w-4 h-4" />
-              {session?.user ? "Back to Dashboard" : "Go to Home"}
+              <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
             </Button>
           </div>
         </div>
@@ -260,18 +272,22 @@ export default function MeetPage() {
           <div className="space-y-2 pt-2">
             {requiresAuth ? (
               <Button
+                variant="lime"
+                size="lg"
                 onClick={() => router.push(`/auth/login?callbackUrl=/meet/${id}`)}
-                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
+                className="w-full font-bold"
               >
                 Sign In to Join Call
               </Button>
             ) : (
               <Button
+                variant="lime"
+                size="lg"
                 onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-                className="w-full h-11 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-bold rounded-xl gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 transition-all cursor-pointer"
+                className="w-full gap-2 font-bold"
               >
                 <ArrowLeft className="w-4 h-4" />
-                {session?.user ? "Back to Dashboard" : "Go to Home"}
+                <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
               </Button>
             )}
           </div>
@@ -294,6 +310,8 @@ export default function MeetPage() {
           organizationName: meeting.organization?.name,
           themeId: meeting.organization?.themeId,
           isHost,
+          isOrgMember,
+          canModerate,
           canRecord,
         }}
         audioEnabled={audioEnabled}
@@ -301,7 +319,7 @@ export default function MeetPage() {
         onLeave={(reason, customMessage) => {
           setIsInRoom(false);
           setLeaveState((prev) => {
-            if (prev?.reason === "user_left" || prev?.reason === "meeting_ended") {
+            if (prev?.reason === "user_left" || prev?.reason === "meeting_ended" || prev?.reason === "removed_by_host") {
               return prev;
             }
             return {
@@ -310,6 +328,8 @@ export default function MeetPage() {
                 customMessage ||
                 (reason === "meeting_ended"
                   ? "This meeting has ended."
+                  : reason === "removed_by_host"
+                  ? "You were removed from the meeting by an organization moderator."
                   : reason === "network_error"
                   ? "Network Connection Issue: Disconnected from the meeting server."
                   : "You have left the meeting."),

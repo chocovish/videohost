@@ -3,6 +3,42 @@ import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getPresignedUploadUrl, uploadBufferToS3 } from "@/lib/s3";
 
+async function getOrCreateFolder(
+  organizationId: string,
+  name: string,
+  parentId: string | null = null
+) {
+  let folder = await db.folder.findFirst({
+    where: {
+      organizationId,
+      parentId,
+      name,
+    },
+  });
+
+  if (!folder) {
+    try {
+      folder = await db.folder.create({
+        data: {
+          organizationId,
+          name,
+          parentId,
+        },
+      });
+    } catch (err: any) {
+      folder = await db.folder.findFirst({
+        where: {
+          organizationId,
+          parentId,
+          name,
+        },
+      });
+    }
+  }
+
+  return folder;
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,6 +57,30 @@ export async function POST(
     const session = await auth();
     const orgId = meeting.organizationId;
     const userId = session?.user?.id || meeting.createdById;
+
+    // 1. Get or create parent folder: "Meeting Recordings"
+    const parentFolder = await getOrCreateFolder(orgId, "Meeting Recordings", null);
+
+    // 2. Get or create subfolder: "Meeting Recordings/{Meeting Name}"
+    const meetingFolderName = (meeting.title && meeting.title.trim()) || `Meeting-${meeting.id}`;
+    const meetingFolder = await getOrCreateFolder(
+      orgId,
+      meetingFolderName,
+      parentFolder ? parentFolder.id : null
+    );
+
+    // Count existing recordings
+    const existingCount = await db.video.count({
+      where: {
+        organizationId: orgId,
+        folderId: meetingFolder ? meetingFolder.id : null,
+      },
+    });
+
+    const defaultTitle =
+      existingCount > 0
+        ? `${meeting.title} (Part ${existingCount + 1})`
+        : `${meeting.title}`;
 
     // Check if body is JSON or FormData
     const contentType = req.headers.get("content-type") || "";
@@ -42,8 +102,12 @@ export async function POST(
         data: {
           organizationId: orgId,
           uploadedByUserId: userId,
-          title: `Recording: ${meeting.title}`,
-          description: `Recorded meeting session from ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(meeting.createdAt)}.`,
+          folderId: meetingFolder ? meetingFolder.id : null,
+          title: defaultTitle,
+          description: `Recorded meeting session from ${new Intl.DateTimeFormat("en-US", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(meeting.createdAt)}.`,
           status: "READY",
           progress: 100,
           originalKey: "temp",
@@ -66,8 +130,6 @@ export async function POST(
         data: {
           recordedVideoId: video.id,
           isRecording: false,
-          status: meeting.status === "ACTIVE" ? "ENDED" : meeting.status,
-          endedAt: meeting.endedAt || new Date(),
         },
       });
 
@@ -97,7 +159,8 @@ export async function POST(
         data: {
           organizationId: orgId,
           uploadedByUserId: userId,
-          title: title || `Recording: ${meeting.title}`,
+          folderId: meetingFolder ? meetingFolder.id : null,
+          title: title || defaultTitle,
           description: `Recorded meeting session (${meeting.id}).`,
           status: "READY",
           progress: 100,

@@ -141,12 +141,14 @@ export default function InMeetingInviteModal({
               <p className="text-xs text-slate-400 truncate max-w-xs">{meetingTitle}</p>
             </div>
           </div>
-          <button
+          <Button
+            variant="darkGhost"
+            size="icon-xs"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Close invite modal"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -160,9 +162,9 @@ export default function InMeetingInviteModal({
               <span className="text-xs text-slate-300 truncate flex-1 font-mono">{joinUrl}</span>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="dark"
                 onClick={handleCopyLink}
-                className="h-8 px-3 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 shrink-0 rounded-lg gap-1.5"
+                className="h-8 px-3 text-xs shrink-0 rounded-lg gap-1.5 font-medium"
               >
                 {copiedLink ? (
                   <>
@@ -171,8 +173,8 @@ export default function InMeetingInviteModal({
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>Copy Link</span>
+                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="text-slate-200">Copy Link</span>
                   </>
                 )}
               </Button>
@@ -189,9 +191,9 @@ export default function InMeetingInviteModal({
             </div>
             <Button
               size="sm"
-              variant="outline"
+              variant="darkOutline"
               onClick={handleCopyCode}
-              className="h-8 px-3 text-xs border-slate-700 hover:bg-slate-800 text-slate-300 rounded-lg gap-1.5"
+              className="h-8 px-3 text-xs text-slate-200 hover:text-white rounded-lg gap-1.5 font-medium"
             >
               {copiedCode ? (
                 <>
@@ -200,7 +202,7 @@ export default function InMeetingInviteModal({
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="w-3.5 h-3.5 text-slate-400" />
                   <span>Copy Code</span>
                 </>
               )}
@@ -241,9 +243,9 @@ export default function InMeetingInviteModal({
               />
               <Button
                 type="button"
-                variant="outline"
+                variant="darkOutline"
                 onClick={handleAddEmail}
-                className="px-3 border-slate-700 hover:bg-slate-800 text-slate-200"
+                className="px-3"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -261,7 +263,7 @@ export default function InMeetingInviteModal({
                     <button
                       type="button"
                       onClick={() => handleRemoveEmail(email)}
-                      className="text-slate-400 hover:text-rose-400 transition-colors"
+                      className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -273,8 +275,9 @@ export default function InMeetingInviteModal({
             <div className="flex justify-end pt-2">
               <Button
                 type="submit"
+                variant="lime"
                 disabled={isSending || (inviteEmails.length === 0 && !emailInput.trim())}
-                className="bg-[hsl(var(--primary))] text-white hover:opacity-90 font-bold px-5 gap-2 cursor-pointer"
+                className="font-bold px-5 gap-2"
               >
                 {isSending ? (
                   <>

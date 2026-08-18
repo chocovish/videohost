@@ -22,7 +22,7 @@ export function getRoomServiceClient() {
 
 export function getEgressClient() {
   const { httpUrl, apiKey, apiSecret } = getLiveKitCredentials();
-  const egressUrl = process.env.LIVEKIT_EGRESS_ENDPOINT || httpUrl;
+  const egressUrl = httpUrl;
   const httpEgressUrl = egressUrl.replace(/^ws:\/\//, "http://").replace(/^wss:\/\//, "https://");
   return new EgressClient(httpEgressUrl, apiKey, apiSecret);
 }
@@ -34,6 +34,8 @@ export interface CreateAccessTokenParams {
   name: string;
   image?: string;
   isHost?: boolean;
+  isOrgMember?: boolean;
+  canModerate?: boolean;
   canPublish?: boolean;
   canSubscribe?: boolean;
 }
@@ -44,10 +46,13 @@ export async function createMeetingAccessToken({
   name,
   image,
   isHost = false,
+  isOrgMember = false,
+  canModerate = false,
   canPublish = true,
   canSubscribe = true,
 }: CreateAccessTokenParams): Promise<string> {
   const { apiKey, apiSecret } = getLiveKitCredentials();
+  const hasModerationRights = Boolean(isHost || isOrgMember || canModerate);
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity,
@@ -55,8 +60,10 @@ export async function createMeetingAccessToken({
     metadata: JSON.stringify({
       name,
       image: image || null,
-      role: isHost ? "host" : "attendee",
+      role: isHost ? "host" : isOrgMember ? "org_member" : "attendee",
       isHost,
+      isOrgMember,
+      canModerate: hasModerationRights,
     }),
     ttl: "6h",
   });
@@ -67,8 +74,8 @@ export async function createMeetingAccessToken({
     canPublish,
     canSubscribe,
     canPublishData: true,
-    roomRecord: isHost,
-    roomAdmin: isHost,
+    roomRecord: hasModerationRights,
+    roomAdmin: hasModerationRights,
   });
 
   return await at.toJwt();

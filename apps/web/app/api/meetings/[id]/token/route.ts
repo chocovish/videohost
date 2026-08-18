@@ -66,7 +66,9 @@ export async function POST(
     }
 
     const isHost = isCreator;
-    const canRecord = isCreator || isOrgMember;
+    const isOrgUser = Boolean(isCreator || isOrgMember);
+    const canModerate = isOrgUser;
+    const canRecord = isOrgUser;
 
     // Determine participant identity and display name
     const participantName =
@@ -95,16 +97,20 @@ export async function POST(
       name: participantName,
       image,
       isHost,
+      isOrgMember: isOrgUser,
+      canModerate,
       canPublish: true,
       canSubscribe: true,
     });
 
-    const livekitPublicUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL || process.env.LIVEKIT_URL || "ws://127.0.0.1:7880";
+    const livekitPublicUrl = process.env.LIVEKIT_URL || "ws://127.0.0.1:7880";
 
     return NextResponse.json({
       token,
       url: livekitPublicUrl,
       isHost,
+      isOrgMember: isOrgUser,
+      canModerate,
       canRecord,
       participantName,
       identity,
@@ -117,6 +123,7 @@ export async function POST(
         allowGuests: meeting.allowGuests,
         isRecording: meeting.isRecording,
         canRecord,
+        canModerate,
         organizationName: meeting.organization?.name,
         themeId: meeting.organization?.themeId || "lime",
         createdById: meeting.createdById,

@@ -54,7 +54,7 @@ export async function POST(
     let egressId = meeting.recordingId;
 
     // LiveKit Egress Server Integration:
-    if (process.env.LIVEKIT_EGRESS_ENDPOINT || process.env.LIVEKIT_URL) {
+    if (process.env.LIVEKIT_URL) {
       try {
         const egressClient = getEgressClient();
         if (nextRecordingState && !meeting.isRecording) {
