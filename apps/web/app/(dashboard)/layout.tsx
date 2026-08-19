@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getOrganizationUsage } from "@/lib/usage";
 import { db } from "@videohost/db";
+import { getPresignedPlaybackUrl } from "@/lib/s3";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import { SidebarProvider } from "@/components/SidebarContext";
@@ -21,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const themeId = (session as any).themeId || "lime";
 
   let orgName = (session as any).organizationName || "My Organization";
+  let orgLogoUrl: string | null = null;
 
   let viewMode = (session.user as any)?.viewMode || "CREATOR";
 
@@ -45,13 +47,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   try {
     const org = await db.organization.findUnique({
       where: { id: orgId },
-      select: { name: true },
+      select: { name: true, logoUrl: true },
     });
     if (org?.name) {
       orgName = org.name;
     }
+    orgLogoUrl = await getPresignedPlaybackUrl(org?.logoUrl);
   } catch (e) {
-    console.error("Error fetching organization name in layout:", e);
+    console.error("Error fetching organization in layout:", e);
   }
 
   let usedBytes = 0;
@@ -72,6 +75,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="h-screen flex bg-[hsl(var(--background))] overflow-hidden">
         <Sidebar
           organizationName={orgName}
+          organizationLogo={orgLogoUrl}
           usedBytes={usedBytes}
           storageLimitBytes={storageLimitBytes}
           storageLimitGb={storageLimitGb}

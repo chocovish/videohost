@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getRoomServiceClient, getEgressClient } from "@/lib/livekit";
+import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { EgressStatus } from "livekit-server-sdk";
 
 export async function GET(
   req: NextRequest,
@@ -24,11 +26,18 @@ export async function GET(
         recordedVideo: {
           select: { id: true, title: true, status: true, durationSeconds: true, thumbnailKey: true },
         },
+        folder: {
+          select: { id: true, name: true },
+        },
       },
     });
 
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    if (meeting.organization) {
+      meeting.organization.logoUrl = await getPresignedPlaybackUrl(meeting.organization.logoUrl);
     }
 
     return NextResponse.json({ meeting });
@@ -71,13 +80,34 @@ export async function PATCH(
         updateData.isRecording = false;
 
         // Stop active egress recording if applicable
-        if (meeting.recordingId) {
-          try {
-            const egressClient = getEgressClient();
-            await egressClient.stopEgress(meeting.recordingId);
-          } catch (egressErr: any) {
-            console.warn("Could not stop egress on meeting end:", egressErr?.message || egressErr);
+        try {
+          const egressClient = getEgressClient();
+          let activeEgresses = await egressClient.listEgress({ active: true }).catch(() => []);
+          if (!activeEgresses || activeEgresses.length === 0) {
+            activeEgresses = await egressClient.listEgress({}).catch(() => []);
           }
+          for (const egress of activeEgresses) {
+            const egressJson = JSON.stringify(egress);
+            const isMatch =
+              egress.roomName === id ||
+              egress.roomId === id ||
+              egressJson.includes(`/meet/${id}`) ||
+              egressJson.includes(id);
+
+            if (isMatch && egress.egressId) {
+              const isEnded =
+                egress.status === EgressStatus.EGRESS_ENDING ||
+                egress.status === EgressStatus.EGRESS_COMPLETE ||
+                egress.status === EgressStatus.EGRESS_FAILED ||
+                egress.status === EgressStatus.EGRESS_ABORTED;
+
+              if (!isEnded) {
+                await egressClient.stopEgress(egress.egressId).catch(() => {});
+              }
+            }
+          }
+        } catch (egressErr: any) {
+          console.warn("Could not stop egress on meeting end:", egressErr?.message || egressErr);
         }
 
         // Delete LiveKit room to disconnect all connected participants immediately

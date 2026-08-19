@@ -1,8 +1,9 @@
 port: 7880
 bind_addresses:
   - ""
+
 redis:
-  address: host.docker.internal:6379
+  address: redis:6379
 
 rtc:
   tcp_port: 7881

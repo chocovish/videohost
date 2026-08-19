@@ -35,6 +35,7 @@ export interface CreateAccessTokenParams {
   image?: string;
   isHost?: boolean;
   isOrgMember?: boolean;
+  isHidden?: boolean;
   canModerate?: boolean;
   canPublish?: boolean;
   canSubscribe?: boolean;
@@ -47,6 +48,7 @@ export async function createMeetingAccessToken({
   image,
   isHost = false,
   isOrgMember = false,
+  isHidden = false,
   canModerate = false,
   canPublish = true,
   canSubscribe = true,
@@ -76,6 +78,7 @@ export async function createMeetingAccessToken({
     canPublishData: true,
     roomRecord: hasModerationRights,
     roomAdmin: hasModerationRights,
+    hidden: isHidden,
   });
 
   return await at.toJwt();

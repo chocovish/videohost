@@ -195,6 +195,7 @@ model Folder {
   parent          Folder?         @relation("NestedFolders", fields: [parentId], references: [id], onDelete: Cascade)
   children        Folder[]        @relation("NestedFolders")
   videos          Video[]
+  meetings        Meeting[]
   shareAccessMode ShareAccessMode @default(PUBLIC)
   sharedEmails    SharedEmail[]
 
@@ -387,6 +388,7 @@ model Meeting {
   id              String        @id @default(cuid())
   organizationId  String
   createdById     String
+  folderId        String?
   title           String
   description     String?
   scheduledStart  DateTime?
@@ -396,7 +398,6 @@ model Meeting {
   recordOnStart   Boolean       @default(false)
   allowGuests     Boolean       @default(true)
   isRecording     Boolean       @default(false)
-  recordingId     String?       // Egress ID or session recording ID
   recordedVideoId String?
   endedAt         DateTime?
   createdAt       DateTime      @default(now())
@@ -404,11 +405,13 @@ model Meeting {
 
   organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   createdBy       User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  folder          Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
   invites         MeetingInvite[]
   recordedVideo   Video?        @relation("MeetingRecordedVideo", fields: [recordedVideoId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([createdById])
+  @@index([folderId])
 }
 
 enum MeetingStatus {

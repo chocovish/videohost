@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
+import { getPresignedPlaybackUrl } from "@/lib/s3";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -33,17 +34,20 @@ export async function GET(req: Request) {
 
     const activeOrgId = user?.activeOrganizationId || authCtx.orgId;
 
-    const organizations = memberships.map((m) => ({
-      id: m.organization.id,
-      name: m.organization.name,
-      slug: m.organization.slug,
-      themeId: m.organization.themeId,
-      planName: m.organization.plan.name,
-      role: m.role,
-      joinedAt: m.joinedAt,
-      memberCount: m.organization._count.members,
-      isActive: m.organization.id === activeOrgId,
-    }));
+    const organizations = await Promise.all(
+      memberships.map(async (m) => ({
+        id: m.organization.id,
+        name: m.organization.name,
+        slug: m.organization.slug,
+        logoUrl: await getPresignedPlaybackUrl(m.organization.logoUrl),
+        themeId: m.organization.themeId,
+        planName: m.organization.plan.name,
+        role: m.role,
+        joinedAt: m.joinedAt,
+        memberCount: m.organization._count.members,
+        isActive: m.organization.id === activeOrgId,
+      }))
+    );
 
     return NextResponse.json({
       activeOrganizationId: activeOrgId,

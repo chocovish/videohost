@@ -96,7 +96,8 @@ export async function getPresignedUploadUrl(key: string, contentType: string = "
   return await getSignedUrl(s3, command, { expiresIn: 3600 });
 }
 
-export async function getPresignedPlaybackUrl(key: string, expiresInSeconds: number = 10000): Promise<string> {
+export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeconds: number = 10000): Promise<string> {
+  if (!key) return "";
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,

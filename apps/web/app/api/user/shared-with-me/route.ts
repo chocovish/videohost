@@ -91,22 +91,24 @@ export async function GET(req: Request) {
         thumbnailUrl: video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null,
         durationSeconds: video.durationSeconds,
         organizationName: video.organization.name,
-        organizationLogo: video.organization.logoUrl,
+        organizationLogo: await getPresignedPlaybackUrl(video.organization.logoUrl),
         createdAt: video.createdAt,
       }))
     );
 
-    const folderItems = sharedFolders.map((folder) => ({
-      id: folder.id,
-      shareUrl: `${baseUrl}/share/${folder.id}`,
-      accessMode: folder.shareAccessMode,
-      requireLogin: folder.shareAccessMode === "RESTRICTED",
-      type: "folder" as const,
-      title: folder.name,
-      organizationName: folder.organization.name,
-      organizationLogo: folder.organization.logoUrl,
-      createdAt: folder.createdAt,
-    }));
+    const folderItems = await Promise.all(
+      sharedFolders.map(async (folder) => ({
+        id: folder.id,
+        shareUrl: `${baseUrl}/share/${folder.id}`,
+        accessMode: folder.shareAccessMode,
+        requireLogin: folder.shareAccessMode === "RESTRICTED",
+        type: "folder" as const,
+        title: folder.name,
+        organizationName: folder.organization.name,
+        organizationLogo: await getPresignedPlaybackUrl(folder.organization.logoUrl),
+        createdAt: folder.createdAt,
+      }))
+    );
 
     const playlistItems = await Promise.all(
       sharedPlaylists.map(async (pl) => {
@@ -123,7 +125,7 @@ export async function GET(req: Request) {
           thumbnailUrl,
           itemCount: pl._count.items,
           organizationName: pl.organization.name,
-          organizationLogo: pl.organization.logoUrl,
+          organizationLogo: await getPresignedPlaybackUrl(pl.organization.logoUrl),
           createdAt: pl.createdAt,
         };
       })

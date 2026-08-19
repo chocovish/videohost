@@ -16,7 +16,10 @@
     "db:generate": "npm run --prefix packages/db generate",
     "db:push": "npm run --prefix packages/db push",
     "db:seed": "npm run --prefix packages/db seed",
-    "test:worker": "node scripts/test-worker.js"
+    "test:worker": "node scripts/test-worker.js",
+    "livekit:up": "docker compose -f docker-compose.livekit.yml up -d",
+    "livekit:down": "docker compose -f docker-compose.livekit.yml down",
+    "livekit:logs": "docker compose -f docker-compose.livekit.yml logs -f"
   },
   "workspaces": [
     "apps/*",

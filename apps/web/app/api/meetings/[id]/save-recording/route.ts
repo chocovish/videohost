@@ -129,6 +129,7 @@ export async function POST(
         where: { id: meeting.id },
         data: {
           recordedVideoId: video.id,
+          folderId: meetingFolder ? meetingFolder.id : undefined,
           isRecording: false,
         },
       });
@@ -149,6 +150,7 @@ export async function POST(
           where: { id: meeting.id },
           data: {
             recordedVideoId: videoId,
+            folderId: meetingFolder ? meetingFolder.id : undefined,
             isRecording: false,
           },
         });
@@ -183,6 +185,7 @@ export async function POST(
         where: { id: meeting.id },
         data: {
           recordedVideoId: newVideo.id,
+          folderId: meetingFolder ? meetingFolder.id : undefined,
           isRecording: false,
         },
       });

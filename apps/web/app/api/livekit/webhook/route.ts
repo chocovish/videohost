@@ -77,108 +77,190 @@ export async function POST(req: NextRequest) {
       const egressId = egressInfo.egressId;
 
       console.log(
-        `[LiveKit Webhook] Egress ended for room: ${roomName}, egressId: ${egressId}, status: ${egressInfo.status}`
+        `[LiveKit Webhook] Egress ended for room: "${roomName || ""}", egressId: ${egressId}, status: ${egressInfo.status}`
       );
 
-      // Locate the meeting in the database
-      const meeting = await db.meeting.findFirst({
-        where: {
-          OR: [
-            ...(roomName ? [{ id: roomName }] : []),
-            ...(egressId ? [{ recordingId: egressId }] : []),
-          ],
-        },
-      });
-
-      if (!meeting) {
-        console.warn(`[LiveKit Webhook] Meeting not found for room: ${roomName} / egressId: ${egressId}`);
-        return NextResponse.json({ received: true, warning: "Meeting not found" });
-      }
-
-      // Extract file details from EgressInfo (fileResults or file)
+      // Extract file details from EgressInfo (fileResults or file or request)
       const fileResult =
         (egressInfo.fileResults && egressInfo.fileResults[0]) ||
         (egressInfo as any).file;
 
-      if (fileResult) {
-        const s3Key = fileResult.filename || fileResult.location;
-        const durationNanos = Number(fileResult.duration || 0);
-        const durationSeconds = durationNanos > 0 ? Math.round(durationNanos / 1_000_000_000) : null;
-        const sizeBytes = fileResult.size ? BigInt(fileResult.size) : null;
+      const s3Key =
+        fileResult?.filename ||
+        fileResult?.location ||
+        (egressInfo as any).request?.fileOutputs?.[0]?.filepath ||
+        (egressInfo as any).request?.file?.filepath;
 
-        if (s3Key) {
-          // 1. Get or create parent folder: "Meeting Recordings"
-          const parentFolder = await getOrCreateFolder(
-            meeting.organizationId,
-            "Meeting Recordings",
-            null
-          );
+      const durationNanos = Number(fileResult?.duration || 0);
+      const durationSeconds = durationNanos > 0 ? Math.round(durationNanos / 1_000_000_000) : null;
+      const sizeBytes = fileResult?.size ? BigInt(fileResult.size) : null;
 
-          // 2. Get or create meeting subfolder: "Meeting Recordings/{Meeting Name}"
-          const meetingFolderName = (meeting.title && meeting.title.trim()) || `Meeting-${meeting.id}`;
-          const meetingFolder = await getOrCreateFolder(
-            meeting.organizationId,
-            meetingFolderName,
-            parentFolder ? parentFolder.id : null
-          );
+      // Extract video ID from s3Key if available (e.g. "{orgId}/{videoId}/original.mp4")
+      let videoIdFromKey: string | null = null;
+      if (s3Key && typeof s3Key === "string") {
+        const parts = s3Key.split("/").filter(Boolean);
+        if (parts.length >= 2) {
+          // In standard path "{orgId}/{videoId}/original.mp4", the second-to-last segment is videoId
+          videoIdFromKey = parts[parts.length - 2];
+        }
+      }
 
-          // 3. Count existing recordings in this meeting folder (a meeting might generate more than 1 recording)
-          const existingCount = await db.video.count({
-            where: {
-              organizationId: meeting.organizationId,
-              folderId: meetingFolder ? meetingFolder.id : null,
-            },
-          });
+      // Extract meeting ID from request URL if web egress (e.g. ".../meet/{meetingId}/egress...")
+      let meetingIdFromUrl: string | null = null;
+      const requestUrl = (egressInfo as any).request?.url;
+      if (requestUrl && typeof requestUrl === "string") {
+        const match = requestUrl.match(/\/meet\/([^/?]+)/);
+        if (match && match[1]) {
+          meetingIdFromUrl = match[1];
+        }
+      }
 
-          const videoTitle =
-            existingCount > 0
-              ? `${meeting.title} (Part ${existingCount + 1})`
-              : `${meeting.title}`;
+      // 1. Locate pre-created video record
+      let existingVideo = null;
 
-          // 4. Create Video record in DB stored inside "Meeting Recordings/{Meeting Name}"
-          const video = await db.video.create({
+      // Lookup video by ID parsed from key
+      if (videoIdFromKey) {
+        existingVideo = await db.video.findUnique({
+          where: { id: videoIdFromKey },
+        });
+      }
+
+      // Fallback lookup video by originalKey
+      if (!existingVideo && s3Key) {
+        existingVideo = await db.video.findFirst({
+          where: {
+            originalKey: s3Key,
+          },
+        });
+      }
+
+      // 2. Locate the meeting in the database
+      let meeting = await db.meeting.findFirst({
+        where: {
+          OR: [
+            ...(meetingIdFromUrl ? [{ id: meetingIdFromUrl }] : []),
+            ...(roomName ? [{ id: roomName }] : []),
+            ...(existingVideo ? [{ recordedVideoId: existingVideo.id }] : []),
+          ],
+        },
+      });
+
+      // If video was not found yet, check if meeting has recordedVideoId
+      if (!existingVideo && meeting?.recordedVideoId) {
+        existingVideo = await db.video.findUnique({
+          where: { id: meeting.recordedVideoId },
+        });
+      }
+
+      const isSuccessfulStatus =
+        egressInfo.status === 3 || // EGRESS_COMPLETE
+        egressInfo.status === "EGRESS_COMPLETE" ||
+        Boolean(fileResult && (fileResult.size || fileResult.duration));
+
+      let fallbackFolderId: string | null = null;
+
+      if (existingVideo) {
+        if (isSuccessfulStatus) {
+          // Update existing Video entry to READY with file size & duration
+          await db.video.update({
+            where: { id: existingVideo.id },
             data: {
-              organizationId: meeting.organizationId,
-              uploadedByUserId: meeting.createdById,
-              folderId: meetingFolder ? meetingFolder.id : null,
-              title: videoTitle,
-              description: `Recorded session from meeting "${meeting.title}" (${new Intl.DateTimeFormat("en-US", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }).format(new Date())}).`,
               status: "READY",
               progress: 100,
-              originalKey: s3Key,
-              requireHls: false,
-              durationSeconds,
-              sizeBytes,
-            },
-          });
-
-          // 5. Update Meeting state without ending the meeting/interview
-          await db.meeting.update({
-            where: { id: meeting.id },
-            data: {
-              recordedVideoId: video.id,
-              isRecording: false,
-              recordingId: null,
-              // Meeting status is intentionally preserved (never changed to ENDED)
+              durationSeconds: durationSeconds ?? existingVideo.durationSeconds,
+              sizeBytes: sizeBytes ?? existingVideo.sizeBytes,
+              ...(s3Key ? { originalKey: s3Key } : {}),
             },
           });
 
           console.log(
-            `[LiveKit Webhook] Created Video ${video.id} in folder "${meetingFolderName}" and linked to Meeting ${meeting.id}`
+            `[LiveKit Webhook] Updated pre-created Video ${existingVideo.id} to READY for Meeting ${meeting?.id || "unknown"}`
+          );
+        } else {
+          // Egress ended with error or without file result
+          await db.video.update({
+            where: { id: existingVideo.id },
+            data: {
+              status: "FAILED",
+            },
+          });
+
+          console.warn(
+            `[LiveKit Webhook] Marked pre-created Video ${existingVideo.id} as FAILED for Meeting ${meeting?.id || "unknown"}`
           );
         }
-      } else {
-        // Egress stopped without file output - reset recording flag without ending meeting
+      } else if (meeting && isSuccessfulStatus && s3Key) {
+        // Fallback: If for any reason Video entry was not pre-created on recording start
+        const parentFolder = await getOrCreateFolder(
+          meeting.organizationId,
+          "Meeting Recordings",
+          null
+        );
+
+        const meetingFolderName = (meeting.title && meeting.title.trim()) || `Meeting-${meeting.id}`;
+        const meetingFolder = await getOrCreateFolder(
+          meeting.organizationId,
+          meetingFolderName,
+          parentFolder ? parentFolder.id : null
+        );
+
+        if (meetingFolder) {
+          fallbackFolderId = meetingFolder.id;
+        }
+
+        const existingCount = await db.video.count({
+          where: {
+            organizationId: meeting.organizationId,
+            folderId: meetingFolder ? meetingFolder.id : null,
+          },
+        });
+
+        const videoTitle =
+          existingCount > 0
+            ? `${meeting.title} (Part ${existingCount + 1})`
+            : `${meeting.title}`;
+
+        const createdVideo = await db.video.create({
+          data: {
+            organizationId: meeting.organizationId,
+            uploadedByUserId: meeting.createdById,
+            folderId: meetingFolder ? meetingFolder.id : null,
+            title: videoTitle,
+            description: `Recorded session from meeting "${meeting.title}" (${new Intl.DateTimeFormat("en-US", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date())}).`,
+            status: "READY",
+            progress: 100,
+            originalKey: s3Key,
+            requireHls: false,
+            durationSeconds,
+            sizeBytes,
+          },
+        });
+
+        existingVideo = createdVideo;
+
+        console.log(
+          `[LiveKit Webhook] Fallback created Video ${createdVideo.id} in folder "${meetingFolderName}" for Meeting ${meeting.id}`
+        );
+      }
+
+      // Update Meeting state if meeting was found
+      if (meeting) {
+        const resolvedFolderId = fallbackFolderId || existingVideo?.folderId;
         await db.meeting.update({
           where: { id: meeting.id },
           data: {
             isRecording: false,
-            recordingId: null,
+            ...(resolvedFolderId && !meeting.folderId ? { folderId: resolvedFolderId } : {}),
+            ...(existingVideo ? { recordedVideoId: existingVideo.id } : {}),
           },
         });
+      } else {
+        console.warn(
+          `[LiveKit Webhook] Meeting record not found (room: "${roomName || ""}", egressId: "${egressId}", url: "${meetingIdFromUrl || ""}"). Video ${existingVideo?.id || "N/A"} was updated directly.`
+        );
       }
     }
 

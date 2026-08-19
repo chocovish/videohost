@@ -1,12 +1,71 @@
 services:
+  # 1. Redis: Central pub/sub & state bus for LiveKit Server and LiveKit Egress
+  redis:
+    image: redis:7-alpine
+    container_name: videohost-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - livekit-network
+
+  # 2. LiveKit Server: Real-time WebRTC media and signaling server
   livekit:
     image: livekit/livekit-server:latest
     container_name: videohost-livekit
     restart: unless-stopped
-    command: --config /etc/livekit.yaml --dev
+    command: --config /etc/livekit.yaml
+    depends_on:
+      redis:
+        condition: service_healthy
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     ports:
-      - "7880:7880"
-      - "7881:7881"
-      - "7882:7882/udp"
+      - "7880:7880"         # LiveKit HTTP / WebSocket API & signaling
+      - "7881:7881"         # WebRTC TCP fallback
+      - "7882:7882/udp"     # WebRTC UDP traffic
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livekit-network
+
+  # 3. LiveKit Egress: Composite & Web recording service (outputs MP4 / uploads to S3 or R2)
+  egress:
+    image: livekit/egress:latest
+    container_name: videohost-livekit-egress
+    restart: unless-stopped
+    environment:
+      - EGRESS_CONFIG_FILE=/etc/egress.yaml
+      - DISABLE_CUDA=true
+    cap_add:
+      - SYS_ADMIN           # Required for headless Chrome sandboxing
+    shm_size: "2gb"         # Prevent Chrome tab crash during video rendering
+    depends_on:
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+    volumes:
+      - ./egress.yaml:/etc/egress.yaml:ro
+      - ./recordings:/out:rw
+      - ./recordings:/recordings:rw
+      - /tmp:/tmp:rw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livekit-network
+
+networks:
+  livekit-network:
+    driver: bridge
+
+volumes:
+  redis-data:

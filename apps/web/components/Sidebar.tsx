@@ -29,6 +29,7 @@ import { formatBytes } from "@/lib/video-utils";
 
 interface SidebarProps {
   organizationName: string;
+  organizationLogo?: string | null;
   usedBytes?: number;
   storageLimitBytes?: number;
   storageLimitGb?: number;
@@ -41,6 +42,7 @@ interface SidebarProps {
 
 export default function Sidebar({
   organizationName,
+  organizationLogo,
   usedBytes = 0,
   storageLimitBytes = 2 * 1024 * 1024 * 1024,
   storageLimitGb = 2,
@@ -193,10 +195,17 @@ export default function Sidebar({
                 </Link>
                 <Link
                   href="/dashboard/settings"
-                  className="text-xs font-medium text-[hsl(var(--primary))] hover:underline truncate max-w-[150px] block mt-1 px-0.5"
+                  className="flex items-center gap-1.5 text-xs font-medium text-[hsl(var(--primary))] hover:underline truncate max-w-[160px] mt-1 px-0.5"
                   title="Switch active organization or manage settings"
                 >
-                  {organizationName}
+                  {organizationLogo && (
+                    <img
+                      src={organizationLogo}
+                      alt={organizationName}
+                      className="w-3.5 h-3.5 rounded-xs object-cover shrink-0 border border-[hsl(var(--border))]"
+                    />
+                  )}
+                  <span className="truncate">{organizationName}</span>
                 </Link>
               </div>
             )}

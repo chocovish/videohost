@@ -29,12 +29,14 @@ import {
   AlertTriangle,
   Info,
   ShieldAlert,
+  Sliders,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
 import MeetingSettingsModal from "@/components/meetings/MeetingSettingsModal";
 import ParticipantsPanel from "@/components/meetings/ParticipantsPanel";
+import RecordOptionsModal from "@/components/meetings/RecordOptionsModal";
 
 interface MeetingRoomProps {
   token: string;
@@ -252,6 +254,7 @@ function RoomContent({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [meetingSeconds, setMeetingSeconds] = useState(0);
   const [isUpdatingRecord, setIsUpdatingRecord] = useState(false);
+  const [isRecordOptionsOpen, setIsRecordOptionsOpen] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [recordingFallbackUrl, setRecordingFallbackUrl] = useState<string | null>(null);
 
@@ -293,32 +296,172 @@ function RoomContent({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  // Toggle Recording Handler
-  const handleToggleRecording = async () => {
+  // Active Recording Configuration (persisted across live updates)
+  const [activeRecordingConfig, setActiveRecordingConfig] = useState<{
+    mode: "room" | "participant";
+    participantIdentity?: string;
+    showCamera?: boolean;
+    showScreen?: boolean;
+    pipPosition?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  }>({
+    mode: "room",
+    showCamera: true,
+    showScreen: true,
+    pipPosition: "bottom-right",
+  });
+
+  // Trigger Record Button Click: If not recording, open options popup
+  const handleRecordButtonClick = () => {
+    setRecordingError(null);
+    setIsRecordOptionsOpen(true);
+  };
+
+  // Stop Recording Handler
+  const handleStopRecording = async () => {
     if (isUpdatingRecord) return;
     setIsUpdatingRecord(true);
     setRecordingError(null);
 
     try {
-      const nextAction = isRecording ? "stop" : "start";
       const res = await fetch(`/api/meetings/${meeting.id}/record`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: nextAction }),
+        body: JSON.stringify({ action: "stop" }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setIsRecording(data.isRecording);
+        setIsRecording(false);
+        showToast("Recording stopped and saved to organization library.", "info");
+      } else {
+        throw new Error(data.error || "Failed to stop recording.");
+      }
+    } catch (err: any) {
+      console.error("Failed to stop recording:", err);
+      showToast(err.message || "Failed to stop recording.", "error");
+    } finally {
+      setIsUpdatingRecord(false);
+    }
+  };
+
+  // Start or Live-Update Recording Handler (Whole meeting vs Participant Cam/Screen PiP)
+  const handleStartOrUpdateRecordingWithOptions = async (options: {
+    mode: "room" | "participant";
+    participantIdentity?: string;
+    showCamera?: boolean;
+    showScreen?: boolean;
+    screenShare?: boolean;
+    participantName?: string;
+    pipPosition?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  }) => {
+    // If recording is already active: Live Mid-Recording Layout Update via DataChannel!
+    if (isRecording) {
+      try {
+        if (room?.localParticipant) {
+          const payload = new TextEncoder().encode(
+            JSON.stringify({
+              type: "RECORDING_CONFIG_UPDATE",
+              mode: options.mode,
+              targetIdentity: options.participantIdentity,
+              showCamera: options.showCamera ?? true,
+              showScreen: options.showScreen ?? true,
+              pipPosition: options.pipPosition || "bottom-right",
+            })
+          );
+          await room.localParticipant.publishData(payload, { reliable: true });
+        }
+
+        setActiveRecordingConfig({
+          mode: options.mode,
+          participantIdentity: options.participantIdentity,
+          showCamera: options.showCamera,
+          showScreen: options.showScreen,
+          pipPosition: options.pipPosition,
+        });
+
+        setIsRecordOptionsOpen(false);
+
+        if (options.mode === "room") {
+          showToast("Live recording layout updated to Whole Meeting Grid.", "success");
+        } else {
+          const modeDescription =
+            options.showCamera && options.showScreen
+              ? "Screen + Camera PiP"
+              : options.showScreen
+              ? "Screen Share"
+              : "Camera";
+          showToast(
+            `Live recording layout updated: ${options.participantName || "Participant"} (${modeDescription}).`,
+            "success"
+          );
+        }
+      } catch (e: any) {
+        console.error("Failed to broadcast recording layout update:", e);
+        showToast("Failed to update recording layout in real time.", "error");
+      }
+      return;
+    }
+
+    // Otherwise: Start New Egress Recording
+    setIsUpdatingRecord(true);
+    setRecordingError(null);
+
+    try {
+      const res = await fetch(`/api/meetings/${meeting.id}/record`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "start",
+          mode: options.mode,
+          participantIdentity: options.participantIdentity,
+          showCamera: options.showCamera ?? true,
+          showScreen: options.showScreen ?? true,
+          screenShare: options.showScreen ?? true,
+          pipPosition: options.pipPosition || "bottom-right",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setIsRecording(true);
+        setActiveRecordingConfig({
+          mode: options.mode,
+          participantIdentity: options.participantIdentity,
+          showCamera: options.showCamera,
+          showScreen: options.showScreen,
+          pipPosition: options.pipPosition,
+        });
+        setIsRecordOptionsOpen(false);
+
+        if (options.mode === "room") {
+          showToast("Whole meeting recording started (Room Composite).", "success");
+        } else if (options.showCamera && options.showScreen) {
+          showToast(
+            `Recording started for ${options.participantName || "participant"} (Screen + Camera PiP).`,
+            "success"
+          );
+        } else if (options.showScreen) {
+          showToast(
+            `Recording started for ${options.participantName || "participant"}'s screen presentation.`,
+            "success"
+          );
+        } else {
+          showToast(
+            `Recording started for ${options.participantName || "participant"}'s camera and microphone.`,
+            "success"
+          );
+        }
       } else {
         throw new Error(data.error || "Recording start failed.");
       }
     } catch (err: any) {
-      console.error("Failed to toggle recording:", err);
+      console.error("Failed to start recording:", err);
       const hostUrl = typeof window !== "undefined" ? window.location.origin : "";
       const fallback = `${hostUrl}/dashboard/uploaded-videos`;
-      setRecordingError(`Recording start failed. You may use screen recording`);
+      const message = err.message || "Recording start failed. You may use screen recording.";
+      setRecordingError(message);
       setRecordingFallbackUrl(fallback);
+      showToast(message, "error");
     } finally {
       setIsUpdatingRecord(false);
     }
@@ -474,23 +617,43 @@ function RoomContent({
 
         {/* Right: In-meeting Controls (Record, Invite, Participants, End/Leave) */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Optional Record Toggle Button for Host */}
+          {/* Recording Controls for Host / Authorized Members */}
           {(meeting.canRecord || meeting.isHost) && (
-            <Button
-              variant={isRecording ? "dangerOutline" : "dark"}
-              size="sm"
-              onClick={handleToggleRecording}
-              disabled={isUpdatingRecord}
-              className="hidden md:inline-flex gap-1.5"
-              title={isRecording ? "Stop Recording" : "Record Meeting"}
-            >
-              {isUpdatingRecord ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
+            <div className="flex items-center gap-1.5">
+              {/* If Recording: Show Live Adjust Layout Button */}
+              {isRecording && (
+                <Button
+                  variant="dark"
+                  size="sm"
+                  onClick={() => {
+                    setRecordingError(null);
+                    setIsRecordOptionsOpen(true);
+                  }}
+                  className="inline-flex gap-1.5 text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+                  title="Adjust live recording layout"
+                >
+                  <Sliders className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">REC Layout</span>
+                </Button>
               )}
-              <span>{isRecording ? "Stop REC" : "Record"}</span>
-            </Button>
+
+              {/* Start Record or Stop Record Button */}
+              <Button
+                variant={isRecording ? "dangerOutline" : "dark"}
+                size="sm"
+                onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
+                disabled={isUpdatingRecord}
+                className="inline-flex gap-1.5"
+                title={isRecording ? "Stop Recording" : "Record Meeting"}
+              >
+                {isUpdatingRecord ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
+                )}
+                <span className="hidden sm:inline">{isRecording ? "Stop REC" : "Record"}</span>
+              </Button>
+            </div>
           )}
 
           {/* Invite Button */}
@@ -574,6 +737,26 @@ function RoomContent({
           onClose={() => setIsInviteOpen(false)}
           meetingId={meeting.id}
           meetingTitle={meeting.title}
+        />
+      )}
+
+      {/* Recording Options & Live Layout Modal */}
+      {isRecordOptionsOpen && (
+        <RecordOptionsModal
+          isOpen={isRecordOptionsOpen}
+          onClose={() => setIsRecordOptionsOpen(false)}
+          onStartRecording={handleStartOrUpdateRecordingWithOptions}
+          participants={participants}
+          meetingTitle={meeting.title}
+          isStarting={isUpdatingRecord}
+          isLiveAdjusting={isRecording}
+          initialMode={activeRecordingConfig.mode}
+          initialTargetIdentity={activeRecordingConfig.participantIdentity}
+          initialShowCamera={activeRecordingConfig.showCamera ?? true}
+          initialShowScreen={activeRecordingConfig.showScreen ?? true}
+          initialPipPosition={activeRecordingConfig.pipPosition || "bottom-right"}
+          error={recordingError}
+          onClearError={() => setRecordingError(null)}
         />
       )}
     </div>

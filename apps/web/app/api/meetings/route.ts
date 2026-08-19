@@ -44,6 +44,9 @@ export async function GET(req: NextRequest) {
         recordedVideo: {
           select: { id: true, title: true, status: true, durationSeconds: true, thumbnailKey: true },
         },
+        folder: {
+          select: { id: true, name: true },
+        },
       },
       orderBy: [
         { status: "asc" },
