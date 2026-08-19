@@ -57,17 +57,17 @@ export default function UnsupportedVideoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg z-[70]">
+      <DialogContent className="max-w-lg z-70">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-red-500/15 border border-red-500/25 text-red-600 dark:text-red-400 shrink-0">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2">
                 Video Tracks Not Supported
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <DialogDescription>
                 Pre-upload MKV containerization halted: some tracks cannot be played in web browsers
               </DialogDescription>
             </div>
@@ -77,19 +77,19 @@ export default function UnsupportedVideoModal({
         <div className="space-y-3.5 py-1">
           {/* File info banner */}
           {fileName && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-700 dark:text-slate-300 font-medium">
-              <FileVideo className="w-4 h-4 text-slate-500 shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border text-xs text-foreground font-medium">
+              <FileVideo className="w-4 h-4 text-muted-foreground shrink-0" />
               <span className="truncate font-semibold">{fileName}</span>
             </div>
           )}
 
           {/* Explanation Alert */}
-          <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-800 dark:text-red-300 text-xs space-y-1">
+          <div className="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs space-y-1">
             <p className="font-semibold flex items-center gap-1.5">
-              <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+              <XCircle className="w-4 h-4 text-destructive shrink-0" />
               Unplayable Tracks Detected in Video File
             </p>
-            <p className="text-red-700/90 dark:text-red-300/90 text-[11.5px] leading-relaxed">
+            <p className="text-[11.5px] leading-relaxed">
               Videos are containerized to MKV before upload using strict stream copy. The following streams in this file cannot be decoded or played by your web browser:
             </p>
           </div>
@@ -100,7 +100,7 @@ export default function UnsupportedVideoModal({
               unsupportedTracks.map((item, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5"
+                  className="p-3 rounded-xl bg-muted/40 border border-border space-y-1.5"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
@@ -111,22 +111,22 @@ export default function UnsupportedVideoModal({
                       >
                         {item.type}
                       </span>
-                      <Badge variant="outline" className="text-[10px] font-mono lowercase">
+                      <Badge variant="outline" className="font-mono lowercase">
                         {item.codec}
                       </Badge>
                     </div>
-                    <span className="text-[10px] font-semibold text-red-600 dark:text-red-400 capitalize px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20">
+                    <span className="text-[10px] font-semibold text-destructive capitalize px-2 py-0.5 rounded-md bg-destructive/10 border border-destructive/20">
                       {getReasonBadgeLabel(item.reason)}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-normal pl-0.5">
+                  <p className="text-xs text-muted-foreground leading-normal pl-0.5">
                     {item.friendlyReason}
                   </p>
                 </div>
               ))
             ) : (
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 text-xs text-slate-500">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground">
                 Container or stream format is not supported for browser playback.
               </div>
             )}
@@ -150,7 +150,7 @@ export default function UnsupportedVideoModal({
                 onClose();
                 onSelectAnotherFile();
               }}
-              className="w-full sm:w-auto text-xs gap-1.5"
+              className="w-full sm:w-auto gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               Choose Another File
@@ -159,7 +159,7 @@ export default function UnsupportedVideoModal({
           <Button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto text-xs"
+            className="w-full sm:w-auto"
           >
             Dismiss
           </Button>

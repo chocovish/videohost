@@ -23,7 +23,7 @@ export interface ConfirmDialogProps {
   theme?: "dark" | "default" | "glass";
   confirmText?: string;
   cancelText?: string;
-  confirmButtonVariant?: "destructive" | "default" | "secondary" | "outline";
+  confirmButtonVariant?: "destructive" | "default" | "secondary" | "outline-solid";
   isLoading?: boolean;
   onConfirm: () => void | Promise<void>;
   onCancel?: () => void;
@@ -53,7 +53,7 @@ const variantStyles = {
   },
   default: {
     iconBg: "bg-slate-800 border-slate-700 text-slate-300",
-    confirmBtn: "bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black shadow-md",
+    confirmBtn: "bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs",
     defaultIcon: AlertCircle,
   },
 };
@@ -115,10 +115,10 @@ export function ConfirmDialog({
 
           {/* Title & Description */}
           <div className="space-y-1">
-            <DialogTitle className="text-base font-bold text-white">
+            <DialogTitle>
               {title}
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400 leading-relaxed">
+            <DialogDescription>
               {description}
             </DialogDescription>
           </div>
@@ -129,11 +129,10 @@ export function ConfirmDialog({
           {!hideCancel && (
             <Button
               type="button"
-              variant="darkOutline"
+              variant="outline"
               size="sm"
               onClick={handleCancel}
               disabled={isLoading}
-              className="text-slate-300 hover:text-white h-9 px-4"
             >
               {cancelText}
             </Button>
@@ -142,15 +141,13 @@ export function ConfirmDialog({
             type="button"
             variant={
               variant === "danger" || variant === "warning"
-                ? "danger"
-                : variant === "info"
-                ? "default"
+                ? "destructive"
                 : "default"
             }
             size="sm"
             disabled={isLoading}
             onClick={handleConfirm}
-            className="h-9 px-4 gap-1.5"
+            className="gap-1.5"
           >
             {isLoading ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />

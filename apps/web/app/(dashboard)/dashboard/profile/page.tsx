@@ -14,6 +14,18 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface UserProfile {
   id: string;
@@ -93,10 +105,7 @@ export default function ProfileSettingsPage() {
         setProfile({ ...profile, name: data.user.name });
       }
       setNameSuccess("Display name updated successfully!");
-
-      // Refresh layout to update Navbar immediately
       router.refresh();
-
       setTimeout(() => setNameSuccess(""), 4000);
     } catch (err: any) {
       setNameError(err.message || "Failed to update display name");
@@ -169,7 +178,7 @@ export default function ProfileSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -177,218 +186,219 @@ export default function ProfileSettingsPage() {
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-tight text-[hsl(var(--foreground))]">
+        <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
           Profile Settings
         </h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-sm text-muted-foreground">
           Manage your personal account details, display name, and login password
         </p>
       </div>
 
       {/* Section 1: Profile Information */}
-      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-[hsl(var(--border))]">
-          <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
-            <User className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-base text-[hsl(var(--foreground))]">
-              Personal Information
-            </h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              Update your display name visible across your organization
-            </p>
-          </div>
-        </div>
-
-        {nameSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-            <Check className="w-4 h-4 flex-shrink-0" />
-            <span>{nameSuccess}</span>
-          </div>
-        )}
-
-        {nameError && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{nameError}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleNameSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-[hsl(var(--muted-foreground))]" />
-                <input
-                  type="email"
-                  disabled
-                  value={profile?.email || ""}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[hsl(var(--border))] bg-gray-50 text-gray-500 text-sm outline-none cursor-not-allowed"
-                />
-              </div>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {profile?.isGoogleAccount && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-200">
-                    <Sparkles className="w-3 h-3" /> Signed in via Google
-                  </span>
-                )}
-                {profile?.hasPassword && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                    <ShieldCheck className="w-3 h-3" /> Password Login Enabled
-                  </span>
-                )}
-              </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+              <User className="w-5 h-5" />
             </div>
-
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                Display Name
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-                className="w-full px-4 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all"
-              />
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>
+                Update your display name visible across your organization
+              </CardDescription>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={isSavingName || !name.trim() || name.trim() === initialName}
-              className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px]"
-            >
-              {isSavingName ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> Save Display Name
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Section 2: Password & Security */}
-      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
-        <div className="flex items-center gap-3 pb-4 border-b border-[hsl(var(--border))]">
-          <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
-            <Lock className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="font-bold text-base text-[hsl(var(--foreground))]">
-              {profile?.hasPassword ? "Change Password" : "Set Account Password"}
-            </h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
-              {profile?.hasPassword
-                ? "Update your password to keep your account secure"
-                : "Create a password to enable password-based login for your account"}
-            </p>
-          </div>
-        </div>
-
-        {!profile?.hasPassword && profile?.isGoogleAccount && (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 text-xs leading-relaxed flex items-start gap-3">
-            <KeyRound className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold mb-1">Google OAuth Account Detected</p>
-              <p>
-                You originally signed in with Google and do not have a password stored. You can set a password below if you wish to sign in directly with your email and password in the future.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {passwordSuccess && (
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-            <Check className="w-4 h-4 flex-shrink-0" />
-            <span>{passwordSuccess}</span>
-          </div>
-        )}
-
-        {passwordError && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{passwordError}</span>
-          </div>
-        )}
-
-        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          {profile?.hasPassword && (
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                required
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full max-w-md px-4 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all"
-              />
+        <CardContent className="space-y-4">
+          {nameSuccess && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{nameSuccess}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                className="w-full px-4 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all"
-              />
+          {nameError && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{nameError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleNameSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="profile-email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="profile-email"
+                    type="email"
+                    disabled
+                    value={profile?.email || ""}
+                    className="pl-9 cursor-not-allowed opacity-70"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {profile?.isGoogleAccount && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Sparkles className="w-3 h-3 text-blue-500" /> Signed in via Google
+                    </Badge>
+                  )}
+                  {profile?.hasPassword && (
+                    <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/30">
+                      <ShieldCheck className="w-3 h-3" /> Password Login Enabled
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="profile-name">Display Name</Label>
+                <Input
+                  id="profile-name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your full name"
+                  disabled={isSavingName}
+                />
+              </div>
             </div>
 
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                disabled={isSavingName || !name.trim() || name.trim() === initialName}
+                className="w-full sm:w-auto gap-2"
+              >
+                {isSavingName ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" /> Save Display Name
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Section 2: Password & Security */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Re-enter new password"
-                className="w-full px-4 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all"
-              />
+              <CardTitle>
+                {profile?.hasPassword ? "Change Password" : "Set Account Password"}
+              </CardTitle>
+              <CardDescription>
+                {profile?.hasPassword
+                  ? "Update your password to keep your account secure"
+                  : "Create a password to enable password-based login for your account"}
+              </CardDescription>
             </div>
           </div>
+        </CardHeader>
 
-          <div className="flex justify-end pt-2">
-            <button
-              type="submit"
-              disabled={isSavingPassword || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
-              className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px]"
-            >
-              {isSavingPassword ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
-                </>
-              ) : (
-                <>
-                  <Lock className="w-4 h-4" /> {profile?.hasPassword ? "Update Password" : "Set Password"}
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
+        <CardContent className="space-y-4">
+          {!profile?.hasPassword && profile?.isGoogleAccount && (
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs leading-relaxed flex items-start gap-3">
+              <KeyRound className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold mb-0.5">Google OAuth Account Detected</p>
+                <p>
+                  You originally signed in with Google and do not have a password stored. You can set a password below if you wish to sign in directly with your email and password in the future.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {passwordSuccess && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{passwordSuccess}</span>
+            </div>
+          )}
+
+          {passwordError && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{passwordError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            {profile?.hasPassword && (
+              <div className="space-y-2 max-w-md">
+                <Label htmlFor="current-password">Current Password</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  required
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={isSavingPassword}
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  disabled={isSavingPassword}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  disabled={isSavingPassword}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                disabled={isSavingPassword || !newPassword || newPassword.length < 8 || newPassword !== confirmPassword}
+                className="w-full sm:w-auto gap-2"
+              >
+                {isSavingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" /> {profile?.hasPassword ? "Update Password" : "Set Password"}
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

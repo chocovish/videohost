@@ -23,7 +23,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (
-    <header className="w-full bg-transparent sticky top-0 z-40 transition-colors backdrop-blur-md bg-white/40 dark:bg-slate-950/40 border-b border-[hsl(var(--border))]/40">
+    <header className="w-full bg-transparent sticky top-0 z-40 transition-colors backdrop-blur-md bg-white/40 dark:bg-slate-950/40 border-b border-border/40">
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
         {/* Brand Logo */}
         <Link
@@ -46,11 +46,11 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
           {currentPage !== "record" && (
             <Link
               href="/record"
-              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center gap-2"
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border border-primary/40 text-primary hover:bg-primary/10 transition-all flex items-center gap-2"
             >
               <Video className="w-4 h-4" />
               <span>Recorder</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[10px] uppercase tracking-wider font-extrabold ml-0.5">
+              <span className="px-1.5 py-0.5 rounded-md bg-primary text-white text-[10px] uppercase tracking-wider font-extrabold ml-0.5">
                 Free
               </span>
             </Link>
@@ -60,8 +60,8 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             href="/pricing"
             className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               currentPage === "pricing"
-                ? "text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
-                : "text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary bg-primary/10"
+                : "text-foreground hover:bg-black/5 dark:hover:bg-white/10"
             }`}
           >
             Pricing
@@ -71,8 +71,8 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             href="/contact"
             className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
               currentPage === "contact"
-                ? "text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10"
-                : "text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10"
+                ? "text-primary bg-primary/10"
+                : "text-foreground hover:bg-black/5 dark:hover:bg-white/10"
             }`}
           >
             Contact
@@ -88,16 +88,16 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             >
               <Avatar className="h-8 w-8 shrink-0">
                 {session.user.image && <AvatarImage src={session.user.image} alt={userName} />}
-                <AvatarFallback className="bg-[hsl(var(--primary))] text-white font-bold text-xs">
+                <AvatarFallback className="bg-primary text-white font-bold text-xs">
                   {userInitial}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-left max-w-[120px] lg:max-w-[160px]">
-                <span className="text-xs font-semibold text-[hsl(var(--foreground))] truncate group-hover:text-[hsl(var(--primary))] transition-colors leading-tight">
+                <span className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors leading-tight">
                   {userName}
                 </span>
                 {userEmail && (
-                  <span className="text-[10px] text-[hsl(var(--muted-foreground))] truncate leading-tight">
+                  <span className="text-[10px] text-muted-foreground truncate leading-tight">
                     {userEmail}
                   </span>
                 )}
@@ -107,14 +107,14 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             <>
               <Link
                 href="/auth/login"
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all text-foreground hover:bg-black/5 dark:hover:bg-white/10"
               >
                 Sign In
               </Link>
 
               <Link
                 href="/auth/register"
-                className="px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-all flex items-center gap-1.5 active:scale-95"
+                className="px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-primary text-white shadow-md hover:opacity-90 transition-all flex items-center gap-1.5 active:scale-95"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -128,11 +128,11 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
           {currentPage !== "record" && (
             <Link
               href="/record"
-              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold border border-primary/40 text-primary hover:bg-primary/10 transition-all flex items-center gap-1.5"
             >
               <Video className="w-3.5 h-3.5" />
               <span>Recorder</span>
-              <span className="px-1.5 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[9px] uppercase tracking-wider font-extrabold ml-0.5">
+              <span className="px-1.5 py-0.5 rounded-md bg-primary text-white text-[9px] uppercase tracking-wider font-extrabold ml-0.5">
                 Free
               </span>
             </Link>
@@ -142,7 +142,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/10 transition-colors border border-[hsl(var(--border))]"
+              className="p-2 rounded-xl text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors border border-border"
               aria-label="Toggle navigation menu"
               aria-expanded={mobileMenuOpen}
             >
@@ -155,8 +155,8 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
       {/* Mobile Menu Dropdown Drawer */}
       {(!isAuthPage || session?.user) && mobileMenuOpen && (
         <div className="md:hidden max-w-7xl mx-auto px-4 pb-4">
-          <div className="p-4 rounded-2xl border border-[hsl(var(--border))]/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-xl space-y-3 animate-in fade-in slide-in-from-top-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] px-1">
+          <div className="p-4 rounded-2xl border border-border/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-xl space-y-3 animate-in fade-in slide-in-from-top-1">
+            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">
               Account Menu
             </div>
 
@@ -165,21 +165,21 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-[hsl(var(--foreground))]"
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-foreground"
                 >
                   <Avatar className="h-9 w-9 shrink-0">
                     {session.user.image && <AvatarImage src={session.user.image} alt={userName} />}
-                    <AvatarFallback className="bg-[hsl(var(--primary))] text-white font-bold text-sm">
+                    <AvatarFallback className="bg-primary text-white font-bold text-sm">
                       {userInitial}
                     </AvatarFallback>
                   </Avatar>
                   <div className="text-left min-w-0 flex-1 truncate">
-                    <div className="text-sm font-bold truncate text-[hsl(var(--foreground))]">{userName}</div>
+                    <div className="text-sm font-bold truncate text-foreground">{userName}</div>
                     {userEmail && (
-                      <div className="text-xs text-[hsl(var(--muted-foreground))] truncate">{userEmail}</div>
+                      <div className="text-xs text-muted-foreground truncate">{userEmail}</div>
                     )}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-[hsl(var(--muted-foreground))] shrink-0" />
+                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </Link>
               </div>
             ) : (
@@ -187,21 +187,21 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
                 <Link
                   href="/auth/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 text-[hsl(var(--foreground))]"
+                  className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 text-foreground"
                 >
                   <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <LogIn className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <LogIn className="w-4 h-4 text-primary" />
                   </div>
                   <div>
                     <div className="text-sm font-semibold">Sign In</div>
-                    <div className="text-xs text-[hsl(var(--muted-foreground))]">Access your video library</div>
+                    <div className="text-xs text-muted-foreground">Access your video library</div>
                   </div>
                 </Link>
 
                 <Link
                   href="/auth/register"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[hsl(var(--primary))] text-white font-bold shadow-lg hover:opacity-95 transition-all mt-1"
+                  className="flex items-center justify-between p-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:opacity-95 transition-all mt-1"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">

@@ -12,6 +12,7 @@ import {
   useConnectionState,
 } from "@livekit/components-react";
 import { Track, ConnectionState, DisconnectReason, RoomEvent } from "livekit-client";
+import "@livekit/components-styles";
 import "@/styles/livekit.css";
 import {
   Mic,
@@ -602,7 +603,7 @@ function RoomContent({
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Meeting duration timer */}
           <div className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/60 border border-slate-800 text-[11px] sm:text-xs font-mono text-slate-300 font-semibold flex items-center gap-1.5">
-            <Radio className="w-3 h-3 text-[hsl(var(--primary))]" />
+            <Radio className="w-3 h-3 text-primary" />
             <span>{formatTimer(meetingSeconds)}</span>
           </div>
 
@@ -673,7 +674,7 @@ function RoomContent({
             size="icon-sm"
             onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
             className={`relative transition-colors ${
-              isParticipantsOpen ? "text-[hsl(var(--primary))] border-[hsl(var(--primary))]/40" : ""
+              isParticipantsOpen ? "text-primary border-primary/40" : ""
             }`}
             title="Participants list"
           >

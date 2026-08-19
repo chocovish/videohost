@@ -75,15 +75,15 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[hsl(var(--background))] relative overflow-hidden pb-8 selection:bg-[hsl(var(--primary))]/30">
+    <div className="min-h-screen flex flex-col justify-between bg-background relative overflow-hidden pb-8 selection:bg-primary/30">
       {/* Background glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30rem] h-[30rem] bg-[hsl(var(--primary))] opacity-20 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-120 h-120 bg-primary opacity-20 blur-3xl rounded-full pointer-events-none" />
 
       {/* Brand Header Navigation */}
       <PublicHeader currentPage="register" />
 
       <main className="flex-1 flex items-center justify-center p-4 relative z-10 my-auto">
-        <div className="w-full max-w-lg glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))]">
+        <div className="w-full max-w-lg glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-border">
           <div className="flex flex-col items-center text-center mb-8">
             <Link href="/" className="mb-4 inline-block transform hover:scale-105 transition-transform">
               <Image
@@ -95,8 +95,8 @@ export default function RegisterForm() {
                 priority
               />
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Create your Taped Account</h1>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Create your Taped Account</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Get started instantly with 2GB free video cloud storage
             </p>
           </div>
@@ -110,7 +110,7 @@ export default function RegisterForm() {
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-3 text-sm mb-6 hover:shadow"
+            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg border border-slate-200 shadow-xs transition-all flex items-center justify-center gap-3 text-sm mb-6 hover:shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -135,10 +135,10 @@ export default function RegisterForm() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[hsl(var(--border))]" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white/80 dark:bg-slate-900/80 px-2 text-[hsl(var(--muted-foreground))] font-medium backdrop-blur-sm">
+              <span className="bg-white/80 dark:bg-slate-900/80 px-2 text-muted-foreground font-medium backdrop-blur-xs">
                 Or register with email
               </span>
             </div>
@@ -147,7 +147,7 @@ export default function RegisterForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Full Name
                 </label>
                 <input
@@ -155,13 +155,13 @@ export default function RegisterForm() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 dark:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
                   placeholder="Alex Dev"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                   Organization Name
                 </label>
                 <input
@@ -169,14 +169,14 @@ export default function RegisterForm() {
                   required
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 dark:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
+                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
                   placeholder="Acme Media Corp"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Work Email
               </label>
               <input
@@ -184,13 +184,13 @@ export default function RegisterForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 dark:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
                 placeholder="alex@acme.com"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1.5">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Password
               </label>
               <input
@@ -199,7 +199,7 @@ export default function RegisterForm() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg border border-[hsl(var(--input))] bg-white/80 dark:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm transition-all"
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -207,17 +207,17 @@ export default function RegisterForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 px-4 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="w-full mt-2 py-3 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
             >
               {loading ? "Creating account..." : "Get Started Free (2GB Included)"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-[hsl(var(--border))] text-center">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="mt-8 pt-6 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/auth/login" className="font-semibold text-[hsl(var(--primary))] hover:underline">
+              <Link href="/auth/login" className="font-semibold text-primary hover:underline">
                 Sign in
               </Link>
             </p>

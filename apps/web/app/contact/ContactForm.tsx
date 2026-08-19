@@ -40,10 +40,10 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="glass-card p-6 sm:p-8 rounded-3xl border border-[hsl(var(--border))] shadow-xl space-y-6">
+    <div className="glass-card p-6 sm:p-8 rounded-3xl border border-border shadow-xl space-y-6">
       <div className="space-y-1">
         <h3 className="text-xl font-black tracking-tight">Send Us a Direct Message</h3>
-        <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Fill out the form below and our team will get back to you at support@taped.in within 24 hours.
         </p>
       </div>
@@ -54,13 +54,13 @@ export default function ContactForm() {
             <CheckCircle2 className="w-7 h-7" />
           </div>
           <h4 className="text-lg font-bold text-emerald-700 dark:text-emerald-300">Message Received!</h4>
-          <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] max-w-md mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
             Thank you for reaching out. We have received your inquiry and our support team will respond shortly to your email address.
           </p>
           <button
             type="button"
             onClick={() => setStatus("idle")}
-            className="px-5 py-2.5 rounded-xl bg-[hsl(var(--primary))] text-white font-bold text-xs shadow-md hover:opacity-90 transition-all mt-2"
+            className="px-5 py-2.5 rounded-xl bg-primary text-white font-bold text-xs shadow-md hover:opacity-90 transition-all mt-2"
           >
             Send Another Message
           </button>
@@ -76,7 +76,7 @@ export default function ContactForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="font-bold text-[hsl(var(--foreground))] text-xs">
+              <label className="font-bold text-foreground text-xs">
                 Your Full Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -85,12 +85,12 @@ export default function ContactForm() {
                 placeholder="e.g. Rahul Sharma"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs sm:text-sm transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-[hsl(var(--foreground))] text-xs">
+              <label className="font-bold text-foreground text-xs">
                 Email Address <span className="text-red-500">*</span>
               </label>
               <input
@@ -99,20 +99,20 @@ export default function ContactForm() {
                 placeholder="name@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs sm:text-sm transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="font-bold text-[hsl(var(--foreground))] text-xs">
+              <label className="font-bold text-foreground text-xs">
                 Category
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-slate-900 border border-[hsl(var(--border))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs sm:text-sm transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-slate-900 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all"
               >
                 <option value="General Inquiry">General Support</option>
                 <option value="Billing & Refund">Billing & Refund Request</option>
@@ -123,7 +123,7 @@ export default function ContactForm() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="font-bold text-[hsl(var(--foreground))] text-xs">
+              <label className="font-bold text-foreground text-xs">
                 Subject
               </label>
               <input
@@ -131,13 +131,13 @@ export default function ContactForm() {
                 placeholder="Brief summary of your request"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs sm:text-sm transition-all"
+                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-bold text-[hsl(var(--foreground))] text-xs">
+            <label className="font-bold text-foreground text-xs">
               Message <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -146,14 +146,14 @@ export default function ContactForm() {
               placeholder="How can we help you? Provide details about your question..."
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-[hsl(var(--border))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-xs sm:text-sm transition-all resize-none"
+              className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-white/5 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all resize-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={status === "submitting"}
-            className="w-full sm:w-auto px-8 py-3.5 bg-[hsl(var(--primary))] text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-[hsl(var(--primary))]/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+            className="w-full sm:w-auto px-8 py-3.5 bg-primary text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg shadow-primary/20 hover:opacity-95 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
           >
             {status === "submitting" ? (
               <>

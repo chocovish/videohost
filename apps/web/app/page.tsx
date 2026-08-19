@@ -116,7 +116,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] relative overflow-x-hidden flex flex-col justify-between selection:bg-[hsl(var(--primary))]/30">
+    <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden flex flex-col justify-between selection:bg-primary/30">
       {/* JSON-LD for Search Engine Microdata */}
       <script
         type="application/ld+json"
@@ -128,9 +128,9 @@ export default function LandingPage() {
       />
 
       {/* Dynamic Background Radial Glow Effects */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[45rem] sm:w-[65rem] h-[30rem] sm:h-[45rem] bg-[hsl(var(--primary))] opacity-15 blur-[120px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[800px] -right-20 w-[25rem] h-[25rem] bg-emerald-500 opacity-10 blur-[100px] rounded-full pointer-events-none -z-10" />
-      <div className="absolute top-[1800px] -left-20 w-[30rem] h-[30rem] bg-cyan-500 opacity-10 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-180 sm:w-260 h-120 sm:h-180 bg-primary opacity-15 blur-[120px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[800px] -right-20 w-100 h-100 bg-emerald-500 opacity-10 blur-[100px] rounded-full pointer-events-none -z-10" />
+      <div className="absolute top-[1800px] -left-20 w-120 h-120 bg-cyan-500 opacity-10 blur-[120px] rounded-full pointer-events-none -z-10" />
 
       {/* Brand Header Navigation */}
       <PublicHeader currentPage="home" />
@@ -139,7 +139,7 @@ export default function LandingPage() {
       <main className="w-full flex-1 relative z-10">
         <section className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-12 text-center space-y-8">
           {/* Top Announcement Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-sm animate-in fade-in slide-in-from-top-2">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-xs animate-in fade-in slide-in-from-top-2">
             <Sparkles className="w-4 h-4 animate-spin [animation-duration:8s]" />
             <span>One-Stop Solution for All Your Video Needs • 2GB Free</span>
           </div>
@@ -151,7 +151,7 @@ export default function LandingPage() {
           </h1>
 
           {/* Value Proposition Description */}
-          <p className="text-base sm:text-xl text-[hsl(var(--muted-foreground))] max-w-3xl mx-auto leading-relaxed font-medium">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-medium">
             The all-in-one video suite with in-browser studio recording, curated playlists, selective email access control, conference rooms, and custom branded share pages.
           </p>
 
@@ -159,7 +159,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 pt-2">
             <Link
               href="/auth/register"
-              className="w-full sm:w-auto px-8 py-4 bg-[hsl(var(--primary))] text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-[hsl(var(--primary))]/25 hover:opacity-95 hover:scale-[1.02] transition-all flex items-center justify-center gap-2.5 group active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.02] transition-all flex items-center justify-center gap-2.5 group active:scale-95 cursor-pointer"
             >
               <span>Get Started Free — 2GB Included</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -167,44 +167,44 @@ export default function LandingPage() {
 
             <Link
               href="/record"
-              className="w-full sm:w-auto px-7 py-4 border-2 border-[hsl(var(--primary))]/50 text-[hsl(var(--primary))] font-extrabold text-base rounded-2xl hover:bg-[hsl(var(--primary))]/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-[hsl(var(--primary))]/10 active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto px-7 py-4 border-2 border-primary/50 text-primary font-extrabold text-base rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10 active:scale-95 cursor-pointer"
             >
               <Video className="w-5 h-5" />
               <span>Try Studio Recorder</span>
-              <span className="px-2 py-0.5 rounded-md bg-[hsl(var(--primary))] text-white text-[10px] uppercase tracking-wider font-black ml-1">
+              <span className="px-2 py-0.5 rounded-md bg-primary text-white text-[10px] uppercase tracking-wider font-black ml-1">
                 Free
               </span>
             </Link>
 
             <Link
               href="/auth/login"
-              className="w-full sm:w-auto px-6 py-4 glass-card font-bold text-base rounded-2xl border border-[hsl(var(--border))] hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-[hsl(var(--foreground))]"
+              className="w-full sm:w-auto px-6 py-4 glass-card font-bold text-base rounded-2xl border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-foreground"
             >
-              <Play className="w-4 h-4 fill-current text-[hsl(var(--primary))]" />
+              <Play className="w-4 h-4 fill-current text-primary" />
               <span>Sign In</span>
             </Link>
           </div>
 
           {/* Trust Value Proof Checkpoints */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-3 text-xs sm:text-sm font-bold text-[hsl(var(--muted-foreground))]">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-3 text-xs sm:text-sm font-bold text-muted-foreground">
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>2GB Free Cloud Storage</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>Email Whitelist & Passcodes</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>Curated Playlists & Embeds</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>Video Conference Rooms</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" />
+              <CheckCircle2 className="w-4 h-4 text-primary" />
               <span>White Label Share Pages</span>
             </div>
           </div>
@@ -216,31 +216,31 @@ export default function LandingPage() {
         </section>
 
         {/* Metric Proof / Key Stats Strip */}
-        <section className="w-full border-y border-[hsl(var(--border))] bg-slate-100/50 dark:bg-slate-900/50 py-10">
+        <section className="w-full border-y border-border bg-slate-100/50 dark:bg-slate-900/50 py-10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               <div className="space-y-1">
-                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">2 GB</span>
-                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">Free Storage Included</p>
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Zero credit card required</p>
+                <span className="text-3xl sm:text-4xl font-black text-primary">2 GB</span>
+                <p className="text-xs sm:text-sm font-bold text-foreground">Free Storage Included</p>
+                <p className="text-[11px] text-muted-foreground">Zero credit card required</p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">100%</span>
-                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">In-Browser Recording</p>
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Screen, audio & camera bubble</p>
+                <span className="text-3xl sm:text-4xl font-black text-primary">100%</span>
+                <p className="text-xs sm:text-sm font-bold text-foreground">In-Browser Recording</p>
+                <p className="text-[11px] text-muted-foreground">Screen, audio & camera bubble</p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">100%</span>
-                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">White-Label Pages</p>
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Your logo, banner & CTAs</p>
+                <span className="text-3xl sm:text-4xl font-black text-primary">100%</span>
+                <p className="text-xs sm:text-sm font-bold text-foreground">White-Label Pages</p>
+                <p className="text-[11px] text-muted-foreground">Your logo, banner & CTAs</p>
               </div>
 
               <div className="space-y-1">
-                <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--primary))]">0</span>
-                <p className="text-xs sm:text-sm font-bold text-[hsl(var(--foreground))]">Context Switching</p>
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">Record, host, gate & meet here</p>
+                <span className="text-3xl sm:text-4xl font-black text-primary">0</span>
+                <p className="text-xs sm:text-sm font-bold text-foreground">Context Switching</p>
+                <p className="text-[11px] text-muted-foreground">Record, host, gate & meet here</p>
               </div>
             </div>
           </div>
@@ -263,9 +263,9 @@ export default function LandingPage() {
 
         {/* High Converting Bottom CTA Banner */}
         <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-          <div className="rounded-3xl border border-[hsl(var(--primary))]/30 bg-gradient-to-br from-[hsl(var(--primary))]/15 via-slate-900/90 to-slate-950 text-white p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
+          <div className="rounded-3xl border border-primary/30 bg-linear-to-br from-primary/15 via-slate-900/90 to-slate-950 text-white p-8 sm:p-14 shadow-2xl relative overflow-hidden text-center space-y-6">
             <div className="absolute inset-0 bg-dot-grid opacity-20 pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[hsl(var(--primary))] opacity-25 blur-3xl rounded-full pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary opacity-25 blur-3xl rounded-full pointer-events-none" />
 
             <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/20 text-lime-400 text-xs font-black uppercase tracking-wider">

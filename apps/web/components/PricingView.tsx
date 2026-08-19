@@ -31,6 +31,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface PricingViewProps {
   isEmbedded?: boolean;
@@ -288,7 +289,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       popular: false,
       badge: "Get Started",
       accentColor: "border-slate-200 dark:border-slate-800",
-      buttonVariant: "outline",
+      buttonVariant: "outline-solid",
       features: [
         { title: "Unlimited screen record with face cam overlay", icon: Video, highlight: true },
         { title: "Unlimited videos upload", icon: Video, highlight: true },
@@ -333,7 +334,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       tagline: "For professional creators needing adaptive bitrate & high storage",
       popular: true,
       badge: "Popular",
-      accentColor: "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 shadow-xl",
+      accentColor: "border-primary ring-2 ring-primary/30 shadow-xl",
       buttonVariant: "primary",
       features: [
         { title: "All in Basic plan +", icon: Sparkles, highlight: true },
@@ -372,13 +373,13 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       {/* Header Banner */}
       {!isEmbedded && (
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4" /> Clear & Transparent Pricing
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[hsl(var(--foreground))]">
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-foreground">
             Simple plans for creators & teams.
           </h1>
-          <p className="text-base sm:text-lg text-[hsl(var(--muted-foreground))]">
+          <p className="text-base sm:text-lg text-muted-foreground">
             Start free with 2GB storage, or upgrade to 50GB Basic, 200GB Pro with adaptive bitrate streaming, or Enterprise for unlimited storage and team collaboration.
           </p>
         </div>
@@ -386,20 +387,20 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
       {/* Active Plan Subscription Status Banner */}
       {orgDetails && orgDetails.planExpiresAt && currentPlan !== "free" && (
-        <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-teal-500/10 border border-lime-500/30 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-linear-to-r from-lime-500/10 via-emerald-500/10 to-teal-500/10 border border-lime-500/30 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2 rounded-xl bg-primary/20 text-primary shrink-0">
               <Zap className="w-5 h-5" />
             </div>
             <div>
-              <div className="font-bold text-[hsl(var(--foreground))] flex items-center gap-2">
-                Active Plan: <span className="uppercase text-[hsl(var(--primary))] font-extrabold">{currentPlan}</span>
+              <div className="font-bold text-foreground flex items-center gap-2">
+                Active Plan: <span className="uppercase text-primary font-extrabold">{currentPlan}</span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase">
                   {orgDetails.subscriptionStatus || "ACTIVE"}
                 </span>
               </div>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                Paid Validity Ends: <span className="font-semibold text-[hsl(var(--foreground))]">{new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span> ({orgDetails.billingMode === "RECURRING" ? "Auto-renewing subscription" : "One-time validity"})
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Paid Validity Ends: <span className="font-semibold text-foreground">{new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span> ({orgDetails.billingMode === "RECURRING" ? "Auto-renewing subscription" : "One-time validity"})
               </p>
             </div>
           </div>
@@ -410,7 +411,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                 setPendingPlanSwitch("free");
                 setConfirmCancelModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-extrabold transition-all shadow-xs shrink-0 cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-extrabold transition-all shadow-2xs shrink-0 cursor-pointer"
             >
               Cancel Subscription
             </button>
@@ -430,8 +431,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             type="button"
             onClick={() => setBillingCycle("MONTHLY")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingCycle === "MONTHLY"
-              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
-              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "bg-card text-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Monthly Billing
@@ -440,8 +441,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             type="button"
             onClick={() => setBillingCycle("YEARLY")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === "YEARLY"
-              ? "bg-[hsl(var(--primary))] text-white shadow-md"
-              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "bg-primary text-white shadow-md"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Yearly Billing
@@ -457,8 +458,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             type="button"
             onClick={() => setBillingMode("ONE_TIME")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "ONE_TIME"
-              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
-              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "bg-card text-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             One-Time Payment
@@ -467,8 +468,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             type="button"
             onClick={() => setBillingMode("RECURRING")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "RECURRING"
-              ? "bg-[hsl(var(--card))] text-[hsl(var(--foreground))] shadow-md"
-              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "bg-card text-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Auto-Renewing Subscription
@@ -516,12 +517,12 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-3xl bg-[hsl(var(--card))] border transition-all duration-300 hover:shadow-2xl ${plan.accentColor
-                } ${plan.popular ? "scale-[1.02] bg-gradient-to-b from-white via-white to-lime-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/40" : ""}`}
+              className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-3xl bg-card border transition-all duration-300 hover:shadow-2xl ${plan.accentColor
+                } ${plan.popular ? "scale-[1.02] bg-linear-to-b from-white via-white to-lime-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/40" : ""}`}
             >
               {/* Popular / Badge Ribbon */}
               {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[hsl(var(--primary))] text-white font-extrabold text-xs uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-white font-extrabold text-xs uppercase tracking-wider shadow-md flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> {plan.badge}
                 </div>
               )}
@@ -529,39 +530,39 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               <div>
                 {/* Plan Header */}
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-[hsl(var(--foreground))]">{plan.name}</h3>
+                  <h3 className="text-xl sm:text-2xl font-black text-foreground">{plan.name}</h3>
                   {isCurrent && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] font-extrabold text-[11px] uppercase tracking-wider border border-[hsl(var(--primary))]/40">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary font-extrabold text-[11px] uppercase tracking-wider border border-primary/40">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Current Plan
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mb-6 min-h-[32px]">{plan.tagline}</p>
+                <p className="text-xs text-muted-foreground mb-6 min-h-[32px]">{plan.tagline}</p>
 
                 {/* Price Display */}
-                <div className="mb-6 pb-6 border-b border-[hsl(var(--border))]">
+                <div className="mb-6 pb-6 border-b border-border">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-[hsl(var(--foreground))] tracking-tight">
+                    <span className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
                       {plan.price}
                     </span>
-                    <span className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">/{plan.period}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">/{plan.period}</span>
                   </div>
                 </div>
 
                 {/* Features List */}
                 <div className="space-y-3.5 mb-8">
-                  <p className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     What's included:
                   </p>
                   {plan.features.map((feat, idx) => {
                     const FeatIcon = feat.icon;
                     return (
                       <div key={idx} className="flex items-start gap-3 text-xs sm:text-sm">
-                        <div className="w-5 h-5 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center shrink-0 mt-0.5">
+                        <div className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0 mt-0.5">
                           <FeatIcon className="w-3.5 h-3.5" />
                         </div>
-                        <span className="font-semibold text-[hsl(var(--foreground))] leading-snug">
+                        <span className="font-semibold text-foreground leading-snug">
                           {feat.title}
                         </span>
                       </div>
@@ -570,9 +571,9 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
                   {/* Not included items */}
                   {plan.notIncluded.length > 0 && (
-                    <div className="pt-2 space-y-2 border-t border-[hsl(var(--border))]/60">
+                    <div className="pt-2 space-y-2 border-t border-border/60">
                       {plan.notIncluded.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))]/70 line-through">
+                        <div key={idx} className="flex items-center gap-3 text-xs text-muted-foreground/70 line-through">
                           <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
                             <span className="text-[10px] font-bold">✕</span>
                           </div>
@@ -590,9 +591,9 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                   <div className="space-y-2">
                     <button
                       disabled
-                      className="w-full py-3 px-4 rounded-2xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] font-bold text-sm border border-[hsl(var(--border))] opacity-75 cursor-default flex items-center justify-center gap-2"
+                      className="w-full py-3 px-4 rounded-2xl bg-muted text-foreground font-bold text-sm border border-border opacity-75 cursor-default flex items-center justify-center gap-2"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-[hsl(var(--primary))]" /> Active Workspace Plan
+                      <CheckCircle2 className="w-4 h-4 text-primary" /> Active Workspace Plan
                     </button>
                     {plan.id !== "free" && currentPlan !== "free" && orgDetails?.billingMode === "RECURRING" && orgDetails?.subscriptionStatus !== "CANCELLED" && (
                       <button
@@ -612,7 +613,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                     onClick={() => handleSelectPlan(plan.id as any)}
                     disabled={updatingPlan !== null || loadingPlan}
                     className={`w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${plan.id === "pro"
-                      ? "bg-[hsl(var(--primary))] text-white hover:opacity-90 shadow-[hsl(var(--primary))]/20"
+                      ? "bg-primary text-white hover:opacity-90 shadow-primary/20"
                       : plan.id === "enterprise"
                         ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
                         : plan.id === "basic"
@@ -644,36 +645,36 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       </div>
 
       {/* Feature Comparison Table / FAQ Footer */}
-      <div className="glass-card rounded-3xl p-6 sm:p-8 border border-[hsl(var(--border))] space-y-6 mt-12">
-        <h3 className="font-extrabold text-xl text-[hsl(var(--foreground))] text-center">
+      <div className="glass-card rounded-3xl p-6 sm:p-8 border border-border space-y-6 mt-12">
+        <h3 className="font-extrabold text-xl text-foreground text-center">
           Frequently Asked Questions
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-          <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
-            <h4 className="font-bold text-[hsl(var(--foreground))]">What is Adaptive Bitrate Streaming?</h4>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
+            <h4 className="font-bold text-foreground">What is Adaptive Bitrate Streaming?</h4>
+            <p className="text-xs text-muted-foreground">
               Available on Pro and Enterprise plans, adaptive bitrate generates multi-quality HLS streams (480p, 720p, 1080p, 4K) so viewers experience continuous playback without buffering even on weak mobile connections.
             </p>
           </div>
 
-          <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
-            <h4 className="font-bold text-[hsl(var(--foreground))]">What video sharing options are available on Free and Basic plans?</h4>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
+            <h4 className="font-bold text-foreground">What video sharing options are available on Free and Basic plans?</h4>
+            <p className="text-xs text-muted-foreground">
               Both Free and Basic plan users enjoy full public link sharing (anyone with link can watch) and granular email-restricted sharing (only specified authenticated emails can access).
             </p>
           </div>
 
-          <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
-            <h4 className="font-bold text-[hsl(var(--foreground))]">Can I switch plans at any time?</h4>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
+            <h4 className="font-bold text-foreground">Can I switch plans at any time?</h4>
+            <p className="text-xs text-muted-foreground">
               Yes! Organization owners can switch between Free, Basic, Pro, and Enterprise plans at any time. Your limits and feature entitlements update instantly.
             </p>
           </div>
 
-          <div className="space-y-1.5 p-4 rounded-2xl bg-[hsl(var(--muted))]/40">
-            <h4 className="font-bold text-[hsl(var(--foreground))]">Who needs the Enterprise plan?</h4>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
+            <h4 className="font-bold text-foreground">Who needs the Enterprise plan?</h4>
+            <p className="text-xs text-muted-foreground">
               Teams that require multiple separate workspace organizations, team member role invitations, unlimited storage, and dedicated phone support.
             </p>
           </div>
@@ -689,15 +690,15 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold">Cancel Auto-Renewing Subscription?</DialogTitle>
+                <DialogTitle>Cancel Auto-Renewing Subscription?</DialogTitle>
                 <DialogDescription className="mt-1">
-                  Cancel auto-renewal for your <strong className="text-[hsl(var(--foreground))] uppercase">{currentPlan}</strong> plan.
+                  Cancel auto-renewal for your <strong className="text-foreground uppercase">{currentPlan}</strong> plan.
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="space-y-3 py-2 text-xs text-[hsl(var(--muted-foreground))]">
+          <div className="space-y-3 py-2 text-xs text-muted-foreground">
             <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium">
               ✅ <strong>Keep Paid Features Until Expiry:</strong> You will remain on your paid <strong>{currentPlan.toUpperCase()}</strong> plan in one-time mode with full feature access until <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'expiration'}</strong>.
             </div>
@@ -707,21 +708,22 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={() => {
                 setConfirmCancelModalOpen(false);
                 setPendingPlanSwitch(null);
               }}
-              className="px-4 py-2.5 rounded-xl bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] font-bold text-xs hover:bg-[hsl(var(--muted))]/80 transition-all cursor-pointer"
             >
               Keep Auto-Renew
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="destructive"
               disabled={updatingPlan !== null}
               onClick={() => executeCancelSubscription()}
-              className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="gap-2"
             >
               {updatingPlan ? (
                 <>
@@ -730,7 +732,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               ) : (
                 "Yes, Cancel Auto-Renew"
               )}
-            </button>
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

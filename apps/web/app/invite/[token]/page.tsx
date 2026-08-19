@@ -166,7 +166,7 @@ export default function AcceptInvitePage({ params }: { params: Promise<{ token: 
 
                 {error && (
                   <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-center gap-2 text-left">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <AlertCircle className="w-4 h-4 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}

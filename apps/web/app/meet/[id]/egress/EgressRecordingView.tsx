@@ -10,6 +10,7 @@ import {
   VideoTrack,
 } from "@livekit/components-react";
 import { Track, RoomEvent, Participant } from "livekit-client";
+import "@livekit/components-styles";
 import "@/styles/livekit.css";
 import {
   User,

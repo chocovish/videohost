@@ -55,19 +55,19 @@ export default function LandingWorkflow() {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   return (
-    <section className="w-full py-16 sm:py-24 bg-slate-50/50 dark:bg-slate-950/40 border-y border-[hsl(var(--border))] relative">
+    <section className="w-full py-16 sm:py-24 bg-slate-50/50 dark:bg-slate-950/40 border-y border-border relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-black uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-xs font-black uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" /> How It Works
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-[hsl(var(--foreground))]">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-foreground">
             From creation to delivery in 5 simple steps.
           </h2>
 
-          <p className="text-base text-[hsl(var(--muted-foreground))] font-medium">
+          <p className="text-base text-muted-foreground font-medium">
             A frictionless video workflow designed for speed, security, and exceptional branding.
           </p>
         </div>
@@ -82,36 +82,36 @@ export default function LandingWorkflow() {
                 key={item.step}
                 onClick={() => setActiveStepIndex(idx)}
                 className={`p-5 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between space-y-4 group ${isCurrent
-                  ? "bg-white dark:bg-slate-900 border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/20 shadow-xl scale-[1.02]"
-                  : "bg-white/60 dark:bg-slate-900/40 border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40"
+                  ? "bg-white dark:bg-slate-900 border-primary ring-2 ring-primary/20 shadow-xl scale-[1.02]"
+                  : "bg-white/60 dark:bg-slate-900/40 border-border hover:border-primary/40"
                   }`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-black font-mono text-[hsl(var(--primary))] opacity-80">
+                    <span className="text-2xl font-black font-mono text-primary opacity-80">
                       {item.step}
                     </span>
                     <div
                       className={`p-2.5 rounded-2xl transition-all ${isCurrent
-                        ? "bg-[hsl(var(--primary))] text-white"
-                        : "bg-slate-100 dark:bg-slate-800 text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--primary))]"
+                        ? "bg-primary text-white"
+                        : "bg-slate-100 dark:bg-slate-800 text-muted-foreground group-hover:text-primary"
                         }`}
                     >
                       <Icon className="w-4 h-4" />
                     </div>
                   </div>
 
-                  <h3 className="text-base font-black text-[hsl(var(--foreground))] leading-snug">
+                  <h3 className="text-base font-black text-foreground leading-snug">
                     {item.title}
                   </h3>
 
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {item.desc}
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-[hsl(var(--border))]">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[hsl(var(--primary))] flex items-center gap-1">
+                <div className="pt-2 border-t border-border">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-primary flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> {item.highlight}
                   </span>
                 </div>

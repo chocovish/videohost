@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -419,21 +420,21 @@ export default function PlaylistDetailPage() {
     switch (mode) {
       case "PUBLIC":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+          <Badge variant="outline" className="gap-1.5 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
             <Globe className="w-3.5 h-3.5" /> Public
-          </span>
+          </Badge>
         );
       case "RESTRICTED":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">
+          <Badge variant="outline" className="gap-1.5 text-indigo-600 border-indigo-500/30 bg-indigo-500/10">
             <Lock className="w-3.5 h-3.5" /> Restricted
-          </span>
+          </Badge>
         );
       case "PRIVATE":
         return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-500/10 text-slate-600 border border-slate-500/20">
+          <Badge variant="secondary" className="gap-1.5">
             <ShieldAlert className="w-3.5 h-3.5" /> Private
-          </span>
+          </Badge>
         );
       default:
         return null;
@@ -443,8 +444,8 @@ export default function PlaylistDetailPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[450px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
-        <p className="text-sm font-semibold text-[hsl(var(--muted-foreground))]">Loading playlist...</p>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm font-semibold text-muted-foreground">Loading playlist...</p>
       </div>
     );
   }
@@ -455,10 +456,10 @@ export default function PlaylistDetailPage() {
         <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center mx-auto">
           <AlertCircle className="w-7 h-7" />
         </div>
-        <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">Playlist Not Found</h2>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">{error || "This playlist could not be loaded."}</p>
+        <h2 className="text-xl font-bold text-foreground">Playlist Not Found</h2>
+        <p className="text-sm text-muted-foreground">{error || "This playlist could not be loaded."}</p>
         <Link href="/dashboard/playlists">
-          <Button variant="outline" className="rounded-xl font-bold gap-2">
+          <Button variant="outline" className="gap-2">
             <ArrowLeft className="w-4 h-4" /> Back to Playlists
           </Button>
         </Link>
@@ -473,33 +474,33 @@ export default function PlaylistDetailPage() {
         <div className="flex items-start gap-3">
           <Link
             href="/dashboard/playlists"
-            className="p-2 mt-1 rounded-xl bg-white dark:bg-slate-900 border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] shadow-xs transition-colors shrink-0"
+            className="p-2 mt-1 rounded-xl bg-white dark:bg-slate-900 border border-border text-muted-foreground hover:text-foreground shadow-2xs transition-colors shrink-0"
             title="Back to Playlists"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div className="space-y-1.5">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Playlist Collection
               </span>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-black text-[hsl(var(--foreground))] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
                 {playlist.title}
               </h1>
               {getAccessBadge(playlist.shareAccessMode)}
             </div>
 
             {playlist.description && (
-              <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed max-w-3xl">
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
                 {playlist.description}
               </p>
             )}
 
-            <div className="flex items-center gap-4 text-xs font-semibold text-[hsl(var(--muted-foreground))] pt-0.5 flex-wrap">
+            <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground pt-0.5 flex-wrap">
               <span className="flex items-center gap-1.5">
-                <Film className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> {items.length} {items.length === 1 ? "Video" : "Videos"}
+                <Film className="w-3.5 h-3.5 text-primary" /> {items.length} {items.length === 1 ? "Video" : "Videos"}
               </span>
               {playlist.totalDurationSeconds > 0 && (
                 <span className="flex items-center gap-1.5">
@@ -519,7 +520,7 @@ export default function PlaylistDetailPage() {
               setRenameDescription(playlist.description || "");
               setIsRenameOpen(true);
             }}
-            className="rounded-xl font-medium gap-2 shadow-xs border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
+            className="gap-2"
           >
             <Pencil className="w-4 h-4" /> Edit Playlist
           </Button>
@@ -527,14 +528,14 @@ export default function PlaylistDetailPage() {
           <Button
             variant="outline"
             onClick={() => setIsShareOpen(true)}
-            className="rounded-xl font-medium gap-2 shadow-xs border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
+            className="gap-2"
           >
             <Share2 className="w-4 h-4" /> Share Playlist
           </Button>
 
           <Button
             onClick={openAddModal}
-            className="rounded-xl font-medium gap-2 shadow-xs bg-[hsl(var(--primary))] text-white hover:opacity-90 transition-all"
+            className="gap-2"
           >
             <Plus className="w-4 h-4" /> Add Videos
           </Button>
@@ -542,7 +543,7 @@ export default function PlaylistDetailPage() {
           <Button
             variant="outline"
             onClick={() => setIsDeleteOpen(true)}
-            className="rounded-xl font-medium gap-2 text-red-600 hover:bg-red-500/10 hover:border-red-500/30 border-[hsl(var(--border))]"
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
             title="Delete Playlist"
           >
             <Trash2 className="w-4 h-4" /> Delete Playlist
@@ -554,15 +555,15 @@ export default function PlaylistDetailPage() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-[hsl(var(--foreground))]">Playlist Sequence</h2>
-            <span className="text-xs text-[hsl(var(--muted-foreground))]">
+            <h2 className="text-lg font-bold text-foreground">Playlist Sequence</h2>
+            <span className="text-xs text-muted-foreground">
               (Drag rows or use up/down arrows to reorder)
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {savingOrder && (
-              <span className="text-xs font-bold text-[hsl(var(--primary))] flex items-center gap-1">
+              <span className="text-xs font-bold text-primary flex items-center gap-1">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Saving order...
               </span>
             )}
@@ -575,22 +576,22 @@ export default function PlaylistDetailPage() {
         </div>
 
         {items.length === 0 ? (
-          <div className="glass-card rounded-3xl p-12 text-center border border-[hsl(var(--border))] space-y-4 bg-white/60 dark:bg-slate-900/40">
-            <div className="w-14 h-14 rounded-2xl bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] flex items-center justify-center mx-auto shadow-xs">
-              <Film className="w-7 h-7" />
+          <div className="text-center py-16 px-4 bg-card/40 rounded-2xl border border-dashed border-border">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+              <Film className="w-8 h-8" />
             </div>
-            <div className="space-y-1">
-              <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">This playlist is empty</h3>
-              <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-md mx-auto">
-                Add videos to your playlist by searching video titles, IDs, or adding all videos from a folder.
-              </p>
+            <h3 className="font-bold text-lg text-foreground">This playlist is empty</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-1 mb-6">
+              Add videos to your playlist by searching video titles, IDs, or adding all videos from a folder.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <Button
+                onClick={openAddModal}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" /> Add First Video
+              </Button>
             </div>
-            <Button
-              onClick={openAddModal}
-              className="rounded-xl shadow-xs font-bold gap-2 bg-[hsl(var(--primary))] text-white hover:opacity-90"
-            >
-              <Plus className="w-4 h-4" /> Add First Video
-            </Button>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -607,10 +608,10 @@ export default function PlaylistDetailPage() {
                   onDrop={(e) => handleDrop(e, index)}
                   className={`group relative bg-white dark:bg-slate-900/90 border rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-200 ${
                     isDragging
-                      ? "opacity-40 scale-[0.98] border-dashed border-[hsl(var(--primary))]"
+                      ? "opacity-40 scale-[0.98] border-dashed border-primary"
                       : isDragOver
-                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5 shadow-md"
-                      : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40 hover:shadow-sm"
+                      ? "border-primary bg-primary/5 shadow-md"
+                      : "border-border hover:border-primary/40 hover:shadow-xs"
                   }`}
                 >
                   {/* Left: Drag Handle & Number */}
@@ -630,7 +631,7 @@ export default function PlaylistDetailPage() {
                   {/* Video Thumbnail */}
                   <div
                     onClick={() => setPreviewVideo(item)}
-                    className="relative w-28 sm:w-32 aspect-video bg-slate-950 rounded-xl overflow-hidden shrink-0 cursor-pointer group/thumb shadow-xs"
+                    className="relative w-28 sm:w-32 aspect-video bg-slate-950 rounded-xl overflow-hidden shrink-0 cursor-pointer group/thumb shadow-2xs"
                   >
                     {item.thumbnailUrl ? (
                       <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
@@ -653,12 +654,12 @@ export default function PlaylistDetailPage() {
                   <div className="flex-1 min-w-0">
                     <h4
                       onClick={() => setPreviewVideo(item)}
-                      className="font-bold text-sm text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors cursor-pointer line-clamp-1"
+                      className="font-bold text-sm text-foreground hover:text-primary transition-colors cursor-pointer line-clamp-1"
                     >
                       {item.title}
                     </h4>
 
-                    <div className="flex items-center gap-3 text-xs text-[hsl(var(--muted-foreground))] mt-1 flex-wrap">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                       {item.folderName && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-[11px]">
                           <Folder className="w-3 h-3 text-amber-500" />
@@ -676,7 +677,7 @@ export default function PlaylistDetailPage() {
                       <button
                         onClick={() => moveItem(index, "up")}
                         disabled={index === 0}
-                        className="p-1 rounded text-slate-400 hover:text-[hsl(var(--foreground))] disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                        className="p-1 rounded text-slate-400 hover:text-foreground disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
                         title="Move Up"
                       >
                         <ChevronUp className="w-4 h-4" />
@@ -684,7 +685,7 @@ export default function PlaylistDetailPage() {
                       <button
                         onClick={() => moveItem(index, "down")}
                         disabled={index === items.length - 1}
-                        className="p-1 rounded text-slate-400 hover:text-[hsl(var(--foreground))] disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                        className="p-1 rounded text-slate-400 hover:text-foreground disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
                         title="Move Down"
                       >
                         <ChevronDown className="w-4 h-4" />
@@ -711,7 +712,7 @@ export default function PlaylistDetailPage() {
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
                 <Plus className="w-5 h-5" />
               </div>
               <div>
@@ -739,7 +740,7 @@ export default function PlaylistDetailPage() {
             {/* TAB 1: SEARCH VIDEOS */}
             <TabsContent value="search" className="flex-1 flex flex-col min-h-0 space-y-3 pt-3">
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3.5 top-3 text-[hsl(var(--muted-foreground))]" />
+                <Search className="w-4 h-4 absolute left-3.5 top-3 text-muted-foreground" />
                 <Input
                   placeholder="Search by video title or paste video ID..."
                   value={searchQuery}
@@ -761,7 +762,7 @@ export default function PlaylistDetailPage() {
               <div className="flex-1 overflow-y-auto max-h-[380px] space-y-2 pr-1">
                 {searching ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--primary))]" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <span className="text-xs">Searching organization videos...</span>
                   </div>
                 ) : searchResults.length === 0 ? (
@@ -777,7 +778,7 @@ export default function PlaylistDetailPage() {
                     return (
                       <div
                         key={video.id}
-                        className="bg-slate-50 dark:bg-slate-900/70 border border-[hsl(var(--border))] rounded-xl p-2.5 flex items-center justify-between gap-3 hover:border-[hsl(var(--primary))]/40 transition-colors"
+                        className="bg-slate-50 dark:bg-slate-900/70 border border-border rounded-xl p-2.5 flex items-center justify-between gap-3 hover:border-primary/40 transition-colors"
                       >
                         {/* Thumbnail */}
                         <div className="relative w-20 aspect-video bg-slate-900 rounded-lg overflow-hidden shrink-0">
@@ -797,10 +798,10 @@ export default function PlaylistDetailPage() {
 
                         {/* Video Info */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-xs text-[hsl(var(--foreground))] line-clamp-1">
+                          <h4 className="font-bold text-xs text-foreground line-clamp-1">
                             {video.title}
                           </h4>
-                          <div className="flex items-center gap-2 text-[10px] text-[hsl(var(--muted-foreground))] mt-0.5">
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {video.folderName && (
                               <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
                                 <Folder className="w-2.5 h-2.5" /> {video.folderName}
@@ -821,7 +822,7 @@ export default function PlaylistDetailPage() {
                               size="sm"
                               onClick={() => handleAddVideo(video.id)}
                               disabled={isAdding}
-                              className="rounded-xl font-bold text-xs gap-1.5 bg-[hsl(var(--primary))] text-white hover:opacity-90"
+                              className="rounded-xl font-bold text-xs gap-1.5 bg-primary text-white hover:opacity-90"
                             >
                               {isAdding ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -841,17 +842,17 @@ export default function PlaylistDetailPage() {
 
             {/* TAB 2: ADD FROM FOLDER */}
             <TabsContent value="folder" className="flex-1 flex flex-col space-y-4 pt-3">
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-[hsl(var(--border))] rounded-2xl space-y-3">
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-border rounded-2xl space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-[hsl(var(--foreground))]">Select Folder</label>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <label className="text-xs font-bold text-foreground">Select Folder</label>
+                  <p className="text-xs text-muted-foreground">
                     All videos from this folder (and its nested subfolders) will be added to this playlist in sequential order.
                   </p>
                 </div>
 
                 {loadingFolders ? (
                   <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
-                    <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--primary))]" />
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     Loading organization folders...
                   </div>
                 ) : folders.length === 0 ? (
@@ -867,13 +868,13 @@ export default function PlaylistDetailPage() {
                           onClick={() => setSelectedFolderId(f.id)}
                           className={`p-3 rounded-xl border text-left flex items-center justify-between gap-2 transition-all ${
                             isSelected
-                              ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 shadow-xs"
-                              : "border-[hsl(var(--border))] hover:border-slate-300 bg-white dark:bg-slate-800"
+                              ? "border-primary bg-primary/10 shadow-2xs"
+                              : "border-border hover:border-slate-300 bg-white dark:bg-slate-800"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-[hsl(var(--primary))]" : "text-amber-500"}`} />
-                            <span className="font-bold text-xs truncate text-[hsl(var(--foreground))]">{f.name}</span>
+                            <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-primary" : "text-amber-500"}`} />
+                            <span className="font-bold text-xs truncate text-foreground">{f.name}</span>
                           </div>
                           <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-300 shrink-0">
                             {f.itemCount} items
@@ -895,7 +896,7 @@ export default function PlaylistDetailPage() {
               <Button
                 onClick={handleAddFromFolder}
                 disabled={addingFolder || !selectedFolderId || folders.length === 0}
-                className="w-full rounded-xl bg-[hsl(var(--primary))] text-white font-bold hover:opacity-90 gap-2 py-2.5"
+                className="w-full gap-2"
               >
                 {addingFolder ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -907,11 +908,10 @@ export default function PlaylistDetailPage() {
             </TabsContent>
           </Tabs>
 
-          <DialogFooter className="pt-2 border-t border-[hsl(var(--border))]">
+          <DialogFooter className="pt-2 border-t border-border">
             <Button
               variant="outline"
               onClick={() => setIsAddModalOpen(false)}
-              className="rounded-xl font-bold"
             >
               Done
             </Button>
@@ -929,7 +929,7 @@ export default function PlaylistDetailPage() {
 
           <form onSubmit={handleRenameSubmit} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[hsl(var(--foreground))]">Playlist Title *</label>
+              <label className="text-xs font-bold text-foreground">Playlist Title *</label>
               <Input
                 value={renameTitle}
                 onChange={(e) => setRenameTitle(e.target.value)}
@@ -939,12 +939,12 @@ export default function PlaylistDetailPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[hsl(var(--foreground))]">Description (optional)</label>
+              <label className="text-xs font-bold text-foreground">Description (optional)</label>
               <textarea
                 value={renameDescription}
                 onChange={(e) => setRenameDescription(e.target.value)}
                 rows={3}
-                className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--input))] rounded-xl outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-[hsl(var(--foreground))] resize-none"
+                className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
               />
             </div>
 
@@ -954,14 +954,13 @@ export default function PlaylistDetailPage() {
                 variant="outline"
                 onClick={() => setIsRenameOpen(false)}
                 disabled={renaming}
-                className="rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={renaming || !renameTitle.trim()}
-                className="rounded-xl bg-[hsl(var(--primary))] text-white font-bold hover:opacity-90 gap-2"
+                className="gap-2"
               >
                 {renaming ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
               </Button>
@@ -987,7 +986,7 @@ export default function PlaylistDetailPage() {
             </div>
           </DialogHeader>
 
-          <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          <p className="text-xs text-muted-foreground">
             Note: Deleting this playlist will not delete your original videos.
           </p>
 
@@ -997,15 +996,15 @@ export default function PlaylistDetailPage() {
               variant="outline"
               onClick={() => setIsDeleteOpen(false)}
               disabled={deleting}
-              className="rounded-xl"
             >
               Cancel
             </Button>
             <Button
               type="button"
+              variant="destructive"
               onClick={handleDeleteSubmit}
               disabled={deleting}
-              className="rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 gap-2"
+              className="gap-2"
             >
               {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               {deleting ? "Deleting..." : "Delete Playlist"}

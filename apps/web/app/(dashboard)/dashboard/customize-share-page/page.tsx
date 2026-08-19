@@ -19,6 +19,7 @@ import {
   Info,
 } from "lucide-react";
 import SharedContentClient, { SharePageConfigData, SharedData } from "@/app/share/[token]/shared-content-client";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -272,8 +273,8 @@ export default function CustomizeSharePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-8 h-8 text-[hsl(var(--primary))] animate-spin" />
-        <p className="text-sm font-semibold text-[hsl(var(--muted-foreground))]">Loading customization options...</p>
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-sm font-semibold text-muted-foreground">Loading customization options...</p>
       </div>
     );
   }
@@ -281,34 +282,35 @@ export default function CustomizeSharePage() {
   return (
     <div className="space-y-6 pb-12">
       {/* Top Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[hsl(var(--border))]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Paintbrush className="w-5 h-5" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-[hsl(var(--foreground))]">
+            <h1 className="text-2xl font-black tracking-tight text-foreground">
               Customize share page
             </h1>
           </div>
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          <p className="text-sm text-muted-foreground">
             Personalize the look, custom logo, welcome banner, call-to-action, and interactive elements of your shared video pages.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="outline"
             onClick={handleReset}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-all flex items-center gap-1.5 cursor-pointer"
+            className="text-xs font-semibold gap-1.5"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             onClick={handleSave}
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl bg-[hsl(var(--primary))] hover:opacity-90 text-white font-black text-xs transition-all shadow-md shadow-[hsl(var(--primary))]/20 flex items-center gap-2 active:scale-95 cursor-pointer disabled:opacity-50"
+            className="font-bold text-xs gap-2"
           >
             {saving ? (
               <>
@@ -317,7 +319,7 @@ export default function CustomizeSharePage() {
               </>
             ) : savedSuccess ? (
               <>
-                <Check className="w-4 h-4 text-white" />
+                <Check className="w-4 h-4" />
                 <span>Saved & Uploaded!</span>
               </>
             ) : (
@@ -326,7 +328,7 @@ export default function CustomizeSharePage() {
                 <span>Save Customization</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -335,13 +337,13 @@ export default function CustomizeSharePage() {
         {/* Controls Section (Left Column) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Navigation Tabs */}
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-[hsl(var(--border))] overflow-x-auto gap-1">
+          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-border overflow-x-auto gap-1">
             <button
               onClick={() => setActiveTab("theme")}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "theme"
-                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-sm"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "bg-white dark:bg-slate-950 text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Palette className="w-3.5 h-3.5" />
@@ -351,8 +353,8 @@ export default function CustomizeSharePage() {
               onClick={() => setActiveTab("branding")}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "branding"
-                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-sm"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "bg-white dark:bg-slate-950 text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Type className="w-3.5 h-3.5" />
@@ -362,8 +364,8 @@ export default function CustomizeSharePage() {
               onClick={() => setActiveTab("cta")}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "cta"
-                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-sm"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "bg-white dark:bg-slate-950 text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -373,8 +375,8 @@ export default function CustomizeSharePage() {
               onClick={() => setActiveTab("display")}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "display"
-                  ? "bg-white dark:bg-slate-950 text-[hsl(var(--foreground))] shadow-sm"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "bg-white dark:bg-slate-950 text-foreground shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -384,9 +386,9 @@ export default function CustomizeSharePage() {
 
           {/* TAB 1: Theme & Styling */}
           {activeTab === "theme" && (
-            <div className="space-y-6 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-[hsl(var(--border))] shadow-xs">
+            <div className="space-y-6 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-border shadow-2xs">
               <div className="space-y-3">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Theme Presets
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -402,23 +404,23 @@ export default function CustomizeSharePage() {
                       }
                       className={`p-3 rounded-xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
                         config.themePreset === t.id
-                          ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 bg-[hsl(var(--primary))]/5"
-                          : "border-[hsl(var(--border))] hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50"
+                          ? "border-primary ring-2 ring-primary/30 bg-primary/5"
+                          : "border-border hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50"
                       }`}
                     >
                       <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.primary }} />
-                        <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.card }} />
+                        <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: t.primary }} />
+                        <span className="w-3 h-3 rounded-full shrink-0 shadow-2xs" style={{ backgroundColor: t.card }} />
                         <span className="w-3 h-3 rounded-full shrink-0 border border-slate-300 dark:border-slate-700" style={{ backgroundColor: t.bg }} />
                       </div>
-                      <span className="text-xs font-bold text-[hsl(var(--foreground))] truncate">{t.name}</span>
+                      <span className="text-xs font-bold text-foreground truncate">{t.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-[hsl(var(--border))]">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+              <div className="space-y-3 pt-4 border-t border-border">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Custom Primary Accent Color
                 </label>
                 <div className="flex items-center gap-3">
@@ -426,14 +428,14 @@ export default function CustomizeSharePage() {
                     type="color"
                     value={config.accentColor || "#84cc16"}
                     onChange={(e) => setConfig((prev) => ({ ...prev, accentColor: e.target.value }))}
-                    className="w-10 h-10 rounded-xl cursor-pointer border border-[hsl(var(--border))] p-1 bg-transparent"
+                    className="w-10 h-10 rounded-xl cursor-pointer border border-border p-1 bg-transparent"
                   />
                   <input
                     type="text"
                     value={config.accentColor || "#84cc16"}
                     onChange={(e) => setConfig((prev) => ({ ...prev, accentColor: e.target.value }))}
                     placeholder="#84cc16"
-                    className="flex-1 px-3 py-2 text-xs font-mono font-bold rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                    className="flex-1 px-3 py-2 text-xs font-mono font-bold rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                   />
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">
@@ -441,7 +443,7 @@ export default function CustomizeSharePage() {
                     <button
                       key={hex}
                       onClick={() => setConfig((prev) => ({ ...prev, accentColor: hex }))}
-                      className="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer shadow-xs"
+                      className="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110 cursor-pointer shadow-2xs"
                       style={{ backgroundColor: hex }}
                       title={hex}
                     />
@@ -450,13 +452,13 @@ export default function CustomizeSharePage() {
               </div>
 
               {/* Shadcn Select for Background Visual Style */}
-              <div className="space-y-3 pt-4 border-t border-[hsl(var(--border))]">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+              <div className="space-y-3 pt-4 border-t border-border">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Background Visual Style
                 </label>
                 <Select
                   value={config.backgroundStyle || "mesh-gradient"}
-                  onValueChange={(val) => setConfig((prev) => ({ ...prev, backgroundStyle: val }))}
+                  onValueChange={(val) => setConfig((prev) => ({ ...prev, backgroundStyle: val || undefined }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select background style" />
@@ -471,8 +473,8 @@ export default function CustomizeSharePage() {
                 </Select>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-[hsl(var(--border))]">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+              <div className="space-y-3 pt-4 border-t border-border">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Card & Player Shape Roundness
                 </label>
                 <div className="grid grid-cols-4 gap-2">
@@ -487,8 +489,8 @@ export default function CustomizeSharePage() {
                       onClick={() => setConfig((prev) => ({ ...prev, cardRoundness: r.id }))}
                       className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all text-center cursor-pointer ${
                         config.cardRoundness === r.id
-                          ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]"
-                          : "border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))]"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground"
                       }`}
                     >
                       {r.label}
@@ -501,9 +503,9 @@ export default function CustomizeSharePage() {
 
           {/* TAB 2: Header & Branding */}
           {activeTab === "branding" && (
-            <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-[hsl(var(--border))] shadow-xs">
+            <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-border shadow-2xs">
               <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Custom Page Header Title
                 </label>
                 <input
@@ -511,14 +513,14 @@ export default function CustomizeSharePage() {
                   value={config.customTitle || ""}
                   onChange={(e) => setConfig((prev) => ({ ...prev, customTitle: e.target.value }))}
                   placeholder="e.g. Acme Media Showcase (Leave empty to use Organization name)"
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                 />
               </div>
 
               {/* Uploadable Custom Logo Image */}
-              <div className="space-y-3 pt-3 border-t border-[hsl(var(--border))]">
+              <div className="space-y-3 pt-3 border-t border-border">
                 <div>
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                     Custom Logo Image
                   </label>
                   <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 mt-0.5">
@@ -529,15 +531,15 @@ export default function CustomizeSharePage() {
 
                 <div className="space-y-3 pt-1">
                   {config.customLogoUrl ? (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 border border-[hsl(var(--border))] rounded-2xl">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 border border-border rounded-2xl">
                       <img
                         src={config.customLogoUrl}
                         alt="Custom Logo Preview"
-                        className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-xs"
+                        className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-2xs"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-[hsl(var(--foreground))] truncate">Custom Logo Selected</p>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))]">Will be saved to bucket on save</p>
+                        <p className="text-xs font-bold text-foreground truncate">Custom Logo Selected</p>
+                        <p className="text-[10px] text-muted-foreground">Will be saved to bucket on save</p>
                       </div>
                       <button
                         onClick={handleRemoveLogo}
@@ -550,14 +552,14 @@ export default function CustomizeSharePage() {
                   ) : (
                     <div
                       onClick={() => logoFileInputRef.current?.click()}
-                      className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] p-4 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-[hsl(var(--primary))]/5 flex flex-col items-center gap-2"
+                      className="border-2 border-dashed border-border hover:border-primary p-4 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-primary/5 flex flex-col items-center gap-2"
                     >
-                      <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                      <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
                         <Upload className="w-5 h-5" />
                       </div>
                       <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-[hsl(var(--foreground))]">Click to upload custom logo</p>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))]">PNG, JPG, SVG, WebP up to 5MB</p>
+                        <p className="text-xs font-bold text-foreground">Click to upload custom logo</p>
+                        <p className="text-[10px] text-muted-foreground">PNG, JPG, SVG, WebP up to 5MB</p>
                       </div>
                     </div>
                   )}
@@ -572,9 +574,9 @@ export default function CustomizeSharePage() {
               </div>
 
               {/* Uploadable Welcome Banner Image */}
-              <div className="space-y-3 pt-4 border-t border-[hsl(var(--border))]">
+              <div className="space-y-3 pt-4 border-t border-border">
                 <div className="space-y-0.5">
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                     Welcome Banner Image
                   </label>
                   <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
@@ -584,7 +586,7 @@ export default function CustomizeSharePage() {
                 </div>
 
                 {config.welcomeBannerUrl ? (
-                  <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-950 border border-[hsl(var(--border))] rounded-2xl">
+                  <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-950 border border-border rounded-2xl">
                     <div className="w-full h-24 rounded-xl overflow-hidden bg-slate-900 border border-white/10">
                       <img
                         src={config.welcomeBannerUrl}
@@ -593,7 +595,7 @@ export default function CustomizeSharePage() {
                       />
                     </div>
                     <div className="flex items-center justify-between pt-1">
-                      <p className="text-[11px] font-bold text-[hsl(var(--muted-foreground))]">Welcome banner ready to upload</p>
+                      <p className="text-[11px] font-bold text-muted-foreground">Welcome banner ready to upload</p>
                       <button
                         onClick={handleRemoveWelcomeBanner}
                         className="px-3 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
@@ -606,14 +608,14 @@ export default function CustomizeSharePage() {
                 ) : (
                   <div
                     onClick={() => welcomeBannerInputRef.current?.click()}
-                    className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] p-5 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-[hsl(var(--primary))]/5 flex flex-col items-center gap-2"
+                    className="border-2 border-dashed border-border hover:border-primary p-5 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-primary/5 flex flex-col items-center gap-2"
                   >
-                    <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
                       <ImageIcon className="w-5 h-5" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-[hsl(var(--foreground))]">Click to upload welcome banner image</p>
-                      <p className="text-[10px] text-[hsl(var(--muted-foreground))]">PNG, JPG, WebP up to 10MB</p>
+                      <p className="text-xs font-bold text-foreground">Click to upload welcome banner image</p>
+                      <p className="text-[10px] text-muted-foreground">PNG, JPG, WebP up to 10MB</p>
                     </div>
                   </div>
                 )}
@@ -626,9 +628,9 @@ export default function CustomizeSharePage() {
                 />
               </div>
 
-              <div className="space-y-3 pt-3 border-t border-[hsl(var(--border))]">
+              <div className="space-y-3 pt-3 border-t border-border">
                 <div className="space-y-2">
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                     Welcome Banner Subtitle / Tagline Text
                   </label>
                   <input
@@ -636,16 +638,16 @@ export default function CustomizeSharePage() {
                     value={config.welcomeTagline || ""}
                     onChange={(e) => setConfig((prev) => ({ ...prev, welcomeTagline: e.target.value }))}
                     placeholder="e.g. Watch our official video demos and feature announcements"
-                    className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                    className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                   />
                 </div>
 
                 <div className="space-y-2.5 pt-1">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                       Subtitle Font Size
                     </label>
-                    <span className="text-xs font-mono font-bold text-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                    <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
                       {(() => {
                         const val = config.welcomeTaglineFontSize;
                         if (!val) return 24;
@@ -676,11 +678,12 @@ export default function CustomizeSharePage() {
                     min={12}
                     max={48}
                     step={1}
-                    onValueChange={(val) =>
-                      setConfig((prev) => ({ ...prev, welcomeTaglineFontSize: String(val[0]) }))
-                    }
+                    onValueChange={(val) => {
+                      const num = Array.isArray(val) ? val[0] : val;
+                      setConfig((prev) => ({ ...prev, welcomeTaglineFontSize: String(num) }));
+                    }}
                   />
-                  <div className="flex justify-between text-[10px] text-[hsl(var(--muted-foreground))] font-semibold px-0.5">
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-semibold px-0.5">
                     <span>12px (Small)</span>
                     <span>24px (Default)</span>
                     <span>48px (Large)</span>
@@ -692,12 +695,12 @@ export default function CustomizeSharePage() {
 
           {/* TAB 3: Call-To-Action (CTA) */}
           {activeTab === "cta" && (
-            <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-[hsl(var(--border))] shadow-xs">
+            <div className="space-y-5 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-border shadow-2xs">
               {/* Switch for CTA */}
-              <div className="flex items-center justify-between pb-3 border-b border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div>
-                  <span className="text-xs font-black text-[hsl(var(--foreground))] block">Enable Call-to-Action Card</span>
-                  <span className="text-[11px] text-[hsl(var(--muted-foreground))]">Prompt viewers with a direct link or booking button</span>
+                  <span className="text-xs font-black text-foreground block">Enable Call-to-Action Card</span>
+                  <span className="text-[11px] text-muted-foreground">Prompt viewers with a direct link or booking button</span>
                 </div>
                 <Switch
                   checked={config.showCta ?? false}
@@ -708,7 +711,7 @@ export default function CustomizeSharePage() {
               {config.showCta && (
                 <>
                   <div className="space-y-2">
-                    <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                       CTA Button Text
                     </label>
                     <input
@@ -716,12 +719,12 @@ export default function CustomizeSharePage() {
                       value={config.ctaText || ""}
                       onChange={(e) => setConfig((prev) => ({ ...prev, ctaText: e.target.value }))}
                       placeholder="e.g. Schedule a Live Demo"
-                      className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                      className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                       CTA Destination URL
                     </label>
                     <input
@@ -729,7 +732,7 @@ export default function CustomizeSharePage() {
                       value={config.ctaUrl || ""}
                       onChange={(e) => setConfig((prev) => ({ ...prev, ctaUrl: e.target.value }))}
                       placeholder="https://example.com/calendar"
-                      className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                      className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                     />
                   </div>
                 </>
@@ -739,12 +742,12 @@ export default function CustomizeSharePage() {
 
           {/* TAB 4: Social & Display Options */}
           {activeTab === "display" && (
-            <div className="space-y-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-[hsl(var(--border))] shadow-xs">
+            <div className="space-y-4 bg-white dark:bg-slate-900 p-5 rounded-2xl border border-border shadow-2xs">
               {/* Switch for Copy Link Button */}
-              <div className="flex items-center justify-between py-2 border-b border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between py-2 border-b border-border">
                 <div>
-                  <span className="text-xs font-bold text-[hsl(var(--foreground))] block">Show Copy Link Button</span>
-                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] font-medium">Quick copy share button in header</span>
+                  <span className="text-xs font-bold text-foreground block">Show Copy Link Button</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">Quick copy share button in header</span>
                 </div>
                 <Switch
                   checked={config.showShareButton ?? true}
@@ -753,10 +756,10 @@ export default function CustomizeSharePage() {
               </div>
 
               {/* Switch for Social Bar */}
-              <div className="flex items-center justify-between py-2 border-b border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between py-2 border-b border-border">
                 <div>
-                  <span className="text-xs font-bold text-[hsl(var(--foreground))] block">Show Social Sharing Bar</span>
-                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] font-medium">Quick buttons for Twitter/X, LinkedIn, WhatsApp & Email</span>
+                  <span className="text-xs font-bold text-foreground block">Show Social Sharing Bar</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">Quick buttons for Twitter/X, LinkedIn, WhatsApp & Email</span>
                 </div>
                 <Switch
                   checked={config.showSocialBar ?? true}
@@ -765,10 +768,10 @@ export default function CustomizeSharePage() {
               </div>
 
               {/* Switch for Duration Badge */}
-              <div className="flex items-center justify-between py-2 border-b border-[hsl(var(--border))]">
+              <div className="flex items-center justify-between py-2 border-b border-border">
                 <div>
-                  <span className="text-xs font-bold text-[hsl(var(--foreground))] block">Show Video Duration Badge</span>
-                  <span className="text-[11px] text-[hsl(var(--muted-foreground))] font-medium">Display duration runtime chip on video details</span>
+                  <span className="text-xs font-bold text-foreground block">Show Video Duration Badge</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">Display duration runtime chip on video details</span>
                 </div>
                 <Switch
                   checked={config.showDuration ?? true}
@@ -777,7 +780,7 @@ export default function CustomizeSharePage() {
               </div>
 
               <div className="space-y-2 pt-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Custom Footer Copyright Text
                 </label>
                 <input
@@ -785,7 +788,7 @@ export default function CustomizeSharePage() {
                   value={config.footerText || ""}
                   onChange={(e) => setConfig((prev) => ({ ...prev, footerText: e.target.value }))}
                   placeholder="e.g. © 2026 Acme Corp. All rights reserved."
-                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                  className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                 />
               </div>
             </div>
@@ -795,16 +798,16 @@ export default function CustomizeSharePage() {
         {/* Live Preview Container (Right Column) */}
         <div className="lg:col-span-7 space-y-3 sticky top-6">
           <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
-              <Eye className="w-4 h-4 text-[hsl(var(--primary))]" />
+            <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+              <Eye className="w-4 h-4 text-primary" />
               <span>Real-Time Live Preview</span>
             </div>
-            <span className="text-[11px] text-[hsl(var(--muted-foreground))] font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-[hsl(var(--border))]">
+            <span className="text-[11px] text-muted-foreground font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-full border border-border">
               Shared Video View
             </span>
           </div>
 
-          <div className="border border-[hsl(var(--border))] rounded-2xl overflow-hidden shadow-2xl max-h-[750px] overflow-y-auto">
+          <div className="border border-border rounded-2xl overflow-hidden shadow-2xl max-h-[750px] overflow-y-auto">
             <SharedContentClient overrideConfig={config} previewData={SAMPLE_PREVIEW_DATA} />
           </div>
         </div>

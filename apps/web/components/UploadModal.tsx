@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { uploadVideoFile } from "@/lib/upload-video";
 import {
   VideoMetadata,
@@ -343,7 +345,7 @@ export default function UploadModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <UploadCloud className="w-5 h-5" />
             </div>
             <div>
@@ -382,7 +384,7 @@ export default function UploadModal({
 
         <form onSubmit={handleUpload} className="space-y-4">
           {/* Dropzone */}
-          <div className="border-2 border-dashed border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] rounded-xl p-5 text-center transition-colors bg-[hsl(var(--muted))]/30">
+          <div className="border-2 border-dashed border-border hover:border-primary rounded-xl p-5 text-center transition-colors bg-muted/30">
             <input
               type="file"
               accept="video/*"
@@ -394,7 +396,7 @@ export default function UploadModal({
             />
             <label htmlFor="video-file-input" className="cursor-pointer flex flex-col items-center justify-center">
               {customThumbUrl ? (
-                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-sm">
+                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
                   <img
                     src={customThumbUrl}
                     alt="Custom thumbnail preview"
@@ -405,7 +407,7 @@ export default function UploadModal({
                   </div>
                 </div>
               ) : metadata?.thumbnailUrl ? (
-                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-sm">
+                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
                   <img
                     src={metadata.thumbnailUrl}
                     alt="Extracted video thumbnail preview"
@@ -416,33 +418,33 @@ export default function UploadModal({
                   </div>
                 </div>
               ) : (
-                <Film className="w-10 h-10 text-[hsl(var(--primary))] mb-2" />
+                <Film className="w-10 h-10 text-primary mb-2" />
               )}
               {file ? (
                 <div className="space-y-1">
-                  <p className="font-semibold text-sm text-[hsl(var(--foreground))]">{file.name}</p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                  <p className="font-semibold text-sm text-foreground">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {(file.size / (1024 * 1024)).toFixed(2)} MB
                   </p>
                   {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-[hsl(var(--primary))]">
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-primary">
                       {metadata.durationSeconds > 0 && (
-                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
                           <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
                         </span>
                       )}
                       {metadata.sourceWidth > 0 && (
-                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
                           <Maximize2 className="w-3 h-3" /> {metadata.sourceWidth}x{metadata.sourceHeight}
                         </span>
                       )}
                       {metadata.fps && (
-                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md">
+                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
                           {metadata.fps} FPS
                         </span>
                       )}
                       {metadata.codec && (
-                        <span className="flex items-center gap-1 bg-[hsl(var(--primary))]/10 px-2 py-0.5 rounded-md uppercase">
+                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md uppercase">
                           {metadata.codec}
                         </span>
                       )}
@@ -451,10 +453,10 @@ export default function UploadModal({
                 </div>
               ) : (
                 <div>
-                  <p className="font-semibold text-sm text-[hsl(var(--foreground))]">
+                  <p className="font-semibold text-sm text-foreground">
                     Click to select or drag and drop video
                   </p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">MP4, MOV, WebM, MKV (up to 4K)</p>
+                  <p className="text-xs text-muted-foreground mt-1">MP4, MOV, WebM, MKV (up to 4K)</p>
                 </div>
               )}
             </label>
@@ -479,19 +481,19 @@ export default function UploadModal({
           {(() => {
             const canUseHls = ["pro", "enterprise"].includes(userPlan.toLowerCase());
             return (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-[hsl(var(--border))]">
-                <div className="space-y-0.5">
+              <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card">
+                <div className="space-y-0.5 pr-4">
                   <div className="flex items-center gap-2">
-                    <label htmlFor="require-hls-toggle" className="text-xs font-bold text-[hsl(var(--foreground))] cursor-pointer">
+                    <Label htmlFor="require-hls-toggle" className="text-xs font-semibold cursor-pointer">
                       Require HLS (Adaptive Bitrate)
-                    </label>
+                    </Label>
                     {!canUseHls && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-500/30">
+                      <Badge variant="outline" className="uppercase text-amber-600 border-amber-500/30 bg-amber-500/10">
                         PRO FEATURE
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                  <p className="text-[11px] text-muted-foreground">
                     {!canUseHls
                       ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
                       : requireHls
@@ -499,23 +501,12 @@ export default function UploadModal({
                       : "Store original video & play directly without transcoding"}
                   </p>
                 </div>
-                <button
+                <Switch
                   id="require-hls-toggle"
-                  type="button"
-                  role="switch"
-                  aria-checked={canUseHls && requireHls}
+                  checked={canUseHls && requireHls}
+                  onCheckedChange={(checked) => canUseHls && setRequireHls(checked)}
                   disabled={uploading || !canUseHls}
-                  onClick={() => canUseHls && setRequireHls(!requireHls)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] focus:ring-offset-2 ${
-                    canUseHls && requireHls ? "bg-[hsl(var(--primary))]" : "bg-slate-300 opacity-60"
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                      canUseHls && requireHls ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
+                />
               </div>
             );
           })()}
@@ -550,20 +541,20 @@ export default function UploadModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details about this video..."
-              className="flex w-full rounded-xl border border-[hsl(var(--input))] bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
+              className="flex w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
             />
           </div>
 
           {/* Progress Bar */}
           {uploading && (
             <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs font-medium text-[hsl(var(--muted-foreground))]">
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
                 <span>{statusText}</span>
                 <span>{progress}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full bg-[hsl(var(--primary))] transition-all duration-300 rounded-full"
+                  className="h-full bg-primary transition-all duration-300 rounded-full"
                   style={{ width: `${progress}%` }}
                 />
               </div>

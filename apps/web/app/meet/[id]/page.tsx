@@ -173,7 +173,7 @@ export default function MeetPage() {
   if (isLoading && !meeting && !isInRoom && !leaveState) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-10 h-10 animate-spin text-[hsl(var(--primary))] mb-4" />
+        <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
         <p className="text-sm font-medium text-slate-400">Connecting to meeting room...</p>
       </div>
     );

@@ -132,38 +132,38 @@ export default function InteractiveHeroMockup() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto rounded-3xl border border-[hsl(var(--border))] bg-white/70 dark:bg-slate-950/80 backdrop-blur-2xl shadow-2xl overflow-hidden transition-all">
+    <div className="w-full max-w-5xl mx-auto rounded-3xl border border-border bg-white/70 dark:bg-slate-950/80 backdrop-blur-2xl shadow-2xl overflow-hidden transition-all">
       {/* Top Header Bar / Mac Window Chrome */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-[hsl(var(--border))] bg-slate-100/70 dark:bg-slate-900/80 gap-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-4 sm:px-6 py-3 border-b border-border bg-slate-100/70 dark:bg-slate-900/80 gap-3">
         {/* Window controls & Live Simulator badge */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-rose-500 inline-block shadow-xs" />
-            <span className="w-3 h-3 rounded-full bg-amber-400 inline-block shadow-xs" />
-            <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-xs" />
+            <span className="w-3 h-3 rounded-full bg-rose-500 inline-block shadow-2xs" />
+            <span className="w-3 h-3 rounded-full bg-amber-400 inline-block shadow-2xs" />
+            <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-2xs" />
           </div>
           <div className="flex items-center gap-2 pl-2">
-            <span className="text-xs font-black uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+            <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
               Interactive Product Demo
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-[10px] font-extrabold animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--primary))]" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-[10px] font-extrabold animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
               Live Interactive
             </span>
           </div>
         </div>
 
         {/* Free Storage Value Counter */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-[hsl(var(--muted-foreground))]">
-          <span className="px-2.5 py-1 rounded-lg bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] font-bold flex items-center gap-1.5">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+          <span className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary font-bold flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" /> 2GB Free Cloud Storage
           </span>
-          <span className="hidden md:inline text-[11px] text-[hsl(var(--muted-foreground))]">• No external tools needed</span>
+          <span className="hidden md:inline text-[11px] text-muted-foreground">• No external tools needed</span>
         </div>
       </div>
 
       {/* Feature Selector Tabs */}
-      <div className="p-2 sm:p-3 bg-slate-50/90 dark:bg-slate-900/60 border-b border-[hsl(var(--border))] overflow-x-auto">
+      <div className="p-2 sm:p-3 bg-slate-50/90 dark:bg-slate-900/60 border-b border-border overflow-x-auto">
         <div className="flex items-center gap-1.5 min-w-max">
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -173,15 +173,15 @@ export default function InteractiveHeroMockup() {
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
                 className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${isCurrent
-                    ? "bg-[hsl(var(--primary))] text-white shadow-md shadow-[hsl(var(--primary))]/25 ring-2 ring-[hsl(var(--primary))]/20"
-                    : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-black/5 dark:hover:bg-white/5"
+                    ? "bg-primary text-white shadow-md shadow-primary/25 ring-2 ring-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5"
                   }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isCurrent ? "text-white" : "text-[hsl(var(--primary))]"}`} />
+                <Icon className={`w-3.5 h-3.5 ${isCurrent ? "text-white" : "text-primary"}`} />
                 <span>{t.label}</span>
                 {t.badge && (
                   <span
-                    className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md font-extrabold ${isCurrent ? "bg-white/20 text-white" : "bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]"
+                    className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-md font-extrabold ${isCurrent ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                       }`}
                   >
                     {t.badge}
@@ -200,7 +200,7 @@ export default function InteractiveHeroMockup() {
         {/* ========================================================= */}
         {activeTab === "recorder" && (
           <div className="w-full max-w-3xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="relative rounded-2xl border border-slate-700/60 bg-gradient-to-br from-slate-950 to-slate-900 text-white p-5 shadow-2xl overflow-hidden min-h-[280px] flex flex-col justify-between">
+            <div className="relative rounded-2xl border border-slate-700/60 bg-linear-to-br from-slate-950 to-slate-900 text-white p-5 shadow-2xl overflow-hidden min-h-[280px] flex flex-col justify-between">
               {/* Simulated Desktop Screen Recording Background */}
               <div className="absolute inset-0 bg-dot-grid opacity-25 pointer-events-none" />
 
@@ -248,7 +248,7 @@ export default function InteractiveHeroMockup() {
                       : "w-32 h-32 sm:w-36 sm:h-36"
                   }`}
               >
-                <div className="relative w-full h-full bg-gradient-to-tr from-lime-600 via-emerald-700 to-slate-900 flex items-center justify-center text-white">
+                <div className="relative w-full h-full bg-linear-to-tr from-lime-600 via-emerald-700 to-slate-900 flex items-center justify-center text-white">
                   <div className="text-center">
                     <span className="text-lg sm:text-2xl">👨‍💻</span>
                     <span className="block text-[8px] font-bold uppercase tracking-tight text-lime-200">You (Webcam)</span>
@@ -311,8 +311,8 @@ export default function InteractiveHeroMockup() {
             </div>
 
             {/* Feature Description Footnote */}
-            <div className="flex flex-wrap items-center justify-between text-xs text-[hsl(var(--muted-foreground))] font-semibold px-2">
-              <span className="flex items-center gap-1.5 text-[hsl(var(--primary))] font-bold">
+            <div className="flex flex-wrap items-center justify-between text-xs text-muted-foreground font-semibold px-2">
+              <span className="flex items-center gap-1.5 text-primary font-bold">
                 <CheckCircle2 className="w-4 h-4" /> Instant automated upload to your 2GB cloud library
               </span>
               <span>Available on Chrome, Edge, Brave, Firefox & Safari</span>
@@ -325,17 +325,17 @@ export default function InteractiveHeroMockup() {
         {/* ========================================================= */}
         {activeTab === "security" && (
           <div className="w-full max-w-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="rounded-2xl border border-[hsl(var(--border))] bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-5">
-              <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-3">
+            <div className="rounded-2xl border border-border bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-5">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-lime-500/15 text-[hsl(var(--primary))]">
+                  <div className="p-2 rounded-xl bg-lime-500/15 text-primary">
                     <Lock className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-[hsl(var(--foreground))]">
+                    <h3 className="font-extrabold text-sm text-foreground">
                       Granular Email-Based Sharing & Access Control
                     </h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="text-xs text-muted-foreground">
                       Only verified recipients can unlock and stream this video
                     </p>
                   </div>
@@ -349,18 +349,18 @@ export default function InteractiveHeroMockup() {
               {/* Add Email Form */}
               <form onSubmit={handleAddEmail} className="flex gap-2">
                 <div className="relative flex-1">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="email"
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     placeholder="Enter email to grant playback access (e.g. client@corp.com)..."
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]"
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-border bg-slate-50 dark:bg-slate-950 text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[hsl(var(--primary))] text-white text-xs font-bold rounded-xl shadow-md hover:opacity-90 transition-all flex items-center gap-1 cursor-pointer"
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-md hover:opacity-90 transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Grant Access</span>
@@ -369,7 +369,7 @@ export default function InteractiveHeroMockup() {
 
               {/* Active Whitelisted Emails List */}
               <div className="space-y-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Authorized Viewers ({allowedEmails.length})
                 </span>
 
@@ -377,12 +377,12 @@ export default function InteractiveHeroMockup() {
                   {allowedEmails.map((email) => (
                     <div
                       key={email}
-                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-[hsl(var(--border))] text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-border text-xs"
                     >
                       <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                        <span className="font-semibold text-[hsl(var(--foreground))]">{email}</span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-lime-500/15 text-[hsl(var(--primary))] font-bold">
+                        <span className="font-semibold text-foreground">{email}</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-lime-500/15 text-primary font-bold">
                           1-Time Passcode Auth
                         </span>
                       </div>
@@ -399,20 +399,20 @@ export default function InteractiveHeroMockup() {
               </div>
 
               {/* Security Switches */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-[hsl(var(--border))]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-border">
                 <div
                   onClick={() => setPasscodeEnabled(!passcodeEnabled)}
                   className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${passcodeEnabled
-                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
-                      : "border-[hsl(var(--border))] opacity-75"
+                      ? "border-primary bg-primary/5"
+                      : "border-border opacity-75"
                     }`}
                 >
                   <div>
-                    <span className="font-bold text-[hsl(var(--foreground))] block">Require 6-Digit PIN</span>
-                    <span className="text-[10px] text-[hsl(var(--muted-foreground))]">Emailed upon stream request</span>
+                    <span className="font-bold text-foreground block">Require 6-Digit PIN</span>
+                    <span className="text-[10px] text-muted-foreground">Emailed upon stream request</span>
                   </div>
                   <span
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${passcodeEnabled ? "bg-[hsl(var(--primary))] text-white border-transparent" : "border-slate-400"
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${passcodeEnabled ? "bg-primary text-white border-transparent" : "border-slate-400"
                       }`}
                   >
                     {passcodeEnabled && <CheckCircle2 className="w-3 h-3" />}
@@ -422,16 +422,16 @@ export default function InteractiveHeroMockup() {
                 <div
                   onClick={() => setExpirationEnabled(!expirationEnabled)}
                   className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-center justify-between ${expirationEnabled
-                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/5"
-                      : "border-[hsl(var(--border))] opacity-75"
+                      ? "border-primary bg-primary/5"
+                      : "border-border opacity-75"
                     }`}
                 >
                   <div>
-                    <span className="font-bold text-[hsl(var(--foreground))] block">Auto-Expire Link</span>
-                    <span className="text-[10px] text-[hsl(var(--muted-foreground))]">Disable access after 7 days</span>
+                    <span className="font-bold text-foreground block">Auto-Expire Link</span>
+                    <span className="text-[10px] text-muted-foreground">Disable access after 7 days</span>
                   </div>
                   <span
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${expirationEnabled ? "bg-[hsl(var(--primary))] text-white border-transparent" : "border-slate-400"
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${expirationEnabled ? "bg-primary text-white border-transparent" : "border-slate-400"
                       }`}
                   >
                     {expirationEnabled && <CheckCircle2 className="w-3 h-3" />}
@@ -482,7 +482,7 @@ export default function InteractiveHeroMockup() {
               {/* Conference Grid Layout */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 min-h-[200px]">
                 {/* Main Presenter / Screen Share View (Spans 2 cols) */}
-                <div className="sm:col-span-2 rounded-xl bg-gradient-to-br from-slate-900 to-indigo-950 border border-white/10 p-3 relative overflow-hidden flex flex-col justify-between aspect-video sm:aspect-auto">
+                <div className="sm:col-span-2 rounded-xl bg-linear-to-br from-slate-900 to-indigo-950 border border-white/10 p-3 relative overflow-hidden flex flex-col justify-between aspect-video sm:aspect-auto">
                   <div className="flex items-center justify-between text-xs text-slate-300">
                     <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-bold text-lime-400 flex items-center gap-1">
                       <Monitor className="w-3 h-3" /> Screen Share: Figma Prototype
@@ -548,23 +548,23 @@ export default function InteractiveHeroMockup() {
         {/* ========================================================= */}
         {activeTab === "playlist" && (
           <div className="w-full max-w-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
-            <div className="rounded-2xl border border-[hsl(var(--border))] bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between border-b border-[hsl(var(--border))] pb-3">
+            <div className="rounded-2xl border border-border bg-white dark:bg-slate-900 p-5 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]">
+                  <div className="p-2 rounded-xl bg-primary/10 text-primary">
                     <Layers className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-sm text-[hsl(var(--foreground))]">
+                    <h3 className="font-extrabold text-sm text-foreground">
                       Full-Stack Video Masterclass (Playlist)
                     </h3>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="text-xs text-muted-foreground">
                       4 Episodes • Total Duration: 48 mins • Public Embed Link
                     </p>
                   </div>
                 </div>
 
-                <span className="px-2.5 py-1 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] text-xs font-bold">
+                <span className="px-2.5 py-1 rounded-xl bg-primary/15 text-primary text-xs font-bold">
                   Autoplay Next
                 </span>
               </div>
@@ -580,24 +580,24 @@ export default function InteractiveHeroMockup() {
                   <div
                     key={item.id}
                     className={`flex items-center justify-between p-3 rounded-xl border transition-all text-xs ${item.active
-                        ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 font-bold"
-                        : "border-[hsl(var(--border))] bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 dark:hover:bg-slate-900"
+                        ? "border-primary bg-primary/10 font-bold"
+                        : "border-border bg-slate-50/50 dark:bg-slate-950/50 hover:bg-slate-100 dark:hover:bg-slate-900"
                       }`}
                   >
                     <div className="flex items-center gap-3">
                       <span
-                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold ${item.active ? "bg-[hsl(var(--primary))] text-white" : "bg-slate-200 dark:bg-slate-800 text-[hsl(var(--foreground))]"
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-bold ${item.active ? "bg-primary text-white" : "bg-slate-200 dark:bg-slate-800 text-foreground"
                           }`}
                       >
                         {item.id}
                       </span>
-                      <span className="text-[hsl(var(--foreground))]">{item.title}</span>
+                      <span className="text-foreground">{item.title}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-mono text-[hsl(var(--muted-foreground))]">{item.duration}</span>
+                      <span className="text-[11px] font-mono text-muted-foreground">{item.duration}</span>
                       {item.active ? (
-                        <Play className="w-3.5 h-3.5 fill-current text-[hsl(var(--primary))]" />
+                        <Play className="w-3.5 h-3.5 fill-current text-primary" />
                       ) : (
                         <Sliders className="w-3.5 h-3.5 text-slate-400" />
                       )}
@@ -607,9 +607,9 @@ export default function InteractiveHeroMockup() {
               </div>
 
               {/* Share & Embed Bar */}
-              <div className="flex items-center justify-between pt-2 border-t border-[hsl(var(--border))] text-xs">
-                <span className="text-[hsl(var(--muted-foreground))]">Embed player supported in Notion, WordPress, Next.js</span>
-                <span className="font-bold text-[hsl(var(--primary))] flex items-center gap-1 cursor-pointer">
+              <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
+                <span className="text-muted-foreground">Embed player supported in Notion, WordPress, Next.js</span>
+                <span className="font-bold text-primary flex items-center gap-1 cursor-pointer">
                   <Share2 className="w-3.5 h-3.5" /> 1-Click Copy Playlist Share Link
                 </span>
               </div>
@@ -624,8 +624,8 @@ export default function InteractiveHeroMockup() {
           <div className="w-full max-w-3xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {/* Controls Column */}
-              <div className="md:col-span-4 space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-[hsl(var(--border))] text-xs">
-                <span className="font-extrabold uppercase tracking-wider text-[hsl(var(--muted-foreground))] block">
+              <div className="md:col-span-4 space-y-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-border text-xs">
+                <span className="font-extrabold uppercase tracking-wider text-muted-foreground block">
                   Select Theme Preset
                 </span>
 
@@ -643,30 +643,30 @@ export default function InteractiveHeroMockup() {
                         setBrandAccent(t.color);
                       }}
                       className={`w-full p-2 rounded-xl border text-left font-bold transition-all flex items-center justify-between cursor-pointer ${brandTheme === t.id
-                          ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))]/10"
-                          : "border-[hsl(var(--border))] hover:bg-slate-100 dark:hover:bg-slate-800"
+                          ? "border-primary ring-2 ring-primary/20 bg-primary/10"
+                          : "border-border hover:bg-slate-100 dark:hover:bg-slate-800"
                         }`}
                     >
-                      <span className="text-[hsl(var(--foreground))]">{t.label}</span>
+                      <span className="text-foreground">{t.label}</span>
                       <span className="w-3.5 h-3.5 rounded-full border border-white/20" style={{ backgroundColor: t.color }} />
                     </button>
                   ))}
                 </div>
 
-                <div className="pt-2 border-t border-[hsl(var(--border))] space-y-1">
-                  <span className="font-bold text-[hsl(var(--foreground))] block">Custom CTA Label</span>
+                <div className="pt-2 border-t border-border space-y-1">
+                  <span className="font-bold text-foreground block">Custom CTA Label</span>
                   <input
                     type="text"
                     value={brandCtaText}
                     onChange={(e) => setBrandCtaText(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-[hsl(var(--border))] bg-slate-50 dark:bg-slate-950 text-[hsl(var(--foreground))]"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-border bg-slate-50 dark:bg-slate-950 text-foreground"
                   />
                 </div>
               </div>
 
               {/* Dynamic Branded Share Page Live Preview */}
               <div
-                className={`md:col-span-8 rounded-2xl border p-4 shadow-xl flex flex-col justify-between transition-all bg-gradient-to-br ${THEME_STYLES[brandTheme].bg} ${THEME_STYLES[brandTheme].card}`}
+                className={`md:col-span-8 rounded-2xl border p-4 shadow-xl flex flex-col justify-between transition-all bg-linear-to-br ${THEME_STYLES[brandTheme].bg} ${THEME_STYLES[brandTheme].card}`}
               >
                 {/* Branded Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-white/10 text-white">
@@ -704,15 +704,15 @@ export default function InteractiveHeroMockup() {
       </div>
 
       {/* Bottom Sub-Footer Bar with Quick CTA */}
-      <div className="px-4 sm:px-6 py-3.5 bg-slate-100/80 dark:bg-slate-900/80 border-t border-[hsl(var(--border))] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 font-semibold text-[hsl(var(--muted-foreground))] text-center sm:text-left">
-          <Sparkles className="w-4 h-4 text-[hsl(var(--primary))]" />
+      <div className="px-4 sm:px-6 py-3.5 bg-slate-100/80 dark:bg-slate-900/80 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2 font-semibold text-muted-foreground text-center sm:text-left">
+          <Sparkles className="w-4 h-4 text-primary" />
           <span>Experience all 5 video tools in one unified dashboard with zero context switching.</span>
         </div>
 
         <Link
           href="/auth/register"
-          className="px-4 py-2 rounded-xl bg-[hsl(var(--primary))] text-white font-black hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0 shadow-md"
+          className="px-4 py-2 rounded-xl bg-primary text-white font-black hover:opacity-90 transition-all flex items-center gap-1.5 shrink-0 shadow-md"
         >
           <span>Claim 2GB Free Storage</span>
           <ArrowRight className="w-3.5 h-3.5" />

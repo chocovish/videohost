@@ -319,7 +319,7 @@ export function VideoTrimmer({
       {/* Header Banner */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-lime-500 to-emerald-600 text-slate-950 font-black shadow-md shadow-lime-500/20">
+          <div className="p-2 rounded-xl bg-linear-to-br from-lime-500 to-emerald-600 text-slate-950 font-black shadow-md shadow-lime-500/20">
             <Scissors className="w-4 h-4" />
           </div>
           <div>
@@ -438,12 +438,12 @@ export function VideoTrimmer({
           <div
             style={{ left: `${startPercent}%` }}
             onPointerDown={(e) => handlePointerDown("start", e)}
-            className="absolute top-0 bottom-0 -ml-2.5 w-5 bg-gradient-to-r from-lime-500 to-lime-600 hover:from-lime-400 hover:to-lime-500 rounded-l-md cursor-ew-resize flex items-center justify-center shadow-lg shadow-lime-500/30 z-20 group/handle touch-none active:scale-105 transition-transform"
+            className="absolute top-0 bottom-0 -ml-2.5 w-5 bg-linear-to-r from-lime-500 to-lime-600 hover:from-lime-400 hover:to-lime-500 rounded-l-md cursor-ew-resize flex items-center justify-center shadow-lg shadow-lime-500/30 z-20 group/handle touch-none active:scale-105 transition-transform"
             title="Drag to trim start"
           >
             <div className="w-0.5 h-6 bg-slate-950 rounded-full" />
             {/* Hover Floating Tooltip */}
-            <div className="absolute -top-7 bg-slate-900 border border-lime-500 text-[10px] font-mono font-bold text-lime-400 px-1.5 py-0.5 rounded shadow pointer-events-none whitespace-nowrap opacity-0 group-hover/handle:opacity-100 transition-opacity">
+            <div className="absolute -top-7 bg-slate-900 border border-lime-500 text-[10px] font-mono font-bold text-lime-400 px-1.5 py-0.5 rounded shadow-sm pointer-events-none whitespace-nowrap opacity-0 group-hover/handle:opacity-100 transition-opacity">
               {formatTimecode(startTime)}
             </div>
           </div>
@@ -452,12 +452,12 @@ export function VideoTrimmer({
           <div
             style={{ left: `${endPercent}%` }}
             onPointerDown={(e) => handlePointerDown("end", e)}
-            className="absolute top-0 bottom-0 -ml-2.5 w-5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-r-md cursor-ew-resize flex items-center justify-center shadow-lg shadow-emerald-500/30 z-20 group/handle touch-none active:scale-105 transition-transform"
+            className="absolute top-0 bottom-0 -ml-2.5 w-5 bg-linear-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 rounded-r-md cursor-ew-resize flex items-center justify-center shadow-lg shadow-emerald-500/30 z-20 group/handle touch-none active:scale-105 transition-transform"
             title="Drag to trim end"
           >
             <div className="w-0.5 h-6 bg-slate-950 rounded-full" />
             {/* Hover Floating Tooltip */}
-            <div className="absolute -top-7 bg-slate-900 border border-emerald-500 text-[10px] font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded shadow pointer-events-none whitespace-nowrap opacity-0 group-hover/handle:opacity-100 transition-opacity">
+            <div className="absolute -top-7 bg-slate-900 border border-emerald-500 text-[10px] font-mono font-bold text-emerald-400 px-1.5 py-0.5 rounded shadow-sm pointer-events-none whitespace-nowrap opacity-0 group-hover/handle:opacity-100 transition-opacity">
               {formatTimecode(endTime)}
             </div>
           </div>
@@ -466,9 +466,9 @@ export function VideoTrimmer({
           <div
             style={{ left: `${playheadPercent}%` }}
             onPointerDown={(e) => handlePointerDown("playhead", e)}
-            className="absolute top-0 bottom-0 -ml-[1.5px] w-[3px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] z-30 cursor-ew-resize pointer-events-auto"
+            className="absolute top-0 bottom-0 ml-[-1.5px] w-[3px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.9)] z-30 cursor-ew-resize pointer-events-auto"
           >
-            <div className="w-3 h-3 bg-white border border-slate-900 rounded-full -ml-[4.5px] -top-1.5 absolute shadow-sm" />
+            <div className="w-3 h-3 bg-white border border-slate-900 rounded-full ml-[-4.5px] -top-1.5 absolute shadow-xs" />
           </div>
         </div>
       </div>
@@ -630,7 +630,7 @@ export function VideoTrimmer({
           size="sm"
           onClick={togglePlayPreview}
           disabled={isTrimming}
-          className="rounded-xl border-white/15 text-xs font-bold gap-2 text-slate-200 hover:bg-white/10"
+          className="gap-2 text-slate-200"
         >
           {isPlaying ? (
             <>
@@ -653,7 +653,6 @@ export function VideoTrimmer({
             size="sm"
             onClick={onCancel}
             disabled={isTrimming}
-            className="rounded-xl text-xs font-bold text-slate-400 hover:text-white hover:bg-white/10"
           >
             Cancel
           </Button>
@@ -663,7 +662,7 @@ export function VideoTrimmer({
             size="sm"
             onClick={handleApplyTrim}
             disabled={isTrimming}
-            className="bg-gradient-to-r from-lime-500 to-emerald-600 hover:from-lime-400 hover:to-emerald-500 text-slate-950 font-black rounded-xl text-xs px-4 shadow-lg shadow-lime-500/20 gap-1.5 transition-transform hover:scale-[1.02]"
+            className="gap-1.5"
           >
             {isTrimming ? (
               <>
@@ -672,7 +671,7 @@ export function VideoTrimmer({
               </>
             ) : (
               <>
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                <Check className="w-3.5 h-3.5" />
                 <span>Apply Trim ({formatDuration(trimmedDuration)})</span>
               </>
             )}

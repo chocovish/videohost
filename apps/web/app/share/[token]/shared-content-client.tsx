@@ -416,7 +416,7 @@ export default function SharedContentClient({
 
   let bgClass = "bg-[#030712] text-slate-100";
   let cardBgClass = "bg-slate-900/80 border-white/10 shadow-2xl";
-  let headerBgClass = "bg-[#030712]/75 border-white/[0.08]";
+  let headerBgClass = "bg-[#030712]/75 border-white/8";
   let accentHex = config.accentColor || "#84cc16";
 
   if (preset === "cyberpunk") {
@@ -650,7 +650,7 @@ export default function SharedContentClient({
                   className="font-bold flex items-center gap-2 transition-all group cursor-pointer hover:opacity-90 active:scale-98 text-slate-200"
                 >
                   <div
-                    className="p-1.5 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center shadow-sm"
+                    className="p-1.5 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center shadow-xs"
                     style={{
                       backgroundColor: `${accentHex}15`,
                       color: accentHex,
@@ -1043,7 +1043,7 @@ export default function SharedContentClient({
                             placeholder="Filter queue..."
                             value={playlistSearchQuery}
                             onChange={(e) => setPlaylistSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-950/60 border border-slate-800 rounded-xl outline-none focus:ring-1 focus:ring-lime-400 text-slate-200"
+                            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-950/60 border border-slate-800 rounded-xl outline-hidden focus:ring-1 focus:ring-lime-400 text-slate-200"
                           />
                         </div>
                       )}
@@ -1169,7 +1169,7 @@ export default function SharedContentClient({
                       onClick={() => handleSubfolderClick(sf.id)}
                       className={`flex items-center gap-3.5 p-4 border transition-all duration-300 text-left group shadow-lg hover:-translate-y-1 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
                     >
-                      <div className="p-3 bg-gradient-to-br from-amber-500/20 to-amber-600/10 text-amber-400 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300">
+                      <div className="p-3 bg-linear-to-br from-amber-500/20 to-amber-600/10 text-amber-400 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300">
                         <Folder className="w-5 h-5 fill-amber-500/30" />
                       </div>
                       <div className="min-w-0 flex-1">

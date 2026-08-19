@@ -10,10 +10,19 @@ import {
   X,
   Loader2,
   Send,
-  Sparkles,
   AlertCircle,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface InMeetingInviteModalProps {
   isOpen: boolean;
@@ -35,8 +44,6 @@ export default function InMeetingInviteModal({
   const [isSending, setIsSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  if (!isOpen) return null;
 
   const joinUrl = typeof window !== "undefined" ? `${window.location.origin}/meet/${meetingId}` : `/meet/${meetingId}`;
 
@@ -121,60 +128,41 @@ export default function InMeetingInviteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800/80 bg-slate-950/40">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isSending && onClose()}>
+      <DialogContent className="max-w-lg p-6">
+        <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 flex items-center justify-center text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Users className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Invite People to Call</h2>
-              <p className="text-xs text-slate-400 truncate max-w-xs">{meetingTitle}</p>
+            <div className="min-w-0 flex-1">
+              <DialogTitle>Invite People to Call</DialogTitle>
+              <DialogDescription className="truncate">{meetingTitle}</DialogDescription>
             </div>
           </div>
-          <Button
-            variant="darkGhost"
-            size="icon-xs"
-            onClick={onClose}
-            title="Close invite modal"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </div>
+        </DialogHeader>
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="space-y-4 pt-1">
           {/* Quick Copy Link Box */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-              Direct Meeting Link
-            </label>
-            <div className="flex items-center gap-2 p-2 pl-3 bg-slate-950/80 border border-slate-800 rounded-xl">
-              <span className="text-xs text-slate-300 truncate flex-1 font-mono">{joinUrl}</span>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Direct Meeting Link</Label>
+            <div className="flex items-center gap-2 p-1.5 pl-3 bg-muted/50 border border-border rounded-xl">
+              <span className="text-xs text-foreground truncate flex-1 font-mono">{joinUrl}</span>
               <Button
                 size="sm"
-                variant="dark"
+                variant="outline"
                 onClick={handleCopyLink}
                 className="h-8 px-3 text-xs shrink-0 rounded-lg gap-1.5 font-medium"
               >
                 {copiedLink ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-emerald-400 font-semibold">Copied</span>
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-emerald-600 font-semibold">Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-slate-200">Copy Link</span>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Link</span>
                   </>
                 )}
               </Button>
@@ -182,27 +170,27 @@ export default function InMeetingInviteModal({
           </div>
 
           {/* Quick Copy Code */}
-          <div className="flex items-center justify-between p-3.5 bg-slate-950/40 border border-slate-800/80 rounded-xl">
+          <div className="flex items-center justify-between p-3 bg-card border border-border rounded-xl">
             <div>
-              <span className="text-xs text-slate-400">Meeting Room ID:</span>
-              <p className="text-sm font-mono font-bold text-[hsl(var(--primary))] tracking-wider mt-0.5">
+              <span className="text-xs text-muted-foreground">Meeting Room ID:</span>
+              <p className="text-sm font-mono font-bold text-primary tracking-wider mt-0.5">
                 {meetingId}
               </p>
             </div>
             <Button
               size="sm"
-              variant="darkOutline"
+              variant="outline"
               onClick={handleCopyCode}
-              className="h-8 px-3 text-xs text-slate-200 hover:text-white rounded-lg gap-1.5 font-medium"
+              className="h-8 px-3 text-xs rounded-lg gap-1.5 font-medium"
             >
               {copiedCode ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-emerald-400 font-semibold">Copied</span>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 font-semibold">Copied</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-3.5 h-3.5 text-slate-400" />
+                  <Copy className="w-3.5 h-3.5" />
                   <span>Copy Code</span>
                 </>
               )}
@@ -210,42 +198,45 @@ export default function InMeetingInviteModal({
           </div>
 
           {/* Send Instant Email Invite Form */}
-          <form onSubmit={handleSendInvites} className="space-y-3 pt-2 border-t border-slate-800/80">
+          <form onSubmit={handleSendInvites} className="space-y-3 pt-3 border-t border-border">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-slate-400" /> Send Instant Email Invitation
-              </label>
-              <span className="text-[11px] text-slate-500">press enter to add</span>
+              <Label htmlFor="in-meeting-invite-email" className="text-xs font-medium flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Send Email Invitation
+              </Label>
+              <span className="text-[11px] text-muted-foreground">Press Enter to add</span>
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
                 <Check className="w-4 h-4 shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
 
             <div className="flex gap-2">
-              <input
+              <Input
+                id="in-meeting-invite-email"
                 type="email"
                 placeholder="colleague@domain.com"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="flex-1 px-4 py-2 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all"
+                disabled={isSending}
+                className="flex-1"
               />
               <Button
                 type="button"
-                variant="darkOutline"
+                variant="outline"
                 onClick={handleAddEmail}
-                className="px-3"
+                disabled={isSending || !emailInput.trim()}
+                className="shrink-0"
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -253,21 +244,23 @@ export default function InMeetingInviteModal({
 
             {/* Email tags */}
             {inviteEmails.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
+              <div className="flex flex-wrap gap-1.5 pt-1">
                 {inviteEmails.map((email) => (
-                  <span
+                  <Badge
                     key={email}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-medium"
+                    variant="secondary"
+                    className="gap-1.5 py-1 px-2.5 text-xs font-normal"
                   >
                     <span>{email}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveEmail(email)}
-                      className="text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                      className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                      aria-label={`Remove ${email}`}
                     >
                       <X className="w-3 h-3" />
                     </button>
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}
@@ -275,9 +268,8 @@ export default function InMeetingInviteModal({
             <div className="flex justify-end pt-2">
               <Button
                 type="submit"
-                variant="lime"
                 disabled={isSending || (inviteEmails.length === 0 && !emailInput.trim())}
-                className="font-bold px-5 gap-2"
+                className="gap-2"
               >
                 {isSending ? (
                   <>
@@ -294,7 +286,7 @@ export default function InMeetingInviteModal({
             </div>
           </form>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

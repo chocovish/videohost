@@ -71,28 +71,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <SidebarProvider>
-      <div className="h-screen flex bg-[hsl(var(--background))] overflow-hidden">
-        <Sidebar
+    <SidebarProvider className="h-screen w-full overflow-hidden bg-background">
+      <Sidebar
+        organizationName={orgName}
+        organizationLogo={orgLogoUrl}
+        usedBytes={usedBytes}
+        storageLimitBytes={storageLimitBytes}
+        storageLimitGb={storageLimitGb}
+        currentTheme={themeId}
+        initialViewMode={viewMode}
+      />
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <Navbar
+          userEmail={userEmail}
+          userName={userName}
+          userImage={userImage}
+          role={role}
           organizationName={orgName}
-          organizationLogo={orgLogoUrl}
-          usedBytes={usedBytes}
-          storageLimitBytes={storageLimitBytes}
-          storageLimitGb={storageLimitGb}
-          currentTheme={themeId}
-          initialViewMode={viewMode}
         />
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-          <Navbar
-            userEmail={userEmail}
-            userName={userName}
-            userImage={userImage}
-            role={role}
-            organizationName={orgName}
-          />
-          <div className="flex-1 overflow-y-auto w-full">
-            <main className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
-          </div>
+        <div className="flex-1 overflow-y-auto w-full">
+          <main className="p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto min-w-0">{children}</main>
         </div>
       </div>
     </SidebarProvider>

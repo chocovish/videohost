@@ -24,7 +24,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
   const userInitial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 shrink-0 border-b border-[hsl(var(--border))] bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
+    <header className="h-16 shrink-0 border-b border-border bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile Hamburger Button */}
         <Button
@@ -35,7 +35,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
           title="Open Menu"
           aria-label="Open Navigation Menu"
         >
-          <Menu className="w-5 h-5 text-[hsl(var(--primary))]" />
+          <Menu className="w-5 h-5 text-primary" />
         </Button>
 
         {/* Desktop Collapse Toggle */}
@@ -43,19 +43,19 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
           variant="ghost"
           size="icon"
           onClick={toggleCollapse}
-          className="hidden md:flex shrink-0 h-9 w-9 -ml-1 text-[hsl(var(--muted-foreground))]"
+          className="hidden md:flex shrink-0 h-9 w-9 -ml-1 text-muted-foreground"
           title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           aria-label="Toggle Sidebar"
         >
           {isCollapsed ? (
-            <PanelLeftOpen className="w-5 h-5 text-[hsl(var(--primary))]" />
+            <PanelLeftOpen className="w-5 h-5 text-primary" />
           ) : (
             <PanelLeftClose className="w-5 h-5" />
           )}
         </Button>
 
         <div className="flex items-center gap-2 min-w-0 truncate">
-          <h1 className="font-semibold text-base sm:text-lg text-[hsl(var(--foreground))] truncate max-w-[140px] sm:max-w-xs">
+          <h1 className="font-semibold text-base sm:text-lg text-foreground truncate max-w-[140px] sm:max-w-xs">
             {organizationName}
           </h1>
           <Badge variant="lime" className="shrink-0">
@@ -67,17 +67,17 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         <Link
           href="/dashboard/meetings"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40 text-[hsl(var(--foreground))] hover:text-[hsl(var(--primary))] transition-colors text-xs font-semibold"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border hover:border-primary/40 text-foreground hover:text-primary transition-colors text-xs font-semibold"
           title="Open Video Meetings"
         >
-          <Users className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+          <Users className="w-3.5 h-3.5 text-primary" />
           Meetings
         </Link>
 
         <Link
           href="/record"
           target="_blank"
-          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/10 transition-colors text-xs font-bold"
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/40 text-primary hover:bg-primary/10 transition-colors text-xs font-bold"
           title="Open Public Recorder Page in new tab"
         >
           <Video className="w-3.5 h-3.5" />
@@ -86,7 +86,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
 
         <Link
           href="/dashboard/profile"
-          className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors text-sm"
+          className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-muted hover:bg-muted/80 transition-colors text-sm"
           title="Profile Settings"
         >
           <Avatar className="h-7 w-7">
@@ -94,8 +94,8 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
             <AvatarFallback>{userInitial}</AvatarFallback>
           </Avatar>
           <div className="text-left hidden sm:block max-w-[120px] md:max-w-[160px] truncate">
-            <p className="text-xs font-semibold text-[hsl(var(--foreground))] truncate">{userName || "User"}</p>
-            <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">{userEmail}</p>
+            <p className="text-xs font-semibold text-foreground truncate">{userName || "User"}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{userEmail}</p>
           </div>
         </Link>
 
@@ -103,7 +103,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
           variant="ghost"
           size="icon"
           onClick={() => signOut({ callbackUrl: "/auth/login" })}
-          className="h-9 w-9 text-[hsl(var(--muted-foreground))] hover:text-red-600 hover:bg-red-500/10 rounded-xl"
+          className="h-9 w-9 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-xl"
           title="Sign Out"
           aria-label="Sign Out"
         >

@@ -89,15 +89,15 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-[hsl(var(--background))] relative overflow-hidden pb-8 selection:bg-[hsl(var(--primary))]/30">
+    <div className="min-h-screen flex flex-col justify-between bg-background relative overflow-hidden pb-8 selection:bg-primary/30">
       {/* Decorative gradient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[hsl(var(--primary))] opacity-20 blur-3xl rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary opacity-20 blur-3xl rounded-full pointer-events-none" />
 
       {/* Brand Header Navigation */}
       <PublicHeader currentPage="login" />
 
       <main className="flex-1 flex items-center justify-center p-4 relative z-10 my-auto">
-        <div className="w-full max-w-md glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-[hsl(var(--border))]">
+        <div className="w-full max-w-md glass-card rounded-2xl p-5 sm:p-8 shadow-2xl relative z-10 border border-border">
           <div className="flex flex-col items-center text-center mb-8">
             <Link href="/" className="mb-4 inline-block transform hover:scale-105 transition-transform">
               <Image
@@ -109,8 +109,8 @@ export default function LoginForm() {
                 priority
               />
             </Link>
-            <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--foreground))]">Welcome back</h1>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Welcome back</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Sign in to access your video cloud dashboard
             </p>
           </div>
@@ -134,7 +134,7 @@ export default function LoginForm() {
                       type="button"
                       onClick={handleResend}
                       disabled={resending}
-                      className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                      className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
                     >
                       {resending ? (
                         <>
@@ -189,10 +189,10 @@ export default function LoginForm() {
 
           <div className="relative mb-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[hsl(var(--border))]" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white/80 dark:bg-slate-900/80 px-2 text-[hsl(var(--muted-foreground))] font-medium backdrop-blur-sm">
+              <span className="bg-white/80 dark:bg-slate-900/80 px-2 text-muted-foreground font-medium backdrop-blur-xs">
                 Or continue with email
               </span>
             </div>
@@ -226,17 +226,17 @@ export default function LoginForm() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 min-h-[44px] font-semibold text-sm group bg-[hsl(var(--primary))] text-white shadow-md hover:opacity-90 transition-all"
+              className="w-full mt-2 min-h-[44px] font-semibold text-sm group bg-primary text-white shadow-md hover:opacity-90 transition-all"
             >
               {loading ? "Signing in..." : "Sign in to Dashboard"}
               <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-[hsl(var(--border))] text-center">
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="mt-8 pt-6 border-t border-border text-center">
+            <p className="text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link href="/auth/register" className="font-semibold text-[hsl(var(--primary))] hover:underline">
+              <Link href="/auth/register" className="font-semibold text-primary hover:underline">
                 Create an account (2GB Free Storage)
               </Link>
             </p>

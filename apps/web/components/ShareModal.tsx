@@ -6,7 +6,6 @@ import {
   Send,
   Check,
   Copy,
-  Share2,
   Film,
   Folder,
   Loader2,
@@ -66,6 +65,7 @@ export default function ShareModal({
 
   const [emailInput, setEmailInput] = useState("");
   const [messageInput, setMessageInput] = useState("");
+  const [showNoteField, setShowNoteField] = useState(false);
   const [addingEmail, setAddingEmail] = useState(false);
   const [deletingEmailId, setDeletingEmailId] = useState<string | null>(null);
 
@@ -97,6 +97,7 @@ export default function ShareModal({
       setShareUrl("");
       setEmailInput("");
       setMessageInput("");
+      setShowNoteField(false);
       setSuccessMsg(null);
       setErrorMsg(null);
       setCopied(false);
@@ -133,7 +134,7 @@ export default function ShareModal({
         setAccessMode(data.accessMode);
         setAllowedEmails(data.allowedEmails || []);
         if (onAccessModeChange) onAccessModeChange(data.accessMode);
-        setSuccessMsg(`Access mode updated to ${newMode}`);
+        setSuccessMsg(`Access updated to ${newMode.toLowerCase()}`);
         setTimeout(() => setSuccessMsg(null), 3000);
       } else {
         setErrorMsg(data.error || "Failed to update access mode");
@@ -175,8 +176,10 @@ export default function ShareModal({
         setAllowedEmails(data.allowedEmails || []);
         setEmailInput("");
         setMessageInput("");
+        setShowNoteField(false);
         if (onAccessModeChange) onAccessModeChange(data.accessMode);
-        setSuccessMsg(`Added and sent invitation to ${cleanEmail}`);
+        setSuccessMsg(`Invited ${cleanEmail}`);
+        setTimeout(() => setSuccessMsg(null), 3000);
       } else {
         setErrorMsg(data.error || "Failed to add email");
       }
@@ -219,10 +222,11 @@ export default function ShareModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[88vh] flex flex-col p-6 overflow-hidden">
+        {/* Header */}
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
               {targetType === "video" ? (
                 <Film className="w-5 h-5" />
               ) : targetType === "playlist" ? (
@@ -231,207 +235,222 @@ export default function ShareModal({
                 <Folder className="w-5 h-5" />
               )}
             </div>
-            <div className="min-w-0">
-              <DialogTitle>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="truncate">
                 Share {targetType === "video" ? "Video" : targetType === "playlist" ? "Playlist" : "Folder"}
               </DialogTitle>
-              <DialogDescription className="truncate max-w-xs sm:max-w-sm">{targetName}</DialogDescription>
+              <DialogDescription className="truncate mt-0.5">
+                {targetName || "Manage access and share with team"}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        {/* Notifications */}
-        {errorMsg && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
-          </div>
-        )}
-        {successMsg && (
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
-            <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-0.5 min-h-0">
+          {/* Notifications */}
+          {errorMsg && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="flex-1">{errorMsg}</span>
+            </div>
+          )}
+          {successMsg && (
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="flex-1">{successMsg}</span>
+            </div>
+          )}
 
-        {/* 1. CONSTANT SHARE LINK SECTION */}
-        <div className="space-y-2">
-          <Label className="flex items-center gap-1.5">
-            <LinkIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Share Link
-          </Label>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Input
-              type="text"
-              readOnly
-              value={loading ? "Loading link..." : shareUrl}
-              className="font-mono bg-slate-50 dark:bg-slate-900 select-all"
-            />
-            <Button
-              type="button"
-              onClick={handleCopyLink}
-              disabled={loading || !shareUrl}
-              className="shrink-0 min-w-[110px]"
-            >
-              {copied ? <Check className="w-4 h-4 mr-1.5" /> : <Copy className="w-4 h-4 mr-1.5" />}
-              {copied ? "Copied!" : "Copy Link"}
-            </Button>
-          </div>
-        </div>
-
-        {/* 2. ACCESS MODE CONTROLS */}
-        <div className="space-y-2.5">
-          <Label>Access Settings</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {[
-              {
-                id: "PUBLIC",
-                title: "Public",
-                icon: Globe,
-                desc: "Anyone with link can view",
-              },
-              {
-                id: "RESTRICTED",
-                title: "Specific Emails",
-                icon: Lock,
-                desc: "Requires login & invited email",
-              },
-              {
-                id: "PRIVATE",
-                title: "Private",
-                icon: ShieldAlert,
-                desc: "Disabled for everyone",
-              },
-            ].map((option) => {
-              const Icon = option.icon;
-              const isSelected = accessMode === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  disabled={savingMode}
-                  onClick={() => handleModeChange(option.id as any)}
-                  className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
-                    isSelected
-                      ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 shadow-xs ring-2 ring-[hsl(var(--primary))]/20"
-                      : "bg-slate-50 dark:bg-slate-900 border-[hsl(var(--input))] hover:bg-slate-100 dark:hover:bg-slate-800"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <Icon className={`w-4 h-4 ${isSelected ? "text-[hsl(var(--primary))]" : "text-slate-400"}`} />
-                    {isSelected && <span className="w-2 h-2 rounded-full bg-[hsl(var(--primary))]" />}
-                  </div>
-                  <div>
-                    <p className="font-extrabold text-xs text-[hsl(var(--foreground))]">{option.title}</p>
-                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-tight mt-0.5">
-                      {option.desc}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 3. ADD AND INVITE EMAIL SECTION */}
-        <div className="pt-2 border-t border-[hsl(var(--border))] space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-1.5">
-              <UserPlus className="w-3.5 h-3.5 text-indigo-600" /> Share with Emails
+          {/* 1. Share Link Bar */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+              <LinkIcon className="w-3.5 h-3.5 text-primary" /> Share Link
             </Label>
-            {allowedEmails.length > 0 && (
-              <Badge variant="outline" className="text-indigo-600 border-indigo-200">
-                {allowedEmails.length} invited
-              </Badge>
-            )}
-          </div>
 
-          <form onSubmit={handleAddAndInvite} className="space-y-3">
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+            <div className="flex items-center gap-2">
               <Input
-                type="email"
-                disabled={addingEmail}
-                placeholder="colleague@example.com"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                className="pl-10"
+                type="text"
+                readOnly
+                value={loading ? "Loading link..." : shareUrl}
+                className="font-mono text-xs select-all bg-muted/40 h-9"
               />
-            </div>
-
-            <div>
-              <textarea
-                rows={2}
-                disabled={addingEmail}
-                placeholder="Add an optional note in the email invitation..."
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                className="flex w-full rounded-xl border border-[hsl(var(--input))] bg-background px-3.5 py-2 text-xs ring-offset-background placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end">
               <Button
-                type="submit"
-                disabled={addingEmail || !emailInput.trim()}
-                className="min-w-[130px]"
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCopyLink}
+                disabled={loading || !shareUrl}
+                className="shrink-0 h-9 gap-1.5 px-3"
               >
-                {addingEmail ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Adding...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5 mr-1.5" /> Add & Invite
-                  </>
-                )}
+                {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copied ? "Copied" : "Copy"}</span>
               </Button>
             </div>
-          </form>
-        </div>
+          </div>
 
-        {/* 4. ALLOWED EMAILS LIST */}
-        {allowedEmails.length > 0 && (
-          <div className="pt-2 border-t border-[hsl(var(--border))] space-y-2">
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" /> People with Access ({allowedEmails.length})
-            </h4>
-
-            <div className="max-h-40 overflow-y-auto divide-y divide-[hsl(var(--border))] rounded-xl border border-[hsl(var(--border))] bg-slate-50/50 dark:bg-slate-900/50">
-              {allowedEmails.map((item) => (
-                <div
-                  key={item.id}
-                  className="px-3.5 py-2.5 flex items-center justify-between text-xs hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors"
-                >
-                  <div className="min-w-0 pr-2">
-                    <p className="font-semibold text-[hsl(var(--foreground))] truncate">{item.email}</p>
-                    <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
-                      Added {new Date(item.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Button
+          {/* 2. Access Settings (Clean Segmented Selector) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">General Access</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                {
+                  id: "PUBLIC",
+                  title: "Public",
+                  icon: Globe,
+                  desc: "Anyone with link",
+                },
+                {
+                  id: "RESTRICTED",
+                  title: "Restricted",
+                  icon: Lock,
+                  desc: "Invited emails only",
+                },
+                {
+                  id: "PRIVATE",
+                  title: "Private",
+                  icon: ShieldAlert,
+                  desc: "Only owner",
+                },
+              ].map((option) => {
+                const Icon = option.icon;
+                const isSelected = accessMode === option.id;
+                return (
+                  <button
+                    key={option.id}
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={deletingEmailId === item.id}
-                    onClick={() => handleRemoveEmail(item.id, item.email)}
-                    title="Remove access"
-                    className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                    disabled={savingMode}
+                    onClick={() => handleModeChange(option.id as any)}
+                    className={`p-2.5 rounded-lg text-left border transition-all flex flex-col justify-between gap-1 cursor-pointer ${
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary shadow-xs ring-1 ring-primary/30"
+                        : "border-border bg-card hover:bg-accent text-card-foreground"
+                    }`}
                   >
-                    {deletingEmailId === item.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-red-600" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex items-center justify-between w-full">
+                      <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-xs text-foreground leading-tight">{option.title}</p>
+                      <p className="text-[10px] text-muted-foreground leading-tight mt-0.5 line-clamp-1">
+                        {option.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
 
-        <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onClose} className="w-full sm:w-auto">
+          {/* 3. Invite by Email Section */}
+          <div className="pt-2 border-t border-border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <UserPlus className="w-3.5 h-3.5 text-primary" /> Invite People
+              </Label>
+              {allowedEmails.length > 0 && (
+                <Badge variant="secondary">
+                  {allowedEmails.length} invited
+                </Badge>
+              )}
+            </div>
+
+            <form onSubmit={handleAddAndInvite} className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    disabled={addingEmail}
+                    placeholder="name@example.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={addingEmail || !emailInput.trim()}
+                  className="shrink-0 gap-1.5"
+                >
+                  {addingEmail ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>Invite</span>
+                </Button>
+              </div>
+
+              {!showNoteField ? (
+                <button
+                  type="button"
+                  onClick={() => setShowNoteField(true)}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  + Add message to invitation
+                </button>
+              ) : (
+                <div className="space-y-1 animate-in fade-in duration-150">
+                  <textarea
+                    rows={2}
+                    disabled={addingEmail}
+                    placeholder="Add an optional message..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  />
+                </div>
+              )}
+            </form>
+          </div>
+
+          {/* 4. People with Access List */}
+          {allowedEmails.length > 0 && (
+            <div className="pt-2 border-t border-border space-y-2">
+              <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> People with access ({allowedEmails.length})
+              </p>
+
+              <div className="max-h-32 overflow-y-auto divide-y divide-border rounded-lg border border-border bg-card">
+                {allowedEmails.map((item) => (
+                  <div
+                    key={item.id}
+                    className="px-3 py-2 flex items-center justify-between text-xs hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <p className="font-medium text-foreground truncate">{item.email}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Added {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={deletingEmailId === item.id}
+                      onClick={() => handleRemoveEmail(item.id, item.email)}
+                      title="Remove access"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      {deletingEmailId === item.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-destructive" />
+                      ) : (
+                        <Trash2 className="w-3.5 h-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Pinned Footer */}
+        <DialogFooter className="pt-3 border-t border-border shrink-0">
+          <Button type="button" onClick={onClose} className="w-full sm:w-auto">
             Done
           </Button>
         </DialogFooter>

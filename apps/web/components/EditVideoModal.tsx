@@ -212,15 +212,15 @@ export default function EditVideoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !loading && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[88vh] flex flex-col p-6 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
               <Pencil className="w-5 h-5" />
             </div>
-            <div>
-              <DialogTitle className="text-lg font-bold">Edit Video Details</DialogTitle>
-              <DialogDescription className="text-xs">
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="truncate">Edit Video Details</DialogTitle>
+              <DialogDescription className="truncate mt-0.5">
                 Update the video title, description, and custom thumbnail
               </DialogDescription>
             </div>
@@ -228,148 +228,151 @@ export default function EditVideoModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 shrink-0">
             <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
+            <span className="flex-1">{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5 py-1">
-          {/* Title Field */}
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-video-title" className="text-xs font-bold text-[hsl(var(--foreground))]">
-              Title <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="edit-video-title"
-              type="text"
-              required
-              disabled={loading}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Product Demo Q3"
-              className="font-medium"
-            />
-          </div>
-
-          {/* Description Field */}
-          <div className="space-y-1.5">
-            <Label htmlFor="edit-video-desc" className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center justify-between">
-              <span>Description</span>
-              <span className="text-[11px] font-normal text-[hsl(var(--muted-foreground))]">Optional</span>
-            </Label>
-            <textarea
-              id="edit-video-desc"
-              rows={3}
-              disabled={loading}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add details about this video, timestamps, or summary..."
-              className="w-full rounded-xl border border-[hsl(var(--input))] bg-background px-3.5 py-2 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-y min-h-[80px]"
-            />
-          </div>
-
-          {/* Thumbnail Section */}
-          <div className="space-y-2.5 pt-1">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs font-bold text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                <span>Thumbnail</span>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Title Field */}
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-video-title" className="text-xs font-medium text-foreground">
+                Title <span className="text-destructive">*</span>
               </Label>
-              {hasThumbnailChanged && (
-                <button
-                  type="button"
-                  onClick={handleResetThumbnail}
-                  disabled={loading}
-                  className="text-[11px] text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] flex items-center gap-1 transition-colors"
-                >
-                  <RotateCcw className="w-3 h-3" /> Revert
-                </button>
-              )}
+              <Input
+                id="edit-video-title"
+                type="text"
+                required
+                disabled={loading}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Product Demo Q3"
+              />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-              {/* Thumbnail Preview Window */}
-              <div className="aspect-video w-full bg-slate-950 rounded-xl overflow-hidden border border-[hsl(var(--border))] relative flex items-center justify-center group shadow-xs">
-                {previewUrl ? (
-                  <img
-                    src={previewUrl}
-                    alt="Thumbnail preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-slate-500 gap-1.5 p-3 text-center">
-                    <ImageIcon className="w-7 h-7 text-slate-600" />
-                    <span className="text-[11px] font-medium">No thumbnail</span>
-                  </div>
-                )}
+            {/* Description Field */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-video-desc" className="text-xs font-medium text-foreground">
+                  Description
+                </Label>
+                <span className="text-[11px] text-muted-foreground">Optional</span>
+              </div>
+              <textarea
+                id="edit-video-desc"
+                rows={3}
+                disabled={loading}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Add details about this video, timestamps, or summary..."
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y min-h-[70px]"
+              />
+            </div>
 
-                {selectedFile && (
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-bold shadow-md flex items-center gap-1 backdrop-blur-xs">
-                    <Check className="w-3 h-3" /> New Selected
-                  </div>
+            {/* Thumbnail Section */}
+            <div className="space-y-2 pt-1 border-t border-border">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                  <span>Thumbnail</span>
+                </Label>
+                {hasThumbnailChanged && (
+                  <button
+                    type="button"
+                    onClick={handleResetThumbnail}
+                    disabled={loading}
+                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Revert
+                  </button>
                 )}
               </div>
 
-              {/* Action Buttons & Helpers */}
-              <div className="flex flex-col gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  id="edit-video-thumbnail-file-input"
-                  className="hidden"
-                  disabled={loading}
-                  onChange={handleFileChange}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                {/* Thumbnail Preview Window */}
+                <div className="aspect-video w-full bg-muted/60 rounded-lg overflow-hidden border border-border relative flex items-center justify-center group shadow-xs">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-1.5 p-3 text-center">
+                      <ImageIcon className="w-6 h-6 opacity-60" />
+                      <span className="text-[11px]">No thumbnail</span>
+                    </div>
+                  )}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full font-semibold justify-center gap-2 h-9 text-xs"
-                >
-                  <UploadCloud className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
-                  <span>{previewUrl ? "Change Image" : "Upload Image"}</span>
-                </Button>
+                  {selectedFile && (
+                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-semibold shadow-xs flex items-center gap-1">
+                      <Check className="w-3 h-3" /> New Selected
+                    </div>
+                  )}
+                </div>
 
-                {previewUrl && (
+                {/* Action Buttons & Helpers */}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    id="edit-video-thumbnail-file-input"
+                    className="hidden"
+                    disabled={loading}
+                    onChange={handleFileChange}
+                  />
+
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     disabled={loading}
-                    onClick={handleRemoveThumbnail}
-                    className="w-full font-semibold justify-center gap-1.5 h-8 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full justify-center gap-1.5"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove Thumbnail</span>
+                    <UploadCloud className="w-3.5 h-3.5 text-primary" />
+                    <span>{previewUrl ? "Change Image" : "Upload Image"}</span>
                   </Button>
-                )}
 
-                <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-tight">
-                  Supports PNG, JPG, WebP. Recommended ratio 16:9 (1280×720). Images are auto-compressed for lightning-fast loading.
-                </p>
+                  {previewUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={loading}
+                      onClick={handleRemoveThumbnail}
+                      className="w-full justify-center gap-1.5 text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Thumbnail</span>
+                    </Button>
+                  )}
+
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Supports PNG, JPG, WebP. Recommended 16:9 ratio.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-[hsl(var(--border))] gap-2 sm:gap-0">
+          <DialogFooter className="pt-3 border-t border-border shrink-0 mt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onClose}
               disabled={loading}
-              className="w-full sm:w-auto text-xs font-semibold"
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading || !title.trim()}
-              className="w-full sm:w-auto min-w-[130px] text-xs font-semibold"
+              className="w-full sm:w-auto min-w-[120px]"
             >
               {loading ? (
                 <>

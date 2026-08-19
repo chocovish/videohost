@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { Noto_Sans } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const notoSans = Noto_Sans({ subsets: ['latin'], variable: '--font-sans' });
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://taped.app";
 
@@ -84,13 +88,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="lime">
+    <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="antialiased selection:bg-[hsl(var(--primary))]/20 selection:text-[hsl(var(--primary))] min-h-screen">
+      <body className="antialiased selection:bg-primary/20 selection:text-primary min-h-screen">
         <Providers>{children}</Providers>
       </body>
     </html>

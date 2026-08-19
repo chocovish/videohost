@@ -223,14 +223,14 @@ export default function MoveItemModal({
       <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
               <FolderInput className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <DialogTitle className="text-lg font-bold truncate">
+              <DialogTitle className="truncate">
                 Move {itemType === "video" ? "Video" : "Folder"}
               </DialogTitle>
-              <DialogDescription className="text-xs truncate max-w-sm">
+              <DialogDescription className="truncate max-w-sm">
                 Moving &ldquo;{itemName}&rdquo; to another destination
               </DialogDescription>
             </div>
@@ -246,21 +246,21 @@ export default function MoveItemModal({
 
         {/* Search destination folders */}
         <div className="relative my-2 shrink-0">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             type="text"
             placeholder="Search destination folders..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 text-xs h-9"
+            className="pl-9"
           />
         </div>
 
         {/* Folder Destination List */}
-        <div className="flex-1 overflow-y-auto min-h-[220px] max-h-[320px] space-y-1.5 pr-1 border border-[hsl(var(--border))] rounded-xl p-2 bg-slate-50/50 dark:bg-slate-900/30">
+        <div className="flex-1 overflow-y-auto min-h-[220px] max-h-[320px] space-y-1.5 pr-1 border border-border rounded-xl p-2 bg-muted/30">
           {loading ? (
-            <div className="py-12 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--primary))]" />
+            <div className="py-12 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
               <span>Loading folder hierarchy...</span>
             </div>
           ) : (
@@ -271,23 +271,23 @@ export default function MoveItemModal({
                 onClick={() => setSelectedFolderId(null)}
                 className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
                   selectedFolderId === null
-                    ? "bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))]"
-                    : "hover:bg-slate-200/50 dark:hover:bg-slate-800 text-[hsl(var(--foreground))]"
+                    ? "bg-primary/10 border border-primary/40 text-primary"
+                    : "hover:bg-muted text-foreground"
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`p-1.5 rounded-lg ${
                       selectedFolderId === null
-                        ? "bg-[hsl(var(--primary))] text-white"
-                        : "bg-slate-200 dark:bg-slate-800 text-slate-600"
+                        ? "bg-primary text-white"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     <Home className="w-3.5 h-3.5" />
                   </div>
                   <div className="truncate">
                     <span className="font-bold">Root Directory</span>
-                    <p className="text-[10px] text-[hsl(var(--muted-foreground))] font-normal">
+                    <p className="text-[10px] text-muted-foreground font-normal">
                       Top-level storage
                     </p>
                   </div>
@@ -295,12 +295,12 @@ export default function MoveItemModal({
 
                 <div className="flex items-center gap-2 shrink-0">
                   {isRootCurrent && (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted text-muted-foreground">
                       Current
                     </span>
                   )}
                   {selectedFolderId === null && (
-                    <Check className="w-4 h-4 text-[hsl(var(--primary))]" />
+                    <Check className="w-4 h-4 text-primary" />
                   )}
                 </div>
               </button>
@@ -318,27 +318,27 @@ export default function MoveItemModal({
                     onClick={() => !isDisabled && setSelectedFolderId(f.id)}
                     className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
                       isDisabled
-                        ? "opacity-40 cursor-not-allowed bg-slate-100/50 dark:bg-slate-800/30"
+                        ? "opacity-40 cursor-not-allowed bg-muted/40"
                         : isSelected
-                        ? "bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/40 text-[hsl(var(--primary))] cursor-pointer"
-                        : "hover:bg-slate-200/50 dark:hover:bg-slate-800 text-[hsl(var(--foreground))] cursor-pointer"
+                        ? "bg-primary/10 border border-primary/40 text-primary cursor-pointer"
+                        : "hover:bg-muted text-foreground cursor-pointer"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`p-1.5 rounded-lg shrink-0 ${
                           isSelected
-                            ? "bg-[hsl(var(--primary))] text-white"
+                            ? "bg-primary text-white"
                             : "bg-amber-500/10 text-amber-600"
                         }`}
                       >
                         <Folder className="w-3.5 h-3.5 fill-amber-500/20" />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold truncate text-[hsl(var(--foreground))]">
+                        <p className="font-bold truncate text-foreground">
                           {f.name}
                         </p>
-                        <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+                        <p className="text-[10px] text-muted-foreground truncate">
                           {f.path}
                         </p>
                       </div>
@@ -351,12 +351,12 @@ export default function MoveItemModal({
                         </span>
                       )}
                       {f.isCurrent && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted text-muted-foreground">
                           Current
                         </span>
                       )}
                       {isSelected && (
-                        <Check className="w-4 h-4 text-[hsl(var(--primary))]" />
+                        <Check className="w-4 h-4 text-primary" />
                       )}
                     </div>
                   </button>
@@ -364,7 +364,7 @@ export default function MoveItemModal({
               })}
 
               {filteredFolders.length === 0 && search && (
-                <div className="py-8 text-center text-xs text-slate-400">
+                <div className="py-8 text-center text-xs text-muted-foreground">
                   No folders matching &ldquo;{search}&rdquo;
                 </div>
               )}
@@ -373,9 +373,9 @@ export default function MoveItemModal({
         </div>
 
         {/* Selected target preview indicator */}
-        <div className="pt-2 text-xs flex items-center gap-1.5 text-[hsl(var(--muted-foreground))] shrink-0">
+        <div className="pt-2 text-xs flex items-center gap-1.5 text-muted-foreground shrink-0">
           <span>Destination:</span>
-          <span className="font-bold text-[hsl(var(--foreground))] truncate">
+          <span className="font-bold text-foreground truncate">
             {selectedFolderName}
           </span>
         </div>

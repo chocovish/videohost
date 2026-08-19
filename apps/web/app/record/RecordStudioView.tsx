@@ -170,9 +170,9 @@ export default function RecordStudioView() {
   const activeFilename = downloadFilename.trim() || title || "Studio Recording";
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] relative overflow-hidden flex flex-col justify-between selection:bg-lime-500 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col justify-between selection:bg-lime-500 selection:text-white">
       {/* Dynamic Ambient Background Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[48rem] h-[48rem] bg-[hsl(var(--primary))]/20 blur-[130px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3xl h-192 bg-primary/20 blur-[130px] rounded-full pointer-events-none" />
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Header Navigation Bar */}
@@ -182,16 +182,16 @@ export default function RecordStudioView() {
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10 space-y-8 flex-1 flex flex-col justify-center">
         {/* Page Hero Header */}
         <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" /> Free & Unlimited Web Studio Recorder
           </div>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
             Record Screen & Webcam <br />
-            <span className="text-[hsl(var(--primary))] underline decoration-[hsl(var(--primary))]/30">
+            <span className="text-primary underline decoration-primary/30">
               Download Instantly
             </span>
           </h1>
-          <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] leading-relaxed max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
             Capture full desktop screens, windows, or tabs with customizable camera Picture-in-Picture, mixed audio, and zero watermarks.
           </p>
         </div>
@@ -248,7 +248,7 @@ export default function RecordStudioView() {
                     {/* Idle Preview Placeholder */}
                     {recordState === "idle" && (
                       <div className="text-center p-6 space-y-3 max-w-sm">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[hsl(var(--primary))]/20 to-emerald-500/20 border border-[hsl(var(--primary))]/30 flex items-center justify-center mx-auto text-[hsl(var(--primary))] shadow-inner">
+                        <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-primary/20 to-emerald-500/20 border border-primary/30 flex items-center justify-center mx-auto text-primary shadow-inner">
                           <Monitor className="w-8 h-8" />
                         </div>
                         <div className="space-y-1">
@@ -278,7 +278,7 @@ export default function RecordStudioView() {
                         </div>
 
                         <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full shadow-xl text-[11px] font-semibold text-slate-300 pointer-events-auto">
-                          <span className="text-[hsl(var(--primary))] uppercase font-mono font-bold">{resolution}</span>
+                          <span className="text-primary uppercase font-mono font-bold">{resolution}</span>
                           <span>•</span>
                           <span>{fps} FPS</span>
                           <span>•</span>
@@ -291,7 +291,7 @@ export default function RecordStudioView() {
 
                     {/* Processing Video Overlay */}
                     {isProcessing && (
-                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
+                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
                         <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xl shadow-red-500/20">
                           <Loader2 className="w-7 h-7 animate-spin text-red-500" />
                         </div>
@@ -318,19 +318,19 @@ export default function RecordStudioView() {
                           type="button"
                           onClick={handleToggleMic}
                           className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isMicEnabled
-                            ? "bg-[hsl(var(--primary))]/10 border-[hsl(var(--primary))]/40 text-[hsl(var(--foreground))]"
+                            ? "bg-primary/10 border-primary/40 text-foreground"
                             : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                         >
                           <div
-                            className={`p-2 rounded-xl shrink-0 ${isMicEnabled ? "bg-[hsl(var(--primary))] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                            className={`p-2 rounded-xl shrink-0 ${isMicEnabled ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                               }`}
                           >
                             {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-bold truncate">Microphone</p>
-                            <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+                            <p className="text-[10px] text-muted-foreground truncate">
                               {isMicEnabled ? "Voice On" : "Muted"}
                             </p>
                           </div>
@@ -340,19 +340,19 @@ export default function RecordStudioView() {
                           type="button"
                           onClick={handleToggleWebcam}
                           className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isWebcamEnabled
-                            ? "bg-[hsl(var(--primary))]/10 border-[hsl(var(--primary))]/40 text-[hsl(var(--foreground))]"
+                            ? "bg-primary/10 border-primary/40 text-foreground"
                             : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
                             }`}
                         >
                           <div
-                            className={`p-2 rounded-xl shrink-0 ${isWebcamEnabled ? "bg-[hsl(var(--primary))] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                            className={`p-2 rounded-xl shrink-0 ${isWebcamEnabled ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
                               }`}
                           >
                             {isWebcamEnabled ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
                           </div>
                           <div className="min-w-0">
                             <p className="text-xs font-bold truncate">Webcam PIP</p>
-                            <p className="text-[10px] text-[hsl(var(--muted-foreground))] truncate">
+                            <p className="text-[10px] text-muted-foreground truncate">
                               {isWebcamEnabled ? "Active PIP" : "Disabled"}
                             </p>
                           </div>
@@ -361,27 +361,27 @@ export default function RecordStudioView() {
 
                       {/* Auto-Expanded Webcam PIP Controls (Shown immediately below On/Off toggle when enabled) */}
                       {isWebcamEnabled && (
-                        <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-[hsl(var(--primary))]/30 space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-primary/30 space-y-3 animate-in fade-in slide-in-from-top-2">
                           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                             <h4 className="text-xs font-extrabold flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Webcam PIP Controls
+                              <Sparkles className="w-3.5 h-3.5 text-primary" /> Webcam PIP Controls
                             </h4>
-                            <span className="text-[10px] font-bold bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] px-2 py-0.5 rounded-full">
+                            <span className="text-[10px] font-bold bg-primary/15 text-primary px-2 py-0.5 rounded-full">
                               Active
                             </span>
                           </div>
 
                           {/* Camera Input Device */}
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">
+                            <Label className="text-[10px] font-semibold text-muted-foreground">
                               Camera Device
                             </Label>
                             <Select
                               value={selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")}
-                              onValueChange={(val) => handleSelectCameraDevice(val)}
+                              onValueChange={(val) => handleSelectCameraDevice(val || "")}
                               disabled={cameraDevices.length === 0}
                             >
-                              <SelectTrigger className="w-full text-xs font-medium rounded-xl bg-white dark:bg-slate-800 h-8">
+                              <SelectTrigger size="sm" className="w-full bg-white dark:bg-slate-800">
                                 <SelectValue placeholder="Select camera" />
                               </SelectTrigger>
                               <SelectContent>
@@ -400,7 +400,7 @@ export default function RecordStudioView() {
 
                           {/* Position Corner */}
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">
+                            <Label className="text-[10px] font-semibold text-muted-foreground">
                               PIP Position Corner
                             </Label>
                             <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
@@ -410,7 +410,7 @@ export default function RecordStudioView() {
                                   type="button"
                                   onClick={() => setWebcamCorner(c)}
                                   className={`text-[10px] font-bold py-1 px-1.5 rounded-lg capitalize transition-all ${webcamCorner === c
-                                    ? "bg-[hsl(var(--primary))] text-white shadow-sm"
+                                    ? "bg-primary text-white shadow-xs"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                                     }`}
                                 >
@@ -422,7 +422,7 @@ export default function RecordStudioView() {
 
                           {/* Frame Shape */}
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">
+                            <Label className="text-[10px] font-semibold text-muted-foreground">
                               PIP Frame Shape
                             </Label>
                             <div className="flex items-center gap-1">
@@ -432,7 +432,7 @@ export default function RecordStudioView() {
                                   type="button"
                                   onClick={() => setWebcamShape(s)}
                                   className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamShape === s
-                                    ? "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))] shadow-sm"
+                                    ? "bg-primary text-white border-primary shadow-xs"
                                     : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                                     }`}
                                 >
@@ -444,7 +444,7 @@ export default function RecordStudioView() {
 
                           {/* Preview Size */}
                           <div className="space-y-1">
-                            <Label className="text-[10px] font-semibold text-[hsl(var(--muted-foreground))]">
+                            <Label className="text-[10px] font-semibold text-muted-foreground">
                               PIP Preview Size
                             </Label>
                             <div className="flex items-center gap-1">
@@ -454,7 +454,7 @@ export default function RecordStudioView() {
                                   type="button"
                                   onClick={() => setWebcamSize(sz)}
                                   className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamSize === sz
-                                    ? "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))] shadow-sm"
+                                    ? "bg-primary text-white border-primary shadow-xs"
                                     : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                                     }`}
                                 >
@@ -468,7 +468,7 @@ export default function RecordStudioView() {
 
                       {/* Row 2: Resolution Selector Pills */}
                       <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider block">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                           Resolution Preset
                         </Label>
                         <div className="grid grid-cols-4 gap-1">
@@ -478,8 +478,8 @@ export default function RecordStudioView() {
                               type="button"
                               onClick={() => handleSelectResolution(res)}
                               className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
-                                ? "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))] shadow-sm"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-[hsl(var(--muted-foreground))] hover:bg-slate-200 dark:hover:bg-slate-700"
+                                ? "bg-primary text-white border-primary shadow-xs"
+                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
                                 }`}
                             >
                               {res}
@@ -490,7 +490,7 @@ export default function RecordStudioView() {
 
                       {/* Row 2b: Frame Rate (FPS) Selector Pills */}
                       <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider block">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                           Frame Rate (FPS)
                         </Label>
                         <div className="grid grid-cols-4 gap-1">
@@ -500,8 +500,8 @@ export default function RecordStudioView() {
                               type="button"
                               onClick={() => handleSelectFps(rate)}
                               className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
-                                ? "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))] shadow-sm"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-[hsl(var(--muted-foreground))] hover:bg-slate-200 dark:hover:bg-slate-700"
+                                ? "bg-primary text-white border-primary shadow-xs"
+                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
                                 }`}
                             >
                               {rate} FPS
@@ -512,7 +512,7 @@ export default function RecordStudioView() {
 
                       {/* Row 3: Countdown Delay Pills */}
                       <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider block">
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
                           Countdown Timer
                         </Label>
                         <div className="grid grid-cols-3 gap-1">
@@ -526,8 +526,8 @@ export default function RecordStudioView() {
                               type="button"
                               onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
                               className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
-                                ? "bg-[hsl(var(--primary))] text-white border-[hsl(var(--primary))] shadow-sm"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-[hsl(var(--muted-foreground))] hover:bg-slate-200 dark:hover:bg-slate-700"
+                                ? "bg-primary text-white border-primary shadow-xs"
+                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
                                 }`}
                             >
                               {cd.label}
@@ -538,8 +538,8 @@ export default function RecordStudioView() {
 
                       {/* Row 4: Bitrate Quality Pills */}
                       <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-[hsl(var(--muted-foreground))] uppercase tracking-wider flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-[hsl(var(--primary))]" /> Recording Quality (bitrate)
+                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                          <Zap className="w-3 h-3 text-primary" /> Recording Quality (bitrate)
                         </Label>
                         <div className="grid grid-cols-3 gap-1">
                           {[
@@ -552,8 +552,8 @@ export default function RecordStudioView() {
                               type="button"
                               onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
                               className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
-                                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-sm"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-[hsl(var(--muted-foreground))] hover:bg-slate-200 dark:hover:bg-slate-700"
+                                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-xs"
+                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
                                 }`}
                             >
                               {b.label}
@@ -667,7 +667,7 @@ export default function RecordStudioView() {
                                   type="button"
                                   onClick={() => setWebcamCorner(c)}
                                   className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
-                                    ? "bg-lime-500 text-slate-950 shadow-sm"
+                                    ? "bg-lime-500 text-slate-950 shadow-xs"
                                     : "text-slate-300 hover:bg-white/10"
                                     }`}
                                 >
@@ -688,7 +688,7 @@ export default function RecordStudioView() {
                                   type="button"
                                   onClick={() => setWebcamShape(s)}
                                   className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${webcamShape === s
-                                    ? "bg-lime-500 text-slate-950 border-lime-500 shadow-sm"
+                                    ? "bg-lime-500 text-slate-950 border-lime-500 shadow-xs"
                                     : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
                                     }`}
                                 >
@@ -708,7 +708,7 @@ export default function RecordStudioView() {
                       <Button
                         size="lg"
                         onClick={startRecording}
-                        className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/25 text-base gap-3 group transition-all hover:scale-[1.02]"
+                        className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/25 text-base gap-3 group transition-all hover:scale-[1.02]"
                       >
                         <Disc className="w-5 h-5 animate-pulse text-white" />
                         Start Screen Recording
@@ -754,7 +754,7 @@ export default function RecordStudioView() {
                           size="lg"
                           onClick={resumeRecording}
                           disabled={isProcessing}
-                          className="bg-[hsl(var(--primary))] hover:opacity-90 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
+                          className="bg-primary hover:opacity-90 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
                         >
                           <Play className="w-5 h-5 fill-current" /> Resume
                         </Button>
@@ -824,7 +824,7 @@ export default function RecordStudioView() {
                         }}
                         className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${showTrimmer
                           ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
-                          : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
+                          : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-2xs"
                           }`}
                       >
                         <Scissors className="w-3.5 h-3.5" />
@@ -880,11 +880,11 @@ export default function RecordStudioView() {
                 {/* Right Column: Download Controls & Cloud Options */}
                 <div className="md:col-span-2 space-y-4 flex flex-col justify-between">
                   <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/20 space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-extrabold text-[hsl(var(--primary))] uppercase tracking-wider">
+                    <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-extrabold text-primary uppercase tracking-wider">
                         <CheckCircle2 className="w-4 h-4" /> Recording Complete
                       </div>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
                         Your video has been recorded successfully in high quality. You can download the file directly to your device or save it to your Taped cloud account.
                       </p>
                     </div>
@@ -903,7 +903,7 @@ export default function RecordStudioView() {
                     <Button
                       size="lg"
                       onClick={() => handleDownload(activeFilename)}
-                      className="w-full bg-[hsl(var(--primary))] hover:opacity-95 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-[hsl(var(--primary))]/25 text-sm gap-2"
+                      className="w-full bg-primary hover:opacity-95 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-primary/25 text-sm gap-2"
                     >
                       <Download className="w-5 h-5" />
                       Download Recording ({recordedFile?.name?.endsWith(".mp4") ? ".mp4" : ".webm"})
@@ -919,9 +919,9 @@ export default function RecordStudioView() {
                   </div>
 
                   {/* Cloud Account CTA Card */}
-                  <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-950 text-white border border-slate-800 space-y-3">
+                  <div className="p-4 rounded-2xl bg-linear-to-br from-slate-900 to-slate-950 text-white border border-slate-800 space-y-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-[hsl(var(--primary))] flex items-center justify-center text-white shrink-0">
+                      <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
                         <HardDrive className="w-4 h-4" />
                       </div>
                       <div>
@@ -932,7 +932,7 @@ export default function RecordStudioView() {
                     <div className="flex items-center gap-2 pt-1">
                       <Link
                         href="/auth/register"
-                        className="flex-1 py-2 px-3 bg-[hsl(var(--primary))] text-white text-xs font-bold rounded-xl text-center hover:opacity-90 transition-opacity"
+                        className="flex-1 py-2 px-3 bg-primary text-white text-xs font-bold rounded-xl text-center hover:opacity-90 transition-opacity"
                       >
                         Create Free Account
                       </Link>
@@ -953,41 +953,41 @@ export default function RecordStudioView() {
         {/* Feature Highlights Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-6">
           <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center mb-2">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
               <Lock className="w-4 h-4" />
             </div>
             <h3 className="font-extrabold text-sm">100% Private & Local</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Recording and canvas composition run locally in your browser. Zero data sent to servers.
             </p>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center mb-2">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
               <Layers className="w-4 h-4" />
             </div>
             <h3 className="font-extrabold text-sm">Webcam PIP Overlay</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Overlay your face camera in top or bottom corners with circle or square frame shapes.
             </p>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center mb-2">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
               <Zap className="w-4 h-4" />
             </div>
             <h3 className="font-extrabold text-sm">Up to 4K 60FPS</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Hardware-accelerated VP9 capture up to 3840x2160 resolution with dynamic audio mixing.
             </p>
           </div>
 
           <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center mb-2">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <h3 className="font-extrabold text-sm">No Watermark Ever</h3>
-            <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Clean high-definition videos with zero time limits, branding logos, or hidden fees.
             </p>
           </div>
@@ -995,7 +995,7 @@ export default function RecordStudioView() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[hsl(var(--border))] py-6 text-center text-xs text-[hsl(var(--muted-foreground))] relative z-10">
+      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground relative z-10">
         © 2026 Taped Platform. Professional Web Studio Screen Recorder.
       </footer>
 
@@ -1014,10 +1014,10 @@ export default function RecordStudioView() {
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-black tracking-tight">
+              <DialogTitle>
                 High File Size Warning
               </DialogTitle>
-              <DialogDescription className="text-xs text-[hsl(var(--muted-foreground))] mt-1 leading-relaxed">
+              <DialogDescription>
                 Selecting <strong className="text-amber-500">{highQualityConfirm.settingLabel}</strong> will significantly increase video quality, but will result in substantially higher output file sizes and may consume more disk storage and network bandwidth.
               </DialogDescription>
             </div>
@@ -1031,7 +1031,6 @@ export default function RecordStudioView() {
             <Button
               variant="outline"
               onClick={() => setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }))}
-              className="rounded-xl text-xs"
             >
               Cancel
             </Button>
@@ -1040,7 +1039,6 @@ export default function RecordStudioView() {
                 highQualityConfirm.onConfirm();
                 setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
               }}
-              className="rounded-xl text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
             >
               Proceed with High Quality
             </Button>

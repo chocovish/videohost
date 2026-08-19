@@ -2,8 +2,20 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Disc, Sparkles, Loader2, X, AlertCircle, Users } from "lucide-react";
+import { Video, Disc, Sparkles, Loader2, AlertCircle, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 interface InstantMeetingModalProps {
   isOpen: boolean;
@@ -22,8 +34,6 @@ export default function InstantMeetingModal({
   const [allowGuests, setAllowGuests] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!isOpen) return null;
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,149 +66,129 @@ export default function InstantMeetingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity animate-in fade-in"
-        onClick={onClose}
-      />
-
-      {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800/80 bg-slate-950/40">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent className="max-w-md p-6">
+        <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 flex items-center justify-center text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Video className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Start Instant Meeting</h2>
-              <p className="text-xs text-slate-400">Launch a live room instantly</p>
+            <div className="min-w-0 flex-1">
+              <DialogTitle>Start Instant Meeting</DialogTitle>
+              <DialogDescription>Launch a live room instantly</DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
-        {/* Body */}
-        <form onSubmit={handleStart} className="p-6 space-y-5">
-          {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+        {error && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+        <form onSubmit={handleStart} className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="instant-meeting-title" className="text-xs font-medium">
               Meeting Name
-            </label>
-            <input
+            </Label>
+            <Input
+              id="instant-meeting-title"
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all"
+              disabled={isLoading}
             />
           </div>
 
           {/* Record Meeting Option */}
-          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between gap-4">
+          <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg mt-0.5 ${recordOnStart ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" : "bg-slate-800 text-slate-400"}`}>
+              <div className={`p-2 rounded-lg mt-0.5 ${recordOnStart ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground"}`}>
                 <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
               </div>
-              <div>
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">Record Meeting</span>
+                  <Label htmlFor="instant-auto-record" className="text-xs font-semibold cursor-pointer">
+                    Record Meeting
+                  </Label>
                   {recordOnStart && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    <Badge variant="destructive" className="uppercase">
                       Auto-Record
-                    </span>
+                    </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-[11px] text-muted-foreground">
                   Save recorded video directly to your library when the meeting ends.
                 </p>
               </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-              <input
-                type="checkbox"
-                checked={recordOnStart}
-                onChange={(e) => setRecordOnStart(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[hsl(var(--primary))]"></div>
-            </label>
+            <Switch
+              id="instant-auto-record"
+              checked={recordOnStart}
+              onCheckedChange={setRecordOnStart}
+              disabled={isLoading}
+            />
           </div>
 
           {/* Guest Access Option */}
-          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between gap-4">
+          <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg mt-0.5 ${allowGuests ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-slate-800 text-slate-400"}`}>
+              <div className={`p-2 rounded-lg mt-0.5 ${allowGuests ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
                 <Users className="w-4 h-4" />
               </div>
-              <div>
+              <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">Join without login (Guest access)</span>
+                  <Label htmlFor="instant-guest-access" className="text-xs font-semibold cursor-pointer">
+                    Guest Access
+                  </Label>
                   {allowGuests && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <Badge variant="outline" className="uppercase text-emerald-600 border-emerald-500/30">
                       Open
-                    </span>
+                    </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Attendees and candidates can enter their name and join without needing a Taped login.
+                <p className="text-[11px] text-muted-foreground">
+                  Attendees can enter their name and join without needing an account.
                 </p>
               </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-              <input
-                type="checkbox"
-                checked={allowGuests}
-                onChange={(e) => setAllowGuests(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
+            <Switch
+              id="instant-guest-access"
+              checked={allowGuests}
+              onCheckedChange={setAllowGuests}
+              disabled={isLoading}
+            />
           </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <DialogFooter className="pt-3 border-t border-border mt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="text-slate-400 hover:text-white"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
-              className="bg-[hsl(var(--primary))] text-white hover:opacity-90 font-bold px-6 cursor-pointer"
+              disabled={isLoading || !title.trim()}
+              className="gap-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Starting...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Starting...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Launch Room
+                  <Sparkles className="w-4 h-4" /> Launch Room
                 </>
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

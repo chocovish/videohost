@@ -13,11 +13,11 @@ import {
   Building2,
   Lock,
   Loader2,
-  Sparkles,
-  Play,
-  X,
 } from "lucide-react";
-import VideoPlayer from "@/components/VideoPlayer";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
 
 interface SharedItem {
@@ -76,8 +76,8 @@ export default function SharedWithYouPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
-        <p className="text-sm font-semibold text-[hsl(var(--muted-foreground))]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm font-semibold text-muted-foreground">
           Loading content shared with you...
         </p>
       </div>
@@ -90,84 +90,75 @@ export default function SharedWithYouPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-extrabold tracking-tight text-[hsl(var(--foreground))]">
+            <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
               Shared with you
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/20">
+            <Badge variant="secondary">
               {items.length} {items.length === 1 ? "item" : "items"}
-            </span>
+            </Badge>
           </div>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Access videos, playlists, and folder collections shared with your email address or account
           </p>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-[hsl(var(--border))] shadow-xs">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border shadow-2xs">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-3 text-[hsl(var(--muted-foreground))]" />
-          <input
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="text"
             placeholder="Search by title or organization..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-[hsl(var(--input))] rounded-xl outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all text-[hsl(var(--foreground))]"
+            className="pl-9"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex-wrap">
-          <button
+        <div className="flex items-center gap-1.5 p-1 rounded-xl flex-wrap">
+          <Button
+            size="sm"
+            variant={filterType === "all" ? "default" : "ghost"}
             onClick={() => setFilterType("all")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              filterType === "all"
-                ? "bg-white dark:bg-slate-700 text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
           >
             All Items
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "video" ? "default" : "ghost"}
             onClick={() => setFilterType("video")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-              filterType === "video"
-                ? "bg-white dark:bg-slate-700 text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
+            className="gap-1.5"
           >
-            <Film className="w-3.5 h-3.5 text-[hsl(var(--primary))]" /> Videos
-          </button>
-          <button
+            <Film className="w-3.5 h-3.5" /> Videos
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "playlist" ? "default" : "ghost"}
             onClick={() => setFilterType("playlist")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-              filterType === "playlist"
-                ? "bg-white dark:bg-slate-700 text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
+            className="gap-1.5"
           >
-            <ListVideo className="w-3.5 h-3.5 text-lime-500" /> Playlists
-          </button>
-          <button
+            <ListVideo className="w-3.5 h-3.5" /> Playlists
+          </Button>
+          <Button
+            size="sm"
+            variant={filterType === "folder" ? "default" : "ghost"}
             onClick={() => setFilterType("folder")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
-              filterType === "folder"
-                ? "bg-white dark:bg-slate-700 text-[hsl(var(--foreground))] shadow-xs"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-            }`}
+            className="gap-1.5"
           >
-            <Folder className="w-3.5 h-3.5 text-amber-500" /> Folders
-          </button>
+            <Folder className="w-3.5 h-3.5" /> Folders
+          </Button>
         </div>
       </div>
 
       {/* Content Grid */}
       {filteredItems.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center border border-[hsl(var(--border))] space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] flex items-center justify-center mx-auto">
-            <Share2 className="w-6 h-6" />
+        <div className="text-center py-16 px-4 bg-card/40 rounded-2xl border border-dashed border-border">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+            <Share2 className="w-8 h-8" />
           </div>
-          <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">No shared content found</h3>
-          <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-md mx-auto">
+          <h3 className="font-bold text-lg text-foreground">No shared content found</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-1">
             {searchQuery
               ? "No items match your search query."
               : "When colleagues share videos, playlists, or folders with you, they will appear right here."}
@@ -178,7 +169,7 @@ export default function SharedWithYouPage() {
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="glass-card bg-white dark:bg-slate-900 border border-[hsl(var(--border))] rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+              className="bg-card border border-border rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
             >
               <div>
                 {/* Header Preview / Icon */}
@@ -191,9 +182,9 @@ export default function SharedWithYouPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : item.type === "playlist" ? (
-                      <div className="flex flex-col items-center gap-2 text-lime-400">
+                      <div className="flex flex-col items-center gap-2 text-primary">
                         <ListVideo className="w-12 h-12" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-lime-300">
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary">
                           Playlist Collection
                         </span>
                       </div>
@@ -201,9 +192,9 @@ export default function SharedWithYouPage() {
                       <Film className="w-12 h-12 text-slate-600" />
                     )
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-amber-400">
+                    <div className="flex flex-col items-center gap-2 text-amber-500">
                       <Folder className="w-14 h-14 fill-amber-500/20" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
                         Folder Collection
                       </span>
                     </div>
@@ -211,52 +202,52 @@ export default function SharedWithYouPage() {
 
                   {item.durationSeconds && (
                     <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-black/80 backdrop-blur-md text-[11px] font-bold text-slate-200 rounded-md flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[hsl(var(--primary))]" />
+                      <Clock className="w-3 h-3 text-primary" />
                       {formatDuration(item.durationSeconds)}
                     </span>
                   )}
 
                   {item.type === "playlist" && item.itemCount !== undefined && (
-                    <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-[hsl(var(--primary))] text-white text-[11px] font-black rounded-md flex items-center gap-1">
+                    <span className="absolute bottom-2 right-2 px-2 py-0.5 bg-primary text-white text-[11px] font-black rounded-md flex items-center gap-1">
                       <Film className="w-3 h-3" />
                       {item.itemCount} {item.itemCount === 1 ? "video" : "videos"}
                     </span>
                   )}
 
                   {item.requireLogin && (
-                    <span className="absolute top-2 left-2 px-2.5 py-1 bg-indigo-950/90 border border-indigo-500/30 text-[10px] font-extrabold text-indigo-300 rounded-full flex items-center gap-1 backdrop-blur-md">
+                    <Badge variant="destructive" className="absolute top-2 left-2 gap-1 uppercase">
                       <Lock className="w-3 h-3" /> Login Required
-                    </span>
+                    </Badge>
                   )}
                 </div>
 
                 {/* Info Container */}
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <Building2 className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                    <Badge variant="secondary" className="gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
                       {item.organizationName}
-                    </span>
-                    <span className="text-[11px] font-semibold text-[hsl(var(--muted-foreground))]">
+                    </Badge>
+                    <span className="text-[11px] font-semibold text-muted-foreground">
                       {new Date(item.createdAt).toLocaleDateString()}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-base text-[hsl(var(--foreground))] line-clamp-1 group-hover:text-[hsl(var(--primary))] transition-colors">
+                    <h3 className="font-bold text-base text-foreground line-clamp-1 group-hover:text-primary transition-colors">
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-2 mt-1">
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                         {item.description}
                       </p>
                     )}
                   </div>
 
                   {item.message && (
-                    <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 rounded-xl">
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300 italic line-clamp-2">
-                        "{item.message}"
+                    <div className="p-2.5 bg-muted/60 border border-border rounded-xl">
+                      <p className="text-[11px] text-muted-foreground italic line-clamp-2">
+                        &ldquo;{item.message}&rdquo;
                       </p>
                     </div>
                   )}
@@ -268,7 +259,7 @@ export default function SharedWithYouPage() {
                 <Link
                   href={item.shareUrl || `/share/${item.id}`}
                   target="_blank"
-                  className="w-full py-2.5 px-4 bg-[hsl(var(--primary))] hover:opacity-90 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all"
+                  className={cn(buttonVariants({ variant: "default" }), "w-full gap-2")}
                 >
                   <span>
                     Open {item.type === "video" ? "Video" : item.type === "playlist" ? "Playlist" : "Folder"}

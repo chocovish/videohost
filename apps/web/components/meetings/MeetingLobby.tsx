@@ -410,19 +410,19 @@ export default function MeetingLobby({
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background ambient lighting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[hsl(var(--primary))]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-4xl mx-auto space-y-6">
         {/* Header Branding */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
             <Radio className="w-3.5 h-3.5 animate-pulse" /> LiveKit Video Lobby
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             {meeting.title}
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 font-mono">
-            Room ID: <span className="text-[hsl(var(--primary))] font-semibold">{meeting.id}</span>
+            Room ID: <span className="text-primary font-semibold">{meeting.id}</span>
             {meeting.hostName && ` • Hosted by ${meeting.hostName}`}
           </p>
         </div>
@@ -532,9 +532,9 @@ export default function MeetingLobby({
                 <label className="text-slate-400 font-medium mb-1.5 block">Microphone</label>
                 <Select
                   value={selectedAudioDevice || (audioDevices.length > 0 ? audioDevices[0].deviceId : "default")}
-                  onValueChange={(val) => handleDeviceChange("audio", val === "default" ? "" : val)}
+                  onValueChange={(val) => handleDeviceChange("audio", !val || val === "default" ? "" : val)}
                 >
-                  <SelectTrigger className="w-full h-10 px-3 bg-slate-950/90 border-slate-800 rounded-xl text-slate-200 text-xs font-medium focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] shadow-sm">
+                  <SelectTrigger className="w-full bg-slate-950/90 border-slate-800 text-slate-200">
                     <SelectValue placeholder="Select microphone" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
@@ -557,9 +557,9 @@ export default function MeetingLobby({
                 <label className="text-slate-400 font-medium mb-1.5 block">Camera</label>
                 <Select
                   value={selectedVideoDevice || (videoDevices.length > 0 ? videoDevices[0].deviceId : "default")}
-                  onValueChange={(val) => handleDeviceChange("video", val === "default" ? "" : val)}
+                  onValueChange={(val) => handleDeviceChange("video", !val || val === "default" ? "" : val)}
                 >
-                  <SelectTrigger className="w-full h-10 px-3 bg-slate-950/90 border-slate-800 rounded-xl text-slate-200 text-xs font-medium focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] shadow-sm">
+                  <SelectTrigger className="w-full bg-slate-950/90 border-slate-800 text-slate-200">
                     <SelectValue placeholder="Select camera" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
@@ -603,14 +603,14 @@ export default function MeetingLobby({
                   placeholder="Your full name or handle"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] font-semibold transition-all"
+                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary font-semibold transition-all"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={!displayName.trim() || isInitializing}
-                className="w-full py-3.5 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-black font-extrabold text-sm rounded-xl shadow-lg shadow-[hsl(var(--primary))]/20 gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-extrabold text-sm rounded-xl shadow-lg shadow-primary/20 gap-2 cursor-pointer"
               >
                 {isInitializing ? (
                   <>

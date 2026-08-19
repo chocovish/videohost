@@ -4,19 +4,28 @@ import React, { useState } from "react";
 import {
   Calendar,
   Clock,
-  Video,
   Disc,
   Users,
-  X,
   Plus,
   Loader2,
   Sparkles,
-  CheckCircle2,
-  Copy,
   Mail,
   AlertCircle,
+  X,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -38,12 +47,11 @@ export default function ScheduleMeetingModal({
 }: ScheduleMeetingModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  
+
   // Default scheduled time: next nearest 30 mins
   const getDefaultDateTime = () => {
     const now = new Date();
     now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
-    // Format to YYYY-MM-DDTHH:mm for datetime-local input
     const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
   };
@@ -56,8 +64,6 @@ export default function ScheduleMeetingModal({
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  if (!isOpen) return null;
 
   const handleAddEmail = () => {
     const trimmed = emailInput.trim().toLowerCase();
@@ -130,252 +136,246 @@ export default function ScheduleMeetingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-md transition-opacity animate-in fade-in"
-        onClick={onClose}
-      />
-
-      {/* Modal Content */}
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl shadow-2xl overflow-hidden z-10 animate-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800/80 bg-slate-950/40">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
+      <DialogContent className="max-w-xl max-h-[88vh] flex flex-col p-6 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 flex items-center justify-center text-[hsl(var(--primary))]">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">Schedule Video Meeting</h2>
-              <p className="text-xs text-slate-400">Set up a LiveKit room & invite attendees</p>
+            <div className="min-w-0 flex-1">
+              <DialogTitle>Schedule Video Meeting</DialogTitle>
+              <DialogDescription>Set up a LiveKit room and invite attendees</DialogDescription>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </DialogHeader>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
-          {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Meeting Title <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g., Q3 Product Sync & Roadmap Review"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all"
-            />
+        {error && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 shrink-0">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {/* Date & Time and Duration */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" /> Start Date & Time
-              </label>
-              <input
-                type="datetime-local"
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label htmlFor="schedule-meeting-title" className="text-xs font-medium">
+                Meeting Title <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="schedule-meeting-title"
+                type="text"
                 required
-                value={scheduledStart}
-                onChange={(e) => setScheduledStart(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all [color-scheme:dark]"
+                placeholder="e.g. Q3 Product Sync & Roadmap Review"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={isLoading}
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" /> Duration
-              </label>
-              <Select
-                value={String(durationMinutes)}
-                onValueChange={(val) => setDurationMinutes(Number(val))}
-              >
-                <SelectTrigger className="w-full h-11 px-3.5 bg-slate-950/80 border-slate-700/80 rounded-xl text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] shadow-sm">
-                  <SelectValue placeholder="Select duration" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200">
-                  <SelectItem value="15" className="text-xs">15 Minutes</SelectItem>
-                  <SelectItem value="30" className="text-xs">30 Minutes</SelectItem>
-                  <SelectItem value="45" className="text-xs">45 Minutes</SelectItem>
-                  <SelectItem value="60" className="text-xs">1 Hour</SelectItem>
-                  <SelectItem value="90" className="text-xs">1.5 Hours</SelectItem>
-                  <SelectItem value="120" className="text-xs">2 Hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Agenda / Description (Optional)
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Brief details or agenda items for attendees..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all resize-none"
-            />
-          </div>
-
-          {/* Record Meeting Option */}
-          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg mt-0.5 ${recordOnStart ? "bg-rose-500/20 text-rose-400 border border-rose-500/30" : "bg-slate-800 text-slate-400"}`}>
-                <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
+            {/* Date & Time and Duration */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="schedule-start-time" className="text-xs font-medium flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground" /> Start Date & Time
+                </Label>
+                <Input
+                  id="schedule-start-time"
+                  type="datetime-local"
+                  required
+                  value={scheduledStart}
+                  onChange={(e) => setScheduledStart(e.target.value)}
+                  disabled={isLoading}
+                />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">Record meeting automatically</span>
-                  {recordOnStart && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                      Auto-Record
-                    </span>
-                  )}
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" /> Duration
+                </Label>
+                <Select
+                  value={String(durationMinutes)}
+                  onValueChange={(val) => setDurationMinutes(Number(val))}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select duration" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15 Minutes</SelectItem>
+                    <SelectItem value="30">30 Minutes</SelectItem>
+                    <SelectItem value="45">45 Minutes</SelectItem>
+                    <SelectItem value="60">1 Hour</SelectItem>
+                    <SelectItem value="90">1.5 Hours</SelectItem>
+                    <SelectItem value="120">2 Hours</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="schedule-agenda" className="text-xs font-medium">
+                  Agenda / Description
+                </Label>
+                <span className="text-[11px] text-muted-foreground">Optional</span>
+              </div>
+              <textarea
+                id="schedule-agenda"
+                rows={2}
+                placeholder="Brief details or agenda items for attendees..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={isLoading}
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none min-h-[60px]"
+              />
+            </div>
+
+            {/* Record Meeting Option */}
+            <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg mt-0.5 ${recordOnStart ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground"}`}>
+                  <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Record conference and automatically save to your Taped video library when the session starts.
-                </p>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="schedule-auto-record" className="text-xs font-semibold cursor-pointer">
+                      Record meeting automatically
+                    </Label>
+                    {recordOnStart && (
+                      <Badge variant="destructive" className="uppercase">
+                        Auto-Record
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Record conference and automatically save to your video library when the session starts.
+                  </p>
+                </div>
               </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-              <input
-                type="checkbox"
+              <Switch
+                id="schedule-auto-record"
                 checked={recordOnStart}
-                onChange={(e) => setRecordOnStart(e.target.checked)}
-                className="sr-only peer"
+                onCheckedChange={setRecordOnStart}
+                disabled={isLoading}
               />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[hsl(var(--primary))]"></div>
-            </label>
-          </div>
+            </div>
 
-          {/* Guest Access Option */}
-          <div className="p-4 rounded-xl bg-slate-950/40 border border-slate-800 flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg mt-0.5 ${allowGuests ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-slate-800 text-slate-400"}`}>
-                <Users className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">Join without login (Guest access)</span>
-                  {allowGuests && (
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                      Open Access
-                    </span>
-                  )}
+            {/* Guest Access Option */}
+            <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg mt-0.5 ${allowGuests ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                  <Users className="w-4 h-4" />
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Allows candidates, clients, or team members to join with just a name, without needing a Taped login.
-                </p>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="schedule-guest-access" className="text-xs font-semibold cursor-pointer">
+                      Guest access (join without account)
+                    </Label>
+                    {allowGuests && (
+                      <Badge variant="outline" className="uppercase text-emerald-600 border-emerald-500/30">
+                        Open Access
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Allows candidates, clients, or team members to join with just a name.
+                  </p>
+                </div>
               </div>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
-              <input
-                type="checkbox"
+              <Switch
+                id="schedule-guest-access"
                 checked={allowGuests}
-                onChange={(e) => setAllowGuests(e.target.checked)}
-                className="sr-only peer"
+                onCheckedChange={setAllowGuests}
+                disabled={isLoading}
               />
-              <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-
-          {/* Invite Attendees via Email */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-slate-400" /> Invite Attendees by Email
-              </span>
-              <span className="text-[11px] font-normal text-slate-500 lowercase">press enter to add</span>
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="colleague@company.com"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="flex-1 px-4 py-2 bg-slate-950/60 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))] transition-all"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddEmail}
-                className="px-3.5 border-slate-700 hover:bg-slate-800 text-slate-200"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
             </div>
 
-            {/* Email tags */}
-            {inviteEmails.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2.5">
-                {inviteEmails.map((email) => (
-                  <span
-                    key={email}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[hsl(var(--primary))]/10 border border-[hsl(var(--primary))]/30 text-[hsl(var(--primary))] text-xs font-medium"
-                  >
-                    <span>{email}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveEmail(email)}
-                      className="text-slate-400 hover:text-rose-400 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
+            {/* Invite Attendees via Email */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="schedule-invite-email" className="text-xs font-medium flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Invite Attendees by Email
+                </Label>
+                <span className="text-[11px] text-muted-foreground">Press Enter or click Add</span>
               </div>
-            )}
+              <div className="flex gap-2">
+                <Input
+                  id="schedule-invite-email"
+                  type="email"
+                  placeholder="colleague@company.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isLoading}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddEmail}
+                  disabled={isLoading || !emailInput.trim()}
+                  className="shrink-0"
+                >
+                  <Plus className="w-4 h-4 mr-1.5" />
+                  <span>Add</span>
+                </Button>
+              </div>
+
+              {inviteEmails.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {inviteEmails.map((email) => (
+                    <Badge
+                      key={email}
+                      variant="secondary"
+                      className="gap-1.5 py-1 px-2.5 text-xs font-normal"
+                    >
+                      <span>{email}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEmail(email)}
+                        className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                        aria-label={`Remove ${email}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <DialogFooter className="pt-3 border-t border-border shrink-0 mt-4">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="text-slate-400 hover:text-white"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
-              className="bg-[hsl(var(--primary))] text-white hover:opacity-90 font-bold px-5 cursor-pointer"
+              disabled={isLoading || !title.trim()}
+              className="gap-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Scheduling...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Scheduling...
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Schedule Meeting
+                  <Sparkles className="w-4 h-4" /> Schedule Meeting
                 </>
               )}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

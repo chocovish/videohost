@@ -143,7 +143,7 @@ export default function VideoDetailPage() {
     return (
       <div className="text-center py-16">
         <h2 className="text-xl font-bold">Video not found</h2>
-        <Link href="/dashboard/uploaded-videos" className="text-[hsl(var(--primary))] hover:underline mt-2 inline-block">
+        <Link href="/dashboard/uploaded-videos" className="text-primary hover:underline mt-2 inline-block">
           Return to Uploaded Videos
         </Link>
       </div>
@@ -168,7 +168,7 @@ export default function VideoDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Link
           href={backUrl}
-          className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Videos
         </Link>
@@ -179,7 +179,7 @@ export default function VideoDetailPage() {
               size="sm"
               onClick={handleRetryTranscode}
               disabled={isRetrying}
-              className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+              className="flex-1 sm:flex-none"
               title="Retry transcoding job"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
@@ -191,27 +191,27 @@ export default function VideoDetailPage() {
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+            className="flex-1 sm:flex-none"
             title="Refresh video details"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
             <span>Refresh</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsEditOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+            className="flex-1 sm:flex-none"
             title="Edit video title, description, and thumbnail"
           >
-            <Pencil className="w-4 h-4 text-[hsl(var(--primary))]" />
+            <Pencil className="w-4 h-4 text-primary" />
             <span>Edit Video</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsMoveOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+            className="flex-1 sm:flex-none"
             title="Move video to another folder"
           >
             <FolderInput className="w-4 h-4" />
@@ -220,7 +220,7 @@ export default function VideoDetailPage() {
           <Button
             size="sm"
             onClick={() => setIsShareOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[40px]"
+            className="flex-1 sm:flex-none"
           >
             <Share2 className="w-4 h-4" />
             <span>Share Video</span>
@@ -229,7 +229,7 @@ export default function VideoDetailPage() {
             variant="ghost"
             size="sm"
             onClick={handleDelete}
-            className="flex-1 sm:flex-none font-semibold text-red-600 hover:bg-red-500/10 min-h-[40px]"
+            className="flex-1 sm:flex-none text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="w-4 h-4 mr-1.5" /> Delete Video
           </Button>
@@ -289,24 +289,26 @@ export default function VideoDetailPage() {
                     HLS adaptive bitrate encoding encountered an issue during processing.
                   </p>
                 </div>
-                <button
+                <Button
+                  variant="destructive"
+                  size="sm"
                   onClick={handleRetryTranscode}
                   disabled={isRetrying}
-                  className="mt-2 flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors shadow-md disabled:opacity-50"
+                  className="mt-2 gap-2"
                 >
                   <RotateCcw className={`w-4 h-4 ${isRetrying ? "animate-spin" : ""}`} />
                   {isRetrying ? "Requeueing Job..." : "Retry Transcoding"}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
-                <Clock className="w-8 h-8 animate-spin text-[hsl(var(--primary))]" />
+                <Clock className="w-8 h-8 animate-spin text-primary" />
                 <div className="space-y-2 w-full">
                   <p className="text-sm font-semibold text-slate-200">Video Transcoding in Progress</p>
                   <p className="text-xs text-slate-400 font-medium">Progress: {video.progress || 0}%</p>
                   <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
                     <div
-                      className="bg-[hsl(var(--primary))] h-2 transition-all duration-500 rounded-full"
+                      className="bg-primary h-2 transition-all duration-500 rounded-full"
                       style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
                     />
                   </div>
@@ -315,36 +317,33 @@ export default function VideoDetailPage() {
             )}
           </div>
 
-          <div className="border border-[hsl(var(--border))] rounded-2xl bg-white dark:bg-slate-900/60 p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="border border-border rounded-2xl bg-card p-4 sm:p-6 shadow-2xs space-y-4">
             {/* Tabs */}
-            <div className="flex border-b border-[hsl(var(--border))] gap-4 sm:gap-6 text-sm font-semibold overflow-x-auto whitespace-nowrap">
-              <button
+            <div className="flex border-b border-border gap-2 pb-2 text-sm font-semibold overflow-x-auto whitespace-nowrap">
+              <Button
+                variant={activeTab === "details" ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setActiveTab("details")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "details"
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                  }`}
+                className="gap-2"
               >
                 <FileText className="w-4 h-4" /> Video Details
-              </button>
-              <button
+              </Button>
+              <Button
+                variant={activeTab === "embed" ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setActiveTab("embed")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "embed"
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                  }`}
+                className="gap-2"
               >
                 <Code className="w-4 h-4" /> Embed Codes
-              </button>
-              <button
+              </Button>
+              <Button
+                variant={activeTab === "renditions" ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setActiveTab("renditions")}
-                className={`pb-3 flex items-center gap-2 transition-colors border-b-2 shrink-0 ${activeTab === "renditions"
-                  ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
-                  : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
-                  }`}
+                className="gap-2"
               >
                 <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
-              </button>
+              </Button>
             </div>
 
             {/* Tab 1: Video Details (Selected by default) */}
@@ -352,10 +351,10 @@ export default function VideoDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2.5 flex-wrap min-w-0 flex-1">
-                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-[hsl(var(--foreground))] break-words">
+                    <h2 className="text-lg sm:text-xl font-bold tracking-tight text-foreground wrap-break-word">
                       {video.title}
                     </h2>
-                    <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider shrink-0">
+                    <Badge variant="outline" className="uppercase shrink-0">
                       {video.shareAccessMode}
                     </Badge>
                   </div>
@@ -363,19 +362,19 @@ export default function VideoDetailPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsEditOpen(true)}
-                    className="shrink-0 font-semibold gap-1.5 text-xs h-9"
+                    className="shrink-0 gap-1.5"
                   >
-                    <Pencil className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                    <Pencil className="w-3.5 h-3.5 text-primary" />
                     <span>Edit Video</span>
                   </Button>
                 </div>
 
                 {video.description ? (
-                  <div className="max-h-72 overflow-y-auto text-sm text-[hsl(var(--muted-foreground))] whitespace-pre-wrap leading-relaxed pr-1">
+                  <div className="max-h-72 overflow-y-auto text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed pr-1">
                     {video.description}
                   </div>
                 ) : (
-                  <p className="text-xs text-[hsl(var(--muted-foreground))] italic">
+                  <p className="text-xs text-muted-foreground italic">
                     No description provided. Click &ldquo;Edit Video&rdquo; to add one.
                   </p>
                 )}
@@ -386,33 +385,33 @@ export default function VideoDetailPage() {
             {activeTab === "embed" && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                  <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                     <span>IFRAME EMBED (RECOMMENDED)</span>
                     <button
                       onClick={() => copyToClipboard(iframeEmbedCode, "iframe")}
-                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline p-1"
+                      className="text-primary flex items-center gap-1 hover:underline p-1"
                     >
                       {copiedType === "iframe" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "iframe" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
+                  <pre className="p-3 bg-muted text-foreground border border-border text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {iframeEmbedCode}
                   </pre>
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  <div className="flex justify-between items-center text-xs font-semibold text-[hsl(var(--muted-foreground))]">
+                  <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                     <span>DIRECT VIDEO.JS EMBED</span>
                     <button
                       onClick={() => copyToClipboard(scriptEmbedCode, "script")}
-                      className="text-[hsl(var(--primary))] flex items-center gap-1 hover:underline p-1"
+                      className="text-primary flex items-center gap-1 hover:underline p-1 cursor-pointer"
                     >
                       {copiedType === "script" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "script" ? "Copied" : "Copy"}
                     </button>
                   </div>
-                  <pre className="p-3 bg-slate-900 text-slate-200 text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
+                  <pre className="p-3 bg-muted text-foreground border border-border text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {scriptEmbedCode}
                   </pre>
                 </div>
@@ -424,23 +423,23 @@ export default function VideoDetailPage() {
               <div className="space-y-4">
                 {video.renditions?.length > 0 ? (
                   <>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                    <p className="text-xs text-muted-foreground">
                       Adaptive bitrate renditions packaged into fMP4 / HLS streams:
                     </p>
-                    <div className="divide-y divide-[hsl(var(--border))]">
+                    <div className="divide-y divide-border">
                       {video.renditions.map((rend) => (
                         <div key={rend.resolution} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
                           <div className="flex items-center gap-3">
-                            <span className="font-bold px-2.5 py-1 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] rounded-lg">
+                            <span className="font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg">
                               {rend.resolution}
                             </span>
-                            <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono">
+                            <span className="text-xs text-muted-foreground font-mono">
                               {rend.bitrateKbps} kbps bitrate{rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
                             </span>
                           </div>
                           <button
                             onClick={() => copyToClipboard(rend.playlistUrl, rend.resolution)}
-                            className="text-xs text-[hsl(var(--primary))] hover:underline font-medium self-start sm:self-auto"
+                            className="text-xs text-primary hover:underline font-medium self-start sm:self-auto"
                           >
                             {copiedType === rend.resolution ? "Copied URL" : "Copy Playlist URL"}
                           </button>
@@ -459,7 +458,7 @@ export default function VideoDetailPage() {
                         <button
                           onClick={handleRetryTranscode}
                           disabled={isRetrying}
-                          className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 shadow-xs disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
                         >
                           <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
                           {isRetrying ? "Requeueing..." : "Retry Transcoding"}
@@ -511,31 +510,31 @@ export default function VideoDetailPage() {
         {/* Right 1 Col: Metadata Sidebar */}
         <div className="space-y-6">
           {/* Asset Info Card */}
-          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-3 text-xs">
-            <h3 className="font-bold text-sm text-[hsl(var(--foreground))] uppercase tracking-wider mb-2">
+          <div className="glass-card rounded-2xl p-6 border border-border space-y-3 text-xs">
+            <h3 className="font-bold text-sm text-foreground uppercase tracking-wider mb-2">
               Asset Metadata
             </h3>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">Video ID</span>
-              <span className="font-mono text-[hsl(var(--foreground))]">{video.id}</span>
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">Video ID</span>
+              <span className="font-mono text-foreground">{video.id}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">Share Access</span>
-              <span className="font-bold text-[hsl(var(--foreground))] uppercase">{video.shareAccessMode}</span>
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">Share Access</span>
+              <span className="font-bold text-foreground uppercase">{video.shareAccessMode}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">HLS Mode</span>
-              <span className="font-semibold text-[hsl(var(--foreground))]">
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">HLS Mode</span>
+              <span className="font-semibold text-foreground">
                 {video.requireHls ? "Required" : "Disabled (Direct)"}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">Source Resolution</span>
-              <span className="font-semibold text-[hsl(var(--foreground))]">{video.sourceResolution || "Probing"}</span>
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">Source Resolution</span>
+              <span className="font-semibold text-foreground">{video.sourceResolution || "Probing"}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">Total File Size</span>
-              <span className="font-semibold text-[hsl(var(--foreground))] flex items-center gap-1.5">
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">Total File Size</span>
+              <span className="font-semibold text-foreground flex items-center gap-1.5">
                 {formatBytes(video.sizeBytes)}
                 {video.requireHls && video.status !== "READY" && (
                   <span className="text-[10px] text-amber-600 font-medium bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
@@ -544,9 +543,9 @@ export default function VideoDetailPage() {
                 )}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-[hsl(var(--border))]">
-              <span className="text-[hsl(var(--muted-foreground))]">Uploaded On</span>
-              <span className="text-[hsl(var(--foreground))]">{new Date(video.createdAt).toLocaleString()}</span>
+            <div className="flex justify-between py-1 border-b border-border">
+              <span className="text-muted-foreground">Uploaded On</span>
+              <span className="text-foreground">{new Date(video.createdAt).toLocaleString()}</span>
             </div>
           </div>
         </div>

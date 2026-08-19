@@ -437,7 +437,7 @@ export default function ScreenRecordDrawer({
 
             <DrawerHeader className="pr-12">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-md shadow-red-500/20 shrink-0">
+                <div className="p-2.5 rounded-xl bg-linear-to-br from-red-500 to-rose-600 text-white shadow-md shadow-red-500/20 shrink-0">
                   <Video className="w-5 h-5" />
                 </div>
                 <div>
@@ -525,7 +525,7 @@ export default function ScreenRecordDrawer({
                         {/* Idle State Banner */}
                         {recordState === "idle" && (
                           <div className="text-center p-6 space-y-3 max-w-sm">
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-lime-500/20 to-emerald-500/20 border border-lime-500/30 flex items-center justify-center mx-auto text-lime-500 shadow-inner">
+                            <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-lime-500/20 to-emerald-500/20 border border-lime-500/30 flex items-center justify-center mx-auto text-lime-500 shadow-inner">
                               <Monitor className="w-8 h-8" />
                             </div>
                             <div className="space-y-1">
@@ -568,7 +568,7 @@ export default function ScreenRecordDrawer({
 
                         {/* Processing Video Overlay */}
                         {isProcessing && (
-                          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
+                          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
                             <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xl shadow-red-500/20">
                               <Loader2 className="w-7 h-7 animate-spin text-red-500" />
                             </div>
@@ -655,10 +655,10 @@ export default function ScreenRecordDrawer({
                                 </Label>
                                 <Select
                                   value={selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")}
-                                  onValueChange={(val) => handleSelectCameraDevice(val)}
+                                  onValueChange={(val) => handleSelectCameraDevice(val || "")}
                                   disabled={cameraDevices.length === 0}
                                 >
-                                  <SelectTrigger className="w-full h-8 text-xs font-medium rounded-xl bg-white dark:bg-slate-800">
+                                  <SelectTrigger size="sm" className="w-full bg-white dark:bg-slate-800">
                                     <SelectValue placeholder="Select camera" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -687,7 +687,7 @@ export default function ScreenRecordDrawer({
                                       type="button"
                                       onClick={() => setWebcamCorner(c)}
                                       className={`text-[10px] font-bold py-1 px-1.5 rounded-lg capitalize transition-all ${webcamCorner === c
-                                        ? "bg-lime-500 text-white shadow-sm"
+                                        ? "bg-lime-500 text-white shadow-xs"
                                         : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
                                         }`}
                                     >
@@ -709,7 +709,7 @@ export default function ScreenRecordDrawer({
                                       type="button"
                                       onClick={() => setWebcamShape(s)}
                                       className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamShape === s
-                                        ? "bg-lime-500 text-white border-lime-600 shadow-sm"
+                                        ? "bg-lime-500 text-white border-lime-600 shadow-xs"
                                         : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                                         }`}
                                     >
@@ -731,7 +731,7 @@ export default function ScreenRecordDrawer({
                                       type="button"
                                       onClick={() => setWebcamSize(sz)}
                                       className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamSize === sz
-                                        ? "bg-lime-500 text-white border-lime-600 shadow-sm"
+                                        ? "bg-lime-500 text-white border-lime-600 shadow-xs"
                                         : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
                                         }`}
                                     >
@@ -755,7 +755,7 @@ export default function ScreenRecordDrawer({
                                   type="button"
                                   onClick={() => handleSelectResolution(res)}
                                   className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
-                                    ? "bg-lime-500 text-white border-lime-500 shadow-sm"
+                                    ? "bg-lime-500 text-white border-lime-500 shadow-xs"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                                     }`}
                                 >
@@ -777,7 +777,7 @@ export default function ScreenRecordDrawer({
                                   type="button"
                                   onClick={() => handleSelectFps(rate)}
                                   className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
-                                    ? "bg-lime-500 text-white border-lime-500 shadow-sm"
+                                    ? "bg-lime-500 text-white border-lime-500 shadow-xs"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                                     }`}
                                 >
@@ -803,7 +803,7 @@ export default function ScreenRecordDrawer({
                                   type="button"
                                   onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
                                   className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
-                                    ? "bg-lime-500 text-white border-lime-500 shadow-sm"
+                                    ? "bg-lime-500 text-white border-lime-500 shadow-xs"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                                     }`}
                                 >
@@ -829,7 +829,7 @@ export default function ScreenRecordDrawer({
                                   type="button"
                                   onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
                                   className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
-                                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-sm"
+                                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-xs"
                                     : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
                                     }`}
                                 >
@@ -917,7 +917,7 @@ export default function ScreenRecordDrawer({
                                       type="button"
                                       onClick={() => setWebcamCorner(c)}
                                       className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
-                                        ? "bg-lime-500 text-slate-950 shadow-sm"
+                                        ? "bg-lime-500 text-slate-950 shadow-xs"
                                         : "text-slate-300 hover:bg-white/10"
                                         }`}
                                     >
@@ -938,7 +938,7 @@ export default function ScreenRecordDrawer({
                                       type="button"
                                       onClick={() => setWebcamShape(s)}
                                       className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${webcamShape === s
-                                        ? "bg-lime-500 text-slate-950 border-lime-500 shadow-sm"
+                                        ? "bg-lime-500 text-slate-950 border-lime-500 shadow-xs"
                                         : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
                                         }`}
                                     >
@@ -958,7 +958,7 @@ export default function ScreenRecordDrawer({
                           <Button
                             size="lg"
                             onClick={startRecording}
-                            className="w-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/20 text-base gap-3 group transition-all hover:scale-[1.02]"
+                            className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/20 text-base gap-3 group transition-all hover:scale-[1.02]"
                           >
                             <Disc className="w-5 h-5 animate-pulse text-white" />
                             Start Screen Recording
@@ -1075,7 +1075,7 @@ export default function ScreenRecordDrawer({
                             disabled={uploading}
                             className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${showTrimmer
                               ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
-                              : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-xs"
+                              : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-2xs"
                               }`}
                           >
                             <Scissors className="w-3.5 h-3.5" />
@@ -1158,7 +1158,7 @@ export default function ScreenRecordDrawer({
                             placeholder="Add brief details about this recording..."
                             disabled={uploading}
                             rows={3}
-                            className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-lime-500 font-medium"
+                            className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-lime-500 font-medium"
                           />
                         </div>
 
@@ -1207,7 +1207,7 @@ export default function ScreenRecordDrawer({
                               aria-checked={requireHls}
                               disabled={uploading}
                               onClick={() => setRequireHls(!requireHls)}
-                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
+                              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
                                 }`}
                             >
                               <span
@@ -1281,10 +1281,10 @@ export default function ScreenRecordDrawer({
       <Dialog open={showConfirmClose} onOpenChange={setShowConfirmClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-destructive">
               <AlertCircle className="w-5 h-5" /> Discard Active Recording?
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 pt-2">
+            <DialogDescription>
               You have an active or unsaved recording session. If you close now, your recorded video content will be permanently lost.
             </DialogDescription>
           </DialogHeader>
@@ -1293,7 +1293,6 @@ export default function ScreenRecordDrawer({
               variant="outline"
               size="sm"
               onClick={() => setShowConfirmClose(false)}
-              className="rounded-xl text-xs"
             >
               Keep Recording
             </Button>
@@ -1301,7 +1300,6 @@ export default function ScreenRecordDrawer({
               variant="destructive"
               size="sm"
               onClick={handleConfirmDiscard}
-              className="rounded-xl text-xs bg-red-600 hover:bg-red-700 font-bold"
             >
               Discard & Close
             </Button>
@@ -1324,10 +1322,10 @@ export default function ScreenRecordDrawer({
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-black tracking-tight">
+              <DialogTitle>
                 High File Size Warning
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+              <DialogDescription>
                 Selecting <strong className="text-amber-500">{highQualityConfirm.settingLabel}</strong> will significantly increase video quality, but will result in substantially higher output file sizes and may consume more disk storage and network bandwidth.
               </DialogDescription>
             </div>
@@ -1341,7 +1339,6 @@ export default function ScreenRecordDrawer({
             <Button
               variant="outline"
               onClick={() => setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }))}
-              className="rounded-xl text-xs"
             >
               Cancel
             </Button>
@@ -1350,7 +1347,6 @@ export default function ScreenRecordDrawer({
                 highQualityConfirm.onConfirm();
                 setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
               }}
-              className="rounded-xl text-xs bg-amber-600 hover:bg-amber-700 text-white font-bold"
             >
               Proceed with High Quality
             </Button>

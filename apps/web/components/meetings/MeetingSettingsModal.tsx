@@ -243,7 +243,7 @@ export default function MeetingSettingsModal() {
       {/* Modal Header */}
       <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[hsl(var(--primary))]/15 border border-[hsl(var(--primary))]/30 flex items-center justify-center text-[hsl(var(--primary))]">
+          <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
             <SettingsIcon className="w-5 h-5" />
           </div>
           <div>
@@ -268,7 +268,7 @@ export default function MeetingSettingsModal() {
           onClick={() => setActiveTab("audio")}
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "audio"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+              ? "border-primary text-primary"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -280,7 +280,7 @@ export default function MeetingSettingsModal() {
           onClick={() => setActiveTab("video")}
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "video"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+              ? "border-primary text-primary"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -292,7 +292,7 @@ export default function MeetingSettingsModal() {
           onClick={() => setActiveTab("general")}
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "general"
-              ? "border-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+              ? "border-primary text-primary"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -310,7 +310,7 @@ export default function MeetingSettingsModal() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <Mic className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                  <Mic className="w-3.5 h-3.5 text-primary" />
                   Microphone Input
                 </label>
                 <div className="flex items-center gap-2">
@@ -320,7 +320,7 @@ export default function MeetingSettingsModal() {
                   <button
                     type="button"
                     onClick={() => localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled)}
-                    className="text-[11px] font-bold text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                   >
                     {isMicrophoneEnabled ? "Mute" : "Unmute"}
                   </button>
@@ -333,7 +333,7 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveAudioInputDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
                   <SelectValue placeholder="Select microphone" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
@@ -363,7 +363,7 @@ export default function MeetingSettingsModal() {
                 </div>
                 <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 via-[hsl(var(--primary))] to-amber-400 rounded-full transition-all duration-75"
+                    className="h-full bg-linear-to-r from-emerald-500 via-primary to-amber-400 rounded-full transition-all duration-75"
                     style={{ width: `${isMicrophoneEnabled ? audioLevel : 0}%` }}
                   />
                 </div>
@@ -386,7 +386,7 @@ export default function MeetingSettingsModal() {
                   type="button"
                   onClick={handleTestSpeaker}
                   disabled={isTestingSpeaker}
-                  className="text-xs font-bold text-[hsl(var(--primary))] hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
                 >
                   <Play className="w-3 h-3" />
                   {isTestingSpeaker ? "Testing Chime..." : "Test Speaker"}
@@ -399,7 +399,7 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveAudioOutputDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
                   <SelectValue placeholder="Select speaker" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
@@ -435,7 +435,7 @@ export default function MeetingSettingsModal() {
                     type="checkbox"
                     checked={noiseSuppression}
                     onChange={(e) => setNoiseSuppression(e.target.checked)}
-                    className="w-4 h-4 rounded text-[hsl(var(--primary))] accent-[hsl(var(--primary))] cursor-pointer"
+                    className="w-4 h-4 rounded text-primary accent-primary cursor-pointer"
                   />
                 </div>
 
@@ -448,7 +448,7 @@ export default function MeetingSettingsModal() {
                     type="checkbox"
                     checked={echoCancellation}
                     onChange={(e) => setEchoCancellation(e.target.checked)}
-                    className="w-4 h-4 rounded text-[hsl(var(--primary))] accent-[hsl(var(--primary))] cursor-pointer"
+                    className="w-4 h-4 rounded text-primary accent-primary cursor-pointer"
                   />
                 </div>
               </div>
@@ -463,7 +463,7 @@ export default function MeetingSettingsModal() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <VideoIcon className="w-3.5 h-3.5 text-[hsl(var(--primary))]" />
+                  <VideoIcon className="w-3.5 h-3.5 text-primary" />
                   Camera Device
                 </label>
                 <div className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function MeetingSettingsModal() {
                   <button
                     type="button"
                     onClick={() => localParticipant?.setCameraEnabled(!isCameraEnabled)}
-                    className="text-[11px] font-bold text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                   >
                     {isCameraEnabled ? "Turn Off" : "Turn On"}
                   </button>
@@ -486,7 +486,7 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveVideoDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 rounded-xl px-3.5 h-11 text-xs sm:text-sm text-white font-normal focus:border-[hsl(var(--primary))] focus:ring-1 focus:ring-[hsl(var(--primary))]">
+                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
                   <SelectValue placeholder="Select camera" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
@@ -583,7 +583,7 @@ export default function MeetingSettingsModal() {
                     onClick={() => setVideoQuality(item.id as any)}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       videoQuality === item.id
-                        ? "bg-[hsl(var(--primary))]/15 border-[hsl(var(--primary))] text-white"
+                        ? "bg-primary/15 border-primary text-white"
                         : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
                     }`}
                   >
@@ -631,7 +631,7 @@ export default function MeetingSettingsModal() {
 
               <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                  <Radio className="w-4 h-4 text-[hsl(var(--primary))]" />
+                  <Radio className="w-4 h-4 text-primary" />
                   <span>Connection State</span>
                 </div>
                 <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">

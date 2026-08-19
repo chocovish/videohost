@@ -265,7 +265,7 @@ export default function ParticipantsPanel({
         <div className="p-4 border-b border-slate-800/80 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center font-bold">
                 <Users className="w-4 h-4" />
               </div>
               <div>
@@ -330,7 +330,7 @@ export default function ParticipantsPanel({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search participants..."
-              className="w-full h-8 pl-8 pr-3 bg-slate-950/70 border border-slate-800 rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-[hsl(var(--primary))] transition-colors"
+              className="w-full h-8 pl-8 pr-3 bg-slate-950/70 border border-slate-800 rounded-lg text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-primary transition-colors"
             />
             {searchQuery && (
               <button
@@ -385,7 +385,7 @@ export default function ParticipantsPanel({
                   key={identity}
                   className={`group relative p-2.5 rounded-xl border transition-all duration-150 ${
                     isSpeaking
-                      ? "bg-slate-900/90 border-[hsl(var(--primary))]/40 shadow-sm shadow-[hsl(var(--primary))]/5"
+                      ? "bg-slate-900/90 border-primary/40 shadow-xs shadow-primary/5"
                       : "bg-slate-950/60 border-slate-800/80 hover:border-slate-700/80"
                   }`}
                 >
@@ -396,7 +396,7 @@ export default function ParticipantsPanel({
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase border transition-all ${
                             isSpeaking
-                              ? "bg-[hsl(var(--primary))]/25 text-[hsl(var(--primary))] border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/30 animate-pulse"
+                              ? "bg-primary/25 text-primary border-primary ring-2 ring-primary/30 animate-pulse"
                               : isParticipantHost
                               ? "bg-amber-500/20 text-amber-400 border-amber-500/40"
                               : isParticipantOrgMember
@@ -410,7 +410,7 @@ export default function ParticipantsPanel({
                         <span
                           className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-slate-950 ${
                             isSpeaking
-                              ? "bg-[hsl(var(--primary))]"
+                              ? "bg-primary"
                               : "bg-emerald-500"
                           }`}
                         />

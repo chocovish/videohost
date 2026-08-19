@@ -23,7 +23,6 @@ import {
   X,
   Sparkles,
   Upload,
-  Crop,
   Image as ImageIcon,
   Info,
   Camera,
@@ -307,18 +306,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleReCrop = () => {
-    if (newLogoData) {
-      setRawSelectedImage(newLogoData);
-      setIsCropperOpen(true);
-    } else if (orgLogoUrl) {
-      setRawSelectedImage(orgLogoUrl);
-      setIsCropperOpen(true);
-    } else {
-      logoFileInputRef.current?.click();
-    }
-  };
-
   // Check if there are unsaved changes
   const hasNameChanged = orgName.trim() !== initialOrgName && orgName.trim().length > 0;
   const hasLogoChanged = newLogoData !== null || (removeLogo && orgLogoUrl !== null);
@@ -544,10 +531,10 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8 pb-12">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[hsl(var(--foreground))]">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
           Organization Settings
         </h1>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-sm text-muted-foreground">
           Switch active organization, upload 1:1 logo, manage team members, permissions, and storage limits.
         </p>
       </div>
@@ -555,28 +542,28 @@ export default function SettingsPage() {
       {/* Messages */}
       {orgSuccessMsg && (
         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-          <Check className="w-4 h-4 flex-shrink-0" />
+          <Check className="w-4 h-4 shrink-0" />
           <span>{orgSuccessMsg}</span>
         </div>
       )}
 
       {orgErrorMsg && (
         <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{orgErrorMsg}</span>
         </div>
       )}
 
       {/* SECTION 1: WORKSPACE SWITCHER & ORGANIZATIONS LIST */}
-      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[hsl(var(--border))]">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-border space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2.5 rounded-xl bg-primary/15 text-primary shrink-0">
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-[hsl(var(--foreground))]">Switch Active Organization</h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <h3 className="font-bold text-lg text-foreground">Switch Active Organization</h3>
+              <p className="text-xs text-muted-foreground">
                 You belong to {userOrgs.length} organization{userOrgs.length !== 1 ? "s" : ""}. Select an active organization to switch your current workspace.
               </p>
             </div>
@@ -584,7 +571,7 @@ export default function SettingsPage() {
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white font-bold text-xs rounded-xl hover:opacity-90 transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white font-bold text-xs rounded-xl hover:opacity-90 transition-all shadow-xs active:scale-95 shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> New Organization
           </button>
@@ -598,17 +585,17 @@ export default function SettingsPage() {
             return (
               <div
                 key={org.id}
-                className={`relative flex flex-col justify-between p-5 rounded-2xl border transition-all duration-200 bg-[hsl(var(--card))] ${
+                className={`relative flex flex-col justify-between p-5 rounded-2xl border transition-all duration-200 bg-card ${
                   org.isActive
-                    ? "border-[hsl(var(--primary))] ring-2 ring-[hsl(var(--primary))]/20 shadow-md"
-                    : "border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/40"
+                    ? "border-primary ring-2 ring-primary/20 shadow-md"
+                    : "border-border hover:border-primary/40"
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2.5 overflow-hidden">
                       {org.logoUrl ? (
-                        <div className="w-9 h-9 rounded-xl border border-[hsl(var(--border))] overflow-hidden bg-white dark:bg-slate-900 shrink-0 flex items-center justify-center shadow-xs">
+                        <div className="w-9 h-9 rounded-xl border border-border overflow-hidden bg-white dark:bg-slate-900 shrink-0 flex items-center justify-center shadow-2xs">
                           <img
                             src={org.logoUrl}
                             alt={org.name}
@@ -619,25 +606,25 @@ export default function SettingsPage() {
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-extrabold text-sm shrink-0 ${
                             org.isActive
-                              ? "bg-[hsl(var(--primary))] text-white"
-                              : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]"
+                              ? "bg-primary text-white"
+                              : "bg-muted text-foreground"
                           }`}
                         >
                           {org.name.charAt(0).toUpperCase()}
                         </div>
                       )}
                       <div className="overflow-hidden">
-                        <h4 className="font-bold text-sm text-[hsl(var(--foreground))] truncate">
+                        <h4 className="font-bold text-sm text-foreground truncate">
                           {org.name}
                         </h4>
-                        <p className="text-[11px] text-[hsl(var(--muted-foreground))] truncate">
+                        <p className="text-[11px] text-muted-foreground truncate">
                           slug: {org.slug}
                         </p>
                       </div>
                     </div>
 
                     {org.isActive && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-extrabold text-[10px] uppercase tracking-wider border border-[hsl(var(--primary))]/30 shrink-0">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/15 text-primary font-extrabold text-[10px] uppercase tracking-wider border border-primary/30 shrink-0">
                         <CheckCircle2 className="w-3 h-3" /> Active
                       </span>
                     )}
@@ -651,25 +638,25 @@ export default function SettingsPage() {
                     >
                       {org.role}
                     </span>
-                    <span className="px-2 py-0.5 rounded-md bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] text-[10px] font-semibold capitalize">
+                    <span className="px-2 py-0.5 rounded-md bg-muted text-foreground text-[10px] font-semibold capitalize">
                       {org.planName} Plan
                     </span>
-                    <span className="px-2 py-0.5 rounded-md bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] text-[10px] font-medium">
+                    <span className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-[10px] font-medium">
                       {org.memberCount} member{org.memberCount !== 1 ? "s" : ""}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[hsl(var(--border))] flex items-center justify-end">
+                <div className="pt-3 border-t border-border flex items-center justify-end">
                   {org.isActive ? (
-                    <span className="text-xs font-semibold text-[hsl(var(--primary))] flex items-center gap-1">
+                    <span className="text-xs font-semibold text-primary flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" /> Current Workspace
                     </span>
                   ) : (
                     <button
                       onClick={() => handleSwitchOrg(org.id)}
                       disabled={isSwitching}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] font-bold text-xs rounded-xl border border-[hsl(var(--primary))]/20 hover:bg-[hsl(var(--primary))] hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary font-bold text-xs rounded-xl border border-primary/20 hover:bg-primary hover:text-white transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {isSwitching ? (
                         <>
@@ -690,15 +677,15 @@ export default function SettingsPage() {
       </div>
 
       {/* SECTION 2: CURRENT ACTIVE ORGANIZATION DETAILS & 1:1 LOGO */}
-      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-border space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] shrink-0">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Active Organization Details</h3>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <h3 className="font-bold text-base text-foreground">Active Organization Details</h3>
+              <p className="text-xs text-muted-foreground">
                 Manage organization display name and 1:1 resolution logo stored at the organization level
               </p>
             </div>
@@ -714,19 +701,19 @@ export default function SettingsPage() {
         <form onSubmit={handleOrgDetailsSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left 4 cols: 1:1 Resolution Organization Logo Box */}
-            <div className="lg:col-span-4 p-4 rounded-2xl bg-[hsl(var(--muted))]/30 border border-[hsl(var(--border))] space-y-3">
+            <div className="lg:col-span-4 p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-[hsl(var(--foreground))] flex items-center gap-1.5">
-                  <ImageIcon className="w-4 h-4 text-[hsl(var(--primary))]" /> Organization Logo
+                <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-primary" /> Organization Logo
                 </label>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/30">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/30">
                   1:1 Ratio
                 </span>
               </div>
 
               {/* 1:1 Square Logo Preview & Action Triggers */}
-              <div className="flex flex-col items-center justify-center p-4 bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl space-y-3">
-                <div className="relative group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[hsl(var(--border))] bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex items-center justify-center shrink-0">
+              <div className="flex flex-col items-center justify-center p-4 bg-card border border-border rounded-2xl space-y-3">
+                <div className="relative group w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-border bg-white dark:bg-slate-900 shadow-xs overflow-hidden flex items-center justify-center shrink-0">
                   {currentDisplayLogo ? (
                     <img
                       src={currentDisplayLogo}
@@ -734,7 +721,7 @@ export default function SettingsPage() {
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] font-extrabold text-2xl select-none">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-primary/10 text-primary font-extrabold text-2xl select-none">
                       {orgName ? orgName.charAt(0).toUpperCase() : "O"}
                     </div>
                   )}
@@ -745,7 +732,7 @@ export default function SettingsPage() {
                     className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-xs"
                     title="Click to upload or replace logo"
                   >
-                    <Camera className="w-5 h-5 text-[hsl(var(--primary))]" />
+                    <Camera className="w-5 h-5 text-primary" />
                     <span className="text-[10px] font-bold">Change 1:1</span>
                   </div>
                 </div>
@@ -755,32 +742,21 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => logoFileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))] hover:text-white transition-all cursor-pointer border border-[hsl(var(--primary))]/20 shadow-2xs"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer border border-primary/20 shadow-2xs"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     {currentDisplayLogo ? "Replace" : "Upload Logo"}
                   </button>
 
                   {currentDisplayLogo && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleReCrop}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--border))] transition-all cursor-pointer border border-[hsl(var(--border))]"
-                        title="Re-crop to 1:1 Square"
-                      >
-                        <Crop className="w-3.5 h-3.5" /> Crop
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleRemoveLogo}
-                        className="inline-flex items-center gap-1 p-1.5 rounded-xl text-xs text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
-                        title="Remove Logo"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      onClick={handleRemoveLogo}
+                      className="inline-flex items-center gap-1 p-1.5 rounded-xl text-xs text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+                      title="Remove Logo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
 
@@ -793,8 +769,8 @@ export default function SettingsPage() {
                 />
               </div>
 
-              <div className="text-[11px] text-[hsl(var(--muted-foreground))] flex items-start gap-1.5 leading-relaxed pt-1">
-                <Info className="w-3.5 h-3.5 text-[hsl(var(--primary))] shrink-0 mt-0.5" />
+              <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed pt-1">
+                <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                 <span>
                   Saved at 1:1 square ratio (e.g. 512×512). Supports PNG, JPG, SVG, WebP up to 5MB.
                 </span>
@@ -805,7 +781,7 @@ export default function SettingsPage() {
             <div className="lg:col-span-8 space-y-4 flex flex-col justify-between h-full">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                     Organization Display Name
                   </label>
                   <input
@@ -815,32 +791,32 @@ export default function SettingsPage() {
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
                     placeholder="e.g. Acme Corporation"
-                    className="w-full px-4 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] transition-all disabled:opacity-60"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden focus:ring-2 focus:ring-primary transition-all disabled:opacity-60"
                   />
-                  <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-1.5">
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
                     Visible across your shared videos, playlists, meetings, and team invites.
                   </p>
                 </div>
 
                 {activeOrg && (
-                  <div className="p-3.5 rounded-xl bg-[hsl(var(--muted))]/40 border border-[hsl(var(--border))] space-y-1">
+                  <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[hsl(var(--muted-foreground))]">Workspace Slug</span>
-                      <span className="font-mono text-xs font-bold text-[hsl(var(--foreground))]">{activeOrg.slug}</span>
+                      <span className="font-semibold text-muted-foreground">Workspace Slug</span>
+                      <span className="font-mono text-xs font-bold text-foreground">{activeOrg.slug}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[hsl(var(--muted-foreground))]">Plan & Entitlement</span>
-                      <span className="capitalize font-bold text-[hsl(var(--primary))]">{activeOrg.planName} Plan</span>
+                      <span className="font-semibold text-muted-foreground">Plan & Entitlement</span>
+                      <span className="capitalize font-bold text-primary">{activeOrg.planName} Plan</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end pt-4 border-t border-[hsl(var(--border))]">
+              <div className="flex justify-end pt-4 border-t border-border">
                 <button
                   type="submit"
                   disabled={isSavingOrgDetails || loading || !hasUnsavedChanges}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-sm hover:opacity-95 min-h-[44px] cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-xs hover:opacity-95 min-h-[44px] cursor-pointer"
                 >
                   {isSavingOrgDetails ? (
                     <>
@@ -862,34 +838,34 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {/* Left 2 Cols: Team Members & Invitations */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card rounded-2xl p-4 sm:p-6 border border-[hsl(var(--border))] space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-[hsl(var(--border))]">
+          <div className="glass-card rounded-2xl p-4 sm:p-6 border border-border space-y-6">
+            <div className="flex items-center justify-between pb-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-[hsl(var(--primary))]" />
-                <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Invite & Manage Members</h3>
+                <Users className="w-5 h-5 text-primary" />
+                <h3 className="font-bold text-base text-foreground">Invite & Manage Members</h3>
               </div>
-              <span className="text-xs font-medium text-[hsl(var(--muted-foreground))]">
+              <span className="text-xs font-medium text-muted-foreground">
                 {members.length} members {invitations.length > 0 && `(${invitations.length} pending)`}
               </span>
             </div>
 
             {inviteSuccess && (
               <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-                <Check className="w-4 h-4 flex-shrink-0" />
+                <Check className="w-4 h-4 shrink-0" />
                 <span>{inviteSuccess}</span>
               </div>
             )}
 
             {inviteError && (
               <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{inviteError}</span>
               </div>
             )}
 
             {actionMessage && (
               <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm flex items-center gap-2">
-                <Check className="w-4 h-4 flex-shrink-0" />
+                <Check className="w-4 h-4 shrink-0" />
                 <span>{actionMessage}</span>
               </div>
             )}
@@ -904,12 +880,12 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => router.push("/dashboard/pricing")}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg transition-all shadow-xs cursor-pointer"
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs rounded-lg transition-all shadow-2xs cursor-pointer"
                   >
                     Upgrade to Enterprise
                   </button>
                 </div>
-                <p className="text-xs text-[hsl(var(--muted-foreground))]">
+                <p className="text-xs text-muted-foreground">
                   Inviting team members to collaborate in your workspace is an Enterprise plan feature. Upgrade your workspace to invite team members and assign roles.
                 </p>
               </div>
@@ -922,13 +898,13 @@ export default function SettingsPage() {
                   placeholder="colleague@company.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white dark:bg-slate-900 text-sm outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] disabled:opacity-60 transition-all"
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden focus:ring-2 focus:ring-primary disabled:opacity-60 transition-all"
                 />
                 <select
                   value={inviteRole}
                   disabled={isInviting}
                   onChange={(e) => setInviteRole(e.target.value)}
-                  className="px-3.5 py-2.5 rounded-xl border border-[hsl(var(--input))] bg-white dark:bg-slate-900 text-sm outline-none disabled:opacity-60 transition-all"
+                  className="px-3.5 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden disabled:opacity-60 transition-all"
                 >
                   <option value="MEMBER">Member</option>
                   <option value="ADMIN">Admin</option>
@@ -937,7 +913,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={isInviting || !inviteEmail.trim()}
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all min-h-[44px] shadow-sm hover:opacity-95 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all min-h-[44px] shadow-xs hover:opacity-95 cursor-pointer"
                 >
                   {isInviting ? (
                     <>
@@ -955,10 +931,10 @@ export default function SettingsPage() {
             {/* Pending Invitations Section */}
             {invitations.length > 0 && (
               <div className="pt-2 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" /> Pending Invitations ({invitations.length})
                 </h4>
-                <div className="divide-y divide-[hsl(var(--border))] border border-[hsl(var(--border))] rounded-xl p-2 bg-[hsl(var(--muted))]/30">
+                <div className="divide-y divide-border border border-border rounded-xl p-2 bg-muted/30">
                   {invitations.map((inv) => (
                     <div key={inv.id} className="py-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
@@ -966,8 +942,8 @@ export default function SettingsPage() {
                           <Mail className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-xs text-[hsl(var(--foreground))] truncate">{inv.email}</p>
-                          <p className="text-[10px] text-[hsl(var(--muted-foreground))]">
+                          <p className="font-semibold text-xs text-foreground truncate">{inv.email}</p>
+                          <p className="text-[10px] text-muted-foreground">
                             Expires {new Date(inv.expiresAt).toLocaleDateString()}
                           </p>
                         </div>
@@ -980,7 +956,7 @@ export default function SettingsPage() {
                           onClick={() => handleResendInvite(inv.email, inv.role)}
                           disabled={isInviting}
                           title="Resend invitation email"
-                          className="p-1.5 text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
                         >
                           <RefreshCw className="w-3.5 h-3.5" />
                         </button>
@@ -1000,33 +976,33 @@ export default function SettingsPage() {
 
             {/* Active Members Table */}
             <div className="pt-2 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))] flex items-center gap-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Active Team Members ({members.length})
               </h4>
-              <div className="divide-y divide-[hsl(var(--border))]">
+              <div className="divide-y divide-border">
                 {loading ? (
-                  <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))] flex items-center justify-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin text-[hsl(var(--primary))]" /> Loading members...
+                  <div className="py-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading members...
                   </div>
                 ) : members.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
+                  <div className="py-8 text-center text-sm text-muted-foreground">
                     No organization members added yet. Use the form above to invite team members.
                   </div>
                 ) : (
                   members.map((m) => (
                     <div key={m.id} className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] font-bold text-sm flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center shrink-0">
                           {m.user.name ? m.user.name.charAt(0).toUpperCase() : m.user.email.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-semibold text-sm text-[hsl(var(--foreground))] truncate">{m.user.name}</p>
-                          <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{m.user.email}</p>
+                          <p className="font-semibold text-sm text-foreground truncate">{m.user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.user.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 self-start sm:self-auto">
                         {m.role === "OWNER" ? (
-                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] uppercase">
+                          <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary/15 text-primary uppercase">
                             OWNER
                           </span>
                         ) : (
@@ -1034,7 +1010,7 @@ export default function SettingsPage() {
                             <select
                               value={m.role}
                               onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] uppercase border border-[hsl(var(--border))] outline-none cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-muted text-foreground uppercase border border-border outline-hidden cursor-pointer"
                             >
                               <option value="ADMIN">ADMIN</option>
                               <option value="MEMBER">MEMBER</option>
@@ -1060,31 +1036,31 @@ export default function SettingsPage() {
 
         {/* Right 1 Col: Plans & Storage Quota */}
         <div className="space-y-6">
-          <div className="glass-card rounded-2xl p-6 border border-[hsl(var(--border))] space-y-4">
+          <div className="glass-card rounded-2xl p-6 border border-border space-y-4">
             <div className="flex items-center gap-2">
-              <HardDrive className="w-5 h-5 text-[hsl(var(--primary))]" />
-              <h3 className="font-bold text-base text-[hsl(var(--foreground))]">Storage Quota</h3>
+              <HardDrive className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-base text-foreground">Storage Quota</h3>
             </div>
 
-            <div className="p-4 rounded-xl bg-[hsl(var(--muted))]/60 space-y-2">
+            <div className="p-4 rounded-xl bg-muted/60 space-y-2">
               <div className="flex justify-between text-xs font-semibold">
                 <span>Plan Storage Limit</span>
-                <span className="text-[hsl(var(--primary))] font-bold">
+                <span className="text-primary font-bold">
                   {usageInfo ? `${usageInfo.storageLimitGb} GB Storage` : "2 GB Storage"}
                 </span>
               </div>
 
               {usageInfo && (
                 <div className="space-y-1 pt-1">
-                  <div className="flex justify-between text-[11px] font-medium text-[hsl(var(--muted-foreground))]">
+                  <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
                     <span>Current Usage</span>
-                    <span className="font-semibold text-[hsl(var(--foreground))]">
+                    <span className="font-semibold text-foreground">
                       {formatBytes(usageInfo.usedBytes)} / {formatBytes(usageInfo.storageLimitBytes)}
                     </span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
                     <div
-                      className="h-full bg-[hsl(var(--primary))] rounded-full transition-all duration-300"
+                      className="h-full bg-primary rounded-full transition-all duration-300"
                       style={{
                         width: `${Math.min(100, Math.round((usageInfo.usedBytes / usageInfo.storageLimitBytes) * 100))}%`,
                       }}
@@ -1093,14 +1069,14 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <p className="text-xs text-[hsl(var(--muted-foreground))] pt-1">
+              <p className="text-xs text-muted-foreground pt-1">
                 Adaptive HLS encoding and original video uploads consume total storage quota.
               </p>
             </div>
 
             {/* Custom Quota Override Request */}
             <div className="pt-2">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-2">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-muted-foreground mb-2">
                 Need a Custom Storage Limit?
               </h4>
               <form onSubmit={handleCustomLimitRequest} className="space-y-3">
@@ -1109,7 +1085,7 @@ export default function SettingsPage() {
                   placeholder="e.g. 50 GB storage"
                   value={customLimitInput}
                   onChange={(e) => setCustomLimitInput(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl border border-[hsl(var(--input))] bg-white dark:bg-slate-900 text-sm outline-none"
+                  className="w-full px-3.5 py-2 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden"
                 />
                 <button
                   type="submit"
@@ -1142,7 +1118,7 @@ export default function SettingsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[hsl(var(--primary))]/15 text-[hsl(var(--primary))] shrink-0">
+              <div className="p-2 rounded-xl bg-primary/15 text-primary shrink-0">
                 <Building2 className="w-5 h-5" />
               </div>
               <div>
@@ -1157,7 +1133,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
                 <Sparkles className="w-4 h-4 text-purple-600" /> Enterprise Plan Required
               </div>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <p className="text-xs text-muted-foreground">
                 New organization creation can only be done on the Enterprise plan (up to 5 organizations maximum).
               </p>
               <Button
@@ -1176,7 +1152,7 @@ export default function SettingsPage() {
               <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
                 <AlertCircle className="w-4 h-4" /> Organization Limit Reached
               </div>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">
+              <p className="text-xs text-muted-foreground">
                 You have reached the maximum limit of 5 organizations allowed on the Enterprise plan.
               </p>
             </div>
@@ -1198,7 +1174,7 @@ export default function SettingsPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="org-slug-input">
-                  Custom Slug <span className="text-[hsl(var(--muted-foreground))] font-normal">(Optional)</span>
+                  Custom Slug <span className="text-muted-foreground font-normal">(Optional)</span>
                 </Label>
                 <Input
                   id="org-slug-input"
@@ -1207,7 +1183,7 @@ export default function SettingsPage() {
                   value={newOrgSlug}
                   onChange={(e) => setNewOrgSlug(e.target.value)}
                 />
-                <p className="text-[11px] text-[hsl(var(--muted-foreground))]">
+                <p className="text-[11px] text-muted-foreground">
                   Unique identifier used in URLs and API keys (up to 5 orgs per Enterprise account).
                 </p>
               </div>

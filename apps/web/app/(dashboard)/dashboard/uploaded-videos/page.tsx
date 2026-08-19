@@ -33,6 +33,7 @@ import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -244,26 +245,28 @@ function UploadedVideosContent() {
     switch (status) {
       case "READY":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
+          <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
             <CheckCircle2 className="w-3 h-3" /> Ready
-          </span>
+          </Badge>
         );
       case "PROCESSING":
       case "QUEUED":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/10 text-amber-600 flex items-center gap-1 animate-pulse">
+          <Badge variant="outline" className="gap-1 text-amber-600 border-amber-500/30 bg-amber-500/10 animate-pulse">
             <RefreshCw className="w-3 h-3 animate-spin" /> {status === "QUEUED" ? "Queued" : `Encoding ${progress || 0}%`}
-          </span>
+          </Badge>
         );
       case "UPLOADING":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-500/10 text-blue-600">Uploading</span>
+          <Badge variant="outline" className="gap-1 text-blue-600 border-blue-500/30 bg-blue-500/10">
+            Uploading
+          </Badge>
         );
       case "FAILED":
         return (
-          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-red-500/10 text-red-600 flex items-center gap-1">
+          <Badge variant="destructive" className="gap-1">
             <AlertTriangle className="w-3 h-3" /> Transcode Failed
-          </span>
+          </Badge>
         );
       default:
         return null;
@@ -278,8 +281,8 @@ function UploadedVideosContent() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-[hsl(var(--foreground))]">Uploaded Videos</h1>
-          <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground">Uploaded Videos</h1>
+          <p className="text-sm text-muted-foreground">
             Organize folders, manage your video library, and stream adaptive HLS
           </p>
         </div>
@@ -289,22 +292,22 @@ function UploadedVideosContent() {
             onClick={() => refreshAll()}
             disabled={isRefreshing}
             title="Refresh video assets"
-            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
+            className="flex-1 sm:flex-none"
           >
-            <RefreshCw className={`w-4 h-4 text-slate-600 ${isRefreshing ? "animate-spin text-[hsl(var(--primary))]" : ""}`} />
+            <RefreshCw className={`w-4 h-4 text-muted-foreground ${isRefreshing ? "animate-spin text-primary" : ""}`} />
             <span>Refresh</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => setIsCreateFolderOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
+            className="flex-1 sm:flex-none"
           >
             <FolderPlus className="w-4 h-4 text-amber-600" />
             <span>New Folder</span>
           </Button>
           <Button
             onClick={() => setIsUploadOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[44px]"
+            className="flex-1 sm:flex-none"
           >
             <Plus className="w-4 h-4" />
             <span>Upload Video</span>
@@ -312,33 +315,33 @@ function UploadedVideosContent() {
           <Button
             variant="outline"
             onClick={() => setIsRecordOpen(true)}
-            className="flex-1 sm:flex-none font-semibold min-h-[44px] border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700"
+            className="flex-1 sm:flex-none border-destructive/30 text-destructive hover:bg-destructive/10"
           >
-            <Video className="w-4 h-4 text-red-600" />
+            <Video className="w-4 h-4 text-destructive" />
             <span>Record Screen</span>
           </Button>
         </div>
       </div>
 
       {/* Breadcrumb Navigation Bar */}
-      <div className="flex items-center gap-2 px-4 py-3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-2xl border border-[hsl(var(--border))] text-sm overflow-x-auto shadow-xs">
+      <div className="flex items-center gap-2 px-4 py-3 bg-card/70 backdrop-blur-md rounded-2xl border border-border text-sm overflow-x-auto shadow-2xs">
         <button
           onClick={() => navigateToFolder(null)}
           className={`flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${currentFolderId === null
-              ? "text-[hsl(var(--primary))]"
-              : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground"
             }`}
         >
           <Home className="w-4 h-4" /> Root
         </button>
         {breadcrumbs.map((b) => (
           <div key={b.id} className="flex items-center gap-2 shrink-0">
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
             <button
               onClick={() => navigateToFolder(b.id)}
               className={`font-semibold transition-colors cursor-pointer ${currentFolderId === b.id
-                  ? "text-[hsl(var(--primary))]"
-                  : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {b.name}
@@ -349,22 +352,22 @@ function UploadedVideosContent() {
 
       {/* Current Folder Details Header Banner */}
       {currentFolder && (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 border border-amber-500/20 backdrop-blur-md shadow-xs">
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 border border-amber-500/20 backdrop-blur-md shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/20 shrink-0 shadow-xs">
+              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/20 shrink-0 shadow-2xs">
                 <Folder className="w-7 h-7 sm:w-8 sm:h-8 fill-amber-500/20" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[hsl(var(--foreground))] truncate">
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
                     {currentFolder.name}
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                  <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
                     Folder
-                  </span>
+                  </Badge>
                 </div>
-                <p className="text-xs sm:text-sm text-[hsl(var(--muted-foreground))] flex items-center gap-2.5">
+                <p className="text-xs sm:text-sm text-muted-foreground flex items-center gap-2.5">
                   <span>
                     {videos.length} {videos.length === 1 ? "video" : "videos"}
                   </span>
@@ -403,9 +406,9 @@ function UploadedVideosContent() {
                     currentFolderId: breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null,
                   })
                 }
-                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="gap-1.5"
               >
-                <FolderInput className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <FolderInput className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
                 <span>Move</span>
               </Button>
               <Button
@@ -418,9 +421,9 @@ function UploadedVideosContent() {
                     name: currentFolder.name,
                   })
                 }
-                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="gap-1.5"
               >
-                <Share2 className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <Share2 className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
                 <span>Share</span>
               </Button>
               <Button
@@ -428,7 +431,7 @@ function UploadedVideosContent() {
                 size="sm"
                 onClick={handleDeleteCurrentFolder}
                 disabled={isDeletingCurrentFolder}
-                className="font-semibold text-xs h-9 border-red-500/30 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-700"
+                className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 <span>{isDeletingCurrentFolder ? "Deleting..." : "Delete Folder"}</span>
@@ -439,9 +442,9 @@ function UploadedVideosContent() {
       )}
 
       {/* Controls Bar: Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white/60 dark:bg-slate-900/60 backdrop-blur-md p-3 rounded-2xl border border-[hsl(var(--border))] shadow-sm">
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card/60 backdrop-blur-md p-3 rounded-2xl border border-border shadow-xs">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
           <Input
             type="text"
             placeholder="Search by title..."
@@ -469,13 +472,13 @@ function UploadedVideosContent() {
       {/* Subfolders Section */}
       {folders.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Folders</h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Folders</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {folders.map((folder) => (
               <div
                 key={folder.id}
                 onClick={() => navigateToFolder(folder.id)}
-                className="group cursor-pointer glass-card rounded-2xl overflow-hidden border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                className="group cursor-pointer glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 {/* Folder Content */}
                 <div className="p-4 space-y-2">
@@ -486,12 +489,12 @@ function UploadedVideosContent() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3
-                          className="font-bold text-sm text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors truncate"
+                          className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate"
                           title={folder.name}
                         >
                           {folder.name}
                         </h3>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
                         </p>
                       </div>
@@ -500,12 +503,14 @@ function UploadedVideosContent() {
                     <div onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             aria-label="Folder actions"
                           >
                             <MoreVertical className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
                           <DropdownMenuItem
@@ -551,7 +556,7 @@ function UploadedVideosContent() {
                 </div>
 
                 {/* Card Footer */}
-                <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
                   <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
                   <span className="text-[11px] font-medium text-slate-400">Folder</span>
                 </div>
@@ -563,7 +568,7 @@ function UploadedVideosContent() {
 
       {/* Videos Section */}
       <div className="space-y-3 pt-2">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--muted-foreground))]">Videos</h2>
+        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Videos</h2>
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
@@ -571,31 +576,30 @@ function UploadedVideosContent() {
             ))}
           </div>
         ) : filteredVideos.length === 0 && folders.length === 0 ? (
-          <div className="text-center py-16 px-4 bg-white/40 rounded-2xl border border-dashed border-[hsl(var(--border))]">
-            <div className="w-16 h-16 rounded-2xl bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))] flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-16 px-4 bg-card/40 rounded-2xl border border-dashed border-border">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
               <Film className="w-8 h-8" />
             </div>
-            <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">This folder is empty</h3>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] max-w-sm mx-auto mt-1 mb-6">
+            <h3 className="text-lg font-bold text-foreground">This folder is empty</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-1 mb-6">
               Create a subfolder or upload your first video to start managing your media library.
             </p>
             <div className="flex items-center justify-center gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setIsCreateFolderOpen(true)}
-                className="px-4 py-2 bg-white border border-[hsl(var(--border))] text-[hsl(var(--foreground))] font-semibold text-sm rounded-xl hover:bg-slate-50"
               >
                 Create Subfolder
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setIsUploadOpen(true)}
-                className="px-4 py-2 bg-[hsl(var(--primary))] text-white font-semibold text-sm rounded-xl hover:opacity-90"
               >
                 Upload Video
-              </button>
+              </Button>
             </div>
           </div>
         ) : filteredVideos.length === 0 ? (
-          <div className="text-center py-12 px-4 bg-white/30 rounded-2xl border border-dashed border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))]">
+          <div className="text-center py-12 px-4 bg-card/40 rounded-2xl border border-dashed border-border text-sm text-muted-foreground">
             No video files found in this directory.
           </div>
         ) : (
@@ -603,7 +607,7 @@ function UploadedVideosContent() {
             {filteredVideos.map((video) => (
               <div
                 key={video.id}
-                className="group glass-card rounded-2xl overflow-hidden border border-[hsl(var(--border))] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                className="group glass-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
                 <div>
                   {/* Thumbnail Container */}
@@ -627,7 +631,7 @@ function UploadedVideosContent() {
                     {/* Play Overlay */}
                     {video.status === "READY" && (
                       <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
                           <Play className="w-6 h-6 fill-white ml-0.5" />
                         </div>
                       </div>
@@ -651,30 +655,32 @@ function UploadedVideosContent() {
                     <div className="flex items-start justify-between gap-2">
                       <Link
                         href={`/dashboard/videos/${video.id}`}
-                        className="font-bold text-base text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors line-clamp-1 flex-1"
+                        className="font-bold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1"
                       >
                         {video.title}
                       </Link>
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
                             aria-label="Video actions"
                           >
                             <MoreVertical className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-44">
                           <DropdownMenuItem
                             onClick={() => setEditTarget(video)}
                             className="gap-2 font-medium cursor-pointer"
                           >
-                            <Pencil className="w-4 h-4 text-slate-500" />
+                            <Pencil className="w-4 h-4 text-muted-foreground" />
                             Edit Details
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -688,20 +694,20 @@ function UploadedVideosContent() {
                             }
                             className="gap-2 font-medium cursor-pointer"
                           >
-                            <FolderInput className="w-4 h-4 text-slate-500" />
+                            <FolderInput className="w-4 h-4 text-muted-foreground" />
                             Move Video
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => setShareTarget({ type: "video", id: video.id, name: video.title })}
                             className="gap-2 font-medium cursor-pointer"
                           >
-                            <Share2 className="w-4 h-4 text-slate-500" />
+                            <Share2 className="w-4 h-4 text-muted-foreground" />
                             Share Video
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={(e) => handleDeleteVideo(e, video.id, video.title)}
-                            className="gap-2 font-medium text-red-600 focus:text-red-600 cursor-pointer"
+                            className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                             Delete Video
@@ -711,20 +717,20 @@ function UploadedVideosContent() {
                     </div>
 
                     {video.description && (
-                      <p className="text-xs text-[hsl(var(--muted-foreground))] line-clamp-2">{video.description}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{video.description}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Card Footer */}
-                <div className="p-4 pt-2 border-t border-[hsl(var(--border))]/50 flex items-center justify-between text-xs text-[hsl(var(--muted-foreground))] mt-2">
+                <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
                   <div className="flex items-center gap-2">
                     <span>{new Date(video.createdAt).toLocaleDateString()}</span>
                     <span
-                      className="inline-flex items-center gap-1 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-[11px]"
+                      className="inline-flex items-center gap-1 font-medium bg-muted px-2 py-0.5 rounded-md text-[11px]"
                       title="Video file size"
                     >
-                      <HardDrive className="w-3 h-3 text-slate-400" />
+                      <HardDrive className="w-3 h-3 text-muted-foreground" />
                       {formatBytes(video.sizeBytes)}
                       {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
                     </span>
