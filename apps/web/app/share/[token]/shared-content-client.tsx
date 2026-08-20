@@ -467,8 +467,8 @@ export default function SharedContentClient({
   const shareTitle = data.video?.title
     ? `${data.video.title} — ${displayTitle}`
     : data.playlist?.title
-    ? `${data.playlist.title} (Playlist) — ${displayTitle}`
-    : displayTitle;
+      ? `${data.playlist.title} (Playlist) — ${displayTitle}`
+      : displayTitle;
 
   return (
     <div
@@ -529,7 +529,6 @@ export default function SharedContentClient({
             <div className="flex flex-col justify-center">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-black tracking-tight flex items-center gap-1.5">
-                  <Building2 className="w-4 h-4" style={{ color: accentHex }} />
                   {displayTitle}
                 </span>
                 {isFolder && data.currentFolder && (
@@ -566,18 +565,6 @@ export default function SharedContentClient({
                 )}
               </button>
             )}
-
-            <div
-              className="hidden sm:flex px-3 py-1.5 rounded-full border text-xs font-extrabold items-center gap-1.5"
-              style={{
-                backgroundColor: `${accentHex}15`,
-                borderColor: `${accentHex}30`,
-                color: accentHex,
-              }}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Shared Portal</span>
-            </div>
           </div>
         </div>
       </header>
@@ -1058,11 +1045,10 @@ export default function SharedContentClient({
                             <div
                               key={video.id}
                               onClick={() => setActivePlaylistIndex(originalIdx)}
-                              className={`p-2 rounded-xl border flex items-center gap-3 transition-all cursor-pointer group ${
-                                isActive
-                                  ? "border-2 shadow-lg"
-                                  : "border-slate-800/80 hover:border-slate-700 bg-slate-950/40 hover:bg-slate-950/80"
-                              }`}
+                              className={`p-2 rounded-xl border flex items-center gap-3 transition-all cursor-pointer group ${isActive
+                                ? "border-2 shadow-lg"
+                                : "border-slate-800/80 hover:border-slate-700 bg-slate-950/40 hover:bg-slate-950/80"
+                                }`}
                               style={{
                                 borderColor: isActive ? accentHex : undefined,
                                 backgroundColor: isActive ? `${accentHex}15` : undefined,
