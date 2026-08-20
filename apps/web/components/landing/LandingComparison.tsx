@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Check, X, Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
+import { Check, X, Sparkles, ArrowRight } from "lucide-react";
 
 export default function LandingComparison() {
   const COMPARISON_ROWS = [

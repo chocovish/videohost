@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ChevronDown, Sparkles, HelpCircle } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 import { FAQ_DATA, FaqItem } from "./faqData";
 
 interface LandingFaqProps {

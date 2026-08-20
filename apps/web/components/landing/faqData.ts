@@ -20,9 +20,9 @@ export const FAQ_DATA: FaqItem[] = [
       "No! Taped features a native, in-browser studio screen recorder. You can capture your entire desktop, specific application windows, or browser tabs alongside microphone audio and a customizable webcam bubble overlay directly in Chrome, Edge, Brave, Safari, or Firefox.",
   },
   {
-    question: "How do the conference rooms and webinar features work?",
+    question: "How do the conference rooms and dual-mode recording work?",
     answer:
-      "Taped includes built-in real-time video conference rooms powered by LiveKit WebRTC. You can host scheduled or instant meetings with crystal-clear audio, HD video, and screen sharing. When you enable cloud recording, the entire session is automatically saved directly into your Taped video library.",
+      "Taped includes built-in real-time video conference rooms powered by WebRTC. You can host scheduled or instant meetings with crystal-clear audio, HD video, and screen sharing. With our dual-mode cloud recording, you can choose to record the whole meeting room gallery or isolate specific individual participants as dedicated video tracks, automatically saved directly into your Taped library.",
   },
   {
     question: "Can I customize the video share page with my own company branding?",

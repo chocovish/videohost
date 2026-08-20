@@ -3,14 +3,12 @@
 import React, { useState } from "react";
 import {
   Video,
-  UploadCloud,
   Layers,
   Lock,
   Share2,
   Users,
   Sparkles,
   CheckCircle2,
-  ArrowRight,
 } from "lucide-react";
 
 const STEPS = [

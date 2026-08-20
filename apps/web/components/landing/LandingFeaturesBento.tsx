@@ -3,25 +3,16 @@
 import React from "react";
 import Link from "next/link";
 import {
-  Video,
-  Play,
-  Layers,
-  Lock,
-  Users,
-  Palette,
   ArrowRight,
-  Sparkles,
-  Zap,
-  ShieldCheck,
-  HardDrive,
-  Code2,
-  Share2,
-  CheckCircle2,
-  Tv,
   Camera,
+  CheckCircle2,
+  HardDrive,
+  Layers,
+  Palette,
   Radio,
-  Sliders,
-  ExternalLink,
+  ShieldCheck,
+  Sparkles,
+  Users,
 } from "lucide-react";
 
 export default function LandingFeaturesBento() {
@@ -189,22 +180,22 @@ export default function LandingFeaturesBento() {
                 <Users className="w-6 h-6" />
               </div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[11px] font-black uppercase tracking-wide">
-                Lag Free
+                Dual Cloud Recording
               </div>
               <h3 className="text-xl font-black tracking-tight text-foreground">
-                Conference & Webinars
+                Conference & Solo Recording
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                Host live video meetings, collaborative webinars, and customer presentations with screen sharing and automatic cloud recording straight to your video library.
+                Host live WebRTC video meetings and webinars with screen sharing. Cloud-record the entire meeting gallery or isolate individual attendees as dedicated solo video tracks.
               </p>
             </div>
 
             <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-border flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-red-500 animate-pulse" />
-                <span className="font-bold text-foreground">Auto-Record Stage</span>
+                <span className="font-bold text-foreground">Full Room or Solo Track</span>
               </div>
-              <span className="text-[10px] text-slate-400">1-Click Meeting Link</span>
+              <span className="text-[10px] text-primary font-bold">Auto Cloud Save</span>
             </div>
           </div>
 
