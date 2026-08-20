@@ -23,6 +23,9 @@ import {
   HardDrive,
   Pencil,
   MoreVertical,
+  Check,
+  CheckSquare,
+  X,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
@@ -81,6 +84,12 @@ function UploadedVideosContent() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
+  // Multi-selection state
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isRecordOpen, setIsRecordOpen] = useState(false);
   const [isCreateFolderOpen, setIsCreateFolderOpen] = useState(false);
@@ -99,7 +108,39 @@ function UploadedVideosContent() {
   } | null>(null);
   const [editTarget, setEditTarget] = useState<VideoItem | null>(null);
 
+  const selectedCount = selectedFolderIds.size + selectedVideoIds.size;
+
+  const toggleSelectFolder = (id: string) => {
+    setSelectedFolderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectVideo = (id: string) => {
+    setSelectedVideoIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedFolderIds(new Set());
+    setSelectedVideoIds(new Set());
+  };
+
   const navigateToFolder = (folderId: string | null) => {
+    clearSelection();
     if (folderId) {
       router.push(`/dashboard/uploaded-videos?folderId=${folderId}`);
     } else {
@@ -157,6 +198,7 @@ function UploadedVideosContent() {
   };
 
   useEffect(() => {
+    clearSelection();
     refreshAll();
   }, [currentFolderId]);
 
@@ -188,34 +230,63 @@ function UploadedVideosContent() {
     if (!deleteConfirm) return;
     setIsDeletingConfirm(true);
     try {
-      if (deleteConfirm.type === "folder") {
-        const res = await fetch(`/api/folders/${deleteConfirm.id}`, { method: "DELETE" });
-        if (res.ok) {
-          if (deleteConfirm.isCurrentFolder) {
-            const parentId = breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null;
-            navigateToFolder(parentId);
-          } else {
-            refreshAll();
-          }
-          setDeleteConfirm(null);
+      const payload =
+        deleteConfirm.type === "folder"
+          ? { folderIds: [deleteConfirm.id] }
+          : { videoIds: [deleteConfirm.id] };
+
+      const res = await fetch("/api/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        if (deleteConfirm.isCurrentFolder) {
+          const parentId = breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null;
+          navigateToFolder(parentId);
         } else {
-          const data = await res.json();
-          alert(data.error || "Failed to delete folder");
-        }
-      } else {
-        const res = await fetch(`/api/v1/videos/${deleteConfirm.id}`, { method: "DELETE" });
-        if (res.ok) {
           refreshAll();
-          setDeleteConfirm(null);
-        } else {
-          const data = await res.json();
-          alert(data.error || "Failed to delete video");
         }
+        setDeleteConfirm(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || `Failed to delete ${deleteConfirm.type}`);
       }
     } catch (err) {
       console.error("Error executing delete:", err);
+      alert(`An error occurred while deleting the ${deleteConfirm.type}`);
     } finally {
       setIsDeletingConfirm(false);
+    }
+  };
+
+  const handleExecuteBulkDelete = async () => {
+    if (selectedCount === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const res = await fetch("/api/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          videoIds: Array.from(selectedVideoIds),
+          folderIds: Array.from(selectedFolderIds),
+        }),
+      });
+
+      if (res.ok) {
+        clearSelection();
+        setIsBulkDeleteModalOpen(false);
+        await refreshAll();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete selected items");
+      }
+    } catch (err) {
+      console.error("Error executing bulk delete:", err);
+      alert("An error occurred during bulk deletion");
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -231,6 +302,21 @@ function UploadedVideosContent() {
     const matchesStatus = statusFilter === "ALL" || v.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const totalVisibleItems = folders.length + filteredVideos.length;
+  const isAllSelected =
+    totalVisibleItems > 0 &&
+    folders.every((f) => selectedFolderIds.has(f.id)) &&
+    filteredVideos.every((v) => selectedVideoIds.has(v.id));
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      clearSelection();
+    } else {
+      setSelectedFolderIds(new Set(folders.map((f) => f.id)));
+      setSelectedVideoIds(new Set(filteredVideos.map((v) => v.id)));
+    }
+  };
 
   const getStatusBadge = (status: string, progress?: number) => {
     switch (status) {
@@ -313,6 +399,63 @@ function UploadedVideosContent() {
           </Button>
         </div>
       </div>
+
+      {/* Floating / Sticky Bulk Action Bar */}
+      {selectedCount > 0 && (
+        <div className="sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 p-3 sm:px-5 rounded-2xl bg-card/95 backdrop-blur-xl border border-primary/40 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleToggleSelectAll}
+              className="w-6 h-6 rounded-lg flex items-center justify-center bg-primary text-primary-foreground shadow-xs cursor-pointer transition-transform hover:scale-105"
+              title="Toggle select all"
+            >
+              {isAllSelected ? (
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+              ) : (
+                <div className="w-2 h-0.5 bg-primary-foreground rounded-full" />
+              )}
+            </button>
+            <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span>
+                <span className="font-bold text-primary">{selectedCount}</span> {selectedCount === 1 ? "item" : "items"} selected
+              </span>
+              <span className="text-xs text-muted-foreground hidden sm:inline">
+                ({selectedVideoIds.size} {selectedVideoIds.size === 1 ? "video" : "videos"}, {selectedFolderIds.size} {selectedFolderIds.size === 1 ? "folder" : "folders"})
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleSelectAll}
+              className="text-xs font-semibold h-8"
+            >
+              {isAllSelected ? "Deselect All" : `Select All (${totalVisibleItems})`}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSelection}
+              className="text-xs font-semibold h-8 gap-1"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Clear</span>
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setIsBulkDeleteModalOpen(true)}
+              className="text-xs font-semibold h-8 gap-1.5 shadow-sm"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Selected ({selectedCount})</span>
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Breadcrumb Navigation Bar */}
       <div className="flex items-center gap-2 px-4 py-3 bg-card/70 backdrop-blur-md rounded-2xl border border-border text-sm overflow-x-auto shadow-2xs">
@@ -432,27 +575,41 @@ function UploadedVideosContent() {
         </div>
       )}
 
-      {/* Controls Bar: Search & Status Filters */}
+      {/* Controls Bar: Search, Select All, Status Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card/60 backdrop-blur-md p-3 rounded-2xl border border-border shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-          <Input
-            type="text"
-            placeholder="Search by title..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-1 max-w-md">
+          {totalVisibleItems > 0 && (
+            <Button
+              variant={isAllSelected ? "secondary" : "outline"}
+              size="sm"
+              onClick={handleToggleSelectAll}
+              className="text-xs font-semibold h-9 shrink-0 gap-1.5 px-3"
+              title={isAllSelected ? "Deselect all visible items" : "Select all visible items"}
+            >
+              <CheckSquare className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="hidden sm:inline">{isAllSelected ? "Deselect All" : "Select All"}</span>
+            </Button>
+          )}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search by title..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 text-xs sm:text-sm"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
+        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto justify-end">
           {["ALL", "READY", "PROCESSING", "FAILED"].map((st) => (
             <Button
               key={st}
               variant={statusFilter === st ? "default" : "ghost"}
               size="sm"
               onClick={() => setStatusFilter(st)}
-              className="text-xs font-semibold"
+              className="text-xs font-semibold h-8"
             >
               {st}
             </Button>
@@ -463,107 +620,148 @@ function UploadedVideosContent() {
       {/* Subfolders Section */}
       {folders.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Folders</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Folders</h2>
+            {selectedFolderIds.size > 0 && (
+              <span className="text-xs text-primary font-semibold">
+                {selectedFolderIds.size} of {folders.length} selected
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {folders.map((folder) => (
-              <div
-                key={folder.id}
-                onClick={() => navigateToFolder(folder.id)}
-                className="group cursor-pointer glass-card rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-              >
-                {/* Folder Content */}
-                <div className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-3 min-w-0">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
-                        <Folder className="w-6 h-6 fill-amber-500/20" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h3
-                          className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate"
-                          title={folder.name}
+            {folders.map((folder) => {
+              const isSelected = selectedFolderIds.has(folder.id);
+              return (
+                <div
+                  key={folder.id}
+                  onClick={() => navigateToFolder(folder.id)}
+                  className={`group cursor-pointer glass-card rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
+                      : "border-border hover:border-primary/50 hover:shadow-xl"
+                  }`}
+                >
+                  {/* Folder Content */}
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3 min-w-0">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        {/* Checkbox button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelectFolder(folder.id);
+                          }}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 mt-2.5 ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/30"
+                              : selectedCount > 0
+                              ? "border border-border bg-card/90 text-transparent hover:border-primary hover:text-muted-foreground"
+                              : "border border-border/80 bg-card/80 text-transparent opacity-0 group-hover:opacity-100 hover:border-primary hover:text-muted-foreground"
+                          }`}
+                          title={isSelected ? "Deselect folder" : "Select folder"}
+                          aria-label={`Select folder ${folder.name}`}
                         >
-                          {folder.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
-                        </p>
-                      </div>
-                    </div>
+                          <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
+                        </button>
 
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            aria-label="Folder actions"
+                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
+                          <Folder className="w-6 h-6 fill-amber-500/20" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3
+                            className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate"
+                            title={folder.name}
                           >
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            onClick={() => setRenameFolderTarget({ id: folder.id, name: folder.name })}
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <Pencil className="w-4 h-4 text-slate-500" />
-                            Rename Folder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setMoveTarget({
-                                type: "folder",
-                                id: folder.id,
-                                name: folder.name,
-                                currentFolderId: folder.parentId,
-                              })
-                            }
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <FolderInput className="w-4 h-4 text-slate-500" />
-                            Move Folder
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setShareTarget({ type: "folder", id: folder.id, name: folder.name })}
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <Share2 className="w-4 h-4 text-slate-500" />
-                            Share Folder
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
-                            className="gap-2 font-medium text-red-600 focus:text-red-600 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Folder
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                            {folder.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {folder.itemCount} {folder.itemCount === 1 ? "item" : "items"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              aria-label="Folder actions"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => setRenameFolderTarget({ id: folder.id, name: folder.name })}
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4 text-slate-500" />
+                              Rename Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setMoveTarget({
+                                 type: "folder",
+                                  id: folder.id,
+                                  name: folder.name,
+                                  currentFolderId: folder.parentId,
+                                })
+                              }
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <FolderInput className="w-4 h-4 text-slate-500" />
+                              Move Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setShareTarget({ type: "folder", id: folder.id, name: folder.name })}
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <Share2 className="w-4 h-4 text-slate-500" />
+                              Share Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                              className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Folder
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Footer */}
-                <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
-                  <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
-                  <span className="text-[11px] font-medium text-slate-400">Folder</span>
+                  {/* Card Footer */}
+                  <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
+                    <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
+                    <span className="text-[11px] font-medium text-slate-400">Folder</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Videos Section */}
       <div className="space-y-3 pt-2">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Videos</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Videos</h2>
+          {selectedVideoIds.size > 0 && (
+            <span className="text-xs text-primary font-semibold">
+              {selectedVideoIds.size} of {filteredVideos.length} selected
+            </span>
+          )}
+        </div>
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-64 rounded-2xl bg-slate-200/60 animate-pulse" />
+              <div key={n} className="h-64 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60 animate-pulse" />
             ))}
           </div>
         ) : filteredVideos.length === 0 && folders.length === 0 ? (
@@ -595,144 +793,176 @@ function UploadedVideosContent() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredVideos.map((video) => (
-              <div
-                key={video.id}
-                className="group glass-card rounded-2xl overflow-hidden border border-border hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  {/* Thumbnail Container */}
-                  <Link
-                    href={`/dashboard/videos/${video.id}`}
-                    className="block aspect-video bg-slate-900 relative overflow-hidden flex items-center justify-center cursor-pointer"
-                  >
-                    {video.thumbnailUrl ? (
-                      <img
-                        src={video.thumbnailUrl}
-                        alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center text-slate-500">
-                        <Film className="w-10 h-10 mb-1" />
-                        <span className="text-xs">No Preview</span>
+            {filteredVideos.map((video) => {
+              const isSelected = selectedVideoIds.has(video.id);
+              return (
+                <div
+                  key={video.id}
+                  className={`group glass-card rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
+                      : "border-border hover:shadow-xl"
+                  }`}
+                >
+                  <div>
+                    {/* Thumbnail Container */}
+                    <div className="relative aspect-video bg-slate-900 overflow-hidden flex items-center justify-center">
+                      {/* Checkbox Overlay (Top Left) */}
+                      <div className="absolute top-2.5 left-2.5 z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleSelectVideo(video.id);
+                          }}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer backdrop-blur-md ${
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40"
+                              : selectedCount > 0
+                              ? "border border-white/60 bg-black/60 text-transparent hover:border-white hover:text-white/80"
+                              : "border border-white/60 bg-black/60 text-transparent opacity-0 group-hover:opacity-100 hover:border-white hover:text-white/80"
+                          }`}
+                          title={isSelected ? "Deselect video" : "Select video"}
+                          aria-label={`Select video ${video.title}`}
+                        >
+                          <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
+                        </button>
                       </div>
-                    )}
 
-                    {/* Play Overlay */}
-                    {video.status === "READY" && (
-                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                          <Play className="w-6 h-6 fill-white ml-0.5" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Duration Badge */}
-                    {video.durationSeconds && (
-                      <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs">
-                        <Clock className="w-3 h-3" /> {formatDuration(video.durationSeconds)}
-                      </span>
-                    )}
-
-                    {/* Share Access Tag */}
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold uppercase backdrop-blur-xs">
-                      {video.shareAccessMode}
-                    </span>
-                  </Link>
-
-                  {/* Content */}
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
                       <Link
                         href={`/dashboard/videos/${video.id}`}
-                        className="font-bold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1"
+                        className="w-full h-full block relative cursor-pointer"
                       >
-                        {video.title}
-                      </Link>
+                        {video.thumbnailUrl ? (
+                          <img
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
+                            <Film className="w-10 h-10 mb-1" />
+                            <span className="text-xs">No Preview</span>
+                          </div>
+                        )}
 
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                            aria-label="Video actions"
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem
-                            onClick={() => setEditTarget(video)}
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <Pencil className="w-4 h-4 text-muted-foreground" />
-                            Edit Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setMoveTarget({
-                                type: "video",
-                                id: video.id,
-                                name: video.title,
-                                currentFolderId: video.folderId || null,
-                              })
-                            }
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <FolderInput className="w-4 h-4 text-muted-foreground" />
-                            Move Video
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setShareTarget({ type: "video", id: video.id, name: video.title })}
-                            className="gap-2 font-medium cursor-pointer"
-                          >
-                            <Share2 className="w-4 h-4 text-muted-foreground" />
-                            Share Video
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => handleDeleteVideo(e, video.id, video.title)}
-                            className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete Video
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                        {/* Play Overlay */}
+                        {video.status === "READY" && (
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                              <Play className="w-6 h-6 fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Duration Badge */}
+                        {video.durationSeconds && (
+                          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs">
+                            <Clock className="w-3 h-3" /> {formatDuration(video.durationSeconds)}
+                          </span>
+                        )}
+
+                        {/* Share Access Tag (Top Right) */}
+                        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold uppercase backdrop-blur-xs">
+                          {video.shareAccessMode}
+                        </span>
+                      </Link>
                     </div>
 
-                    {video.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{video.description}</p>
-                    )}
+                    {/* Content */}
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/dashboard/videos/${video.id}`}
+                          className="font-bold text-base text-foreground group-hover:text-primary transition-colors line-clamp-1 flex-1"
+                        >
+                          {video.title}
+                        </Link>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              aria-label="Video actions"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => setEditTarget(video)}
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                              Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setMoveTarget({
+                                  type: "video",
+                                  id: video.id,
+                                  name: video.title,
+                                  currentFolderId: video.folderId || null,
+                                })
+                              }
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <FolderInput className="w-4 h-4 text-muted-foreground" />
+                              Move Video
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setShareTarget({ type: "video", id: video.id, name: video.title })}
+                              className="gap-2 font-medium cursor-pointer"
+                            >
+                              <Share2 className="w-4 h-4 text-muted-foreground" />
+                              Share Video
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => handleDeleteVideo(e, video.id, video.title)}
+                              className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Video
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {video.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">{video.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Footer */}
+                  <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
+                    <div className="flex items-center gap-2">
+                      <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+                      <span
+                        className="inline-flex items-center gap-1 font-medium bg-muted px-2 py-0.5 rounded-md text-[11px]"
+                        title="Video file size"
+                      >
+                        <HardDrive className="w-3 h-3 text-muted-foreground" />
+                        {formatBytes(video.sizeBytes)}
+                        {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {getStatusBadge(video.status, video.progress)}
+                    </div>
                   </div>
                 </div>
-
-                {/* Card Footer */}
-                <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
-                  <div className="flex items-center gap-2">
-                    <span>{new Date(video.createdAt).toLocaleDateString()}</span>
-                    <span
-                      className="inline-flex items-center gap-1 font-medium bg-muted px-2 py-0.5 rounded-md text-[11px]"
-                      title="Video file size"
-                    >
-                      <HardDrive className="w-3 h-3 text-muted-foreground" />
-                      {formatBytes(video.sizeBytes)}
-                      {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {getStatusBadge(video.status, video.progress)}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -809,7 +1039,7 @@ function UploadedVideosContent() {
         folderPathName={folderPathName}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Single Delete Confirmation Dialog */}
       <ConfirmDialog
         open={Boolean(deleteConfirm)}
         onOpenChange={(open) => {
@@ -822,8 +1052,8 @@ function UploadedVideosContent() {
         }
         description={
           deleteConfirm?.type === "folder"
-            ? `Are you sure you want to delete folder "${deleteConfirm.name}"? Contained videos will be safely moved to Root.`
-            : `Are you sure you want to delete video "${deleteConfirm?.name}"? This action cannot be undone and will permanently remove the video and its renditions.`
+            ? `Are you sure you want to delete folder "${deleteConfirm.name}"? This folder, all its nested subfolders, and all videos inside will be permanently deleted from storage. This action cannot be undone.`
+            : `Are you sure you want to delete video "${deleteConfirm?.name}"? This action cannot be undone and will permanently remove the video and its files from storage.`
         }
         variant="danger"
         confirmText={deleteConfirm?.type === "folder" ? "Delete Folder" : "Delete Video"}
@@ -831,6 +1061,22 @@ function UploadedVideosContent() {
         isLoading={isDeletingConfirm}
         onConfirm={handleExecuteDelete}
         onCancel={() => setDeleteConfirm(null)}
+      />
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isBulkDeleteModalOpen}
+        onOpenChange={(open) => {
+          if (!open && !isBulkDeleting) setIsBulkDeleteModalOpen(false);
+        }}
+        title={`Delete ${selectedCount} selected ${selectedCount === 1 ? "item" : "items"}?`}
+        description={`Are you sure you want to delete ${selectedVideoIds.size > 0 ? `${selectedVideoIds.size} video(s)` : ""}${selectedVideoIds.size > 0 && selectedFolderIds.size > 0 ? " and " : ""}${selectedFolderIds.size > 0 ? `${selectedFolderIds.size} folder(s)` : ""}? Selected videos and folders (including all nested subfolders and their contained videos) will be permanently deleted from storage. This action cannot be undone.`}
+        variant="danger"
+        confirmText={`Delete ${selectedCount} ${selectedCount === 1 ? "Item" : "Items"}`}
+        cancelText="Cancel"
+        isLoading={isBulkDeleting}
+        onConfirm={handleExecuteBulkDelete}
+        onCancel={() => setIsBulkDeleteModalOpen(false)}
       />
     </div>
   );

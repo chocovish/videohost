@@ -99,6 +99,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 }
 
+import { executeDeleteService } from "@/lib/delete-service";
+
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: folderId } = await params;
   const authCtx = await authenticateRequest(req);
@@ -115,18 +117,12 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: "Folder not found" }, { status: 404 });
     }
 
-    // Unlink videos in this folder before deleting
-    await db.video.updateMany({
-      where: { folderId: folderId, organizationId: authCtx.orgId },
-      data: { folderId: null },
+    const result = await executeDeleteService({
+      organizationId: authCtx.orgId,
+      folderIds: [folderId],
     });
 
-    // Delete folder (Prisma cascading delete handles child folders)
-    await db.folder.delete({
-      where: { id: folderId },
-    });
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error("Error deleting folder:", error);
     return NextResponse.json({ error: "Failed to delete folder" }, { status: 500 });

@@ -123,7 +123,11 @@ export default function VideoDetailPage() {
   const handleExecuteDelete = async () => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/v1/videos/${id}`, { method: "DELETE" });
+      const res = await fetch("/api/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ videoIds: [id] }),
+      });
       if (res.ok) {
         router.push(backUrl);
       } else {
