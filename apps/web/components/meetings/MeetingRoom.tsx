@@ -32,12 +32,22 @@ import {
   ShieldAlert,
   Sliders,
   X,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
 import MeetingSettingsModal from "@/components/meetings/MeetingSettingsModal";
 import ParticipantsPanel from "@/components/meetings/ParticipantsPanel";
 import RecordOptionsModal from "@/components/meetings/RecordOptionsModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MeetingRoomProps {
   token: string;
@@ -49,6 +59,7 @@ interface MeetingRoomProps {
     isRecording?: boolean;
     recordOnStart?: boolean;
     organizationName?: string;
+    organizationLogoUrl?: string | null;
     themeId?: string;
     isHost?: boolean;
     isOrgMember?: boolean;
@@ -155,6 +166,8 @@ function RoomContent({
   const [copiedCode, setCopiedCode] = useState(false);
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [isEndMeetingConfirmOpen, setIsEndMeetingConfirmOpen] = useState(false);
+  const [isEndingMeeting, setIsEndingMeeting] = useState(false);
 
   // In-Meeting Notification Toast State
   const [inMeetingToast, setInMeetingToast] = useState<{
@@ -481,8 +494,12 @@ function RoomContent({
     else router.push("/dashboard/meetings");
   };
 
-  const handleEndMeetingForAll = async () => {
-    if (!confirm("Are you sure you want to end this meeting for everyone?")) return;
+  const handleEndMeetingForAll = () => {
+    setIsEndMeetingConfirmOpen(true);
+  };
+
+  const confirmEndMeetingForAll = async () => {
+    setIsEndingMeeting(true);
     userIntentionalLeave.current = true;
     try {
       await fetch(`/api/meetings/${meeting.id}`, {
@@ -495,6 +512,9 @@ function RoomContent({
       }
     } catch (e) {
       console.error("Error ending meeting:", e);
+    } finally {
+      setIsEndingMeeting(false);
+      setIsEndMeetingConfirmOpen(false);
     }
     if (onLeave) onLeave("meeting_ended", "The meeting was ended for everyone.");
     else router.push("/dashboard/meetings");
@@ -573,139 +593,267 @@ function RoomContent({
       )}
 
       {/* Top Navigation / Status Header Bar */}
-      <header className="h-14 px-3 sm:px-6 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between z-20 backdrop-blur-md gap-2">
-        {/* Left: Meeting title & code pill */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <h2 className="text-xs sm:text-sm md:text-base font-bold text-white truncate max-w-[120px] sm:max-w-xs md:max-w-md">
-              {meeting.title}
-            </h2>
-          </div>
-
-          <Button
-            variant="darkOutline"
-            size="xs"
-            onClick={handleCopyLink}
-            className="hidden sm:inline-flex font-mono text-slate-300 hover:text-white"
-            title="Click to copy meeting link"
-          >
-            <span>{meeting.id}</span>
-            {copiedCode ? (
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-slate-400" />
-            )}
-          </Button>
-        </div>
-
-        {/* Center: Live Timer & Recording Status Indicator */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Meeting duration timer */}
-          <div className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/60 border border-slate-800 text-[11px] sm:text-xs font-mono text-slate-300 font-semibold flex items-center gap-1.5">
-            <Radio className="w-3 h-3 text-primary" />
-            <span>{formatTimer(meetingSeconds)}</span>
-          </div>
-
-          {/* Recording Badge */}
-          {isRecording && (
-            <div className="px-2.5 sm:px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px] sm:text-xs font-mono font-bold flex items-center gap-1.5 animate-pulse">
-              <Disc className="w-3.5 h-3.5" />
-              <span>REC {formatTimer(recordingSeconds)}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Right: In-meeting Controls (Record, Invite, Participants, End/Leave) */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* Recording Controls for Host / Authorized Members */}
-          {(meeting.canRecord || meeting.isHost) && (
-            <div className="flex items-center gap-1.5">
-              {/* If Recording: Show Live Adjust Layout Button */}
-              {isRecording && (
-                <Button
-                  variant="dark"
-                  size="sm"
-                  onClick={() => {
-                    setRecordingError(null);
-                    setIsRecordOptionsOpen(true);
-                  }}
-                  className="inline-flex gap-1.5 text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
-                  title="Adjust live recording layout"
-                >
-                  <Sliders className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">REC Layout</span>
-                </Button>
-              )}
-
-              {/* Start Record or Stop Record Button */}
-              <Button
-                variant={isRecording ? "dangerOutline" : "dark"}
-                size="sm"
-                onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
-                disabled={isUpdatingRecord}
-                className="inline-flex gap-1.5"
-                title={isRecording ? "Stop Recording" : "Record Meeting"}
-              >
-                {isUpdatingRecord ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
-                )}
-                <span className="hidden sm:inline">{isRecording ? "Stop REC" : "Record"}</span>
-              </Button>
-            </div>
-          )}
-
-          {/* Invite Button */}
-          <Button
-            variant="lime"
-            size="sm"
-            onClick={() => setIsInviteOpen(true)}
-            className="gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Invite</span>
-          </Button>
-
-          {/* Participants Drawer Toggle Button */}
-          <Button
-            variant={isParticipantsOpen ? "dark" : "darkOutline"}
-            size="icon-sm"
-            onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
-            className={`relative transition-colors ${
-              isParticipantsOpen ? "text-primary border-primary/40" : ""
-            }`}
-            title="Participants list"
-          >
-            <Users className="w-4 h-4" />
-            <span className="absolute -top-1 -right-1 bg-slate-800 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-slate-700 text-slate-200">
-              {participants.length}
-            </span>
-          </Button>
-
-          {/* End / Leave Button */}
-          {meeting.isHost ? (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleEndMeetingForAll}
-              title="End meeting for everyone"
-            >
-              <PhoneOff className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">End for All</span>
-            </Button>
+      <header className="h-14 px-3 sm:px-5 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between z-20 backdrop-blur-md gap-2">
+        {/* Left: Organization Logo & Meeting Title */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {meeting.organizationLogoUrl ? (
+            <img
+              src={meeting.organizationLogoUrl}
+              alt={meeting.organizationName || "Organization"}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-slate-700/60 shrink-0 bg-slate-900 shadow-xs"
+            />
           ) : (
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={handleLeaveMeeting}
-              title="Leave meeting"
-            >
-              <PhoneOff className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Leave</span>
-            </Button>
+            <img
+              src="/taped-in-logo.webp"
+              alt="Taped"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain border border-slate-700/60 shrink-0 bg-slate-900 p-1 shadow-xs"
+            />
           )}
+
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="flex flex-col min-w-0">
+              <h2 className="text-xs sm:text-sm font-bold text-white truncate max-w-[130px] sm:max-w-xs md:max-w-md leading-tight">
+                {meeting.title}
+              </h2>
+              {meeting.organizationName && (
+                <span className="text-[10px] text-slate-400 truncate hidden sm:inline leading-none mt-0.5">
+                  {meeting.organizationName}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: In-meeting Timer, Recording Status & Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Meeting duration call timer with animated pulse */}
+          <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-slate-950/60 border border-slate-800 text-[11px] sm:text-xs font-mono text-slate-300 font-semibold inline-flex items-center gap-1.5 sm:gap-2">
+            <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-emerald-500" />
+            </span>
+            <span className="leading-none tracking-tight">{formatTimer(meetingSeconds)}</span>
+          </div>
+
+          {/* Recording Badge (Restricted to Org Members / Host) */}
+          {isRecording && Boolean(meeting.isOrgMember || meeting.isHost) && (
+            <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-rose-500/15 border border-rose-500/30 text-rose-400 text-[11px] sm:text-xs font-mono font-bold inline-flex items-center gap-1.5 animate-pulse">
+              <Disc className="w-3.5 h-3.5 shrink-0" />
+              <span className="leading-none tracking-tight">REC {formatTimer(recordingSeconds)}</span>
+            </div>
+          )}
+
+          {/* --- Desktop Controls (hidden on mobile, visible on sm/md and up) --- */}
+          <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
+            {/* Recording Controls for Host / Authorized Members */}
+            {(meeting.canRecord || meeting.isHost) && (
+              <div className="flex items-center gap-1.5">
+                {/* If Recording: Show Live Adjust Layout Button */}
+                {isRecording && (
+                  <Button
+                    variant="dark"
+                    size="sm"
+                    onClick={() => {
+                      setRecordingError(null);
+                      setIsRecordOptionsOpen(true);
+                    }}
+                    className="inline-flex gap-1.5 text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+                    title="Adjust live recording layout"
+                  >
+                    <Sliders className="w-3.5 h-3.5" />
+                    <span className="hidden md:inline">REC Layout</span>
+                  </Button>
+                )}
+
+                {/* Start Record or Stop Record Button */}
+                <Button
+                  variant={isRecording ? "dangerOutline" : "dark"}
+                  size="sm"
+                  onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
+                  disabled={isUpdatingRecord}
+                  className="inline-flex gap-1.5"
+                  title={isRecording ? "Stop Recording" : "Record Meeting"}
+                >
+                  {isUpdatingRecord ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
+                  )}
+                  <span className="hidden md:inline">{isRecording ? "Stop REC" : "Record"}</span>
+                </Button>
+              </div>
+            )}
+
+            {/* Invite Button (Org Members / Host Only) */}
+            {(meeting.isOrgMember || meeting.isHost) && (
+              <Button
+                variant="lime"
+                size="sm"
+                onClick={() => setIsInviteOpen(true)}
+                className="gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Invite</span>
+              </Button>
+            )}
+
+            {/* Participants Drawer Toggle Button (Desktop only, hidden on mobile) */}
+            <Button
+              variant={isParticipantsOpen ? "dark" : "darkOutline"}
+              size="icon-sm"
+              onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
+              className={`hidden sm:inline-flex relative transition-colors ${
+                isParticipantsOpen ? "text-primary border-primary/40" : ""
+              }`}
+              title="Participants list"
+            >
+              <Users className="w-4 h-4" />
+              <span className="absolute -top-1 -right-1 bg-slate-800 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-slate-700 text-slate-200">
+                {participants.length}
+              </span>
+            </Button>
+
+            {/* End / Leave Button */}
+            {meeting.isHost ? (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleEndMeetingForAll}
+                title="End meeting for everyone"
+              >
+                <PhoneOff className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">End for All</span>
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleLeaveMeeting}
+                title="Leave meeting"
+              >
+                <PhoneOff className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Leave</span>
+              </Button>
+            )}
+          </div>
+
+          {/* --- Mobile View 3-dot Menu (visible on mobile only, sm:hidden) --- */}
+          <div className="sm:hidden flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="darkOutline"
+                  size="icon-sm"
+                  className="text-slate-300 hover:text-white"
+                  title="More meeting options"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-56 bg-slate-900 border border-slate-800 text-slate-200 shadow-2xl p-1.5 z-50"
+              >
+                {/* Participants list in 3-dot menu */}
+                <DropdownMenuItem
+                  onClick={() => setIsParticipantsOpen(true)}
+                  className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-sky-400" />
+                    <span>Participants</span>
+                  </div>
+                  <span className="bg-slate-800 text-[10px] font-bold rounded-full px-2 py-0.5 border border-slate-700 text-slate-300">
+                    {participants.length}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-800 my-1" />
+
+                {/* Recording Controls in 3-dot Menu */}
+                {(meeting.canRecord || meeting.isHost) && (
+                  <>
+                    <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1">
+                      Recording
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
+                      disabled={isUpdatingRecord}
+                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
+                    >
+                      {isUpdatingRecord ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      ) : (
+                        <Disc
+                          className={`w-4 h-4 ${
+                            isRecording ? "text-rose-400 animate-pulse" : "text-slate-400"
+                          }`}
+                        />
+                      )}
+                      <span className={isRecording ? "text-rose-300 font-semibold" : ""}>
+                        {isRecording ? "Stop Recording" : "Start Recording"}
+                      </span>
+                    </DropdownMenuItem>
+
+                    {isRecording && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setRecordingError(null);
+                          setIsRecordOptionsOpen(true);
+                        }}
+                        className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-amber-300"
+                      >
+                        <Sliders className="w-4 h-4 text-amber-400" />
+                        <span>Adjust REC Layout</span>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator className="bg-slate-800 my-1" />
+                  </>
+                )}
+
+                {/* Invite Options in 3-dot Menu (Org Members / Host Only) */}
+                {(meeting.isOrgMember || meeting.isHost) && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setIsInviteOpen(true)}
+                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
+                    >
+                      <Plus className="w-4 h-4 text-lime-400" />
+                      <span className="font-semibold text-lime-300">Invite People</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-800 my-1" />
+                  </>
+                )}
+
+                {/* End / Leave Actions in 3-dot Menu */}
+                {meeting.isHost ? (
+                  <>
+                    <DropdownMenuItem
+                      onClick={handleEndMeetingForAll}
+                      className="gap-2.5 text-xs cursor-pointer focus:bg-rose-950/60 focus:text-rose-200 text-rose-400 py-2"
+                    >
+                      <PhoneOff className="w-4 h-4 text-rose-400" />
+                      <span className="font-bold">End Meeting for All</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleLeaveMeeting}
+                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-slate-200 text-slate-400 py-2"
+                    >
+                      <PhoneOff className="w-4 h-4" />
+                      <span>Leave (Keep Active)</span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={handleLeaveMeeting}
+                    className="gap-2.5 text-xs cursor-pointer focus:bg-rose-950/60 focus:text-rose-200 text-rose-400 py-2"
+                  >
+                    <PhoneOff className="w-4 h-4 text-rose-400" />
+                    <span className="font-bold">Leave Meeting</span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
@@ -726,6 +874,7 @@ function RoomContent({
           meetingId={meeting.id}
           canModerate={Boolean(meeting.canModerate || meeting.isHost || meeting.isOrgMember)}
           isHost={Boolean(meeting.isHost)}
+          isOrgMember={Boolean(meeting.isOrgMember || meeting.isHost)}
           onOpenInvite={() => setIsInviteOpen(true)}
           onToast={showToast}
         />
@@ -760,7 +909,20 @@ function RoomContent({
           onClearError={() => setRecordingError(null)}
         />
       )}
+
+      {/* End Meeting for All Confirmation Dialog */}
+      <ConfirmDialog
+        open={isEndMeetingConfirmOpen}
+        onOpenChange={setIsEndMeetingConfirmOpen}
+        title="End Meeting for Everyone?"
+        description="Are you sure you want to end this meeting for all participants? All active attendees will be disconnected and recording will be finalized."
+        confirmText="End Meeting"
+        cancelText="Cancel"
+        variant="danger"
+        theme="dark"
+        isLoading={isEndingMeeting}
+        onConfirm={confirmEndMeetingForAll}
+      />
     </div>
   );
 }
-

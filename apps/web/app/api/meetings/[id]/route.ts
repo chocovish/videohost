@@ -40,7 +40,34 @@ export async function GET(
       meeting.organization.logoUrl = await getPresignedPlaybackUrl(meeting.organization.logoUrl);
     }
 
-    return NextResponse.json({ meeting });
+    const session = await auth();
+    let isHost = false;
+    let isOrgMember = false;
+    if (session?.user?.id) {
+      const userId = session.user.id;
+      isHost = meeting.createdById === userId;
+      if (isHost) {
+        isOrgMember = true;
+      } else {
+        const membership = await db.organizationMember.findUnique({
+          where: {
+            organizationId_userId: {
+              organizationId: meeting.organizationId,
+              userId,
+            },
+          },
+        });
+        if (membership) isOrgMember = true;
+      }
+    }
+
+    return NextResponse.json({
+      meeting,
+      isHost,
+      isOrgMember,
+      canModerate: isHost || isOrgMember,
+      canRecord: isHost || isOrgMember,
+    });
   } catch (err: any) {
     console.error("GET /api/meetings/[id] error:", err);
     return NextResponse.json({ error: err.message || "Failed to fetch meeting" }, { status: 500 });
@@ -66,6 +93,29 @@ export async function PATCH(
 
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    // Check authorization: user must be meeting creator or organization member
+    const userId = session.user.id;
+    const isCreator = meeting.createdById === userId;
+    let isOrgMember = false;
+    if (!isCreator && userId) {
+      const membership = await db.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: meeting.organizationId,
+            userId,
+          },
+        },
+      });
+      if (membership) isOrgMember = true;
+    }
+
+    if (!isCreator && !isOrgMember) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to modify this meeting" },
+        { status: 403 }
+      );
     }
 
     const updateData: any = {};
@@ -117,6 +167,10 @@ export async function PATCH(
         } catch (lkErr: any) {
           console.warn("Could not delete LiveKit room on meeting end:", lkErr?.message || lkErr);
         }
+      } else if (body.status === "ACTIVE" || body.status === "SCHEDULED") {
+        // Reopen or activate meeting
+        updateData.endedAt = null;
+        updateData.isRecording = false;
       }
     }
     if (typeof body.isRecording === "boolean") updateData.isRecording = body.isRecording;
@@ -126,6 +180,9 @@ export async function PATCH(
       where: { id: meeting.id },
       data: updateData,
       include: {
+        organization: {
+          select: { id: true, name: true, logoUrl: true, themeId: true },
+        },
         createdBy: {
           select: { id: true, name: true, email: true, image: true },
         },

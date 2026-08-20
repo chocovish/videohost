@@ -32,10 +32,6 @@ export async function POST(
       return NextResponse.json({ error: "This meeting has been cancelled." }, { status: 410 });
     }
 
-    if (meeting.status === "ENDED") {
-      return NextResponse.json({ error: "This meeting has ended." }, { status: 410 });
-    }
-
     const session = await auth();
     const isAuthUser = Boolean(session?.user?.id);
     const userId = session?.user?.id;
@@ -70,6 +66,20 @@ export async function POST(
     const canModerate = isOrgUser;
     const canRecord = isOrgUser;
 
+    // Check meeting ENDED status:
+    if (meeting.status === "ENDED") {
+      if (isHost || isOrgUser) {
+        // Reopen meeting if host or org member is joining
+        await db.meeting.update({
+          where: { id: meeting.id },
+          data: { status: "ACTIVE", endedAt: null, isRecording: false },
+        });
+        meeting.status = "ACTIVE";
+      } else {
+        return NextResponse.json({ error: "This meeting has ended." }, { status: 410 });
+      }
+    }
+
     // Determine participant identity and display name
     const participantName =
       (body.participantName && String(body.participantName).trim()) ||
@@ -83,10 +93,10 @@ export async function POST(
     const image = session?.user?.image || undefined;
 
     // If meeting was in SCHEDULED status and host joins, update to ACTIVE
-    if (meeting.status === "SCHEDULED" && isHost) {
+    if (meeting.status === "SCHEDULED" && (isHost || isOrgUser)) {
       await db.meeting.update({
         where: { id: meeting.id },
-        data: { status: "ACTIVE" },
+        data: { status: "ACTIVE", endedAt: null },
       });
       meeting.status = "ACTIVE";
     }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Video,
   Calendar,
@@ -28,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import ScheduleMeetingModal from "@/components/meetings/ScheduleMeetingModal";
 import InstantMeetingModal from "@/components/meetings/InstantMeetingModal";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MeetingItem {
   id: string;
@@ -64,6 +66,7 @@ interface MeetingItem {
 }
 
 export default function MeetingsDashboardPage() {
+  const router = useRouter();
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +78,7 @@ export default function MeetingsDashboardPage() {
   const [inviteModalData, setInviteModalData] = useState<{ id: string; title: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
 
   const fetchMeetings = async () => {
     try {
@@ -114,15 +118,48 @@ export default function MeetingsDashboardPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleDeleteMeeting = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this meeting?")) return;
+  const handleReopenMeeting = async (meetingId: string) => {
     try {
-      const res = await fetch(`/api/meetings/${id}`, { method: "DELETE" });
+      setReopeningId(meetingId);
+      const res = await fetch(`/api/meetings/${meetingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACTIVE" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to reopen meeting");
+      }
+      router.push(`/meet/${meetingId}`);
+    } catch (err: any) {
+      alert(err.message || "Failed to reopen meeting room");
+      setReopeningId(null);
+    }
+  };
+
+  const [deleteMeetingTarget, setDeleteMeetingTarget] = useState<{ id: string; title: string } | null>(null);
+  const [isDeletingMeeting, setIsDeletingMeeting] = useState(false);
+
+  const handleDeleteMeeting = (meeting: { id: string; title: string }) => {
+    setDeleteMeetingTarget(meeting);
+  };
+
+  const handleExecuteDeleteMeeting = async () => {
+    if (!deleteMeetingTarget) return;
+    setIsDeletingMeeting(true);
+    try {
+      const res = await fetch(`/api/meetings/${deleteMeetingTarget.id}`, { method: "DELETE" });
       if (res.ok) {
-        setMeetings(meetings.filter((m) => m.id !== id));
+        setMeetings(meetings.filter((m) => m.id !== deleteMeetingTarget.id));
+        setDeleteMeetingTarget(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to delete meeting");
       }
     } catch (err) {
       console.error("Failed to delete meeting:", err);
+    } finally {
+      setIsDeletingMeeting(false);
     }
   };
 
@@ -333,7 +370,7 @@ export default function MeetingsDashboardPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDeleteMeeting(meeting.id)}
+                        onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
                         className="h-8 px-2 text-xs text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 rounded-lg cursor-pointer"
                         title="Delete meeting"
                       >
@@ -424,20 +461,25 @@ export default function MeetingsDashboardPage() {
                       </Button>
                     </Link>
                   ) : (
-                    <Link href={`/meet/${meeting.id}`}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-border hover:bg-slate-100 dark:hover:bg-slate-800 text-foreground text-xs gap-1.5 cursor-pointer"
-                      >
-                        <Video className="w-3.5 h-3.5" /> Re-open Room
-                      </Button>
-                    </Link>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={reopeningId === meeting.id}
+                      onClick={() => handleReopenMeeting(meeting.id)}
+                      className="border-border hover:bg-slate-100 dark:hover:bg-slate-800 text-foreground text-xs gap-1.5 cursor-pointer"
+                    >
+                      {reopeningId === meeting.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Video className="w-3.5 h-3.5" />
+                      )}
+                      <span>{reopeningId === meeting.id ? "Reopening..." : "Re-open Room"}</span>
+                    </Button>
                   )}
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => handleDeleteMeeting(meeting.id)}
+                    onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
                     className="text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 h-8 w-8 p-0 cursor-pointer"
                     title="Delete record"
                   >
@@ -472,6 +514,22 @@ export default function MeetingsDashboardPage() {
           meetingTitle={inviteModalData.title}
         />
       )}
+
+      {/* Delete Meeting Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteMeetingTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteMeetingTarget(null);
+        }}
+        title={`Delete Meeting "${deleteMeetingTarget?.title}"?`}
+        description="Are you sure you want to delete this meeting? All attendees will lose access and any active session will be ended."
+        variant="danger"
+        confirmText="Delete Meeting"
+        cancelText="Cancel"
+        isLoading={isDeletingMeeting}
+        onConfirm={handleExecuteDeleteMeeting}
+        onCancel={() => setDeleteMeetingTarget(null)}
+      />
     </div>
   );
 }

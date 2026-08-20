@@ -47,6 +47,7 @@ export default function MeetPage() {
     reason: LeaveReason;
     message: string;
   } | null>(null);
+  const [isReopening, setIsReopening] = useState(false);
 
   // Fetch initial meeting info
   useEffect(() => {
@@ -73,23 +74,33 @@ export default function MeetPage() {
           throw new Error(data.error || "Meeting not found or has ended");
         }
 
-        if (data.meeting?.status === "ENDED") {
-          setLeaveState({
-            reason: "meeting_ended",
-            message: "This meeting has ended.",
-          });
-          return;
-        }
+        const currentUserId = session?.user?.id;
+        const userIsHost = Boolean(
+          data.isHost ||
+          (currentUserId && data.meeting?.createdById === currentUserId)
+        );
+        const userIsOrgMember = Boolean(data.isOrgMember || userIsHost);
+
+        setIsHost(userIsHost);
+        setIsOrgMember(userIsOrgMember);
+        setCanModerate(Boolean(data.canModerate || userIsHost || userIsOrgMember));
+        setCanRecord(Boolean(data.canRecord || userIsHost || userIsOrgMember));
+        setMeeting(data.meeting);
+
         if (data.meeting?.status === "CANCELLED") {
           setError("This meeting has been cancelled.");
           return;
         }
 
-        setMeeting(data.meeting);
-
-        const currentUserId = session?.user?.id;
-        if (currentUserId && data.meeting.createdById === currentUserId) {
-          setIsHost(true);
+        if (data.meeting?.status === "ENDED") {
+          setLeaveState({
+            reason: "meeting_ended",
+            message:
+              userIsHost || userIsOrgMember
+                ? "This meeting was previously ended. As a host or team member, you can reopen it to start the room again."
+                : "This meeting has ended.",
+          });
+          return;
         }
       } catch (err: any) {
         if (err.name === "TypeError" || err.message?.includes("fetch")) {
@@ -110,6 +121,33 @@ export default function MeetPage() {
       loadMeeting();
     }
   }, [id, session?.user?.id, authStatus]);
+
+  // Handle Reopening Meeting Room
+  const handleReopenMeeting = async () => {
+    try {
+      setIsReopening(true);
+      setError(null);
+      const res = await fetch(`/api/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ACTIVE" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to reopen meeting room");
+      }
+      if (data.meeting) {
+        setMeeting(data.meeting);
+      } else {
+        setMeeting((prev: any) => (prev ? { ...prev, status: "ACTIVE" } : null));
+      }
+      setLeaveState(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to reopen meeting room");
+    } finally {
+      setIsReopening(false);
+    }
+  };
 
   // Handle Joining from Lobby
   const handleJoinFromLobby = async (options: {
@@ -185,6 +223,9 @@ export default function MeetPage() {
     const isEnded = leaveState.reason === "meeting_ended";
     const isRemoved = leaveState.reason === "removed_by_host";
     const isUserLeft = leaveState.reason === "user_left";
+    const canReopen =
+      isEnded &&
+      (isHost || isOrgMember || (session?.user?.id && meeting?.createdById === session.user.id));
 
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
@@ -234,18 +275,33 @@ export default function MeetPage() {
                 onClick={() => {
                   setLeaveState(null);
                 }}
-                className="w-full gap-2 font-bold"
+                className="w-full gap-2 font-bold cursor-pointer"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>{isNetwork ? "Retry Connection" : "Rejoin Meeting"}</span>
               </Button>
+            ) : canReopen ? (
+              <Button
+                variant="lime"
+                size="lg"
+                disabled={isReopening}
+                onClick={handleReopenMeeting}
+                className="w-full gap-2 font-bold cursor-pointer"
+              >
+                {isReopening ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+                <span>{isReopening ? "Reopening Room..." : "Reopen Meeting Room"}</span>
+              </Button>
             ) : null}
 
             <Button
-              variant={!isUserLeft && !isNetwork ? "lime" : "dark"}
+              variant={!isUserLeft && !isNetwork && !canReopen ? "lime" : "dark"}
               size="lg"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className="w-full gap-2 font-bold"
+              className="w-full gap-2 font-bold cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
@@ -308,6 +364,7 @@ export default function MeetPage() {
           isRecording: meeting.isRecording,
           recordOnStart: meeting.recordOnStart,
           organizationName: meeting.organization?.name,
+          organizationLogoUrl: meeting.organization?.logoUrl,
           themeId: meeting.organization?.themeId,
           isHost,
           isOrgMember,

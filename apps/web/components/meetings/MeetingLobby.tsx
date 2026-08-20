@@ -120,7 +120,7 @@ export default function MeetingLobby({
   const setupAudioMeter = useCallback((stream: MediaStream) => {
     try {
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current.close().catch(() => { });
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -225,7 +225,7 @@ export default function MeetingLobby({
       // Attach video stream to DOM
       if (videoRef.current && videoSuccess) {
         videoRef.current.srcObject = newCombinedStream;
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => { });
       }
 
       if (audioSuccess) {
@@ -263,7 +263,7 @@ export default function MeetingLobby({
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-        audioContextRef.current.close().catch(() => {});
+        audioContextRef.current.close().catch(() => { });
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -275,7 +275,7 @@ export default function MeetingLobby({
   useEffect(() => {
     if (videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   }, [videoEnabled]);
 
@@ -300,7 +300,7 @@ export default function MeetingLobby({
             streamRef.current.addTrack(track);
             if (videoRef.current) {
               videoRef.current.srcObject = streamRef.current;
-              videoRef.current.play().catch(() => {});
+              videoRef.current.play().catch(() => { });
             }
             await refreshDeviceList();
           }
@@ -357,7 +357,7 @@ export default function MeetingLobby({
           streamRef.current.addTrack(newVTrack);
           if (videoRef.current) {
             videoRef.current.srcObject = streamRef.current;
-            videoRef.current.play().catch(() => {});
+            videoRef.current.play().catch(() => { });
           }
         }
       } catch (err) {
@@ -395,7 +395,7 @@ export default function MeetingLobby({
       streamRef.current.getTracks().forEach((track) => track.stop());
     }
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current.close().catch(() => { });
     }
 
     onJoin({
@@ -416,7 +416,7 @@ export default function MeetingLobby({
         {/* Header Branding */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
-            <Radio className="w-3.5 h-3.5 animate-pulse" /> LiveKit Video Lobby
+            <Radio className="w-3.5 h-3.5 animate-pulse" /> Meeting Lobby
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
             {meeting.title}
@@ -438,9 +438,8 @@ export default function MeetingLobby({
                 autoPlay
                 muted
                 playsInline
-                className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-200 ${
-                  videoEnabled && !permissionError ? "opacity-100" : "opacity-0 absolute pointer-events-none"
-                }`}
+                className={`w-full h-full object-cover scale-x-[-1] transition-opacity duration-200 ${videoEnabled && !permissionError ? "opacity-100" : "opacity-0 absolute pointer-events-none"
+                  }`}
               />
 
               {/* Camera Off / Fallback Placeholder Avatar */}
@@ -480,11 +479,10 @@ export default function MeetingLobby({
                 <button
                   type="button"
                   onClick={toggleAudio}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${
-                    audioEnabled
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${audioEnabled
                       ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
                       : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
-                  }`}
+                    }`}
                   title={audioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                 >
                   {audioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
@@ -492,11 +490,10 @@ export default function MeetingLobby({
                 <button
                   type="button"
                   onClick={toggleVideo}
-                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${
-                    videoEnabled
+                  className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${videoEnabled
                       ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
                       : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
-                  }`}
+                    }`}
                   title={videoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                 >
                   {videoEnabled ? <VideoIcon className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}

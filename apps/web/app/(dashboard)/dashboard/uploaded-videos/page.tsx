@@ -42,6 +42,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { formatDuration, formatBytes } from "@/lib/video-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface FolderItem {
   id: string;
@@ -159,51 +160,62 @@ function UploadedVideosContent() {
     refreshAll();
   }, [currentFolderId]);
 
-  const handleDeleteFolder = async (e: React.MouseEvent, folderId: string, name: string) => {
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "folder" | "video";
+    id: string;
+    name: string;
+    isCurrentFolder?: boolean;
+  } | null>(null);
+  const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
+
+  const handleDeleteFolder = (e: React.MouseEvent, folderId: string, name: string) => {
     e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete folder "${name}"? Contained videos will be moved to Root.`)) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/folders/${folderId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        refreshAll();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete folder");
-      }
-    } catch (err) {
-      console.error("Error deleting folder:", err);
-    }
+    setDeleteConfirm({ type: "folder", id: folderId, name });
   };
 
-  const handleDeleteCurrentFolder = async () => {
+  const handleDeleteCurrentFolder = () => {
     if (!currentFolder) return;
-    if (
-      !confirm(
-        `Are you sure you want to delete folder "${currentFolder.name}"? Contained videos will be moved to Root.`
-      )
-    ) {
-      return;
-    }
-    setIsDeletingCurrentFolder(true);
+    setDeleteConfirm({ type: "folder", id: currentFolder.id, name: currentFolder.name, isCurrentFolder: true });
+  };
+
+  const handleDeleteVideo = (e: React.MouseEvent, videoId: string, title: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteConfirm({ type: "video", id: videoId, name: title });
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!deleteConfirm) return;
+    setIsDeletingConfirm(true);
     try {
-      const res = await fetch(`/api/folders/${currentFolder.id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        const parentId = breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null;
-        navigateToFolder(parentId);
+      if (deleteConfirm.type === "folder") {
+        const res = await fetch(`/api/folders/${deleteConfirm.id}`, { method: "DELETE" });
+        if (res.ok) {
+          if (deleteConfirm.isCurrentFolder) {
+            const parentId = breadcrumbs.length >= 2 ? breadcrumbs[breadcrumbs.length - 2].id : null;
+            navigateToFolder(parentId);
+          } else {
+            refreshAll();
+          }
+          setDeleteConfirm(null);
+        } else {
+          const data = await res.json();
+          alert(data.error || "Failed to delete folder");
+        }
       } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete folder");
+        const res = await fetch(`/api/v1/videos/${deleteConfirm.id}`, { method: "DELETE" });
+        if (res.ok) {
+          refreshAll();
+          setDeleteConfirm(null);
+        } else {
+          const data = await res.json();
+          alert(data.error || "Failed to delete video");
+        }
       }
     } catch (err) {
-      console.error("Error deleting current folder:", err);
+      console.error("Error executing delete:", err);
     } finally {
-      setIsDeletingCurrentFolder(false);
+      setIsDeletingConfirm(false);
     }
   };
 
@@ -212,27 +224,6 @@ function UploadedVideosContent() {
       setCurrentFolder({ ...currentFolder, name: newName });
     }
     refreshAll();
-  };
-
-  const handleDeleteVideo = async (e: React.MouseEvent, videoId: string, title: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm(`Are you sure you want to delete video "${title}"? This cannot be undone.`)) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/v1/videos/${videoId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        refreshAll();
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to delete video");
-      }
-    } catch (err) {
-      console.error("Error deleting video:", err);
-    }
   };
 
   const filteredVideos = videos.filter((v) => {
@@ -816,6 +807,30 @@ function UploadedVideosContent() {
         onUploadSuccess={refreshAll}
         currentFolderId={currentFolderId}
         folderPathName={folderPathName}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteConfirm)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteConfirm(null);
+        }}
+        title={
+          deleteConfirm?.type === "folder"
+            ? `Delete Folder "${deleteConfirm.name}"?`
+            : `Delete Video "${deleteConfirm?.name}"?`
+        }
+        description={
+          deleteConfirm?.type === "folder"
+            ? `Are you sure you want to delete folder "${deleteConfirm.name}"? Contained videos will be safely moved to Root.`
+            : `Are you sure you want to delete video "${deleteConfirm?.name}"? This action cannot be undone and will permanently remove the video and its renditions.`
+        }
+        variant="danger"
+        confirmText={deleteConfirm?.type === "folder" ? "Delete Folder" : "Delete Video"}
+        cancelText="Cancel"
+        isLoading={isDeletingConfirm}
+        onConfirm={handleExecuteDelete}
+        onCancel={() => setDeleteConfirm(null)}
       />
     </div>
   );

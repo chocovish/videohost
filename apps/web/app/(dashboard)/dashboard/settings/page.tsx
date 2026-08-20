@@ -38,6 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatBytes } from "@/lib/video-utils";
 import ImageCropper1to1Modal from "@/components/ImageCropper1to1Modal";
 
@@ -465,9 +466,17 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!confirm(`Are you sure you want to remove ${memberName} from this organization?`)) return;
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<{ id: string; name: string } | null>(null);
+  const [isRemovingMember, setIsRemovingMember] = useState(false);
 
+  const handleRemoveMember = (memberId: string, memberName: string) => {
+    setRemoveMemberTarget({ id: memberId, name: memberName });
+  };
+
+  const handleExecuteRemoveMember = async () => {
+    if (!removeMemberTarget) return;
+    const { id: memberId, name: memberName } = removeMemberTarget;
+    setIsRemovingMember(true);
     try {
       const res = await fetch(`/api/organization/members/${memberId}`, {
         method: "DELETE",
@@ -478,12 +487,15 @@ export default function SettingsPage() {
         throw new Error(data.error || "Failed to remove member");
       }
 
+      setRemoveMemberTarget(null);
       setActionMessage(`Member ${memberName} removed successfully`);
       fetchOrgData();
       setTimeout(() => setActionMessage(""), 3000);
     } catch (err: any) {
       setOrgErrorMsg(err.message || "Failed to remove member");
       setTimeout(() => setOrgErrorMsg(""), 4000);
+    } finally {
+      setIsRemovingMember(false);
     }
   };
 
@@ -1217,6 +1229,22 @@ export default function SettingsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Remove Member Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(removeMemberTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRemoveMemberTarget(null);
+        }}
+        title={`Remove ${removeMemberTarget?.name}?`}
+        description={`Are you sure you want to remove ${removeMemberTarget?.name} from this organization? They will lose access to all shared resources and workspace data.`}
+        variant="danger"
+        confirmText="Remove Member"
+        cancelText="Cancel"
+        isLoading={isRemovingMember}
+        onConfirm={handleExecuteRemoveMember}
+        onCancel={() => setRemoveMemberTarget(null)}
+      />
     </div>
   );
 }

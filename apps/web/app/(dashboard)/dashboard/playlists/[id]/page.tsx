@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShareModal from "@/components/ShareModal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
 
@@ -278,9 +279,17 @@ export default function PlaylistDetailPage() {
   };
 
   // Remove video from playlist
-  const handleRemoveItem = async (itemId: string, videoTitle: string) => {
-    if (!confirm(`Remove "${videoTitle}" from this playlist?`)) return;
+  const [removeItemTarget, setRemoveItemTarget] = useState<{ itemId: string; videoTitle: string } | null>(null);
+  const [isRemovingItem, setIsRemovingItem] = useState(false);
 
+  const handleRemoveItem = (itemId: string, videoTitle: string) => {
+    setRemoveItemTarget({ itemId, videoTitle });
+  };
+
+  const handleExecuteRemoveItem = async () => {
+    if (!removeItemTarget) return;
+    const { itemId } = removeItemTarget;
+    setIsRemovingItem(true);
     const previousItems = [...items];
     const newItems = items.filter((item) => item.itemId !== itemId);
     setItems(newItems);
@@ -290,15 +299,18 @@ export default function PlaylistDetailPage() {
         method: "DELETE",
       });
       if (res.ok) {
+        setRemoveItemTarget(null);
         fetchPlaylistDetails();
       } else {
         setItems(previousItems);
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         alert(data.error || "Failed to remove video");
       }
     } catch (err) {
       setItems(previousItems);
       console.error("Error removing item:", err);
+    } finally {
+      setIsRemovingItem(false);
     }
   };
 
@@ -970,48 +982,34 @@ export default function PlaylistDetailPage() {
       </Dialog>
 
       {/* Delete Playlist Modal */}
-      <Dialog open={isDeleteOpen} onOpenChange={(open) => !open && setIsDeleteOpen(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle>Delete Playlist</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete <span className="font-semibold text-slate-800 dark:text-slate-200">"{playlist.title}"</span>?
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
+      <ConfirmDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        title={`Delete Playlist "${playlist.title}"?`}
+        description="Are you sure you want to delete this playlist? Deleting this playlist will not delete your original videos."
+        variant="danger"
+        confirmText="Delete Playlist"
+        cancelText="Cancel"
+        isLoading={deleting}
+        onConfirm={handleDeleteSubmit}
+        onCancel={() => setIsDeleteOpen(false)}
+      />
 
-          <p className="text-xs text-muted-foreground">
-            Note: Deleting this playlist will not delete your original videos.
-          </p>
-
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteSubmit}
-              disabled={deleting}
-              className="gap-2"
-            >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {deleting ? "Deleting..." : "Delete Playlist"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Remove Video from Playlist Modal */}
+      <ConfirmDialog
+        open={Boolean(removeItemTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRemoveItemTarget(null);
+        }}
+        title="Remove Video from Playlist?"
+        description={`Are you sure you want to remove "${removeItemTarget?.videoTitle}" from this playlist? The original video will not be deleted.`}
+        variant="danger"
+        confirmText="Remove Video"
+        cancelText="Cancel"
+        isLoading={isRemovingItem}
+        onConfirm={handleExecuteRemoveItem}
+        onCancel={() => setRemoveItemTarget(null)}
+      />
 
       {/* Video Preview Modal */}
       <Dialog open={Boolean(previewVideo)} onOpenChange={(open) => !open && setPreviewVideo(null)}>

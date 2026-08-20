@@ -39,6 +39,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ShareModal from "@/components/ShareModal";
 import { formatDuration } from "@/lib/video-utils";
 
@@ -533,48 +534,20 @@ export default function PlaylistsPage() {
       </Dialog>
 
       {/* Delete Playlist Confirmation */}
-      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-red-500/10 text-red-600">
-                <Trash2 className="w-5 h-5" />
-              </div>
-              <div>
-                <DialogTitle>Delete Playlist</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete <span className="font-semibold text-slate-800 dark:text-slate-200">"{deleteTarget?.title}"</span>?
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <p className="text-xs text-muted-foreground">
-            Note: Deleting this playlist will not delete your original videos. It only deletes the playlist collection and share links.
-          </p>
-
-          <DialogFooter className="gap-2 sm:gap-0 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeletePlaylist}
-              disabled={deleting}
-              className="gap-2"
-            >
-              {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-              {deleting ? "Deleting..." : "Delete Playlist"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title={`Delete Playlist "${deleteTarget?.title}"?`}
+        description="Are you sure you want to delete this playlist? Your original videos will not be deleted, only the playlist collection and share links."
+        variant="danger"
+        confirmText="Delete Playlist"
+        cancelText="Cancel"
+        isLoading={deleting}
+        onConfirm={handleDeletePlaylist}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Share Modal */}
       {shareTarget && (

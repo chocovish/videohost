@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const THEME_PRESETS = [
   { id: "obsidian", name: "Obsidian Dark", primary: "#84cc16", bg: "#030712", card: "#0f172a" },
@@ -233,15 +234,13 @@ export default function CustomizeSharePage() {
     }
   };
 
-  const handleReset = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to reset customization settings to defaults? This will delete your custom logo and welcome banner images from storage."
-      )
-    ) {
-      return;
-    }
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
+  const handleReset = () => {
+    setIsResetConfirmOpen(true);
+  };
+
+  const handleExecuteReset = async () => {
     try {
       setSaving(true);
       const res = await fetch("/api/organization/share-config", {
@@ -259,6 +258,7 @@ export default function CustomizeSharePage() {
 
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
+        setIsResetConfirmOpen(false);
       } else {
         alert("Failed to reset customization. Please try again.");
       }
@@ -812,6 +812,19 @@ export default function CustomizeSharePage() {
           </div>
         </div>
       </div>
+
+      {/* Reset Customization Confirmation Dialog */}
+      <ConfirmDialog
+        open={isResetConfirmOpen}
+        onOpenChange={setIsResetConfirmOpen}
+        title="Reset Customization to Defaults?"
+        description="Are you sure you want to reset all branding settings to defaults? This will remove your custom logo and welcome banner images."
+        variant="danger"
+        confirmText="Reset to Defaults"
+        cancelText="Cancel"
+        isLoading={saving}
+        onConfirm={handleExecuteReset}
+      />
     </div>
   );
 }

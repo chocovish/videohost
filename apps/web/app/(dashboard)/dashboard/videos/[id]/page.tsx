@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 import { formatBytes } from "@/lib/video-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface VideoDetail {
   id: string;
@@ -112,15 +113,27 @@ export default function VideoDetailPage() {
     fetchVideoDetail();
   }, [id]);
 
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this video and all its transcoded renditions?")) return;
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = () => {
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    setIsDeleting(true);
     try {
       const res = await fetch(`/api/v1/videos/${id}`, { method: "DELETE" });
       if (res.ok) {
         router.push(backUrl);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to delete video");
       }
     } catch (e) {
       console.error("Delete error", e);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -550,6 +563,19 @@ export default function VideoDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={isDeleteConfirmOpen}
+        onOpenChange={setIsDeleteConfirmOpen}
+        title={`Delete Video "${video.title}"?`}
+        description="Are you sure you want to delete this video and all its transcoded renditions? This action cannot be undone."
+        variant="danger"
+        confirmText="Delete Video"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        onConfirm={handleExecuteDelete}
+      />
     </div>
   );
 }

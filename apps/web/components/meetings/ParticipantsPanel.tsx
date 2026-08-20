@@ -43,6 +43,7 @@ interface ParticipantsPanelProps {
   meetingId: string;
   canModerate: boolean;
   isHost: boolean;
+  isOrgMember?: boolean;
   onOpenInvite?: () => void;
   onToast?: (message: string, type?: "success" | "error" | "info" | "warning") => void;
 }
@@ -53,6 +54,7 @@ export default function ParticipantsPanel({
   meetingId,
   canModerate,
   isHost,
+  isOrgMember,
   onOpenInvite,
   onToast,
 }: ParticipantsPanelProps) {
@@ -309,7 +311,7 @@ export default function ParticipantsPanel({
               </Button>
             )}
 
-            {onOpenInvite && (
+            {onOpenInvite && (isHost || isOrgMember) && (
               <Button
                 variant="lime"
                 size="sm"
@@ -678,12 +680,13 @@ export default function ParticipantsPanel({
         description={
           <>
             Are you sure you want to kick{" "}
-            <span className="font-bold text-slate-200">{kickTarget?.name}</span>{" "}
+            <span className="font-bold text-white">{kickTarget?.name}</span>{" "}
             out of this meeting? They will be immediately disconnected from the call.
           </>
         }
         icon={UserX}
         variant="danger"
+        theme="dark"
         confirmText="Remove Participant"
         cancelText="Cancel"
         isLoading={Boolean(kickTarget && loadingActions[`${kickTarget.identity}_kick`])}
@@ -707,6 +710,7 @@ export default function ParticipantsPanel({
         description="This will mute the microphones for all current participants in the meeting room. Participants will still be able to unmute themselves if they wish to speak."
         icon={AlertTriangle}
         variant="warning"
+        theme="dark"
         confirmText="Mute Everyone"
         cancelText="Cancel"
         isLoading={isMutingAll}
