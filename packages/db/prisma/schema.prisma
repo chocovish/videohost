@@ -356,21 +356,26 @@ enum PaymentStatus {
 }
 
 model PaymentOrder {
-  id                String        @id @default(cuid())
-  organizationId   String
-  userId            String
-  planId            String
-  razorpayOrderId   String        @unique
-  razorpayPaymentId String?
-  razorpaySignature String?
-  amount            Int           // Amount in INR paise (e.g. 99900)
-  currency          String        @default("INR")
-  billingMode       String        @default("ONE_TIME") // "ONE_TIME" | "RECURRING"
-  billingCycle      String        @default("MONTHLY")  // "MONTHLY" | "YEARLY"
+  id                     String        @id @default(cuid())
+  organizationId        String
+  userId                 String
+  planId                 String
+  gateway                String        @default("razorpay") // "razorpay" | "cashfree"
+  razorpayOrderId        String?       @unique
+  razorpayPaymentId      String?
+  razorpaySignature      String?
   razorpaySubscriptionId String?
-  status            PaymentStatus @default(PENDING)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  cashfreeOrderId        String?       @unique
+  cashfreePaymentId      String?
+  cashfreeSessionId      String?
+  cashfreeSubscriptionId String?       @unique
+  amount                 Int           // Amount in INR paise (e.g. 99900)
+  currency               String        @default("INR")
+  billingMode            String        @default("ONE_TIME") // "ONE_TIME" | "RECURRING"
+  billingCycle           String        @default("MONTHLY")  // "MONTHLY" | "YEARLY"
+  status                 PaymentStatus @default(PENDING)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   plan         Plan         @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -378,6 +383,7 @@ model PaymentOrder {
 
   @@index([organizationId])
   @@index([userId])
+  @@index([gateway])
 }
 
 // --------------------------------------------------------

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { razorpayClient } from "@/lib/razorpay";
+import { cancelCashfreeSubscription } from "@/lib/cashfree";
 
 export async function POST(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -27,22 +28,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    let wasCancelledOnRazorpay = false;
+    let wasCancelledOnGateway = false;
 
-    // Cancel Razorpay subscription if subscription ID is present
+    // Cancel Gateway subscription if subscription ID is present
     if (organization.subscriptionId) {
-      try {
-        await razorpayClient.subscriptions.cancel(organization.subscriptionId, false);
-        wasCancelledOnRazorpay = true;
-        console.log(
-          `[API /api/payments/cancel-subscription]: Cancelled Razorpay subscription ${organization.subscriptionId} for org ${organization.id}`
-        );
-      } catch (razorpayErr: any) {
-        console.warn(
-          `[API /api/payments/cancel-subscription]: Razorpay subscription cancellation warning (proceeding with DB update):`,
-          razorpayErr.message || razorpayErr
-        );
-        wasCancelledOnRazorpay = true;
+      const isCashfreeSub = organization.subscriptionId.startsWith("cf_sub_");
+
+      if (isCashfreeSub) {
+        try {
+          await cancelCashfreeSubscription(organization.subscriptionId);
+          wasCancelledOnGateway = true;
+          console.log(
+            `[API /api/payments/cancel-subscription]: Cancelled Cashfree subscription ${organization.subscriptionId} for org ${organization.id}`
+          );
+        } catch (cfErr: any) {
+          console.warn(
+            `[API /api/payments/cancel-subscription]: Cashfree subscription cancellation warning (proceeding with DB update):`,
+            cfErr.message || cfErr
+          );
+          wasCancelledOnGateway = true;
+        }
+      } else {
+        try {
+          await razorpayClient.subscriptions.cancel(organization.subscriptionId, false);
+          wasCancelledOnGateway = true;
+          console.log(
+            `[API /api/payments/cancel-subscription]: Cancelled Razorpay subscription ${organization.subscriptionId} for org ${organization.id}`
+          );
+        } catch (razorpayErr: any) {
+          console.warn(
+            `[API /api/payments/cancel-subscription]: Razorpay subscription cancellation warning (proceeding with DB update):`,
+            razorpayErr.message || razorpayErr
+          );
+          wasCancelledOnGateway = true;
+        }
       }
     }
 

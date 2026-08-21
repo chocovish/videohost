@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -37,11 +37,23 @@ interface PricingViewProps {
   isEmbedded?: boolean;
 }
 
+interface DbPlanRecord {
+  id: string;
+  name: string;
+  minutesLimit: number;
+  storageLimitGb: number;
+  maxResolution: string;
+  seatLimit: number;
+  priceMonthlyCents: number;
+  isCustom: boolean;
+}
+
 export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
+  const [dbPlans, setDbPlans] = useState<DbPlanRecord[]>([]);
   const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
   const [billingMode, setBillingMode] = useState<"ONE_TIME" | "RECURRING">("ONE_TIME");
   const [orgDetails, setOrgDetails] = useState<any>(null);
@@ -51,37 +63,105 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const [confirmCancelModalOpen, setConfirmCancelModalOpen] = useState<boolean>(false);
   const [pendingPlanSwitch, setPendingPlanSwitch] = useState<"free" | "basic" | "pro" | "enterprise" | null>(null);
 
-  useEffect(() => {
-    async function fetchCurrentPlan() {
-      if (!session) {
-        setLoadingPlan(false);
-        return;
-      }
-      try {
-        const [usageRes, orgRes] = await Promise.all([
-          fetch("/api/v1/usage"),
-          fetch("/api/organization"),
-        ]);
-        if (usageRes.ok) {
-          const data = await usageRes.json();
-          if (data.plan) {
-            setCurrentPlan(data.plan.toLowerCase());
-          }
+  const fetchPlans = useCallback(async () => {
+    try {
+      const res = await fetch("/api/plans");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.plans && Array.isArray(data.plans)) {
+          setDbPlans(data.plans);
         }
-        if (orgRes.ok) {
-          const orgData = await orgRes.json();
-          if (orgData.organization) {
-            setOrgDetails(orgData.organization);
-          }
-        }
-      } catch (e) {
-        console.error("Error fetching current plan:", e);
-      } finally {
-        setLoadingPlan(false);
       }
+    } catch (err) {
+      console.error("Error fetching db plans:", err);
     }
-    fetchCurrentPlan();
+  }, []);
+
+  const fetchCurrentPlan = useCallback(async () => {
+    if (!session) {
+      setLoadingPlan(false);
+      return;
+    }
+    try {
+      const [usageRes, orgRes] = await Promise.all([
+        fetch("/api/v1/usage"),
+        fetch("/api/organization"),
+      ]);
+      if (usageRes.ok) {
+        const data = await usageRes.json();
+        if (data.plan) {
+          setCurrentPlan(data.plan.toLowerCase());
+        }
+      }
+      if (orgRes.ok) {
+        const orgData = await orgRes.json();
+        if (orgData.organization) {
+          setOrgDetails(orgData.organization);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching current plan:", e);
+    } finally {
+      setLoadingPlan(false);
+    }
   }, [session]);
+
+  useEffect(() => {
+    fetchPlans();
+    fetchCurrentPlan();
+  }, [fetchPlans, fetchCurrentPlan]);
+
+  // Re-fetch organization & plan whenever usage or plan updates occur across components
+  useEffect(() => {
+    const handleUsageUpdated = () => {
+      fetchPlans();
+      fetchCurrentPlan();
+    };
+    window.addEventListener("usage-updated", handleUsageUpdated);
+    return () => {
+      window.removeEventListener("usage-updated", handleUsageUpdated);
+    };
+  }, [fetchPlans, fetchCurrentPlan]);
+
+  // Check URL parameters for return from Cashfree checkout redirect
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const subId = params.get("subscription_id") || params.get("cf_subscription_id");
+    const orderId = params.get("order_id") || params.get("cf_order_id");
+
+    if (subId || orderId) {
+      // Auto-verify the returned payment/subscription
+      (async () => {
+        try {
+          const verifyRes = await fetch("/api/payments/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              gateway: "cashfree",
+              subscription_id: subId || undefined,
+              order_id: orderId || undefined,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyRes.ok && verifyData.organization) {
+            setSuccessMsg(verifyData.message || "Payment verified successfully!");
+            setOrgDetails((prev: any) => ({
+              ...prev,
+              ...verifyData.organization,
+            }));
+            fetchCurrentPlan();
+            window.dispatchEvent(new CustomEvent("usage-updated"));
+            // Clean URL query parameters
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setTimeout(() => setSuccessMsg(""), 6000);
+          }
+        } catch (e) {
+          console.warn("[Auto-verify Cashfree callback warning]:", e);
+        }
+      })();
+    }
+  }, [fetchCurrentPlan]);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -89,6 +169,18 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       if ((window as any).Razorpay) return resolve(true);
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const loadCashfreeScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Cashfree) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
@@ -115,6 +207,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       if (data.organization) {
         setOrgDetails((prev: any) => ({ ...prev, ...data.organization }));
       }
+      await fetchCurrentPlan();
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("usage-updated"));
       }
@@ -149,6 +242,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       if (data.organization) {
         setOrgDetails((prev: any) => ({ ...prev, ...data.organization }));
       }
+      await fetchCurrentPlan();
       if (typeof window !== "undefined") {
         window.dispatchEvent(new CustomEvent("usage-updated"));
       }
@@ -164,13 +258,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     }
   };
 
-  const handleSelectPlan = async (planKey: "free" | "basic" | "pro" | "enterprise") => {
+  const handleSelectPlan = async (
+    planKey: "free" | "basic" | "pro" | "enterprise",
+    allowSamePlan: boolean = false
+  ) => {
     if (!session) {
       router.push("/auth/login?callbackUrl=/pricing");
       return;
     }
 
-    if (planKey === currentPlan || updatingPlan) return;
+    if ((planKey === currentPlan && !allowSamePlan) || updatingPlan) return;
 
     // If downgrading/selecting Free plan directly
     if (planKey === "free") {
@@ -188,14 +285,12 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       return;
     }
 
-    // For Paid Plans (Basic, Pro & Enterprise), trigger Razorpay Payment Gateway
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error("Razorpay SDK failed to load. Please check your network connection.");
-      }
+    // For Paid Plans (Basic, Pro & Enterprise), trigger active payment gateway
+    setUpdatingPlan(planKey);
+    setErrorMsg("");
 
-      // 1. Create Razorpay Order
+    try {
+      // 1. Create Payment Order on backend
       const res = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -207,7 +302,102 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         throw new Error(orderData.error || "Failed to initiate payment order");
       }
 
-      // 2. Open Razorpay Checkout Modal
+      // ----------------------------------------------------
+      // 2A. CASHFREE GATEWAY (Modal / Redirect Checkout)
+      // ----------------------------------------------------
+      if (orderData.gateway === "cashfree") {
+        // If paymentSessionId is provided, use Cashfree Web SDK modal
+        if (orderData.paymentSessionId) {
+          const scriptLoaded = await loadCashfreeScript();
+          if (!scriptLoaded || !(window as any).Cashfree) {
+            throw new Error("Cashfree SDK failed to load. Please check your network connection.");
+          }
+
+          const cashfree = (window as any).Cashfree({
+            mode: orderData.cfEnv === "production" ? "production" : "sandbox",
+          });
+
+          const checkoutOptions = {
+            paymentSessionId: orderData.paymentSessionId,
+            redirectTarget: "_modal", // Checkout modal popup directly on the same page
+          };
+
+          cashfree.checkout(checkoutOptions).then(async (result: any) => {
+            if (result.error) {
+              console.warn("[Cashfree Modal Checkout Result]:", result.error);
+              if (result.error.message && result.error.message !== "User closed the popup") {
+                setErrorMsg(result.error.message || "Cashfree payment was cancelled or failed");
+                setTimeout(() => setErrorMsg(""), 5000);
+              }
+              setUpdatingPlan(null);
+              return;
+            }
+
+            // If user completed payment or returned from modal
+            try {
+              const verifyRes = await fetch("/api/payments/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  gateway: "cashfree",
+                  subscription_id: orderData.subscriptionId,
+                  order_id: orderData.orderId,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok) {
+                throw new Error(verifyData.error || "Payment verification failed");
+              }
+
+              setCurrentPlan(planKey);
+              if (verifyData.organization) {
+                setOrgDetails((prev: any) => ({
+                  ...prev,
+                  ...verifyData.organization,
+                  subscriptionStatus: verifyData.organization.subscriptionStatus || "ACTIVE",
+                  billingMode: verifyData.organization.billingMode || billingMode,
+                  billingCycle: verifyData.organization.billingCycle || billingCycle,
+                }));
+              }
+              await fetchCurrentPlan();
+              setSuccessMsg(
+                verifyData.message ||
+                `Payment verified! Active workspace plan upgraded to ${planKey.toUpperCase()}!`
+              );
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("usage-updated"));
+              }
+              router.refresh();
+              setTimeout(() => setSuccessMsg(""), 5000);
+            } catch (verifyErr: any) {
+              setErrorMsg(verifyErr.message || "Payment verification failed");
+              setTimeout(() => setErrorMsg(""), 5000);
+            } finally {
+              setUpdatingPlan(null);
+            }
+          });
+
+          return;
+        }
+
+        // Fallback: If authLink is provided (mandate authorization page)
+        if (orderData.authLink) {
+          window.location.href = orderData.authLink;
+          return;
+        }
+
+        throw new Error("Unable to initialize Cashfree checkout session.");
+      }
+
+      // ----------------------------------------------------
+      // 2B. RAZORPAY GATEWAY (Modal Checkout)
+      // ----------------------------------------------------
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error("Razorpay SDK failed to load. Please check your network connection.");
+      }
+
       const options = {
         key: orderData.key,
         amount: orderData.amount,
@@ -230,6 +420,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                gateway: "razorpay",
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
@@ -242,6 +433,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             }
 
             setCurrentPlan(planKey);
+            if (verifyData.organization) {
+              setOrgDetails((prev: any) => ({
+                ...prev,
+                ...verifyData.organization,
+                subscriptionStatus: verifyData.organization.subscriptionStatus || "ACTIVE",
+                billingMode: verifyData.organization.billingMode || billingMode,
+                billingCycle: verifyData.organization.billingCycle || billingCycle,
+              }));
+            }
+            await fetchCurrentPlan();
             setSuccessMsg(`Payment verified! Active workspace plan upgraded to ${planKey.toUpperCase()}!`);
             if (typeof window !== "undefined") {
               window.dispatchEvent(new CustomEvent("usage-updated"));
@@ -272,19 +473,50 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
       razorpayWindow.open();
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to initiate Razorpay checkout");
+      setErrorMsg(err.message || "Failed to initiate checkout");
       setUpdatingPlan(null);
       setTimeout(() => setErrorMsg(""), 5000);
     }
   };
 
 
+  // Helper to retrieve plan record from DB or fallback default
+  const getDbPlan = (name: string) => {
+    return dbPlans.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  };
+
+  const freePlanRecord = getDbPlan("free");
+  const basicPlanRecord = getDbPlan("basic");
+  const proPlanRecord = getDbPlan("pro");
+  const enterprisePlanRecord = getDbPlan("enterprise");
+
+  // Format price helper
+  const formatPrice = (priceMonthlyCents: number) => {
+    if (priceMonthlyCents <= 0) return "₹0";
+    if (billingCycle === "YEARLY") {
+      const yearlyRupees = (priceMonthlyCents * 10) / 100;
+      return `₹${Math.round(yearlyRupees).toLocaleString("en-IN")}`;
+    }
+    const monthlyRupees = priceMonthlyCents / 100;
+    return `₹${Math.round(monthlyRupees).toLocaleString("en-IN")}`;
+  };
+
+  const formatPeriod = (priceMonthlyCents: number) => {
+    if (priceMonthlyCents <= 0) return "forever";
+    return billingCycle === "YEARLY" ? "per year (2 months free)" : "per month";
+  };
+
+  const formatStorageText = (storageGb: number | undefined, defaultGb: number) => {
+    const limit = storageGb !== undefined ? storageGb : defaultGb;
+    return limit === 0 ? "Unlimited cloud storage" : `${limit}GB cloud storage`;
+  };
+
   const plans = [
     {
       id: "free",
       name: "Free",
-      price: "₹0",
-      period: "forever",
+      price: formatPrice(freePlanRecord?.priceMonthlyCents ?? 0),
+      period: formatPeriod(freePlanRecord?.priceMonthlyCents ?? 0),
       tagline: "Essential tools for personal screen recording & email-secured sharing",
       popular: false,
       badge: "Get Started",
@@ -293,8 +525,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       features: [
         { title: "Unlimited screen record with face cam overlay", icon: Video, highlight: true },
         { title: "Unlimited videos upload", icon: Video, highlight: true },
-        { title: "2GB cloud storage", icon: HardDrive, highlight: true },
-        { title: "Share videos with specific email users or make them publicly accessible.", icon: Share2, highlight: true },
+        {
+          title: formatStorageText(freePlanRecord?.storageLimitGb, 2),
+          icon: HardDrive,
+          highlight: true,
+        },
+        {
+          title: "Share videos with specific email users or make them publicly accessible.",
+          icon: Share2,
+          highlight: true,
+        },
         { title: "Email based support", icon: Mail, highlight: false },
       ],
       notIncluded: [
@@ -306,16 +546,23 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     {
       id: "basic",
       name: "Basic",
-      price: billingCycle === "YEARLY" ? "₹3,990" : "₹399",
-      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
-      tagline: "Expanded 50GB cloud storage on top of Free plan for active creators",
+      price: formatPrice(basicPlanRecord?.priceMonthlyCents ?? 39900),
+      period: formatPeriod(basicPlanRecord?.priceMonthlyCents ?? 39900),
+      tagline:
+        (basicPlanRecord?.storageLimitGb ?? 50) === 0
+          ? "Expanded unlimited cloud storage on top of Free plan for active creators"
+          : `Expanded ${basicPlanRecord?.storageLimitGb ?? 50}GB cloud storage on top of Free plan for active creators`,
       popular: false,
       badge: "Budget Friendly",
       accentColor: "border-sky-500/40 dark:border-sky-500/30 hover:border-sky-500 shadow-md",
       buttonVariant: "basic",
       features: [
         { title: "All in Free plan +", icon: Sparkles, highlight: true },
-        { title: "50GB cloud storage", icon: HardDrive, highlight: true },
+        {
+          title: formatStorageText(basicPlanRecord?.storageLimitGb, 50),
+          icon: HardDrive,
+          highlight: true,
+        },
         { title: "Unlimited screen recordings & uploads", icon: Video, highlight: true },
         { title: "Granular email-restricted & public sharing", icon: Share2, highlight: true },
         { title: "Standard email support", icon: Mail, highlight: false },
@@ -329,8 +576,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     {
       id: "pro",
       name: "Pro",
-      price: billingCycle === "YEARLY" ? "₹9,990" : "₹999",
-      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
+      price: formatPrice(proPlanRecord?.priceMonthlyCents ?? 99900),
+      period: formatPeriod(proPlanRecord?.priceMonthlyCents ?? 99900),
       tagline: "For professional creators needing adaptive bitrate & high storage",
       popular: true,
       badge: "Popular",
@@ -338,8 +585,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       buttonVariant: "primary",
       features: [
         { title: "All in Basic plan +", icon: Sparkles, highlight: true },
-        { title: "200GB cloud storage", icon: HardDrive, highlight: true },
-        { title: "Store videos in adaptive bitrate (multi-quality HLS for weak connections)", icon: Zap, highlight: true },
+        {
+          title: formatStorageText(proPlanRecord?.storageLimitGb, 200),
+          icon: HardDrive,
+          highlight: true,
+        },
+        {
+          title: "Store videos in adaptive bitrate (multi-quality HLS for weak connections)",
+          icon: Zap,
+          highlight: true,
+        },
         { title: "Live chat support", icon: MessageSquare, highlight: true },
       ],
       notIncluded: [
@@ -350,8 +605,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
     {
       id: "enterprise",
       name: "Enterprise",
-      price: billingCycle === "YEARLY" ? "₹29,990" : "₹2,999",
-      period: billingCycle === "YEARLY" ? "per year (2 months free)" : "per month",
+      price: formatPrice(enterprisePlanRecord?.priceMonthlyCents ?? 299900),
+      period: formatPeriod(enterprisePlanRecord?.priceMonthlyCents ?? 299900),
       tagline: "For teams & multi-org teams requiring unlimited storage & full controls",
       popular: false,
       badge: "Full Access",
@@ -359,8 +614,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       buttonVariant: "enterprise",
       features: [
         { title: "All in Pro plan +", icon: Sparkles, highlight: true },
-        { title: "Unlimited cloud storage", icon: HardDrive, highlight: true },
-        { title: "Create multiple organizations (up to 5 workspaces)", icon: Building2, highlight: true },
+        {
+          title: formatStorageText(enterprisePlanRecord?.storageLimitGb, 0),
+          icon: HardDrive,
+          highlight: true,
+        },
+        {
+          title: `Create multiple organizations (up to ${enterprisePlanRecord?.seatLimit ?? 5} workspaces)`,
+          icon: Building2,
+          highlight: true,
+        },
         { title: "Invite team members & manage roles", icon: Users, highlight: true },
         { title: "Dedicated call support", icon: Headphones, highlight: true },
       ],
@@ -380,7 +643,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             Simple plans for creators & teams.
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground">
-            Start free with 2GB storage, or upgrade to 50GB Basic, 200GB Pro with adaptive bitrate streaming, or Enterprise for unlimited storage and team collaboration.
+            Start free with {freePlanRecord?.storageLimitGb === 0 ? "unlimited" : `${freePlanRecord?.storageLimitGb ?? 2}GB`} storage, or upgrade to {basicPlanRecord?.storageLimitGb === 0 ? "unlimited" : `${basicPlanRecord?.storageLimitGb ?? 50}GB`} Basic, {proPlanRecord?.storageLimitGb === 0 ? "unlimited" : `${proPlanRecord?.storageLimitGb ?? 200}GB`} Pro with adaptive bitrate streaming, or Enterprise for unlimited storage and team collaboration.
           </p>
         </div>
       )}
@@ -395,7 +658,12 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             <div>
               <div className="font-bold text-foreground flex items-center gap-2">
                 Active Plan: <span className="uppercase text-primary font-extrabold">{currentPlan}</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase">
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border ${orgDetails.subscriptionStatus === "CANCELLED"
+                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                      : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                    }`}
+                >
                   {orgDetails.subscriptionStatus || "ACTIVE"}
                 </span>
               </div>
@@ -607,6 +875,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                         Cancel Subscription
                       </button>
                     )}
+                    {plan.id !== "free" && currentPlan !== "free" && orgDetails?.subscriptionStatus === "CANCELLED" && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectPlan(plan.id as any, true)}
+                        disabled={updatingPlan !== null || loadingPlan}
+                        className="w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" /> Renew / Reactivate {plan.name}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <button
@@ -703,7 +981,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               ✅ <strong>Keep Paid Features Until Expiry:</strong> You will remain on your paid <strong>{currentPlan.toUpperCase()}</strong> plan in one-time mode with full feature access until <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'expiration'}</strong>.
             </div>
             <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 font-medium">
-              ⚠️ <strong>No Future Charges:</strong> Auto-renewal on Razorpay will be cancelled immediately. Once your paid validity ends on <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString() : 'expiration'}</strong>, your workspace will automatically move to the Free plan.
+              ⚠️ <strong>No Future Charges:</strong> Auto-renewal will be cancelled immediately. Once your paid validity ends on <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString() : 'expiration'}</strong>, your workspace will automatically move to the Free plan.
             </div>
           </div>
 

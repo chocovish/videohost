@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { razorpayClient } from "@/lib/razorpay";
+import { cancelCashfreeSubscription } from "@/lib/cashfree";
 
 export async function POST(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -50,19 +51,37 @@ export async function POST(req: Request) {
 
     // If organization has an active recurring subscription and is switching to free (or changing plan)
     if (currentOrg?.subscriptionId) {
-      try {
-        await razorpayClient.subscriptions.cancel(currentOrg.subscriptionId, false);
-        wasSubscriptionCancelled = true;
-        console.log(
-          `[API /api/organization/plan]: Successfully cancelled Razorpay subscription ${currentOrg.subscriptionId} for org ${authCtx.orgId}`
-        );
-      } catch (razorpayErr: any) {
-        console.warn(
-          `[API /api/organization/plan]: Razorpay subscription cancel warning (proceeding with DB update):`,
-          razorpayErr.message || razorpayErr
-        );
-        // Mark as cancelled even if SDK returns warning (e.g. test subscription ID or already cancelled)
-        wasSubscriptionCancelled = true;
+      const isCashfreeSub = currentOrg.subscriptionId.startsWith("cf_sub_");
+
+      if (isCashfreeSub) {
+        try {
+          await cancelCashfreeSubscription(currentOrg.subscriptionId);
+          wasSubscriptionCancelled = true;
+          console.log(
+            `[API /api/organization/plan]: Successfully cancelled Cashfree subscription ${currentOrg.subscriptionId} for org ${authCtx.orgId}`
+          );
+        } catch (cfErr: any) {
+          console.warn(
+            `[API /api/organization/plan]: Cashfree subscription cancel warning (proceeding with DB update):`,
+            cfErr.message || cfErr
+          );
+          wasSubscriptionCancelled = true;
+        }
+      } else {
+        try {
+          await razorpayClient.subscriptions.cancel(currentOrg.subscriptionId, false);
+          wasSubscriptionCancelled = true;
+          console.log(
+            `[API /api/organization/plan]: Successfully cancelled Razorpay subscription ${currentOrg.subscriptionId} for org ${authCtx.orgId}`
+          );
+        } catch (razorpayErr: any) {
+          console.warn(
+            `[API /api/organization/plan]: Razorpay subscription cancel warning (proceeding with DB update):`,
+            razorpayErr.message || razorpayErr
+          );
+          // Mark as cancelled even if SDK returns warning (e.g. test subscription ID or already cancelled)
+          wasSubscriptionCancelled = true;
+        }
       }
     }
 
@@ -88,7 +107,7 @@ export async function POST(req: Request) {
 
     const successMessage = isDowngradingToFree
       ? wasSubscriptionCancelled || currentOrg?.billingMode === "RECURRING"
-        ? "Organization plan switched to Free. Your recurring Razorpay subscription has been successfully cancelled!"
+        ? "Organization plan switched to Free. Your recurring subscription has been successfully cancelled!"
         : "Organization plan successfully updated to Free."
       : `Organization plan successfully updated to ${targetPlan.name.toUpperCase()}`;
 
