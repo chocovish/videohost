@@ -3,12 +3,11 @@ import Link from "next/link";
 import {
   Video,
   ArrowRight,
-  Play,
   Sparkles,
-  CheckCircle2,
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
+import LandingHero from "@/components/landing/LandingHero";
 import LandingFeatureTimeline from "@/components/landing/LandingFeatureTimeline";
 import LandingFeaturesBento from "@/components/landing/LandingFeaturesBento";
 import LandingWorkflow from "@/components/landing/LandingWorkflow";
@@ -176,78 +175,10 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main className="w-full flex-1 relative z-10">
-        <section className="max-w-6xl w-full mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8 sm:pb-12 text-center space-y-8">
-          {/* Top Announcement Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs sm:text-sm font-extrabold uppercase tracking-wider shadow-xs animate-in fade-in slide-in-from-top-2">
-            <Sparkles className="w-4 h-4 animate-spin [animation-duration:8s]" />
-            <span>One-Stop Solution for All Your Video Needs • 2GB Free</span>
-          </div>
+        <LandingHero />
 
-          {/* Primary High-Impact Headline */}
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] max-w-5xl mx-auto">
-            Record, organize, <br className="hidden sm:inline" />
-            <span className="shimmer-text">share & meet in one place.</span>
-          </h1>
-
-          {/* Value Proposition Description */}
-          <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-medium">
-            The all-in-one video suite with in-browser studio recording, curated playlists, selective email access control, conference rooms, and custom branded share pages.
-          </p>
-
-          {/* Call to Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 pt-2">
-            <Link
-              href="/auth/register"
-              className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-black text-base sm:text-lg rounded-2xl shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.02] transition-all flex items-center justify-center gap-2.5 group active:scale-95 cursor-pointer"
-            >
-              <span>Get Started Free — 2GB Included</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-
-            <Link
-              href="/record"
-              className="w-full sm:w-auto px-7 py-4 border-2 border-primary/50 text-primary font-extrabold text-base rounded-2xl hover:bg-primary/10 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/10 active:scale-95 cursor-pointer"
-            >
-              <Video className="w-5 h-5" />
-              <span>Try Studio Recorder</span>
-              <span className="px-2 py-0.5 rounded-md bg-primary text-white text-[10px] uppercase tracking-wider font-black ml-1">
-                Free
-              </span>
-            </Link>
-
-            <Link
-              href="/auth/login"
-              className="w-full sm:w-auto px-6 py-4 glass-card font-bold text-base rounded-2xl border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-all flex items-center justify-center gap-2 text-foreground"
-            >
-              <Play className="w-4 h-4 fill-current text-primary" />
-              <span>Sign In</span>
-            </Link>
-          </div>
-
-          {/* Trust Value Proof Checkpoints */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 pt-3 text-xs sm:text-sm font-bold text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>2GB Free Cloud Storage</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>Email Whitelist & Passcodes</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>Curated Playlists & Embeds</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>Video Conference Rooms</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-primary" />
-              <span>White Label Share Pages</span>
-            </div>
-          </div>
-        </section>
+        {/* 5-Step Visual Workflow: How It Works */}
+        <LandingWorkflow />
 
         {/* State-of-the-Art Line-Drawn Feature Timeline with Rich Visuals */}
         <LandingFeatureTimeline />
@@ -285,9 +216,6 @@ export default function LandingPage() {
 
         {/* 6 Core Pillars Bento Grid */}
         <LandingFeaturesBento />
-
-        {/* 5-Step Visual Workflow */}
-        <LandingWorkflow />
 
         {/* Stack Comparison Matrix */}
         <LandingComparison />
