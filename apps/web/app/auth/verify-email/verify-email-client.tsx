@@ -11,6 +11,9 @@ function VerifyEmailInner() {
 
   const token = searchParams.get("token");
   const email = searchParams.get("email");
+  const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "";
+
+  const loginLink = callbackUrl ? `/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : "/auth/login";
 
   const [status, setStatus] = useState<"loading" | "success" | "error" | "sent">(
     token && email ? "loading" : "sent"
@@ -58,7 +61,7 @@ function VerifyEmailInner() {
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, callbackUrl }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -118,13 +121,13 @@ function VerifyEmailInner() {
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
-                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {resending ? "Sending..." : "Resend Verification Email"}
               </button>
             )}
             <div className="pt-4 border-t border-border">
-              <Link href="/auth/login" className="text-sm font-semibold text-primary hover:underline flex items-center justify-center gap-1">
+              <Link href={loginLink} className="text-sm font-semibold text-primary hover:underline flex items-center justify-center gap-1">
                 Back to Sign In <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -140,10 +143,10 @@ function VerifyEmailInner() {
             <p className="text-sm text-muted-foreground">{message}</p>
             <div className="pt-4">
               <Link
-                href="/auth/login"
+                href={loginLink}
                 className="w-full py-3 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
               >
-                Sign In to Dashboard <ArrowRight className="w-4 h-4" />
+                Sign In to Continue <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -168,14 +171,14 @@ function VerifyEmailInner() {
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
-                className="w-full py-2.5 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg text-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 {resending ? "Resending..." : "Request New Verification Link"}
               </button>
             )}
 
             <div className="pt-4 border-t border-border">
-              <Link href="/auth/login" className="text-sm font-semibold text-primary hover:underline flex items-center justify-center gap-1">
+              <Link href={loginLink} className="text-sm font-semibold text-primary hover:underline flex items-center justify-center gap-1">
                 Return to Login
               </Link>
             </div>

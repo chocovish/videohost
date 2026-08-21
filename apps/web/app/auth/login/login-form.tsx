@@ -35,7 +35,7 @@ export default function LoginForm() {
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, callbackUrl }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -134,7 +134,7 @@ export default function LoginForm() {
                       type="button"
                       onClick={handleResend}
                       disabled={resending}
-                      className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50"
+                      className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
                     >
                       {resending ? (
                         <>
@@ -164,7 +164,7 @@ export default function LoginForm() {
             type="button"
             variant="outline"
             onClick={() => signIn("google", { callbackUrl })}
-            className="w-full py-2.5 px-4 font-semibold mb-6 flex items-center justify-center gap-3 text-sm min-h-[44px]"
+            className="w-full py-2.5 px-4 font-semibold mb-6 flex items-center justify-center gap-3 text-sm min-h-[44px] cursor-pointer"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -226,7 +226,7 @@ export default function LoginForm() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 min-h-[44px] font-semibold text-sm group bg-primary text-white shadow-md hover:opacity-90 transition-all"
+              className="w-full mt-2 min-h-[44px] font-semibold text-sm group bg-primary text-white shadow-md hover:opacity-90 transition-all cursor-pointer"
             >
               {loading ? "Signing in..." : "Sign in to Dashboard"}
               <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
@@ -236,7 +236,10 @@ export default function LoginForm() {
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link href="/auth/register" className="font-semibold text-primary hover:underline">
+              <Link
+                href={`/auth/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                className="font-semibold text-primary hover:underline"
+              >
                 Create an account (2GB Free Storage)
               </Link>
             </p>

@@ -24,6 +24,7 @@ import {
   Check,
   ExternalLink,
   ArrowUpRight,
+  ArrowRight,
   ArrowLeft,
   Mail,
   Send,
@@ -32,6 +33,10 @@ import {
   SkipBack,
   SkipForward,
   Search,
+  KeyRound,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
@@ -147,6 +152,72 @@ export default function SharedContentClient({
     itemTitle?: string;
     type?: string;
   } | null>(null);
+
+  // One-time OTP state
+  const [authViewMode, setAuthViewMode] = useState<"options" | "otp">("options");
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpStep, setOtpStep] = useState<"request" | "verify">("request");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!otpEmail) return;
+    setOtpLoading(true);
+    setOtpError("");
+    setOtpSuccess("");
+
+    try {
+      const res = await fetch("/api/share/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, email: otpEmail }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        setOtpError(resData.message || resData.error || "Failed to send code.");
+      } else {
+        setOtpStep("verify");
+        setOtpSuccess(resData.message || "A 6-digit access code has been sent to your email.");
+      }
+    } catch (err: any) {
+      setOtpError("An error occurred while sending the code. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!otpCode || !otpEmail) return;
+    setOtpLoading(true);
+    setOtpError("");
+    setOtpSuccess("");
+
+    try {
+      const res = await fetch("/api/share/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, email: otpEmail, code: otpCode }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        setOtpError(resData.message || resData.error || "Invalid access code.");
+      } else {
+        setOtpSuccess("Access granted! Loading content...");
+        setErrorState(null);
+        await fetchSharedContent();
+      }
+    } catch (err: any) {
+      setOtpError("An error occurred while verifying the code. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const fetchSharedContent = async () => {
     if (previewData) return;
@@ -307,44 +378,242 @@ export default function SharedContentClient({
     return (
       <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black relative overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-lime-500/10 blur-[140px] rounded-full pointer-events-none" />
-        <div className="max-w-md w-full p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl shadow-black/80 space-y-6 backdrop-blur-2xl relative z-10">
-          <div className="flex flex-col items-center text-center space-y-3">
-            <div className="p-4 bg-lime-500/10 text-lime-400 rounded-2xl border border-lime-500/20 shadow-lg shadow-lime-500/10">
-              <Lock className="w-8 h-8" />
+        <div className="max-w-md w-full p-6 sm:p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl shadow-black/80 space-y-6 backdrop-blur-2xl relative z-10">
+          {authViewMode === "options" ? (
+            <>
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="p-4 bg-lime-500/10 text-lime-400 rounded-2xl border border-lime-500/20 shadow-lg shadow-lime-500/10">
+                  <Lock className="w-8 h-8" />
+                </div>
+
+                {errorState.organizationName && (
+                  <span className="text-xs font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3.5 py-1 rounded-full border border-lime-500/20">
+                    {errorState.organizationName}
+                  </span>
+                )}
+
+                <h1 className="text-2xl font-black text-slate-100 tracking-tight">
+                  Authentication Required
+                </h1>
+
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  Access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this content"}"</span> is restricted. Choose how you would like to view this content:
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+                  className="w-full py-3.5 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm active:scale-98 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign In to Access
+                </button>
+
+                <button
+                  onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+                  className="w-full py-3.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-sm active:scale-98 cursor-pointer"
+                >
+                  <UserPlus className="w-4 h-4 text-lime-400" />
+                  Create Free Viewer Account
+                </button>
+
+                <div className="relative py-1">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-800" />
+                  </div>
+                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <span className="bg-slate-900 px-2">or temporary access</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setAuthViewMode("otp");
+                    setOtpError("");
+                    setOtpSuccess("");
+                  }}
+                  className="w-full py-3 px-4 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold rounded-xl border border-slate-800 hover:border-lime-500/40 transition-all flex items-center justify-center gap-2 text-xs active:scale-98 cursor-pointer group"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-lime-400 group-hover:scale-110 transition-transform" />
+                  <span>Access with One-Time Email Code (24h Pass)</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-5">
+              {/* Back to auth choices button */}
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthViewMode("options");
+                    setOtpError("");
+                    setOtpSuccess("");
+                  }}
+                  className="text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  Back to Sign In options
+                </button>
+
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-2.5 py-0.5 rounded-full border border-lime-500/20">
+                  24h Viewer Pass
+                </span>
+              </div>
+
+              <div className="text-left space-y-1.5">
+                <h2 className="text-xl font-black text-slate-100 tracking-tight flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-lime-400" />
+                  One-Time Code Access
+                </h2>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Enter your invited email address to receive a 6-digit access code for 24-hour viewer access in this browser.
+                </p>
+              </div>
+
+              {/* Professional Guidance Notice */}
+              <div className="p-3.5 rounded-xl bg-lime-950/30 border border-lime-500/25 space-y-1.5 text-left">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-lime-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Recommended: Create an Account</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Signing in saves all videos shared with you directly into your dashboard. You won't need to request or verify OTP codes again to watch your content.
+                </p>
+                <div className="pt-1 flex items-center gap-3">
+                  <button
+                    onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+                    className="text-xs font-bold text-lime-400 hover:underline cursor-pointer"
+                  >
+                    Sign In &rarr;
+                  </button>
+                  <button
+                    onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
+                    className="text-xs font-bold text-slate-300 hover:text-white hover:underline cursor-pointer"
+                  >
+                    Create Free Account &rarr;
+                  </button>
+                </div>
+              </div>
+
+              {otpError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-start gap-2 text-left">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+
+              {otpSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-start gap-2 text-left">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{otpSuccess}</span>
+                </div>
+              )}
+
+              {otpStep === "request" ? (
+                <form onSubmit={handleSendOtp} className="space-y-3.5 text-left">
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Your Invited Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="email"
+                        required
+                        value={otpEmail}
+                        onChange={(e) => setOtpEmail(e.target.value)}
+                        placeholder="you@company.com"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-lime-400 text-sm text-slate-100 placeholder:text-slate-500 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer active:scale-98"
+                  >
+                    {otpLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending Access Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Send 6-Digit Code</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-3.5 text-left">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Code sent to <span className="text-slate-200 font-semibold">{otpEmail}</span></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtpStep("request");
+                        setOtpCode("");
+                        setOtpError("");
+                        setOtpSuccess("");
+                      }}
+                      className="text-lime-400 hover:underline font-bold cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      6-Digit Access Code
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      autoFocus
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123456"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-lime-400 text-center font-mono text-xl font-bold tracking-[6px] text-slate-100 placeholder:text-slate-600 transition-all"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={otpLoading || otpCode.length < 6}
+                    className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer active:scale-98"
+                  >
+                    {otpLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Verifying Pass...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Verify & Unlock Content</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={handleSendOtp}
+                      disabled={otpLoading}
+                      className="text-xs text-slate-400 hover:text-slate-200 font-semibold hover:underline cursor-pointer disabled:opacity-50"
+                    >
+                      Didn't receive the code? Resend
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
-
-            {errorState.organizationName && (
-              <span className="text-xs font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3.5 py-1 rounded-full border border-lime-500/20">
-                {errorState.organizationName}
-              </span>
-            )}
-
-            <h1 className="text-2xl font-black text-slate-100 tracking-tight">
-              Authentication Required
-            </h1>
-
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this content"}"</span> is restricted. Please sign in with your authorized email address.
-            </p>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <button
-              onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-              className="w-full py-3.5 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm active:scale-98"
-            >
-              <LogIn className="w-4 h-4" />
-              Sign In to Access
-            </button>
-
-            <button
-              onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-              className="w-full py-3.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-sm active:scale-98"
-            >
-              <UserPlus className="w-4 h-4 text-lime-400" />
-              Create Free Viewer Account
-            </button>
-          </div>
+          )}
 
           <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-3 border-t border-slate-800/80">
             <ShieldCheck className="w-4 h-4 text-lime-400" />

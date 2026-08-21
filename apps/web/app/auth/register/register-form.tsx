@@ -19,7 +19,6 @@ export default function RegisterForm() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [orgName, setOrgName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +36,7 @@ export default function RegisterForm() {
           name,
           email,
           password,
-          orgName: orgName || undefined,
+          callbackUrl,
           viewMode: isViewerFlow ? "VIEWER" : "CREATOR",
         }),
       });
@@ -50,7 +49,7 @@ export default function RegisterForm() {
       }
 
       if (data.requiresVerification) {
-        router.push(`/auth/verify-email?sent=true&email=${encodeURIComponent(email)}`);
+        router.push(`/auth/verify-email?sent=true&email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
         return;
       }
 
@@ -109,7 +108,7 @@ export default function RegisterForm() {
 
           <button
             type="button"
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() => signIn("google", { callbackUrl })}
             className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-lg border border-slate-200 shadow-xs transition-all flex items-center justify-center gap-3 text-sm mb-6 hover:shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -145,34 +144,18 @@ export default function RegisterForm() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
-                  placeholder="Alex Dev"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
-                  Organization Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
-                  placeholder="Acme Media Corp"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border border-input bg-white/80 dark:bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-primary text-sm transition-all"
+                placeholder="Alex Dev"
+              />
             </div>
 
             <div>
@@ -207,7 +190,7 @@ export default function RegisterForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-2 py-3 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="w-full mt-2 py-3 px-4 bg-primary hover:opacity-90 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
             >
               {loading ? "Creating account..." : "Get Started Free (2GB Included)"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -217,7 +200,10 @@ export default function RegisterForm() {
           <div className="mt-8 pt-6 border-t border-border text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/auth/login" className="font-semibold text-primary hover:underline">
+              <Link
+                href={`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                className="font-semibold text-primary hover:underline"
+              >
                 Sign in
               </Link>
             </p>
@@ -227,3 +213,4 @@ export default function RegisterForm() {
     </div>
   );
 }
+

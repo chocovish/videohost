@@ -6,7 +6,7 @@ import { sendVerificationEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, orgName, viewMode, inviteToken } = await req.json();
+    const { name, email, password, orgName, viewMode, inviteToken, callbackUrl } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
 
     // Send verification email
     try {
-      await sendVerificationEmail(email, result.token);
+      await sendVerificationEmail(email, result.token, callbackUrl);
     } catch (mailErr) {
       console.error("Failed to send verification email:", mailErr);
     }

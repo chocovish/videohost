@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { db } from "@videohost/db";
 import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
 import { auth } from "@/lib/auth";
+import { verifySharePassJwt, SHARE_OTP_COOKIE_NAME } from "@/lib/share-otp";
 
 export async function GET(req: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
@@ -117,51 +119,101 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
 
     // 5. Check RESTRICTED Access Mode (Specific Emails)
     if (accessMode === "RESTRICTED") {
-      if (!session || !session.user || !session.user.id) {
-        return NextResponse.json(
-          {
-            error: "LOGIN_REQUIRED",
-            requireLogin: true,
-            accessMode: "RESTRICTED",
-            token,
-            organization,
-            type: targetType,
-            itemTitle,
-            sharePageConfig,
-          },
-          { status: 401 }
-        );
-      }
+      let isAllowed = false;
+      let authenticatedEmail = "";
 
-      const userEmail = (session.user.email || "").toLowerCase();
-      const isEmailAllowed = sharedEmails.some((se) => se.email.toLowerCase() === userEmail);
+      // 5a. Check Session (logged in user)
+      if (session?.user?.email) {
+        const userEmail = session.user.email.toLowerCase();
+        authenticatedEmail = userEmail;
+        const isEmailAllowed = sharedEmails.some((se) => se.email.toLowerCase() === userEmail);
 
-      let isOrgMember = false;
-      if (session.user.id) {
-        const member = await db.organizationMember.findUnique({
-          where: {
-            organizationId_userId: {
-              organizationId: item.organizationId,
-              userId: session.user.id,
+        let isOrgMember = false;
+        if (session.user.id) {
+          const member = await db.organizationMember.findUnique({
+            where: {
+              organizationId_userId: {
+                organizationId: item.organizationId,
+                userId: session.user.id,
+              },
             },
-          },
-        });
-        if (member) isOrgMember = true;
+          });
+          if (member) isOrgMember = true;
+        }
+
+        if (isEmailAllowed || isOrgMember) {
+          isAllowed = true;
+        }
       }
 
-      if (!isEmailAllowed && !isOrgMember) {
-        return NextResponse.json(
-          {
-            error: "ACCESS_DENIED",
-            accessMode: "RESTRICTED",
-            userEmail: session.user.email,
-            organization,
-            type: targetType,
-            itemTitle,
-            sharePageConfig,
-          },
-          { status: 403 }
-        );
+      // 5b. If not allowed by session, check 1-day OTP viewer pass cookie
+      if (!isAllowed) {
+        try {
+          const cookieStore = await cookies();
+          const otpPassCookie = cookieStore.get(SHARE_OTP_COOKIE_NAME)?.value;
+          const verifiedPass = verifySharePassJwt(otpPassCookie);
+
+          if (verifiedPass?.email) {
+            authenticatedEmail = verifiedPass.email;
+            const isOtpEmailAllowed = sharedEmails.some(
+              (se) => se.email.toLowerCase() === verifiedPass.email
+            );
+
+            let isOrgMember = false;
+            const memberUser = await db.user.findUnique({
+              where: { email: verifiedPass.email },
+            });
+            if (memberUser) {
+              const member = await db.organizationMember.findUnique({
+                where: {
+                  organizationId_userId: {
+                    organizationId: item.organizationId,
+                    userId: memberUser.id,
+                  },
+                },
+              });
+              if (member) isOrgMember = true;
+            }
+
+            if (isOtpEmailAllowed || isOrgMember) {
+              isAllowed = true;
+            }
+          }
+        } catch (cookieErr) {
+          console.error("Error reading OTP pass cookie:", cookieErr);
+        }
+      }
+
+      // If still not allowed:
+      if (!isAllowed) {
+        if (!session?.user?.id && !authenticatedEmail) {
+          return NextResponse.json(
+            {
+              error: "LOGIN_REQUIRED",
+              requireLogin: true,
+              accessMode: "RESTRICTED",
+              token,
+              organization,
+              type: targetType,
+              itemTitle,
+              sharePageConfig,
+            },
+            { status: 401 }
+          );
+        } else {
+          return NextResponse.json(
+            {
+              error: "ACCESS_DENIED",
+              accessMode: "RESTRICTED",
+              userEmail: authenticatedEmail || session?.user?.email,
+              organization,
+              type: targetType,
+              itemTitle,
+              sharePageConfig,
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 

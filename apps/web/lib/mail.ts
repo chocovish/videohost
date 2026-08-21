@@ -10,9 +10,10 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendVerificationEmail(email: string, token: string) {
+export async function sendVerificationEmail(email: string, token: string, callbackUrl?: string) {
   const baseUrl = process.env.APP_URL || "http://localhost:3000";
-  const confirmLink = `${baseUrl}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+  const callbackParam = callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : "";
+  const confirmLink = `${baseUrl}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}${callbackParam}`;
 
   const html = `
     <!DOCTYPE html>
@@ -294,6 +295,78 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
   } catch (err) {
     console.error("Failed to send meeting invitation email to", toEmail, err);
   }
+}
+
+export interface SendShareOtpEmailOptions {
+  toEmail: string;
+  otpCode: string;
+  targetTitle: string;
+  organizationName: string;
+  targetType: "video" | "folder" | "playlist";
+}
+
+export async function sendShareOtpEmail(options: SendShareOtpEmailOptions) {
+  const { toEmail, otpCode, targetTitle, organizationName, targetType } = options;
+  const itemTypeName = targetType === "video" ? "video" : targetType === "playlist" ? "playlist" : "folder";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 540px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .org-badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); color: #000; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: #ffffff; }
+          p { font-size: 14px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px; }
+          .item-card { background-color: #0b1324; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin: 16px 0; }
+          .item-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+          .item-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+          .otp-box { background: linear-gradient(135deg, #0b1324 0%, #172554 100%); border: 2px dashed #84cc16; border-radius: 14px; padding: 24px; text-align: center; margin: 28px 0; }
+          .otp-label { font-size: 12px; font-weight: 700; color: #84cc16; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+          .otp-code { font-family: monospace, monospace; font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #ffffff; margin: 0; text-shadow: 0 2px 10px rgba(132, 204, 22, 0.4); }
+          .expiry-note { font-size: 12px; color: #cbd5e1; margin-top: 10px; }
+          .tip-box { background-color: rgba(132, 204, 22, 0.08); border-left: 3px solid #84cc16; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-top: 20px; }
+          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="org-badge">${organizationName}</div>
+          <h1>One-Time Access Code</h1>
+          <p>You requested temporary viewer access to restricted content hosted by <strong>${organizationName}</strong>.</p>
+          
+          <div class="item-card">
+            <div class="item-label">Requested ${itemTypeName}</div>
+            <div class="item-title">${targetTitle}</div>
+          </div>
+
+          <div class="otp-box">
+            <div class="otp-label">Your 6-Digit Code</div>
+            <div class="otp-code">${otpCode}</div>
+            <div class="expiry-note">Valid for 10 minutes &bull; Grants 24-hour browser pass</div>
+          </div>
+
+          <div class="tip-box">
+            <strong>Pro-tip:</strong> Signing in or creating a free account gives you permanent access to all videos shared with you directly from your dashboard without needing one-time codes.
+          </div>
+
+          <div class="footer">
+            If you did not request this code, you can safely ignore this email.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName} via Taped. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: toEmail,
+    subject: `Your access code: ${otpCode} - ${organizationName}`,
+    html,
+  });
 }
 
 

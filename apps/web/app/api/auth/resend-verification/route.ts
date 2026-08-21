@@ -5,7 +5,7 @@ import { sendVerificationEmail } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const { email, callbackUrl } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendVerificationEmail(email, token);
+    await sendVerificationEmail(email, token, callbackUrl);
 
     return NextResponse.json({ success: true, message: "Verification email resent successfully" });
   } catch (error: any) {
