@@ -26,8 +26,19 @@ export default function ContactForm() {
     setStatus("submitting");
     setErrorMessage("");
 
-    // Simulate swift network dispatch with success response
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to submit your inquiry. Please try again.");
+      }
+
       setStatus("success");
       setFormData({
         name: "",
@@ -36,7 +47,10 @@ export default function ContactForm() {
         subject: "",
         message: "",
       });
-    }, 800);
+    } catch (err: any) {
+      setErrorMessage(err?.message || "An unexpected error occurred. Please try again.");
+      setStatus("error");
+    }
   };
 
   return (

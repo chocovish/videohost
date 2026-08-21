@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, Menu, X, ArrowRight, LogIn, UserPlus } from "lucide-react";
+import { Video, Menu, X, ArrowRight, LogIn, UserPlus, CreditCard, Mail } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -123,7 +123,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
           ) : null}
         </nav>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Navigation Toggle */}
         <div className="flex md:hidden items-center gap-2">
           {currentPage !== "record" && (
             <Link
@@ -155,72 +155,128 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
       {/* Mobile Menu Dropdown Drawer */}
       {(!isAuthPage || session?.user) && mobileMenuOpen && (
         <div className="md:hidden max-w-7xl mx-auto px-4 pb-4">
-          <div className="p-4 rounded-2xl border border-border/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-xl space-y-3 animate-in fade-in slide-in-from-top-1">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1">
-              Account Menu
+          <div className="p-4 rounded-2xl border border-border/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl shadow-xl space-y-4 animate-in fade-in slide-in-from-top-1">
+            {/* Main Navigation Links */}
+            <div className="space-y-1.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 pb-1">
+                Explore
+              </div>
+
+              <Link
+                href="/pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
+                  currentPage === "pricing"
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      currentPage === "pricing"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-slate-100 dark:bg-slate-800 text-foreground"
+                    }`}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                  </div>
+                  <span>Pricing</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
+
+              <Link
+                href="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
+                  currentPage === "contact"
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      currentPage === "contact"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-slate-100 dark:bg-slate-800 text-foreground"
+                    }`}
+                  >
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <span>Contact</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
             </div>
 
-            {session?.user ? (
-              <div className="grid grid-cols-1 gap-2">
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-foreground"
-                >
-                  <Avatar className="h-9 w-9 shrink-0">
-                    {session.user.image && <AvatarImage src={session.user.image} alt={userName} />}
-                    <AvatarFallback className="bg-primary text-white font-bold text-sm">
-                      {userInitial}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="text-left min-w-0 flex-1 truncate">
-                    <div className="text-sm font-bold truncate text-foreground">{userName}</div>
-                    {userEmail && (
-                      <div className="text-xs text-muted-foreground truncate">{userEmail}</div>
-                    )}
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                </Link>
+            {/* Account / Authentication Section */}
+            <div className="border-t border-border/60 pt-3 space-y-2">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 pb-1">
+                Account
               </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                <Link
-                  href="/auth/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 text-foreground"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                    <LogIn className="w-4 h-4 text-primary" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">Sign In</div>
-                    <div className="text-xs text-muted-foreground">Access your video library</div>
-                  </div>
-                </Link>
 
-                <Link
-                  href="/auth/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between p-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:opacity-95 transition-all mt-1"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                      <UserPlus className="w-4 h-4" />
+              {session?.user ? (
+                <div className="grid grid-cols-1 gap-2">
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-foreground"
+                  >
+                    <Avatar className="h-9 w-9 shrink-0">
+                      {session.user.image && <AvatarImage src={session.user.image} alt={userName} />}
+                      <AvatarFallback className="bg-primary text-white font-bold text-sm">
+                        {userInitial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-left min-w-0 flex-1 truncate">
+                      <div className="text-sm font-bold truncate text-foreground">{userName}</div>
+                      {userEmail && (
+                        <div className="text-xs text-muted-foreground truncate">{userEmail}</div>
+                      )}
                     </div>
-                    <div className="text-left">
-                      <div className="text-sm font-extrabold">Get Started Free</div>
-                      <div className="text-[11px] text-white/80 font-normal">2GB Free Cloud Storage</div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 text-foreground"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                      <LogIn className="w-4 h-4 text-primary" />
                     </div>
-                  </div>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            )}
+                    <div>
+                      <div className="text-sm font-semibold">Sign In</div>
+                      <div className="text-xs text-muted-foreground">Access your video library</div>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/auth/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:opacity-95 transition-all mt-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                        <UserPlus className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-sm font-extrabold">Get Started Free</div>
+                        <div className="text-[11px] text-white/80 font-normal">2GB Free Cloud Storage</div>
+                      </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
     </header>
   );
 }
-
-
