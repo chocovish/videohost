@@ -96,6 +96,9 @@ model Organization {
   sharePageConfig SharePageConfig?
   meetings    Meeting[]
   playlists   Playlist[]
+  offeringsConfig OfferingsPageConfig?
+  offeringItems   OfferingItem[]
+  offeringInquiries OfferingInquiry[]
 }
 
 model SharePageConfig {
@@ -457,6 +460,106 @@ model ContactInquiry {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// --------------------------------------------------------
+// Organization Offerings & Creator Portfolio
+// --------------------------------------------------------
+
+model OfferingsPageConfig {
+  id               String       @id @default(cuid())
+  organizationId   String       @unique
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Appearance & Theme
+  themePreset      String       @default("obsidian") // "obsidian" | "aurora" | "sunset" | "minimal-light" | "cyberpunk" | "rose-gold" | "emerald" | "midnight"
+  accentColor      String       @default("#84cc16")
+  backgroundStyle  String       @default("mesh-gradient") // "mesh-gradient" | "obsidian-aura" | "ambient-glow" | "minimal-grid" | "glassmorphism"
+  cardRoundness    String       @default("2xl") // "xl" | "2xl" | "3xl" | "square"
+
+  // Brand & Creator Profile Header
+  headline         String?      @default("Master Your Craft & Scale Your Knowledge")
+  subheadline      String?      @default("Courses, direct mentorship, production assets & consulting sessions.")
+  bio              String?      @db.Text
+  showAvatar       Boolean      @default(true)
+  avatarKey        String?
+  bannerKey        String?
+
+  // Primary Call-To-Action
+  ctaText          String?      @default("Explore Offerings")
+  ctaAction        String?      @default("SCROLL_OFFERINGS") // "SCROLL_OFFERINGS" | "INQUIRY_MODAL" | "CONTACT_SECTION" | "FEATURED_VIDEO" | "EXTERNAL_LINK"
+  ctaUrl           String?      @default("#offerings")
+  secondaryCtaText String?      @default("Book 1:1 Call")
+  secondaryCtaAction String?    @default("INQUIRY_MODAL") // "SCROLL_OFFERINGS" | "INQUIRY_MODAL" | "CONTACT_SECTION" | "FEATURED_VIDEO" | "EXTERNAL_LINK"
+  secondaryCtaUrl  String?      @default("#meetings")
+
+  // Social Links & Stats (Stored as JSON objects/arrays)
+  socialLinks      Json?        // e.g. { youtube, twitter, github, linkedin, instagram, discord, website, twitch, email }
+  stats            Json?        // e.g. [ { label: "Students", value: "12,000+" }, { label: "Rating", value: "4.9 ★" } ]
+  sectionsConfig   Json?        // e.g. { showCourses: true, showMeetings: true, showVideos: true, showProducts: true, showServices: true, showTestimonials: true, showFaq: true, showContact: true }
+  testimonials     Json?        // e.g. [ { name, role, company, avatar, quote, rating } ]
+  faqs             Json?        // e.g. [ { question, answer } ]
+
+  // Featured Showcase Video
+  featuredVideoUrl String?
+
+  isPublished      Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model OfferingItem {
+  id               String            @id @default(cuid())
+  organizationId   String
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  type             String            // "PLAYLIST" | "COURSE" | "MEETING" | "VIDEO" | "PRODUCT" | "SERVICE"
+  title            String
+  slug             String?
+  subtitle         String?
+  description      String?           @db.Text
+  price            String?           // e.g. "$199", "Free", "$150/hr", "₹3,499"
+  pricePeriod      String?           // e.g. "one-time", "/hr", "/session", "/month"
+  badge            String?           // e.g. "Bestseller", "Popular", "New", "Limited Seats"
+  coverImageKey    String?
+  ctaText          String?           @default("Learn More")
+  ctaAction        String?           @default("INQUIRY_MODAL") // "INQUIRY_MODAL" | "EXTERNAL_LINK" | "FEATURED_VIDEO"
+  ctaUrl           String?
+  highlights       String[]          // e.g. ["8 Comprehensive Modules", "Certificate of Completion", "Discord Community Access"]
+  meetingDuration  String?           // e.g. "45 mins", "60 mins" (for 1:1 meetings)
+  deliveryFormat   String?           // e.g. "Live 1:1 Video Call", "Self-paced HD Video", "Instant Download (ZIP)"
+  order            Int               @default(0)
+  isFeatured       Boolean           @default(false)
+  isPublished      Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  inquiries        OfferingInquiry[]
+
+  @@index([organizationId, type])
+  @@index([organizationId, order])
+}
+
+model OfferingInquiry {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  offeringItemId String?
+  offeringItem   OfferingItem? @relation(fields: [offeringItemId], references: [id], onDelete: SetNull)
+
+  name           String
+  email          String
+  offeringTitle  String?
+  message        String        @db.Text
+  preferredTime  String?
+  status         String        @default("PENDING") // "PENDING" | "CONTACTED" | "RESOLVED"
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
   @@index([status])
   @@index([createdAt])
 }

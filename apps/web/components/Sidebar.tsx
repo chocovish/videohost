@@ -20,6 +20,7 @@ import {
   Paintbrush,
   Users2,
   ListVideo,
+  Layers,
   Sun,
   Moon,
 } from "lucide-react";
@@ -164,6 +165,7 @@ export default function Sidebar({
     { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
     { label: "Playlists", href: "/dashboard/playlists", icon: ListVideo },
     { label: "Meetings", href: "/dashboard/meetings", icon: Users2 },
+    { label: "Offerings Portfolio", href: "/dashboard/offerings", icon: Layers },
     { label: "Customize share page", href: "/dashboard/customize-share-page", icon: Paintbrush },
     { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },
     { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
