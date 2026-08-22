@@ -98,6 +98,9 @@ export async function getPresignedUploadUrl(key: string, contentType: string = "
 
 export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeconds: number = 10000): Promise<string> {
   if (!key) return "";
+  if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:") || key.startsWith("/")) {
+    return key;
+  }
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,

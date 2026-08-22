@@ -32,6 +32,9 @@ export interface SelectedVideoPayload {
   thumbnailUrl?: string | null;
   description?: string | null;
   durationSeconds?: number | null;
+  shareAccessMode?: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
 }
 
 interface VideoItem {
@@ -42,6 +45,9 @@ interface VideoItem {
   durationSeconds?: number;
   thumbnailUrl?: string | null;
   playbackUrl?: string | null;
+  shareAccessMode?: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
   createdAt: string;
   folderName?: string | null;
 }
@@ -147,6 +153,9 @@ export default function VideoPickerModal({
       thumbnailUrl: selectedVideo.thumbnailUrl,
       description: selectedVideo.description,
       durationSeconds: selectedVideo.durationSeconds,
+      shareAccessMode: selectedVideo.shareAccessMode,
+      price: selectedVideo.price,
+      currency: selectedVideo.currency,
     });
     onClose();
   };

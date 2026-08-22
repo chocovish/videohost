@@ -149,6 +149,8 @@ export async function GET(req: Request) {
         durationSeconds: v.durationSeconds,
         sizeBytes: computedSizeBytes,
         shareAccessMode: v.shareAccessMode,
+        price: v.price,
+        currency: v.currency || "USD",
         playbackUrl: await getPlaybackUrl(v),
         thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
         createdAt: v.createdAt,

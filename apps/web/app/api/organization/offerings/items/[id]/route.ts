@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getPresignedPlaybackUrl, uploadBufferToS3, deleteFileFromS3 } from "@/lib/s3";
+import { resolveOfferingItem } from "@/lib/offerings-resolver";
 
 function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
   const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
@@ -42,23 +43,34 @@ export async function PUT(
       return NextResponse.json({ error: "Offering item not found." }, { status: 404 });
     }
 
+    const itemType = body.type !== undefined ? body.type : existingItem.type;
+    const isPlaylistOrVideo =
+      itemType === "PLAYLIST" ||
+      itemType === "COURSE" ||
+      (itemType === "VIDEO" && !(body.ctaUrl || existingItem.ctaUrl)?.startsWith("http"));
+
     let newCoverImageKey = existingItem.coverImageKey;
 
-    if (body.removeCoverImage || body.coverImageData) {
-      if (existingItem.coverImageKey) {
+    if (isPlaylistOrVideo) {
+      newCoverImageKey = null;
+    } else if (body.removeCoverImage) {
+      if (existingItem.coverImageKey && !existingItem.coverImageKey.startsWith("http")) {
         await deleteFileFromS3(existingItem.coverImageKey);
-        newCoverImageKey = null;
       }
-    }
-
-    if (body.coverImageData) {
+      newCoverImageKey = null;
+    } else if (body.coverImageData) {
       const parsed = parseBase64Data(body.coverImageData);
       if (parsed) {
+        if (existingItem.coverImageKey && !existingItem.coverImageKey.startsWith("http")) {
+          await deleteFileFromS3(existingItem.coverImageKey);
+        }
         const timestamp = Date.now();
         const key = `offerings-items/${organizationId}/cover-${timestamp}.${parsed.extension}`;
         await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
         newCoverImageKey = key;
       }
+    } else if (body.coverImageKey !== undefined || body.coverImageUrl !== undefined) {
+      newCoverImageKey = body.coverImageKey || body.coverImageUrl || null;
     }
 
     const updated = await db.offeringItem.update({
@@ -66,35 +78,29 @@ export async function PUT(
       data: {
         type: body.type !== undefined ? body.type : undefined,
         title: body.title !== undefined ? body.title : undefined,
-        subtitle: body.subtitle !== undefined ? body.subtitle : undefined,
-        description: body.description !== undefined ? body.description : undefined,
-        price: body.price !== undefined ? body.price : undefined,
-        pricePeriod: body.pricePeriod !== undefined ? body.pricePeriod : undefined,
+        subtitle: isPlaylistOrVideo ? null : (body.subtitle !== undefined ? body.subtitle : undefined),
+        description: isPlaylistOrVideo ? null : (body.description !== undefined ? body.description : undefined),
+        price: isPlaylistOrVideo ? null : (body.price !== undefined ? body.price : undefined),
+        pricePeriod: isPlaylistOrVideo ? null : (body.pricePeriod !== undefined ? body.pricePeriod : undefined),
         badge: body.badge !== undefined ? body.badge : undefined,
-        coverImageKey: newCoverImageKey,
-        ctaText: body.ctaText !== undefined ? body.ctaText : undefined,
-        ctaAction: body.ctaAction !== undefined ? body.ctaAction : undefined,
+        coverImageKey: isPlaylistOrVideo ? null : newCoverImageKey,
+        ctaText: isPlaylistOrVideo ? "Watch" : (body.ctaText !== undefined ? body.ctaText : undefined),
+        ctaAction: isPlaylistOrVideo ? "EXTERNAL_LINK" : (body.ctaAction !== undefined ? body.ctaAction : undefined),
         ctaUrl: body.ctaUrl !== undefined ? body.ctaUrl : undefined,
         highlights: Array.isArray(body.highlights) ? body.highlights.filter(Boolean) : undefined,
-        meetingDuration: body.meetingDuration !== undefined ? body.meetingDuration : undefined,
-        deliveryFormat: body.deliveryFormat !== undefined ? body.deliveryFormat : undefined,
+        meetingDuration: itemType === "MEETING" ? (body.meetingDuration !== undefined ? body.meetingDuration : undefined) : null,
+        deliveryFormat: isPlaylistOrVideo ? null : (body.deliveryFormat !== undefined ? body.deliveryFormat : undefined),
         order: typeof body.order === "number" ? body.order : undefined,
         isFeatured: body.isFeatured !== undefined ? body.isFeatured : undefined,
         isPublished: body.isPublished !== undefined ? body.isPublished : undefined,
       },
     });
 
-    let coverImageUrl: string | null = null;
-    if (updated.coverImageKey) {
-      coverImageUrl = await getPresignedPlaybackUrl(updated.coverImageKey);
-    }
+    const resolved = await resolveOfferingItem(updated, { isOrgMember: true });
 
     return NextResponse.json({
       success: true,
-      item: {
-        ...updated,
-        coverImageUrl,
-      },
+      item: resolved,
     });
   } catch (err: any) {
     console.error("[PUT Offering Item Error]:", err);

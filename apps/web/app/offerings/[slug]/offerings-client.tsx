@@ -27,6 +27,7 @@ import {
   Check,
   MessageSquare,
   Layers,
+  Lock,
 } from "lucide-react";
 import {
   RiYoutubeLine,
@@ -139,6 +140,9 @@ export interface OfferingItemData {
   ctaText?: string | null;
   ctaAction?: string | null; // "INQUIRY_MODAL" | "EXTERNAL_LINK" | "FEATURED_VIDEO"
   ctaUrl?: string | null;
+  shareUrl?: string | null;
+  shareAccessMode?: "PUBLIC" | "RESTRICTED" | "PURCHASABLE" | "PRIVATE";
+  userAccessState?: "PUBLIC" | "RESTRICTED" | "GRANTED" | "UNPURCHASED" | "PURCHASED";
   highlights?: string[];
   meetingDuration?: string | null;
   deliveryFormat?: string | null;
@@ -157,6 +161,7 @@ export interface OfferingsLandingClientProps {
     };
     config: OfferingsConfigData;
     items: OfferingItemData[];
+    isLoggedIn?: boolean;
   };
   liveConfig?: OfferingsConfigData;
   liveItems?: OfferingItemData[];
@@ -1290,44 +1295,143 @@ export default function OfferingsLandingClient({
 
                       {/* Card Footer: Price & Action */}
                       <div className="pt-3.5 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3" style={{ borderColor: theme.cardBorder }}>
-                        <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
-                          <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
-                            {item.type === "MEETING" ? "Session Fee" : item.pricePeriod ? "Investment" : "Price"}
-                          </div>
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
-                              {item.price || "Free"}
-                            </span>
-                            {item.pricePeriod && (
-                              <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                {item.pricePeriod}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                        {/* 1. PLAYLIST OR VIDEO ITEM (Dynamic Access State) */}
+                        {(item.type === "PLAYLIST" || item.type === "COURSE" || (item.type === "VIDEO" && !item.ctaUrl?.startsWith("http"))) ? (
+                          <>
+                            {/* Price / Status Column */}
+                            <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
+                              {item.userAccessState === "PURCHASED" ? (
+                                <>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Status</div>
+                                  <div className="flex items-center gap-1.5 pt-0.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      <span>Purchased</span>
+                                    </span>
+                                  </div>
+                                </>
+                              ) : item.userAccessState === "GRANTED" ? (
+                                <>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Access</div>
+                                  <div className="flex items-center gap-1.5 pt-0.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                                      <ShieldCheck className="w-3.5 h-3.5" />
+                                      <span>Access Granted</span>
+                                    </span>
+                                  </div>
+                                </>
+                              ) : item.shareAccessMode === "RESTRICTED" ? (
+                                <>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Access</div>
+                                  <div className="flex items-center gap-1.5 pt-0.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                                      <Lock className="w-3 h-3" />
+                                      <span>Restricted Content</span>
+                                    </span>
+                                  </div>
+                                </>
+                              ) : item.shareAccessMode === "PURCHASABLE" ? (
+                                <>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Price</div>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
+                                      {item.price || "Free"}
+                                    </span>
+                                    <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: theme.subtext }}>
+                                      {item.pricePeriod || "one-time"}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Price</div>
+                                  <div className="flex items-baseline gap-1">
+                                    <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
+                                      Free
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+                            </div>
 
-                        <Button
-                          onClick={() =>
-                            executeCtaAction(
-                              item.ctaAction || (item.type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"),
-                              item.ctaUrl,
-                              item
-                            )
-                          }
-                          className="w-full sm:w-auto text-xs font-bold rounded-xl py-2 sm:py-2.5 px-3.5 sm:px-4 text-white shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-transform active:scale-95 text-center"
-                          style={{ backgroundColor: accentColor }}
-                        >
-                          <span>
-                            {item.ctaText || (item.type === "VIDEO" ? "Watch Video" : item.ctaAction === "EXTERNAL_LINK" ? "Enroll / Buy" : "Inquire / Book")}
-                          </span>
-                          {item.ctaAction === "EXTERNAL_LINK" || (!item.ctaAction && item.ctaUrl?.startsWith("http") && item.type !== "VIDEO") ? (
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          ) : item.ctaAction === "FEATURED_VIDEO" || item.type === "VIDEO" ? (
-                            <Play className="w-3.5 h-3.5 fill-current" />
-                          ) : (
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          )}
-                        </Button>
+                            {/* Action Button */}
+                            <Button
+                              onClick={() =>
+                                executeCtaAction(
+                                  "EXTERNAL_LINK",
+                                  item.shareUrl || item.ctaUrl,
+                                  item
+                                )
+                              }
+                              className="w-full sm:w-auto text-xs font-bold rounded-xl py-2 sm:py-2.5 px-3.5 sm:px-4 text-white shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-transform active:scale-95 text-center"
+                              style={{ backgroundColor: accentColor }}
+                            >
+                              {item.userAccessState === "PURCHASED" || item.userAccessState === "GRANTED" ? (
+                                <>
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  <span>Watch</span>
+                                </>
+                              ) : item.shareAccessMode === "RESTRICTED" ? (
+                                <>
+                                  <span>View / Request Access</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </>
+                              ) : item.shareAccessMode === "PURCHASABLE" ? (
+                                <>
+                                  <span>Purchase</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5 fill-current" />
+                                  <span>Watch</span>
+                                </>
+                              )}
+                            </Button>
+                          </>
+                        ) : (
+                          /* 2. CUSTOM OFFERING ITEMS (MEETING, PRODUCT, SERVICE, EXTERNAL VIDEO) */
+                          <>
+                            <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
+                              <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
+                                {item.type === "MEETING" ? "Session Fee" : item.pricePeriod ? "Investment" : "Price"}
+                              </div>
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
+                                  {item.price || "Free"}
+                                </span>
+                                {item.pricePeriod && (
+                                  <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: theme.subtext }}>
+                                    {item.pricePeriod}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <Button
+                              onClick={() =>
+                                executeCtaAction(
+                                  item.ctaAction || (item.type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"),
+                                  item.ctaUrl,
+                                  item
+                                )
+                              }
+                              className="w-full sm:w-auto text-xs font-bold rounded-xl py-2 sm:py-2.5 px-3.5 sm:px-4 text-white shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-transform active:scale-95 text-center"
+                              style={{ backgroundColor: accentColor }}
+                            >
+                              <span>
+                                {item.ctaText || (item.type === "VIDEO" ? "Watch" : item.ctaAction === "EXTERNAL_LINK" ? "Enroll / Buy" : "Inquire / Book")}
+                              </span>
+                              {item.ctaAction === "EXTERNAL_LINK" || (!item.ctaAction && item.ctaUrl?.startsWith("http") && item.type !== "VIDEO") ? (
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              ) : item.ctaAction === "FEATURED_VIDEO" || item.type === "VIDEO" ? (
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                              ) : (
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              )}
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

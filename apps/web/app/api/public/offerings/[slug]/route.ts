@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
+import { auth } from "@/lib/auth";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { DEFAULT_OFFERINGS_CONFIG } from "@/lib/offerings-defaults";
+import { resolveOfferingItem } from "@/lib/offerings-resolver";
 
 export async function GET(
   req: Request,
@@ -9,6 +11,9 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+    const session = await auth();
+    const visitorUserId = session?.user?.id;
+    const visitorEmail = session?.user?.email?.toLowerCase();
 
     if (!slug) {
       return NextResponse.json({ error: "Organization slug is required." }, { status: 400 });
@@ -27,6 +32,19 @@ export async function GET(
 
     if (!org) {
       return NextResponse.json({ error: "Organization not found." }, { status: 404 });
+    }
+
+    let isOrgMember = false;
+    if (visitorUserId) {
+      const member = await db.organizationMember.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: org.id,
+            userId: visitorUserId,
+          },
+        },
+      });
+      if (member) isOrgMember = true;
     }
 
     let signedOrgLogoUrl: string | null = null;
@@ -65,7 +83,7 @@ export async function GET(
       }
     }
 
-    // Fetch published offerings
+    // Fetch published offerings dynamically resolved from source
     const itemsDb = await db.offeringItem.findMany({
       where: {
         organizationId: org.id,
@@ -75,20 +93,13 @@ export async function GET(
     });
 
     const items = await Promise.all(
-      itemsDb.map(async (item) => {
-        let coverImageUrl: string | null = null;
-        if (item.coverImageKey) {
-          try {
-            coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
-          } catch (e) {
-            console.error("Error signing cover image:", e);
-          }
-        }
-        return {
-          ...item,
-          coverImageUrl,
-        };
-      })
+      itemsDb.map((item) =>
+        resolveOfferingItem(item, {
+          visitorUserId,
+          visitorEmail,
+          isOrgMember,
+        })
+      )
     );
 
     return NextResponse.json({
@@ -104,6 +115,7 @@ export async function GET(
         bannerUrl,
       },
       items,
+      isLoggedIn: Boolean(visitorUserId),
     });
   } catch (err: any) {
     console.error("[GET Public Offerings Error]:", err);

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@videohost/db";
+import { auth } from "@/lib/auth";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { DEFAULT_OFFERINGS_CONFIG } from "@/lib/offerings-defaults";
+import { resolveOfferingItem } from "@/lib/offerings-resolver";
 import OfferingsLandingClient from "./offerings-client";
 
 export async function generateMetadata({
@@ -96,6 +98,9 @@ export default async function OfferingsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const session = await auth();
+  const visitorUserId = session?.user?.id;
+  const visitorEmail = session?.user?.email?.toLowerCase();
 
   const org = await db.organization.findUnique({
     where: { slug },
@@ -110,6 +115,19 @@ export default async function OfferingsPage({
 
   if (!org) {
     notFound();
+  }
+
+  let isOrgMember = false;
+  if (visitorUserId) {
+    const member = await db.organizationMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: org.id,
+          userId: visitorUserId,
+        },
+      },
+    });
+    if (member) isOrgMember = true;
   }
 
   let signedOrgLogoUrl: string | null = null;
@@ -167,20 +185,13 @@ export default async function OfferingsPage({
   });
 
   const items = await Promise.all(
-    itemsDb.map(async (item) => {
-      let coverImageUrl: string | null = null;
-      if (item.coverImageKey) {
-        try {
-          coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
-        } catch (e) {
-          console.error("Error signing item cover image:", e);
-        }
-      }
-      return {
-        ...item,
-        coverImageUrl,
-      };
-    })
+    itemsDb.map((item) =>
+      resolveOfferingItem(item, {
+        visitorUserId,
+        visitorEmail,
+        isOrgMember,
+      })
+    )
   );
 
   return (
@@ -198,6 +209,7 @@ export default async function OfferingsPage({
           bannerUrl,
         },
         items,
+        isLoggedIn: Boolean(visitorUserId),
       }}
     />
   );

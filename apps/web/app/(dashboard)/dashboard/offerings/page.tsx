@@ -53,6 +53,23 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ImageCropperModal, { AspectRatioOption } from "@/components/ImageCropperModal";
 import VideoPickerModal, { SelectedVideoPayload } from "@/components/VideoPickerModal";
+import Link from "next/link";
+import { formatDuration } from "@/lib/video-utils";
+import { formatCurrencyPrice } from "@/lib/utils";
+
+export interface PlaylistItemSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
+  itemCount: number;
+  totalDurationSeconds: number;
+  thumbnailUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const THEME_PRESET_OPTIONS = [
   { id: "obsidian", name: "Obsidian Dark", accent: "#84cc16", bg: "#030712", card: "#0b1329" },
@@ -74,6 +91,8 @@ export default function OfferingsDashboardPage() {
   const [config, setConfig] = useState<OfferingsConfigData>(DEFAULT_OFFERINGS_CONFIG);
   const [items, setItems] = useState<OfferingItemData[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistItemSummary[]>([]);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -165,25 +184,58 @@ export default function OfferingsDashboardPage() {
   // In-Dashboard Video Preview Modal State
   const [previewVideoModalUrl, setPreviewVideoModalUrl] = useState<string | null>(null);
 
+  const handleSelectPlaylist = (playlist: PlaylistItemSummary) => {
+    setSelectedPlaylistId(playlist.id);
+    setItemFormTitle(playlist.title);
+    setItemFormSubtitle("");
+    setItemFormDescription(playlist.description || "");
+    setItemFormCoverData(playlist.thumbnailUrl || null);
+    setItemFormRemoveCover(false);
+    setItemFormCtaUrl(`/share/${playlist.id}`);
+    setItemFormCtaAction("EXTERNAL_LINK");
+    setItemFormDelivery(
+      `${playlist.itemCount} Video Modules • ${playlist.totalDurationSeconds > 0 ? formatDuration(playlist.totalDurationSeconds) : "Self-paced Series"}`
+    );
+
+    if (playlist.shareAccessMode === "PURCHASABLE") {
+      setItemFormPrice(formatCurrencyPrice(playlist.price, playlist.currency || "USD"));
+      setItemFormPricePeriod("one-time");
+      setItemFormCtaText("Purchase");
+    } else if (playlist.shareAccessMode === "RESTRICTED") {
+      setItemFormPrice("Restricted");
+      setItemFormPricePeriod("");
+      setItemFormCtaText("View / Request Access");
+    } else {
+      setItemFormPrice("Free");
+      setItemFormPricePeriod("");
+      setItemFormCtaText("Watch");
+    }
+  };
+
   const handleVideoSelected = (video: SelectedVideoPayload) => {
     if (videoPickerTarget === "itemForm") {
-      setItemFormCtaUrl(video.embedUrl);
-      setItemFormCtaAction("FEATURED_VIDEO");
-      if (!itemFormTitle.trim() && video.title) {
-        setItemFormTitle(video.title);
-      }
-      if (!itemFormDescription.trim() && video.description) {
-        setItemFormDescription(video.description);
-      }
-      if (!itemFormCoverData && video.thumbnailUrl) {
-        setItemFormCoverData(video.thumbnailUrl);
-        setItemFormRemoveCover(false);
-      }
-      if (!itemFormCtaText.trim() || itemFormCtaText === "Learn More" || itemFormCtaText === "Enroll Now") {
-        setItemFormCtaText("Watch Video");
-      }
-      if (!itemFormDelivery.trim()) {
-        setItemFormDelivery("Self-paced HD Video");
+      const isCustomUrl = video.id.startsWith("custom_");
+      const targetUrl = isCustomUrl ? video.embedUrl : `/share/${video.id}`;
+      setItemFormCtaUrl(targetUrl);
+      setItemFormCtaAction(isCustomUrl ? "FEATURED_VIDEO" : "EXTERNAL_LINK");
+      setItemFormTitle(video.title || "Video Showcase");
+      setItemFormDescription(video.description || "");
+      setItemFormCoverData(video.thumbnailUrl || null);
+      setItemFormRemoveCover(false);
+      setItemFormDelivery("Self-paced HD Video");
+
+      if (video.shareAccessMode === "PURCHASABLE") {
+        setItemFormPrice(formatCurrencyPrice(video.price, video.currency || "USD"));
+        setItemFormPricePeriod("one-time");
+        setItemFormCtaText("Purchase");
+      } else if (video.shareAccessMode === "RESTRICTED") {
+        setItemFormPrice("Restricted");
+        setItemFormPricePeriod("");
+        setItemFormCtaText("View / Request Access");
+      } else {
+        setItemFormPrice("Free");
+        setItemFormPricePeriod("");
+        setItemFormCtaText("Watch");
       }
     } else if (videoPickerTarget === "primaryCta") {
       setConfig((prev) => ({
@@ -220,10 +272,11 @@ export default function OfferingsDashboardPage() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [cfgRes, itemsRes, inqRes] = await Promise.all([
+      const [cfgRes, itemsRes, inqRes, playlistsRes] = await Promise.all([
         fetch("/api/organization/offerings-config"),
         fetch("/api/organization/offerings/items"),
         fetch("/api/organization/offerings/inquiries"),
+        fetch("/api/playlists"),
       ]);
 
       if (cfgRes.ok) {
@@ -247,6 +300,13 @@ export default function OfferingsDashboardPage() {
         const inqData = await inqRes.json();
         if (inqData.inquiries) {
           setInquiries(inqData.inquiries);
+        }
+      }
+
+      if (playlistsRes.ok) {
+        const plData = await playlistsRes.json();
+        if (plData.playlists) {
+          setPlaylists(plData.playlists);
         }
       }
     } catch (err) {
@@ -450,40 +510,63 @@ export default function OfferingsDashboardPage() {
   const handleOpenItemModal = (item?: OfferingItemData) => {
     if (item) {
       setEditingItem(item);
-      setItemFormType(item.type === "COURSE" ? "PLAYLIST" : item.type);
+      const type = item.type === "COURSE" ? "PLAYLIST" : item.type;
+      setItemFormType(type);
       setItemFormTitle(item.title);
       setItemFormSubtitle(item.subtitle || "");
       setItemFormDescription(item.description || "");
       setItemFormPrice(item.price || "");
       setItemFormPricePeriod(item.pricePeriod || "");
       setItemFormBadge(item.badge || "");
-      setItemFormCtaText(item.ctaText || (item.type === "VIDEO" ? "Watch Video" : "Learn More"));
-      setItemFormCtaAction(item.ctaAction || (item.type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"));
+      setItemFormCtaText(item.ctaText || (type === "VIDEO" ? "Watch Video" : type === "PLAYLIST" ? "Explore Playlist" : "Learn More"));
+      setItemFormCtaAction(item.ctaAction || (type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"));
       setItemFormCtaUrl(item.ctaUrl || "");
       setItemFormHighlights((item.highlights || []).join("\n"));
       setItemFormDuration(item.meetingDuration || "");
-      setItemFormDelivery(item.deliveryFormat || (item.type === "VIDEO" ? "Self-paced HD Video" : ""));
+      setItemFormDelivery(item.deliveryFormat || (type === "VIDEO" ? "Self-paced HD Video" : type === "PLAYLIST" ? "Self-paced Series" : ""));
       setItemFormIsFeatured(item.isFeatured || false);
       setItemFormIsPublished(item.isPublished !== false);
       setItemFormCoverData(item.coverImageUrl || null);
+
+      if (type === "PLAYLIST") {
+        const matched = playlists.find(
+          (p) => (item.ctaUrl && item.ctaUrl.includes(p.id)) || p.title.toLowerCase() === item.title.toLowerCase()
+        );
+        if (matched) {
+          setSelectedPlaylistId(matched.id);
+        } else {
+          setSelectedPlaylistId("");
+        }
+      } else {
+        setSelectedPlaylistId("");
+      }
     } else {
       setEditingItem(null);
       setItemFormType("PLAYLIST");
-      setItemFormTitle("");
       setItemFormSubtitle("");
-      setItemFormDescription("");
       setItemFormPrice("$99");
       setItemFormPricePeriod("one-time");
       setItemFormBadge("Popular");
       setItemFormCtaText("Explore Playlist");
       setItemFormCtaAction("INQUIRY_MODAL");
-      setItemFormCtaUrl("");
       setItemFormHighlights("Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access");
       setItemFormDuration("");
-      setItemFormDelivery("Self-paced HD Video");
       setItemFormIsFeatured(false);
       setItemFormIsPublished(true);
-      setItemFormCoverData(null);
+
+      if (playlists.length > 0) {
+        const firstPl = playlists[0];
+        handleSelectPlaylist(firstPl);
+      } else {
+        setSelectedPlaylistId("");
+        setItemFormTitle("");
+        setItemFormDescription("");
+        setItemFormCoverData(null);
+        setItemFormCtaUrl("");
+        setItemFormDelivery("Self-paced Series");
+        setItemFormPrice("Free");
+        setItemFormPricePeriod("");
+      }
     }
     setItemFormRemoveCover(false);
     setItemModalOpen(true);
@@ -492,9 +575,29 @@ export default function OfferingsDashboardPage() {
   // Save Item (Create or Update)
   const handleSaveItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!itemFormTitle.trim()) {
-      alert("Offering title is required.");
-      return;
+
+    const isPlaylist = itemFormType === "PLAYLIST" || itemFormType === "COURSE";
+    const isVideo = itemFormType === "VIDEO";
+
+    if (isPlaylist) {
+      if (!itemFormTitle.trim()) {
+        alert("Please select a playlist for this offering.");
+        return;
+      }
+    } else if (isVideo) {
+      if (!itemFormCtaUrl.trim() && !itemFormTitle.trim()) {
+        alert("Please select or specify a video for this video offering.");
+        return;
+      }
+      if (!itemFormTitle.trim()) {
+        alert("Offering title is required.");
+        return;
+      }
+    } else {
+      if (!itemFormTitle.trim()) {
+        alert("Offering title is required.");
+        return;
+      }
     }
 
     try {
@@ -507,20 +610,29 @@ export default function OfferingsDashboardPage() {
       const payload = {
         type: itemFormType,
         title: itemFormTitle.trim(),
-        subtitle: itemFormSubtitle.trim() || null,
+        subtitle: (isPlaylist || isVideo) ? null : (itemFormSubtitle.trim() || null),
         description: itemFormDescription.trim() || null,
         price: itemFormPrice.trim() || null,
         pricePeriod: itemFormPricePeriod.trim() || null,
         badge: itemFormBadge.trim() || null,
-        ctaText: itemFormCtaText.trim() || "Learn More",
-        ctaAction: itemFormCtaAction,
+        ctaText: isPlaylist
+          ? (itemFormPrice === "Restricted" ? "View / Request Access" : itemFormPrice && itemFormPrice !== "Free" ? "Purchase" : "Watch")
+          : isVideo
+            ? (itemFormPrice === "Restricted" ? "View / Request Access" : itemFormPrice && itemFormPrice !== "Free" ? "Purchase" : "Watch")
+            : (itemFormCtaText.trim() || "Learn More"),
+        ctaAction: isPlaylist
+          ? "EXTERNAL_LINK"
+          : isVideo
+            ? (itemFormCtaUrl.startsWith("http") ? "FEATURED_VIDEO" : "EXTERNAL_LINK")
+            : itemFormCtaAction,
         ctaUrl: itemFormCtaUrl.trim() || null,
         highlights: highlightsArray,
-        meetingDuration: itemFormDuration.trim() || null,
-        deliveryFormat: itemFormDelivery.trim() || null,
+        meetingDuration: itemFormType === "MEETING" ? (itemFormDuration.trim() || null) : null,
+        deliveryFormat: itemFormDelivery.trim() || (isVideo ? "Self-paced HD Video" : isPlaylist ? "Self-paced Series" : null),
         isFeatured: itemFormIsFeatured,
         isPublished: itemFormIsPublished,
         coverImageData: itemFormCoverData?.startsWith("data:") ? itemFormCoverData : undefined,
+        coverImageKey: itemFormCoverData && !itemFormCoverData.startsWith("data:") ? itemFormCoverData : undefined,
         removeCoverImage: itemFormRemoveCover,
       };
 
@@ -2134,451 +2246,420 @@ export default function OfferingsDashboardPage() {
           </DialogHeader>
 
           <form onSubmit={handleSaveItem} className="space-y-4 pt-1 min-w-0">
-            {/* ========================================================================= */}
-            {/* SECTION 1: BASIC DETAILS (Core Information First) */}
-            {/* ========================================================================= */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+            {/* Offering Type Selector Header */}
+            <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3 min-w-0">
               <div className="flex items-center justify-between border-b border-border/60 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <FileText className="w-3 h-3" />
+                    <Package className="w-3 h-3" />
                   </div>
                   <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                    Basic Information
+                    Offering Type
                   </span>
                 </div>
                 <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Core Info
+                  Category
                 </span>
               </div>
 
-              {/* Offering Type & Title */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 min-w-0">
-                <div className="sm:col-span-5 space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                    <span>Offering Type</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Select
-                    value={itemFormType === "COURSE" ? "PLAYLIST" : itemFormType}
-                    onValueChange={(val) => {
-                      const nextType = val || "PLAYLIST";
-                      setItemFormType(nextType);
-                      if (nextType === "VIDEO") {
-                        setItemFormCtaAction("FEATURED_VIDEO");
-                        if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Enroll Now" || itemFormCtaText === "Explore Playlist") {
-                          setItemFormCtaText("Watch Video");
-                        }
-                        if (!itemFormDelivery) {
-                          setItemFormDelivery("Self-paced HD Video");
-                        }
-                      } else if (nextType === "MEETING") {
-                        if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist") {
-                          setItemFormCtaText("Book 1:1 Call");
-                        }
-                        if (!itemFormDelivery) {
-                          setItemFormDelivery("Live 1:1 Video Session");
-                        }
+              <div className="space-y-1 min-w-0">
+                <Select
+                  value={itemFormType === "COURSE" ? "PLAYLIST" : itemFormType}
+                  onValueChange={(val) => {
+                    const nextType = val || "PLAYLIST";
+                    setItemFormType(nextType);
+                    if (nextType === "PLAYLIST") {
+                      setItemFormCtaAction("INQUIRY_MODAL");
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                        setItemFormCtaText("Explore Playlist");
                       }
-                    }}
-                  >
-                    <SelectTrigger className="rounded-xl text-xs h-9 bg-background w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PLAYLIST">
-                        <div className="flex items-center gap-2">
-                          <ListVideo className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          <span>Playlist / Series</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="MEETING">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-sky-500 shrink-0" />
-                          <span>1:1 Mentorship</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="VIDEO">
-                        <div className="flex items-center gap-2">
-                          <VideoIcon className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                          <span>Video Showcase</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="PRODUCT">
-                        <div className="flex items-center gap-2">
-                          <Package className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span>Digital Resource</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="SERVICE">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                          <span>Custom Service</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="sm:col-span-7 space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground flex items-center gap-1">
-                    <span>Offering Title</span>
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Advanced System Design & Video Streaming"
-                    value={itemFormTitle}
-                    onChange={(e) => setItemFormTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                  />
-                </div>
-              </div>
-
-              {/* Subtitle / Short Tagline */}
-              <div className="space-y-1 min-w-0">
-                <label className="text-xs font-bold text-foreground">Subtitle / Short Tagline</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Production workflows from zero to scale"
-                  value={itemFormSubtitle}
-                  onChange={(e) => setItemFormSubtitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                />
-              </div>
-
-              {/* Description / Summary */}
-              <div className="space-y-1 min-w-0">
-                <label className="text-xs font-bold text-foreground">Description / Overview</label>
-                <textarea
-                  rows={3}
-                  placeholder="Describe what students or clients will learn or receive in this offering..."
-                  value={itemFormDescription}
-                  onChange={(e) => setItemFormDescription(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
-                />
-              </div>
-
-              {/* Pricing & Frequency */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
-                <div className="space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground">Price</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. $149, Free, $120"
-                    value={itemFormPrice}
-                    onChange={(e) => setItemFormPrice(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                  />
-                </div>
-
-                <div className="space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground">Price Period / Billing Unit</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. one-time, / 45 mins, / month"
-                    value={itemFormPricePeriod}
-                    onChange={(e) => setItemFormPricePeriod(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                  />
-                </div>
-              </div>
-
-              {/* Format & Duration */}
-              <div className={`grid grid-cols-1 ${itemFormType === "MEETING" ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-3 min-w-0`}>
-                <div className="space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground">Delivery Format</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Self-paced HD Video, Live 1:1 Video, Instant Download"
-                    value={itemFormDelivery}
-                    onChange={(e) => setItemFormDelivery(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                  />
-                </div>
-
-                {itemFormType === "MEETING" && (
-                  <div className="space-y-1 min-w-0">
-                    <label className="text-xs font-bold text-foreground">Meeting Duration</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 45 mins, 60 mins"
-                      value={itemFormDuration}
-                      onChange={(e) => setItemFormDuration(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                    />
-                  </div>
-                )}
+                      const curPl = playlists.find((p) => p.id === selectedPlaylistId) || playlists[0];
+                      if (curPl) {
+                        handleSelectPlaylist(curPl);
+                      }
+                    } else if (nextType === "VIDEO") {
+                      setItemFormCtaAction("FEATURED_VIDEO");
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Enroll Now" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Book 1:1 Call") {
+                        setItemFormCtaText("Watch Video");
+                      }
+                      setItemFormDelivery("Self-paced HD Video");
+                      if (!itemFormCtaUrl || itemFormCtaAction !== "FEATURED_VIDEO") {
+                        setVideoPickerTarget("itemForm");
+                        setVideoPickerOpen(true);
+                      }
+                    } else if (nextType === "MEETING") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Watch Video") {
+                        setItemFormCtaText("Book 1:1 Call");
+                      }
+                      if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Series")) {
+                        setItemFormDelivery("Live 1:1 Video Session");
+                      }
+                      if (!itemFormDuration) {
+                        setItemFormDuration("45 mins");
+                      }
+                    } else if (nextType === "PRODUCT") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                        setItemFormCtaText("Get Resource");
+                      }
+                      if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
+                        setItemFormDelivery("Instant Digital Download");
+                      }
+                    } else if (nextType === "SERVICE") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                        setItemFormCtaText("Request Proposal");
+                      }
+                      if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
+                        setItemFormDelivery("Custom Project Delivery");
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PLAYLIST">
+                      <div className="flex items-center gap-2">
+                        <ListVideo className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="font-semibold">Playlist / Series</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="MEETING">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-sky-500 shrink-0" />
+                        <span className="font-semibold">1:1 Mentorship</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="VIDEO">
+                      <div className="flex items-center gap-2">
+                        <VideoIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                        <span className="font-semibold">Video Showcase</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="PRODUCT">
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span className="font-semibold">Digital Resource</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="SERVICE">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 text-purple-500 shrink-0" />
+                        <span className="font-semibold">Custom Service</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {/* ========================================================================= */}
-            {/* SECTION 2: ADVANCED & MEDIA SETTINGS */}
+            {/* 1. PLAYLIST OFFERING: Linked Playlist Selection & Auto-Synced Info */}
             {/* ========================================================================= */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
-              <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <SlidersHorizontal className="w-3 h-3" />
+            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE") && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                      <ListVideo className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Selected Playlist
+                    </span>
                   </div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                    Advanced & Media Settings
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                    Auto-Synced
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Media & Actions
-                </span>
-              </div>
 
-              {/* Cover Image with 16:9 Crop */}
-              <div className="p-3 rounded-xl bg-background border border-border/70 space-y-2 min-w-0">
-                <div className="flex flex-wrap items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <label className="text-xs font-bold text-foreground">Card Cover Image</label>
-                    <span className="text-[10px] text-lime-600 dark:text-lime-400 font-mono font-semibold">16:9 (1280×720px)</span>
-                  </div>
-                  {itemFormCoverData && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setItemFormCoverData(null);
-                        setItemFormRemoveCover(true);
-                      }}
-                      className="text-red-500 hover:text-red-600 text-[11px] font-bold hover:underline cursor-pointer"
-                    >
-                      Remove Image
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  type="file"
-                  ref={itemCoverInputRef}
-                  accept="image/*"
-                  onChange={handleItemCoverFileSelect}
-                  className="hidden"
-                />
-
-                {itemFormCoverData ? (
-                  <div className="space-y-2">
-                    <div className="w-full aspect-video rounded-xl overflow-hidden border border-border bg-black/20 relative group max-h-48">
-                      <img
-                        src={itemFormCoverData}
-                        alt="Offering Cover"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => itemCoverInputRef.current?.click()}
-                          className="h-7 px-3 text-xs font-bold cursor-pointer"
-                        >
-                          Change
-                        </Button>
-                      </div>
+                {playlists.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed text-center space-y-2 bg-background">
+                    <ListVideo className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
+                    <p className="text-xs font-bold">No playlists found in your account</p>
+                    <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                      Create your playlist first in the Playlists dashboard to list it as an offering.
+                    </p>
+                    <div className="pt-1">
+                      <Link
+                        href="/dashboard/playlists"
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                      >
+                        <span>Go to Playlists Management &rarr;</span>
+                      </Link>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => itemCoverInputRef.current?.click()}
-                      className="w-full text-xs font-bold gap-1.5 rounded-xl cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Change Cover Image (Crop)</span>
-                    </Button>
                   </div>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => itemCoverInputRef.current?.click()}
-                    className="w-full text-xs font-bold gap-1.5 rounded-xl border-dashed py-4 cursor-pointer"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-primary" />
-                    <span>Upload Offering Cover (16:9 Ratio)</span>
-                  </Button>
-                )}
-                <p className="text-[10px] text-muted-foreground">
-                  Recommended: <strong>1280×720px (16:9)</strong>. Opens image cropper automatically.
-                </p>
-              </div>
-
-              {/* Key Highlights / Curriculum */}
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Key Highlights & Syllabus</span>
-                  </label>
-                  <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
-                </div>
-                <textarea
-                  rows={3}
-                  placeholder={"12+ Hours HD Video\nFull Source Code Included\nPrivate Discord Community Access"}
-                  value={itemFormHighlights}
-                  onChange={(e) => setItemFormHighlights(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
-                />
-              </div>
-
-              {/* Call to Action Button Configuration */}
-              <div className="p-3 bg-background rounded-xl border border-border/70 space-y-2.5 min-w-0">
-                <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
-                  <span>Call-to-Action (CTA) Button</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
-                  <div className="space-y-1 min-w-0">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Button Label</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Explore Playlist, Enroll Now, Watch Video"
-                      value={itemFormCtaText}
-                      onChange={(e) => setItemFormCtaText(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                    />
-                  </div>
-
-                  <div className="space-y-1 min-w-0">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Button Action</label>
-                    <Select
-                      value={itemFormCtaAction}
-                      onValueChange={(val) => setItemFormCtaAction(val || "INQUIRY_MODAL")}
-                    >
-                      <SelectTrigger className="rounded-xl text-xs h-9 bg-background w-full">
-                        <SelectValue placeholder="Select Action" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INQUIRY_MODAL">Open Inquiry & Booking Modal</SelectItem>
-                        <SelectItem value="EXTERNAL_LINK">Open Custom Checkout / External URL</SelectItem>
-                        <SelectItem value="FEATURED_VIDEO">Play Video Modal</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Destination URL if External Link */}
-                {itemFormCtaAction === "EXTERNAL_LINK" && (
-                  <div className="space-y-1 animate-in fade-in min-w-0">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Destination Link / Checkout URL</label>
-                    <input
-                      type="text"
-                      placeholder="https://checkout.stripe.com/... or https://..."
-                      value={itemFormCtaUrl}
-                      onChange={(e) => setItemFormCtaUrl(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                    />
-                  </div>
-                )}
-
-                {/* Video Selector if Play Video Modal */}
-                {itemFormCtaAction === "FEATURED_VIDEO" && (
-                  <div className="space-y-2 pt-1 animate-in fade-in min-w-0">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-semibold text-muted-foreground">Selected Video Source</label>
-                      {itemFormCtaUrl && (
-                        <button
-                          type="button"
-                          onClick={() => setItemFormCtaUrl("")}
-                          className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
+                  <div className="space-y-3">
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                        <span>Choose Playlist *</span>
+                        <Link
+                          href="/dashboard/playlists"
+                          target="_blank"
+                          className="text-[10px] text-primary hover:underline font-semibold"
                         >
-                          Remove Video
-                        </button>
-                      )}
+                          Manage Playlists
+                        </Link>
+                      </label>
+                      <Select
+                        value={selectedPlaylistId || (playlists.find((p) => p.title === itemFormTitle)?.id || "")}
+                        onValueChange={(val) => {
+                          const matched = playlists.find((p) => p.id === val);
+                          if (matched) {
+                            handleSelectPlaylist(matched);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
+                          <SelectValue placeholder="Select a Playlist from your library..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {playlists.map((pl) => (
+                            <SelectItem key={pl.id} value={pl.id} className="text-xs py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <ListVideo className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span className="font-bold truncate max-w-[280px] sm:max-w-md">{pl.title}</span>
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  ({pl.itemCount} {pl.itemCount === 1 ? "video" : "videos"})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    {itemFormCtaUrl ? (
-                      <div className="p-2.5 bg-muted/40 rounded-xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-xs min-w-0">
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                            <Film className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-xs font-bold truncate">
-                              {itemFormCtaUrl.includes("/embed/")
-                                ? "Platform Uploaded Video"
-                                : itemFormCtaUrl.includes("youtube.com") || itemFormCtaUrl.includes("youtu.be")
-                                ? "YouTube Video Link"
-                                : "External Video"}
+                    {/* Synced Playlist Information Box */}
+                    {itemFormTitle && (
+                      <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
+                        <div className="w-full sm:w-36 aspect-video bg-black/40 rounded-lg overflow-hidden relative shrink-0 border border-border/80">
+                          {itemFormCoverData ? (
+                            <img
+                              src={itemFormCoverData}
+                              alt={itemFormTitle}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 bg-muted/40">
+                              <ListVideo className="w-8 h-8" />
                             </div>
-                            <div className="text-[10px] font-mono text-muted-foreground truncate max-w-full">
-                              {itemFormCtaUrl}
-                            </div>
+                          )}
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/80 text-white">
+                            {itemFormDelivery || "Playlist"}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setPreviewVideoModalUrl(itemFormCtaUrl)}
-                            className="h-7 px-2.5 text-xs font-bold gap-1 cursor-pointer"
-                            title="Preview Video"
-                          >
-                            <Play className="w-3 h-3 fill-current" />
-                            <span>Preview</span>
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setVideoPickerTarget("itemForm");
-                              setVideoPickerOpen(true);
-                            }}
-                            className="h-7 px-2.5 text-xs font-semibold cursor-pointer"
-                          >
-                            Change
-                          </Button>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-extrabold text-xs sm:text-sm text-foreground truncate max-w-full">
+                              {itemFormTitle}
+                            </span>
+                          </div>
+                          {itemFormDescription && (
+                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                              {itemFormDescription}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                              Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              • Synced from playlist access settings
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5 min-w-0">
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            setVideoPickerTarget("itemForm");
-                            setVideoPickerOpen(true);
-                          }}
-                          className="w-full text-xs font-bold gap-1.5 bg-primary text-white cursor-pointer rounded-xl py-2"
-                        >
-                          <Film className="w-3.5 h-3.5" />
-                          <span>Choose from Uploaded Videos or YouTube</span>
-                        </Button>
-                        <p className="text-[10px] text-muted-foreground text-center">
-                          Select an uploaded video from your account or add a YouTube link.
-                        </p>
                       </div>
                     )}
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Badge Label & Featured & Published Settings */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 pt-0.5">
-                <div className="space-y-1 min-w-0">
-                  <label className="text-xs font-bold text-foreground">Badge Label (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Bestseller, New, Cohort 4"
-                    value={itemFormBadge}
-                    onChange={(e) => setItemFormBadge(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                  />
+            {/* ========================================================================= */}
+            {/* 2. VIDEO OFFERING: Selected Video & Auto-Synced Info */}
+            {/* ========================================================================= */}
+            {itemFormType === "VIDEO" && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                      <Film className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Selected Video
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                    Auto-Synced
+                  </span>
                 </div>
 
-                <div className="space-y-1 min-w-0 flex flex-col justify-end">
-                  <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-background border border-border/70 h-[38px]">
+                {itemFormCtaUrl || itemFormTitle ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
+                      <div className="w-full sm:w-36 aspect-video bg-black/40 rounded-lg overflow-hidden relative shrink-0 border border-border/80">
+                        {itemFormCoverData ? (
+                          <img
+                            src={itemFormCoverData}
+                            alt={itemFormTitle}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground/40 bg-muted/40">
+                            <Film className="w-8 h-8" />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center">
+                            <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-extrabold text-xs sm:text-sm text-foreground truncate">
+                            {itemFormTitle || "Video Showcase"}
+                          </h4>
+                        </div>
+                        {itemFormDescription && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            {itemFormDescription}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                            Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            • Synced from video access settings
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto pt-1 sm:pt-0">
+                        {itemFormCtaUrl && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setPreviewVideoModalUrl(itemFormCtaUrl)}
+                            className="h-8 px-2.5 text-xs font-bold gap-1 cursor-pointer"
+                            title="Preview Video"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                            <span>Preview</span>
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setVideoPickerTarget("itemForm");
+                            setVideoPickerOpen(true);
+                          }}
+                          className="h-8 px-2.5 text-xs font-semibold cursor-pointer"
+                        >
+                          Change
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setVideoPickerTarget("itemForm");
+                        setVideoPickerOpen(true);
+                      }}
+                      className="w-full text-xs font-bold gap-1.5 bg-primary text-white cursor-pointer rounded-xl py-3 shadow-sm"
+                    >
+                      <Film className="w-4 h-4" />
+                      <span>Choose Video from Uploaded Library or YouTube Link</span>
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      The title, description, thumbnail, and access price will be automatically loaded from your selected video.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* OFFERING DETAILS: Offering Settings (Shared for Playlist & Video) */}
+            {/* ========================================================================= */}
+            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "VIDEO") && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <SlidersHorizontal className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Offering Settings & Highlights
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    Customization
+                  </span>
+                </div>
+
+                {/* Optional Highlights (for Playlist) */}
+                {(itemFormType === "PLAYLIST" || itemFormType === "COURSE") && (
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>Key Highlights & Syllabus (Optional)</span>
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      placeholder={"Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
+                      value={itemFormHighlights}
+                      onChange={(e) => setItemFormHighlights(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                    />
+                  </div>
+                )}
+
+                {/* Badge Label & Auto CTA Notice */}
+                <div className="space-y-3 min-w-0">
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-[11px] font-semibold text-muted-foreground">Badge Label (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Popular, Bestseller, New"
+                      value={itemFormBadge}
+                      onChange={(e) => setItemFormBadge(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                    />
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-background border border-border/70 flex items-center justify-between gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="text-[11px] font-bold text-foreground">Call-to-Action Action & Button</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Automatically determined for visitors based on content pricing & access mode (Purchase, View / Request Access, or View).
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20 shrink-0">
+                      Auto-Calculated
+                    </span>
+                  </div>
+                </div>
+
+                {/* Featured Switch */}
+                <div className="pt-1">
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-background border border-border/70">
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">Featured Offering</div>
+                      <p className="text-[10px] text-muted-foreground">Highlight prominently with an accent glow on your public page.</p>
                     </div>
                     <Switch
                       checked={itemFormIsFeatured}
@@ -2587,7 +2668,313 @@ export default function OfferingsDashboardPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* 3. CUSTOM OFFERING DETAILS (For MEETING, PRODUCT, and SERVICE) */}
+            {/* ========================================================================= */}
+            {itemFormType !== "PLAYLIST" && itemFormType !== "COURSE" && itemFormType !== "VIDEO" && (
+              <>
+                {/* Basic Info */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <FileText className="w-3 h-3" />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                        Basic Information
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Core Info
+                    </span>
+                  </div>
+
+                  {/* Title */}
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <span>Offering Title</span>
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={itemFormType === "MEETING" ? "e.g. 1:1 Architecture & Career Mentorship Call" : "e.g. Production Streaming Starter Kit"}
+                      value={itemFormTitle}
+                      onChange={(e) => setItemFormTitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                    />
+                  </div>
+
+                  {/* Subtitle / Short Tagline */}
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-xs font-bold text-foreground">Subtitle / Short Tagline</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Direct 45-minute live consultation & architecture review"
+                      value={itemFormSubtitle}
+                      onChange={(e) => setItemFormSubtitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                    />
+                  </div>
+
+                  {/* Description / Summary */}
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-xs font-bold text-foreground">Description / Overview</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Describe what students or clients will learn or receive in this offering..."
+                      value={itemFormDescription}
+                      onChange={(e) => setItemFormDescription(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Pricing & Frequency */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground">Price</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. $120, Free, Custom"
+                        value={itemFormPrice}
+                        onChange={(e) => setItemFormPrice(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                      />
+                    </div>
+
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground">Price Period / Billing Unit</label>
+                      <input
+                        type="text"
+                        placeholder={itemFormType === "MEETING" ? "e.g. / 45 mins" : "e.g. one-time, / project"}
+                        value={itemFormPricePeriod}
+                        onChange={(e) => setItemFormPricePeriod(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Format & Duration */}
+                  <div className={`grid grid-cols-1 ${itemFormType === "MEETING" ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-3 min-w-0`}>
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground">Delivery Format</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Live 1:1 Video Meeting, Instant Download"
+                        value={itemFormDelivery}
+                        onChange={(e) => setItemFormDelivery(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                      />
+                    </div>
+
+                    {itemFormType === "MEETING" && (
+                      <div className="space-y-1 min-w-0">
+                        <label className="text-xs font-bold text-foreground">Meeting Duration</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 45 mins, 60 mins"
+                          value={itemFormDuration}
+                          onChange={(e) => setItemFormDuration(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Advanced & Media Settings */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                  <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <SlidersHorizontal className="w-3 h-3" />
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                        Advanced & Media Settings
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      Media & Actions
+                    </span>
+                  </div>
+
+                  {/* Cover Image with 16:9 Crop */}
+                  <div className="p-3 rounded-xl bg-background border border-border/70 space-y-2 min-w-0">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <label className="text-xs font-bold text-foreground">Card Cover Image {itemFormType === "MEETING" ? "(Optional)" : ""}</label>
+                        <span className="text-[10px] text-lime-600 dark:text-lime-400 font-mono font-semibold">16:9 (1280×720px)</span>
+                      </div>
+                      {itemFormCoverData && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setItemFormCoverData(null);
+                            setItemFormRemoveCover(true);
+                          }}
+                          className="text-red-500 hover:text-red-600 text-[11px] font-bold hover:underline cursor-pointer"
+                        >
+                          Remove Image
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={itemCoverInputRef}
+                      accept="image/*"
+                      onChange={handleItemCoverFileSelect}
+                      className="hidden"
+                    />
+
+                    {itemFormCoverData ? (
+                      <div className="space-y-2">
+                        <div className="w-full aspect-video rounded-xl overflow-hidden border border-border bg-black/20 relative group max-h-48">
+                          <img
+                            src={itemFormCoverData}
+                            alt="Offering Cover"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => itemCoverInputRef.current?.click()}
+                              className="h-7 px-3 text-xs font-bold cursor-pointer"
+                            >
+                              Change
+                            </Button>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => itemCoverInputRef.current?.click()}
+                          className="w-full text-xs font-bold gap-1.5 rounded-xl cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Change Cover Image (Crop)</span>
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => itemCoverInputRef.current?.click()}
+                        className="w-full text-xs font-bold gap-1.5 rounded-xl border-dashed py-4 cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-primary" />
+                        <span>Upload Offering Cover (16:9 Ratio)</span>
+                      </Button>
+                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      Recommended: <strong>1280×720px (16:9)</strong>. Opens image cropper automatically.
+                    </p>
+                  </div>
+
+                  {/* Key Highlights / Curriculum */}
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>Key Highlights & Deliverables</span>
+                      </label>
+                      <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
+                    </div>
+                    <textarea
+                      rows={3}
+                      placeholder={itemFormType === "MEETING" ? "45-Minute Live Video Session\nRecording Included\nFollow-up QA Email Support" : "Instant GitHub & ZIP Download\nCommercial License Included"}
+                      value={itemFormHighlights}
+                      onChange={(e) => setItemFormHighlights(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Call to Action Button Configuration */}
+                  <div className="p-3 bg-background rounded-xl border border-border/70 space-y-2.5 min-w-0">
+                    <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>Call-to-Action (CTA) Button</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
+                      <div className="space-y-1 min-w-0">
+                        <label className="text-[11px] font-semibold text-muted-foreground">Button Label</label>
+                        <input
+                          type="text"
+                          placeholder={itemFormType === "MEETING" ? "e.g. Book 1:1 Session" : "e.g. Get Resource"}
+                          value={itemFormCtaText}
+                          onChange={(e) => setItemFormCtaText(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                        />
+                      </div>
+
+                      <div className="space-y-1 min-w-0">
+                        <label className="text-[11px] font-semibold text-muted-foreground">Button Action</label>
+                        <Select
+                          value={itemFormCtaAction}
+                          onValueChange={(val) => setItemFormCtaAction(val || "INQUIRY_MODAL")}
+                        >
+                          <SelectTrigger className="rounded-xl text-xs h-9 bg-background w-full">
+                            <SelectValue placeholder="Select Action" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="INQUIRY_MODAL">Open Inquiry & Booking Modal</SelectItem>
+                            <SelectItem value="EXTERNAL_LINK">Open Custom Checkout / External URL</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Destination URL if External Link */}
+                    {itemFormCtaAction === "EXTERNAL_LINK" && (
+                      <div className="space-y-1 animate-in fade-in min-w-0">
+                        <label className="text-[11px] font-semibold text-muted-foreground">Destination Link / Checkout URL</label>
+                        <input
+                          type="text"
+                          placeholder="https://checkout.stripe.com/... or https://..."
+                          value={itemFormCtaUrl}
+                          onChange={(e) => setItemFormCtaUrl(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl text-xs border bg-background font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Badge Label & Featured Settings */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0 pt-0.5">
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground">Badge Label (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Popular, New, Limited Seats"
+                        value={itemFormBadge}
+                        onChange={(e) => setItemFormBadge(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
+                      />
+                    </div>
+
+                    <div className="space-y-1 min-w-0 flex flex-col justify-end">
+                      <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-background border border-border/70 h-[38px]">
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold truncate">Featured Offering</div>
+                        </div>
+                        <Switch
+                          checked={itemFormIsFeatured}
+                          onCheckedChange={setItemFormIsFeatured}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Modal Footer Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border min-w-0">

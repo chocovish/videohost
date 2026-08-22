@@ -182,6 +182,39 @@ export default function SharedContentClient({
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutSuccess, setCheckoutSuccess] = useState("");
 
+  // Access Request state
+  const [requestAccessLoading, setRequestAccessLoading] = useState(false);
+  const [requestAccessSuccess, setRequestAccessSuccess] = useState(false);
+  const [requestAccessMessage, setRequestAccessMessage] = useState("");
+  const [requestAccessError, setRequestAccessError] = useState("");
+
+  const handleRequestAccess = async () => {
+    if (!token) return;
+    try {
+      setRequestAccessLoading(true);
+      setRequestAccessError("");
+      const res = await fetch(`/api/share/${token}/request-access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: errorState?.userEmail,
+        }),
+      });
+      const resData = await res.json();
+      if (res.ok) {
+        setRequestAccessSuccess(true);
+        setRequestAccessMessage(resData.message || "Access request submitted! The creator has been notified.");
+      } else {
+        setRequestAccessError(resData.error || "Failed to submit access request.");
+      }
+    } catch (e: any) {
+      console.error("Access request error:", e);
+      setRequestAccessError("Network error. Please try again.");
+    } finally {
+      setRequestAccessLoading(false);
+    }
+  };
+
   // Detect visitor's local country on client
   useEffect(() => {
     if (data?.detectedCountryCode) {
@@ -941,18 +974,61 @@ export default function SharedContentClient({
               Signed in as <span className="font-bold text-slate-200">{errorState.userEmail}</span>, but this email address has not been granted access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this item"}"</span>.
             </p>
           </div>
+          {/* Request Access Action Box */}
+          <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/60 space-y-3 text-left">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-200">Need Access to this Content?</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-2 py-0.5 rounded-full border border-lime-500/20">
+                Restricted
+              </span>
+            </div>
 
-          <div className="p-3.5 bg-slate-800/60 border border-slate-700/60 rounded-xl text-xs text-slate-300 font-medium">
-            If you were invited using a different email address, please switch accounts.
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              You can send an access request to the content creator. Once approved, you'll be granted permission to view and stream this content.
+            </p>
+
+            {requestAccessSuccess ? (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                <span>{requestAccessMessage || "Access request submitted! The creator has been notified."}</span>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-1">
+                {requestAccessError && (
+                  <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>{requestAccessError}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={handleRequestAccess}
+                  disabled={requestAccessLoading}
+                  className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/20 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                >
+                  {requestAccessLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Request Access from Creator</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-1">
             <button
               onClick={() => signOut({ callbackUrl: `/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}` })}
-              className="w-full py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-sm active:scale-98"
+              className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-xs active:scale-98 cursor-pointer"
             >
-              <LogIn className="w-4 h-4 text-lime-400" />
-              Sign in with Different Account
+              <LogIn className="w-3.5 h-3.5 text-slate-400" />
+              <span>Sign In with a Different Account</span>
             </button>
           </div>
         </div>

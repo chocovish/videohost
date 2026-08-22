@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getPresignedPlaybackUrl, uploadBufferToS3 } from "@/lib/s3";
+import { resolveOfferingItem } from "@/lib/offerings-resolver";
 
 function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
   const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
@@ -34,24 +35,15 @@ export async function GET() {
       orderBy: [{ order: "asc" }, { createdAt: "desc" }],
     });
 
-    const itemsWithUrls = await Promise.all(
-      items.map(async (item) => {
-        let coverImageUrl: string | null = null;
-        if (item.coverImageKey) {
-          try {
-            coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
-          } catch (e) {
-            console.error("Error signing cover image URL:", e);
-          }
-        }
-        return {
-          ...item,
-          coverImageUrl,
-        };
-      })
+    const resolvedItems = await Promise.all(
+      items.map((item) =>
+        resolveOfferingItem(item, {
+          isOrgMember: true,
+        })
+      )
     );
 
-    return NextResponse.json({ items: itemsWithUrls });
+    return NextResponse.json({ items: resolvedItems });
   } catch (err: any) {
     console.error("[GET Offering Items Error]:", err);
     return NextResponse.json({ error: "Failed to fetch offering items." }, { status: 500 });
@@ -72,14 +64,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Title and type are required." }, { status: 400 });
     }
 
+    const isPlaylistOrVideo =
+      body.type === "PLAYLIST" ||
+      body.type === "COURSE" ||
+      (body.type === "VIDEO" && !body.ctaUrl?.startsWith("http"));
+
     let coverImageKey: string | null = null;
-    if (body.coverImageData) {
-      const parsed = parseBase64Data(body.coverImageData);
-      if (parsed) {
-        const timestamp = Date.now();
-        const key = `offerings-items/${organizationId}/cover-${timestamp}.${parsed.extension}`;
-        await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-        coverImageKey = key;
+    if (!isPlaylistOrVideo) {
+      if (body.coverImageData) {
+        const parsed = parseBase64Data(body.coverImageData);
+        if (parsed) {
+          const timestamp = Date.now();
+          const key = `offerings-items/${organizationId}/cover-${timestamp}.${parsed.extension}`;
+          await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
+          coverImageKey = key;
+        }
+      } else if (body.coverImageKey || body.coverImageUrl) {
+        coverImageKey = body.coverImageKey || body.coverImageUrl;
       }
     }
 
@@ -91,40 +92,35 @@ export async function POST(req: Request) {
     });
     const nextOrder = (maxOrderItem?.order ?? -1) + 1;
 
+    // For playlists & videos: omit redundant fields, only store reference (ctaUrl), badge, highlights, layout
     const newItem = await db.offeringItem.create({
       data: {
         organizationId,
-        type: body.type, // "COURSE" | "MEETING" | "VIDEO" | "PRODUCT" | "SERVICE"
+        type: body.type, // "PLAYLIST" | "COURSE" | "MEETING" | "VIDEO" | "PRODUCT" | "SERVICE"
         title: body.title,
-        subtitle: body.subtitle || null,
-        description: body.description || null,
-        price: body.price || null,
-        pricePeriod: body.pricePeriod || null,
+        subtitle: isPlaylistOrVideo ? null : (body.subtitle || null),
+        description: isPlaylistOrVideo ? null : (body.description || null),
+        price: isPlaylistOrVideo ? null : (body.price || null),
+        pricePeriod: isPlaylistOrVideo ? null : (body.pricePeriod || null),
         badge: body.badge || null,
-        coverImageKey,
-        ctaText: body.ctaText || "Learn More",
-        ctaAction: body.ctaAction || "INQUIRY_MODAL",
+        coverImageKey: isPlaylistOrVideo ? null : coverImageKey,
+        ctaText: isPlaylistOrVideo ? "Watch" : (body.ctaText || "Learn More"),
+        ctaAction: isPlaylistOrVideo ? "EXTERNAL_LINK" : (body.ctaAction || "INQUIRY_MODAL"),
         ctaUrl: body.ctaUrl || null,
         highlights: Array.isArray(body.highlights) ? body.highlights.filter(Boolean) : [],
-        meetingDuration: body.meetingDuration || null,
-        deliveryFormat: body.deliveryFormat || null,
+        meetingDuration: body.type === "MEETING" ? (body.meetingDuration || null) : null,
+        deliveryFormat: isPlaylistOrVideo ? null : (body.deliveryFormat || null),
         order: typeof body.order === "number" ? body.order : nextOrder,
         isFeatured: body.isFeatured ?? false,
         isPublished: body.isPublished ?? true,
       },
     });
 
-    let coverImageUrl: string | null = null;
-    if (newItem.coverImageKey) {
-      coverImageUrl = await getPresignedPlaybackUrl(newItem.coverImageKey);
-    }
+    const resolved = await resolveOfferingItem(newItem, { isOrgMember: true });
 
     return NextResponse.json({
       success: true,
-      item: {
-        ...newItem,
-        coverImageUrl,
-      },
+      item: resolved,
     });
   } catch (err: any) {
     console.error("[POST Offering Item Error]:", err);
