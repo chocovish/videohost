@@ -23,6 +23,7 @@ import {
   Layers,
   Sun,
   Moon,
+  ShoppingBag,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSidebar } from "@/components/SidebarContext";
@@ -174,6 +175,7 @@ export default function Sidebar({
 
   const viewerNavItems = [
     { label: "Shared with me", href: "/dashboard/shared-with-me", icon: Share2 },
+    { label: "Purchased Items", href: "/dashboard/purchased-items", icon: ShoppingBag },
   ];
 
   const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;

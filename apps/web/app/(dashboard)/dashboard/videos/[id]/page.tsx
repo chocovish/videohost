@@ -18,6 +18,9 @@ import {
   FolderInput,
   Pencil,
   FileText,
+  DollarSign,
+  Receipt,
+  ShoppingBag,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
@@ -40,7 +43,10 @@ interface VideoDetail {
   durationSeconds?: number;
   sizeBytes?: number | null;
   sourceResolution?: string;
-  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
+  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
+  countryPricing?: any;
   playbackUrl?: string;
   thumbnailUrl?: string;
   renditions: { resolution: string; bitrateKbps: number; playlistUrl: string; sizeBytes?: number }[];
@@ -57,10 +63,21 @@ export default function VideoDetailPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"details" | "embed" | "renditions">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "embed" | "renditions" | "purchases">("details");
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  // Video purchases state
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [purchasesStats, setPurchasesStats] = useState<{
+    totalRevenue: number;
+    salesCount: number;
+    basePrice?: number | null;
+    currency?: string;
+    shareAccessMode?: string;
+  } | null>(null);
+  const [loadingPurchases, setLoadingPurchases] = useState(false);
 
   const backUrl = video?.folderId ? `/dashboard/uploaded-videos?folderId=${video.folderId}` : "/dashboard/uploaded-videos";
 
@@ -79,9 +96,25 @@ export default function VideoDetailPage() {
     }
   };
 
+  const fetchVideoPurchases = async () => {
+    setLoadingPurchases(true);
+    try {
+      const res = await fetch(`/api/v1/videos/${id}/purchases`);
+      if (res.ok) {
+        const data = await res.json();
+        setPurchases(data.purchases || []);
+        setPurchasesStats(data.stats || null);
+      }
+    } catch (err) {
+      console.error("Failed to load video purchases:", err);
+    } finally {
+      setLoadingPurchases(false);
+    }
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchVideoDetail(true);
+    await Promise.all([fetchVideoDetail(true), fetchVideoPurchases()]);
     setIsRefreshing(false);
   };
 
@@ -111,6 +144,7 @@ export default function VideoDetailPage() {
 
   useEffect(() => {
     fetchVideoDetail();
+    fetchVideoPurchases();
   }, [id]);
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -361,6 +395,14 @@ export default function VideoDetailPage() {
               >
                 <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
               </Button>
+              <Button
+                variant={activeTab === "purchases" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("purchases")}
+                className="gap-2"
+              >
+                <DollarSign className="w-4 h-4" /> Purchases ({purchases.length})
+              </Button>
             </div>
 
             {/* Tab 1: Video Details (Selected by default) */}
@@ -517,6 +559,118 @@ export default function VideoDetailPage() {
                     <p>
                       HLS transcoding was disabled for this video upon upload. The original video file is stored in Cloudflare R2 and served directly.
                     </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 4: Purchases History */}
+            {activeTab === "purchases" && (
+              <div className="space-y-6">
+                {/* Stats Header */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                      <Receipt className="w-3.5 h-3.5 text-primary" /> Total Video Revenue
+                    </span>
+                    <p className="text-xl font-black text-foreground">
+                      ${purchasesStats ? purchasesStats.totalRevenue.toFixed(2) : "0.00"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-lime-500" /> Share Mode & Price
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="uppercase text-[10px]">
+                        {video.shareAccessMode}
+                      </Badge>
+                      {video.shareAccessMode === "PURCHASABLE" && (
+                        <span className="font-bold text-sm text-foreground">
+                          ${video.price?.toFixed(2) || "0.00"} {video.currency || "USD"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {video.shareAccessMode === "PURCHASABLE" ? "Paid access enabled" : "Free / restricted sharing"}
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                      <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Total Buyers
+                    </span>
+                    <p className="text-xl font-black text-foreground">
+                      {purchases.length}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Active user licenses
+                    </p>
+                  </div>
+                </div>
+
+                {/* Table of Buyers */}
+                {loadingPurchases ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">
+                    Loading purchases...
+                  </div>
+                ) : purchases.length === 0 ? (
+                  <div className="py-12 text-center border border-dashed border-border rounded-xl space-y-2 p-6 bg-muted/20">
+                    <ShoppingBag className="w-8 h-8 text-muted-foreground mx-auto opacity-50" />
+                    <p className="text-sm font-semibold text-foreground">No purchases yet</p>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      When visitors purchase access to this video, their details and transaction IDs will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-border rounded-xl">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
+                        <tr>
+                          <th className="py-3 px-4">Buyer</th>
+                          <th className="py-3 px-4">Amount Paid</th>
+                          <th className="py-3 px-4">Country</th>
+                          <th className="py-3 px-4">Purchased On</th>
+                          <th className="py-3 px-4">Payment ID</th>
+                          <th className="py-3 px-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {purchases.map((p) => (
+                          <tr key={p.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="font-semibold text-foreground">
+                                {p.user?.name || "Buyer"}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground font-mono">
+                                {p.user?.email || "—"}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-foreground">
+                              ${p.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{p.currency}</span>
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground font-mono">
+                              {p.countryCode || "GLOBAL"}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground">
+                              {new Date(p.createdAt).toLocaleDateString()} {new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                              {p.paymentId}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                                {p.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>

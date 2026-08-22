@@ -26,6 +26,16 @@ import {
   Image as ImageIcon,
   Info,
   Camera,
+  DollarSign,
+  CreditCard,
+  Wallet,
+  ArrowDownToLine,
+  Landmark,
+  Receipt,
+  Eye,
+  EyeOff,
+  Film,
+  ListVideo,
 } from "lucide-react";
 import {
   Dialog,
@@ -38,6 +48,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatBytes } from "@/lib/video-utils";
 import ImageCropper1to1Modal from "@/components/ImageCropper1to1Modal";
@@ -124,6 +141,44 @@ export default function SettingsPage() {
   const [customLimitInput, setCustomLimitInput] = useState("");
   const [requestSubmitted, setRequestSubmitted] = useState(false);
 
+  // Monetization, Purchases & Withdrawals state
+  const [purchases, setPurchases] = useState<any[]>([]);
+  const [purchasesStats, setPurchasesStats] = useState<{
+    totalGrossRevenue: number;
+    availableBalance: number;
+    totalWithdrawnOrPending: number;
+    totalPurchasesCount: number;
+    videoPurchasesCount: number;
+    playlistPurchasesCount: number;
+  } | null>(null);
+  const [bankAccount, setBankAccount] = useState<any>(null);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
+  const [monetizationTab, setMonetizationTab] = useState<"purchases" | "bank" | "withdrawals">("purchases");
+  const [loadingMonetization, setLoadingMonetization] = useState(false);
+
+  // Bank Form state
+  const [bankFormData, setBankFormData] = useState({
+    accountHolderName: "",
+    accountNumber: "",
+    routingNumber: "",
+    bankName: "",
+    swiftCode: "",
+    accountType: "CHECKING",
+    country: "US",
+    currency: "USD",
+  });
+  const [showAccountNumber, setShowAccountNumber] = useState(false);
+  const [isSavingBank, setIsSavingBank] = useState(false);
+  const [bankSuccessMsg, setBankSuccessMsg] = useState("");
+  const [bankErrorMsg, setBankErrorMsg] = useState("");
+
+  // Withdrawal Request state
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [isRequestingWithdrawal, setIsRequestingWithdrawal] = useState(false);
+  const [withdrawalSuccessMsg, setWithdrawalSuccessMsg] = useState("");
+  const [withdrawalErrorMsg, setWithdrawalErrorMsg] = useState("");
+
   const fetchUserOrganizations = async () => {
     try {
       const res = await fetch("/api/organizations");
@@ -174,9 +229,119 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchMonetizationData = async () => {
+    setLoadingMonetization(true);
+    try {
+      const [resPurchases, resBank, resWithdrawals] = await Promise.all([
+        fetch("/api/organization/purchases"),
+        fetch("/api/organization/bank-account"),
+        fetch("/api/organization/withdrawals"),
+      ]);
+
+      if (resPurchases.ok) {
+        const pData = await resPurchases.json();
+        setPurchases(pData.purchases || []);
+        setPurchasesStats(pData.stats || null);
+      }
+
+      if (resBank.ok) {
+        const bData = await resBank.json();
+        if (bData.bankAccount) {
+          setBankAccount(bData.bankAccount);
+          setBankFormData({
+            accountHolderName: bData.bankAccount.accountHolderName || "",
+            accountNumber: bData.bankAccount.accountNumber || "",
+            routingNumber: bData.bankAccount.routingNumber || "",
+            bankName: bData.bankAccount.bankName || "",
+            swiftCode: bData.bankAccount.swiftCode || "",
+            accountType: bData.bankAccount.accountType || "CHECKING",
+            country: bData.bankAccount.country || "US",
+            currency: bData.bankAccount.currency || "USD",
+          });
+        }
+      }
+
+      if (resWithdrawals.ok) {
+        const wData = await resWithdrawals.json();
+        setWithdrawals(wData.withdrawals || []);
+        setHasPendingWithdrawal(Boolean(wData.hasPendingWithdrawal));
+      }
+    } catch (err) {
+      console.error("Failed to load monetization data:", err);
+    } finally {
+      setLoadingMonetization(false);
+    }
+  };
+
+  const handleSaveBankAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingBank(true);
+    setBankSuccessMsg("");
+    setBankErrorMsg("");
+
+    try {
+      const res = await fetch("/api/organization/bank-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bankFormData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to save bank account.");
+      }
+
+      setBankSuccessMsg(data.message || "Bank account details saved successfully!");
+      setBankAccount(data.bankAccount);
+      setTimeout(() => setBankSuccessMsg(""), 4000);
+    } catch (err: any) {
+      setBankErrorMsg(err.message || "Failed to save bank account.");
+      setTimeout(() => setBankErrorMsg(""), 4000);
+    } finally {
+      setIsSavingBank(false);
+    }
+  };
+
+  const handleRequestWithdrawal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(withdrawalAmount);
+    if (isNaN(amt) || amt <= 0) {
+      setWithdrawalErrorMsg("Please enter a valid withdrawal amount greater than 0.");
+      return;
+    }
+
+    setIsRequestingWithdrawal(true);
+    setWithdrawalSuccessMsg("");
+    setWithdrawalErrorMsg("");
+
+    try {
+      const res = await fetch("/api/organization/withdrawals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: amt, currency: bankAccount?.currency || "USD" }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to request withdrawal.");
+      }
+
+      setWithdrawalSuccessMsg(data.message || "Withdrawal request submitted successfully!");
+      setWithdrawalAmount("");
+      await fetchMonetizationData();
+      setTimeout(() => setWithdrawalSuccessMsg(""), 4000);
+    } catch (err: any) {
+      setWithdrawalErrorMsg(err.message || "Failed to request withdrawal.");
+      setTimeout(() => setWithdrawalErrorMsg(""), 4000);
+    } finally {
+      setIsRequestingWithdrawal(false);
+    }
+  };
+
   useEffect(() => {
     fetchUserOrganizations();
     fetchOrgData();
+    fetchMonetizationData();
   }, []);
 
   const handleSwitchOrg = async (orgId: string) => {
@@ -211,6 +376,7 @@ export default function SettingsPage() {
 
       // Reload organization data for newly selected active org
       await fetchOrgData();
+      await fetchMonetizationData();
       router.refresh();
       setTimeout(() => setOrgSuccessMsg(""), 4000);
     } catch (err: any) {
@@ -912,16 +1078,22 @@ export default function SettingsPage() {
                   onChange={(e) => setInviteEmail(e.target.value)}
                   className="flex-1 px-3.5 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden focus:ring-2 focus:ring-primary disabled:opacity-60 transition-all"
                 />
-                <select
-                  value={inviteRole}
-                  disabled={isInviting}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="px-3.5 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden disabled:opacity-60 transition-all"
-                >
-                  <option value="MEMBER">Member</option>
-                  <option value="ADMIN">Admin</option>
-                  <option value="VIEWER">Viewer</option>
-                </select>
+                <div className="w-full sm:w-36">
+                  <Select
+                    value={inviteRole}
+                    disabled={isInviting}
+                    onValueChange={(val) => setInviteRole(val || "MEMBER")}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-slate-900 border-input text-sm">
+                      <SelectValue placeholder="Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MEMBER">Member</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="VIEWER">Viewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <button
                   type="submit"
                   disabled={isInviting || !inviteEmail.trim()}
@@ -1019,15 +1191,23 @@ export default function SettingsPage() {
                           </span>
                         ) : (
                           <>
-                            <select
-                              value={m.role}
-                              onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                              className="px-2.5 py-1 rounded-lg text-xs font-bold bg-muted text-foreground uppercase border border-border outline-hidden cursor-pointer"
-                            >
-                              <option value="ADMIN">ADMIN</option>
-                              <option value="MEMBER">MEMBER</option>
-                              <option value="VIEWER">VIEWER</option>
-                            </select>
+                            <div className="w-28">
+                              <Select
+                                value={m.role}
+                                onValueChange={(val) => {
+                                  if (val) handleRoleChange(m.id, val);
+                                }}
+                              >
+                                <SelectTrigger className="h-8 rounded-lg text-xs font-bold bg-muted text-foreground uppercase border-border">
+                                  <SelectValue placeholder={m.role} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="ADMIN">ADMIN</SelectItem>
+                                  <SelectItem value="MEMBER">MEMBER</SelectItem>
+                                  <SelectItem value="VIEWER">VIEWER</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                             <button
                               onClick={() => handleRemoveMember(m.id, m.user.name || m.user.email)}
                               title="Remove member"
@@ -1115,6 +1295,537 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* SECTION 4: CONTENT MONETIZATION, PURCHASES & PAYOUT WITHDRAWALS */}
+      <div className="glass-card rounded-2xl p-4 sm:p-6 border border-border space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-lime-500/15 text-lime-500 shrink-0">
+              <DollarSign className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-foreground">Content Purchases & Payout Withdrawals</h3>
+              <p className="text-xs text-muted-foreground">
+                Track revenue generated from purchasable videos and playlists, configure bank account, and request payouts.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-xl border border-border self-start sm:self-auto">
+            <button
+              onClick={() => setMonetizationTab("purchases")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                monetizationTab === "purchases"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Purchases ({purchases.length})
+            </button>
+            <button
+              onClick={() => setMonetizationTab("bank")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                monetizationTab === "bank"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Bank Account {bankAccount ? "✓" : ""}
+            </button>
+            <button
+              onClick={() => setMonetizationTab("withdrawals")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                monetizationTab === "withdrawals"
+                  ? "bg-card text-foreground shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Withdrawals ({withdrawals.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Revenue Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+              <Receipt className="w-3.5 h-3.5 text-primary" /> Gross Sales Revenue
+            </span>
+            <p className="text-2xl font-black text-foreground">
+              ${purchasesStats ? purchasesStats.totalGrossRevenue.toFixed(2) : "0.00"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              From {purchasesStats?.totalPurchasesCount || 0} completed orders
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-lime-500/10 border border-lime-500/20 space-y-1">
+            <span className="text-[11px] font-semibold text-lime-600 dark:text-lime-400 uppercase flex items-center gap-1">
+              <Wallet className="w-3.5 h-3.5" /> Available for Payout
+            </span>
+            <p className="text-2xl font-black text-lime-600 dark:text-lime-400">
+              ${purchasesStats ? purchasesStats.availableBalance.toFixed(2) : "0.00"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Ready for withdrawal to bank
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+              <Film className="w-3.5 h-3.5 text-primary" /> Video / Playlist Sales
+            </span>
+            <p className="text-2xl font-black text-foreground">
+              {purchasesStats?.videoPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">vids</span> / {purchasesStats?.playlistPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">playlists</span>
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Individual content unlock sales
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-card border border-border space-y-1">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+              <ArrowDownToLine className="w-3.5 h-3.5 text-amber-500" /> Pending / Paid Out
+            </span>
+            <p className="text-2xl font-black text-foreground">
+              ${purchasesStats ? purchasesStats.totalWithdrawnOrPending.toFixed(2) : "0.00"}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              {hasPendingWithdrawal ? "⚠️ 1 request currently pending" : "No pending requests"}
+            </p>
+          </div>
+        </div>
+
+        {/* TAB 1: PURCHASES HISTORY */}
+        {monetizationTab === "purchases" && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Receipt className="w-3.5 h-3.5" /> Content Purchases History ({purchases.length})
+              </h4>
+              <button
+                onClick={fetchMonetizationData}
+                disabled={loadingMonetization}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingMonetization ? "animate-spin" : ""}`} /> Refresh
+              </button>
+            </div>
+
+            {loadingMonetization ? (
+              <div className="py-12 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" /> Loading purchases...
+              </div>
+            ) : purchases.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-border rounded-xl space-y-2 p-6 bg-muted/20">
+                <Receipt className="w-10 h-10 text-muted-foreground mx-auto opacity-50" />
+                <p className="text-sm font-semibold text-foreground">No purchases recorded yet</p>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  When visitors purchase your videos or playlists in Purchasable mode, order details and sales revenue will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-border rounded-xl">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">Buyer</th>
+                      <th className="py-3 px-4">Content</th>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Amount Paid</th>
+                      <th className="py-3 px-4">Country</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Payment ID</th>
+                      <th className="py-3 px-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {purchases.map((purchase) => (
+                      <tr key={purchase.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-foreground">
+                            {purchase.user?.name || "Guest / Buyer"}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground font-mono">
+                            {purchase.user?.email || "—"}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-foreground">
+                          {purchase.video?.title || purchase.playlist?.title || "Shared Content"}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                            purchase.contentType === "PLAYLIST"
+                              ? "bg-purple-500/15 text-purple-600 border border-purple-500/20"
+                              : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
+                          }`}>
+                            {purchase.contentType}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-foreground">
+                          ${purchase.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{purchase.currency}</span>
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground font-mono">
+                          {purchase.countryCode || "GLOBAL"}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {new Date(purchase.createdAt).toLocaleDateString()} {new Date(purchase.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                          {purchase.paymentId}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                            {purchase.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: BANK ACCOUNT SETTINGS */}
+        {monetizationTab === "bank" && (
+          <div className="space-y-6 max-w-2xl">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Landmark className="w-4 h-4 text-primary" /> Bank Account for Payouts
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Enter your official bank account details. Revenue payouts requested will be wired directly to this account.
+              </p>
+            </div>
+
+            {bankSuccessMsg && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>{bankSuccessMsg}</span>
+              </div>
+            )}
+
+            {bankErrorMsg && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{bankErrorMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveBankAccount} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-holder-input">Account Holder Full Name *</Label>
+                  <Input
+                    id="bank-holder-input"
+                    required
+                    placeholder="e.g. John Doe / Studio Corp LLC"
+                    value={bankFormData.accountHolderName}
+                    onChange={(e) => setBankFormData({ ...bankFormData, accountHolderName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-name-input">Bank Name *</Label>
+                  <Input
+                    id="bank-name-input"
+                    required
+                    placeholder="e.g. JPMorgan Chase / HDFC Bank"
+                    value={bankFormData.bankName}
+                    onChange={(e) => setBankFormData({ ...bankFormData, bankName: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="bank-acc-input">Account / IBAN Number *</Label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAccountNumber(!showAccountNumber)}
+                      className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+                    >
+                      {showAccountNumber ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      {showAccountNumber ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  <Input
+                    id="bank-acc-input"
+                    required
+                    type={showAccountNumber ? "text" : "password"}
+                    placeholder="e.g. 123456789012"
+                    value={bankFormData.accountNumber}
+                    onChange={(e) => setBankFormData({ ...bankFormData, accountNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-routing-input">Routing / IFSC / Sort Code</Label>
+                  <Input
+                    id="bank-routing-input"
+                    placeholder="e.g. 021000021 / HDFC0001234"
+                    value={bankFormData.routingNumber}
+                    onChange={(e) => setBankFormData({ ...bankFormData, routingNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-swift-input">SWIFT / BIC Code (Optional for International)</Label>
+                  <Input
+                    id="bank-swift-input"
+                    placeholder="e.g. CHASUS33XXX"
+                    value={bankFormData.swiftCode}
+                    onChange={(e) => setBankFormData({ ...bankFormData, swiftCode: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-type-select">Account Type</Label>
+                  <Select
+                    value={bankFormData.accountType}
+                    onValueChange={(val) => setBankFormData({ ...bankFormData, accountType: val || "CHECKING" })}
+                  >
+                    <SelectTrigger id="bank-type-select" className="w-full h-9 rounded-xl bg-card border-input text-foreground text-xs font-medium">
+                      <SelectValue placeholder="Select Account Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CHECKING">Checking / Current Account</SelectItem>
+                      <SelectItem value="SAVINGS">Savings Account</SelectItem>
+                      <SelectItem value="BUSINESS">Business Corporate Account</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-country-select">Bank Country</Label>
+                  <Select
+                    value={bankFormData.country}
+                    onValueChange={(val) => setBankFormData({ ...bankFormData, country: val || "US" })}
+                  >
+                    <SelectTrigger id="bank-country-select" className="w-full h-9 rounded-xl bg-card border-input text-foreground text-xs font-medium">
+                      <SelectValue placeholder="Select Country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="US">🇺🇸 United States</SelectItem>
+                      <SelectItem value="IN">🇮🇳 India</SelectItem>
+                      <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
+                      <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                      <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                      <SelectItem value="FR">🇫🇷 France</SelectItem>
+                      <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                      <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
+                      <SelectItem value="AE">🇦🇪 United Arab Emirates</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="bank-currency-select">Payout Currency</Label>
+                  <Select
+                    value={bankFormData.currency}
+                    onValueChange={(val) => setBankFormData({ ...bankFormData, currency: val || "USD" })}
+                  >
+                    <SelectTrigger id="bank-currency-select" className="w-full h-9 rounded-xl bg-card border-input text-foreground text-xs font-medium">
+                      <SelectValue placeholder="Select Currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD ($)</SelectItem>
+                      <SelectItem value="INR">INR (₹)</SelectItem>
+                      <SelectItem value="EUR">EUR (€)</SelectItem>
+                      <SelectItem value="GBP">GBP (£)</SelectItem>
+                      <SelectItem value="CAD">CAD ($)</SelectItem>
+                      <SelectItem value="AUD">AUD ($)</SelectItem>
+                      <SelectItem value="SGD">SGD ($)</SelectItem>
+                      <SelectItem value="AED">AED</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  type="submit"
+                  disabled={isSavingBank || !bankFormData.accountHolderName.trim() || !bankFormData.accountNumber.trim() || !bankFormData.bankName.trim()}
+                  className="w-full sm:w-auto font-bold text-xs"
+                >
+                  {isSavingBank ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Saving Bank Details...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-1.5" /> Save Bank Account
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 3: PAYOUT WITHDRAWALS */}
+        {monetizationTab === "withdrawals" && (
+          <div className="space-y-6">
+            {/* Request Withdrawal Box */}
+            <div className="p-5 rounded-2xl bg-card border border-border space-y-4">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <ArrowDownToLine className="w-4 h-4 text-primary" /> Request Payout Withdrawal
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Available for withdrawal: <strong className="text-foreground">${purchasesStats ? purchasesStats.availableBalance.toFixed(2) : "0.00"}</strong>. Withdrawals are processed to your saved bank account.
+                </p>
+              </div>
+
+              {/* Strict Requirement Notice: Single pending withdrawal constraint */}
+              {hasPendingWithdrawal && (
+                <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+                  <div>
+                    <span className="font-bold">Pending Withdrawal In Progress:</span> You currently have a pending withdrawal request under review. Per platform policy, you cannot submit a new withdrawal request until your active pending request is processed.
+                  </div>
+                </div>
+              )}
+
+              {!bankAccount && (
+                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Landmark className="w-4 h-4 shrink-0 text-purple-600" />
+                    <span>Please configure your Bank Account before requesting a withdrawal.</span>
+                  </div>
+                  <button
+                    onClick={() => setMonetizationTab("bank")}
+                    className="px-3 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold hover:bg-purple-700 shrink-0 cursor-pointer"
+                  >
+                    Add Bank Account
+                  </button>
+                </div>
+              )}
+
+              {withdrawalSuccessMsg && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{withdrawalSuccessMsg}</span>
+                </div>
+              )}
+
+              {withdrawalErrorMsg && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{withdrawalErrorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleRequestWithdrawal} className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="space-y-1.5 flex-1 w-full">
+                  <Label htmlFor="withdraw-amt-input" className="text-xs">
+                    Withdrawal Amount ($ USD)
+                  </Label>
+                  <Input
+                    id="withdraw-amt-input"
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    max={purchasesStats?.availableBalance || 0}
+                    disabled={hasPendingWithdrawal || !bankAccount || (purchasesStats?.availableBalance || 0) <= 0 || isRequestingWithdrawal}
+                    placeholder={`e.g. ${purchasesStats?.availableBalance ? purchasesStats.availableBalance.toFixed(2) : "50.00"}`}
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={
+                    hasPendingWithdrawal ||
+                    !bankAccount ||
+                    !withdrawalAmount ||
+                    parseFloat(withdrawalAmount) <= 0 ||
+                    (purchasesStats && parseFloat(withdrawalAmount) > purchasesStats.availableBalance) ||
+                    isRequestingWithdrawal
+                  }
+                  className="w-full sm:w-auto font-bold text-xs shrink-0"
+                >
+                  {isRequestingWithdrawal ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownToLine className="w-4 h-4 mr-1.5" /> Request Payout
+                    </>
+                  )}
+                </Button>
+              </form>
+            </div>
+
+            {/* Withdrawal Requests History Table */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Withdrawal History ({withdrawals.length})
+              </h4>
+
+              {withdrawals.length === 0 ? (
+                <div className="py-8 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
+                  No withdrawal requests recorded yet.
+                </div>
+              ) : (
+                <div className="overflow-x-auto border border-border rounded-xl">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
+                      <tr>
+                        <th className="py-3 px-4">Requested Date</th>
+                        <th className="py-3 px-4">Amount</th>
+                        <th className="py-3 px-4">Bank Destination</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">Processed Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {withdrawals.map((w) => (
+                        <tr key={w.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-3 px-4 font-medium text-foreground">
+                            {new Date(w.createdAt).toLocaleDateString()} {new Date(w.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </td>
+                          <td className="py-3 px-4 font-black text-foreground">
+                            ${w.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{w.currency}</span>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {w.bankDetails?.bankName ? (
+                              <span>
+                                {w.bankDetails.bankName} &bull; ****{w.bankDetails.accountNumber?.slice(-4)}
+                              </span>
+                            ) : (
+                              "Saved Bank Account"
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                              w.status === "PENDING"
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                                : w.status === "PROCESSING"
+                                ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
+                                : w.status === "COMPLETED" || w.status === "APPROVED"
+                                ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+                                : "bg-red-500/15 text-red-600 border border-red-500/30"
+                            }`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-muted-foreground">
+                            {w.processedAt ? new Date(w.processedAt).toLocaleDateString() : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 1:1 Square Image Cropper Modal */}

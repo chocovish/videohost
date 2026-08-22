@@ -11,18 +11,21 @@ export async function GET(req: Request) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const targetType = searchParams.get("targetType") as "video" | "folder" | "playlist" | null;
+    const targetType = searchParams.get("targetType") as "video" | "playlist" | null;
     const targetId = searchParams.get("targetId");
 
-    if (!targetType || !["video", "folder", "playlist"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "playlist"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'folder'|'playlist') and targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'playlist') and targetId." },
         { status: 400 }
       );
     }
 
     let targetTitle = "";
-    let accessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" = "PUBLIC";
+    let accessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE" = "PUBLIC";
+    let price: number | null = null;
+    let currency = "USD";
+    let countryPricing: any[] = [];
     let allowedEmails: any[] = [];
 
     if (targetType === "video") {
@@ -34,9 +37,12 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Video not found in organization" }, { status: 404 });
       }
       targetTitle = video.title;
-      accessMode = video.shareAccessMode;
+      accessMode = video.shareAccessMode as any;
+      price = video.price;
+      currency = video.currency || "USD";
+      countryPricing = (video.countryPricing as any[]) || [];
       allowedEmails = video.sharedEmails;
-    } else if (targetType === "playlist") {
+    } else {
       const playlist = await db.playlist.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
@@ -45,19 +51,11 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: "Playlist not found in organization" }, { status: 404 });
       }
       targetTitle = playlist.title;
-      accessMode = playlist.shareAccessMode;
+      accessMode = playlist.shareAccessMode as any;
+      price = playlist.price;
+      currency = playlist.currency || "USD";
+      countryPricing = (playlist.countryPricing as any[]) || [];
       allowedEmails = playlist.sharedEmails;
-    } else {
-      const folder = await db.folder.findFirst({
-        where: { id: targetId, organizationId: authCtx.orgId },
-        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
-      });
-      if (!folder) {
-        return NextResponse.json({ error: "Folder not found in organization" }, { status: 404 });
-      }
-      targetTitle = folder.name;
-      accessMode = folder.shareAccessMode;
-      allowedEmails = folder.sharedEmails;
     }
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
@@ -68,6 +66,9 @@ export async function GET(req: Request) {
       id: targetId,
       shareUrl,
       accessMode,
+      price,
+      currency,
+      countryPricing,
       allowedEmails,
       targetType,
       targetId,
@@ -87,11 +88,11 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { action, targetType, targetId, accessMode, email, emailId, message } = body;
+    const { action, targetType, targetId, accessMode, price, currency, countryPricing, email, emailId, message } = body;
 
-    if (!targetType || !["video", "folder", "playlist"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "playlist"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'folder'|'playlist'), targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'playlist'), targetId." },
         { status: 400 }
       );
     }
@@ -105,7 +106,10 @@ export async function POST(req: Request) {
     }
 
     let targetTitle = "";
-    let currentAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" = "PUBLIC";
+    let currentAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE" = "PUBLIC";
+    let currentPrice: number | null = null;
+    let currentCurrency = "USD";
+    let currentCountryPricing: any[] = [];
 
     if (targetType === "video") {
       const video = await db.video.findFirst({
@@ -113,21 +117,20 @@ export async function POST(req: Request) {
       });
       if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
       targetTitle = video.title;
-      currentAccessMode = video.shareAccessMode;
-    } else if (targetType === "playlist") {
+      currentAccessMode = video.shareAccessMode as any;
+      currentPrice = video.price;
+      currentCurrency = video.currency || "USD";
+      currentCountryPricing = (video.countryPricing as any[]) || [];
+    } else {
       const playlist = await db.playlist.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
       });
       if (!playlist) return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
       targetTitle = playlist.title;
-      currentAccessMode = playlist.shareAccessMode;
-    } else {
-      const folder = await db.folder.findFirst({
-        where: { id: targetId, organizationId: authCtx.orgId },
-      });
-      if (!folder) return NextResponse.json({ error: "Folder not found" }, { status: 404 });
-      targetTitle = folder.name;
-      currentAccessMode = folder.shareAccessMode;
+      currentAccessMode = playlist.shareAccessMode as any;
+      currentPrice = playlist.price;
+      currentCurrency = playlist.currency || "USD";
+      currentCountryPricing = (playlist.countryPricing as any[]) || [];
     }
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
@@ -135,26 +138,38 @@ export async function POST(req: Request) {
 
     // Handle Action 1: UPDATE_MODE
     if (action === "UPDATE_MODE" || accessMode) {
-      const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE"];
+      const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
       const newMode = accessMode && validModes.includes(accessMode) ? accessMode : currentAccessMode;
+
+      const updateData: any = {
+        shareAccessMode: newMode,
+      };
+
+      if (price !== undefined) {
+        updateData.price = price !== null ? parseFloat(price) : null;
+      }
+      if (currency !== undefined) {
+        updateData.currency = currency;
+      }
+      if (countryPricing !== undefined) {
+        updateData.countryPricing = countryPricing;
+      }
 
       if (targetType === "video") {
         await db.video.update({
           where: { id: targetId },
-          data: { shareAccessMode: newMode },
-        });
-      } else if (targetType === "playlist") {
-        await db.playlist.update({
-          where: { id: targetId },
-          data: { shareAccessMode: newMode },
+          data: updateData,
         });
       } else {
-        await db.folder.update({
+        await db.playlist.update({
           where: { id: targetId },
-          data: { shareAccessMode: newMode },
+          data: updateData,
         });
       }
       currentAccessMode = newMode;
+      if (updateData.price !== undefined) currentPrice = updateData.price;
+      if (updateData.currency !== undefined) currentCurrency = updateData.currency;
+      if (updateData.countryPricing !== undefined) currentCountryPricing = updateData.countryPricing;
     }
 
     // Handle Action 2: ADD_EMAIL
@@ -169,13 +184,10 @@ export async function POST(req: Request) {
         where:
           targetType === "video"
             ? { videoId_email: { videoId: targetId, email: cleanEmail } }
-            : targetType === "playlist"
-            ? { playlistId_email: { playlistId: targetId, email: cleanEmail } }
-            : { folderId_email: { folderId: targetId, email: cleanEmail } },
+            : { playlistId_email: { playlistId: targetId, email: cleanEmail } },
         create: {
           videoId: targetType === "video" ? targetId : null,
           playlistId: targetType === "playlist" ? targetId : null,
-          folderId: targetType === "folder" ? targetId : null,
           email: cleanEmail,
         },
         update: {},
@@ -189,13 +201,8 @@ export async function POST(req: Request) {
             where: { id: targetId },
             data: { shareAccessMode: "RESTRICTED" },
           });
-        } else if (targetType === "playlist") {
-          await db.playlist.update({
-            where: { id: targetId },
-            data: { shareAccessMode: "RESTRICTED" },
-          });
         } else {
-          await db.folder.update({
+          await db.playlist.update({
             where: { id: targetId },
             data: { shareAccessMode: "RESTRICTED" },
           });
@@ -213,7 +220,7 @@ export async function POST(req: Request) {
           toEmail: cleanEmail,
           senderName,
           organizationName: org.name,
-          targetType: targetType as "video" | "folder" | "playlist",
+          targetType: targetType as "video" | "playlist",
           targetTitle,
           shareUrl,
           message: message || undefined,
@@ -235,9 +242,7 @@ export async function POST(req: Request) {
           where:
             targetType === "video"
               ? { videoId: targetId, email: cleanEmail }
-              : targetType === "playlist"
-              ? { playlistId: targetId, email: cleanEmail }
-              : { folderId: targetId, email: cleanEmail },
+              : { playlistId: targetId, email: cleanEmail },
         });
       }
     }
@@ -250,24 +255,31 @@ export async function POST(req: Request) {
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
       });
       allowedEmails = v?.sharedEmails || [];
-    } else if (targetType === "playlist") {
+      if (v) {
+        currentPrice = v.price;
+        currentCurrency = v.currency || "USD";
+        currentCountryPricing = (v.countryPricing as any[]) || [];
+      }
+    } else {
       const p = await db.playlist.findUnique({
         where: { id: targetId },
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
       });
       allowedEmails = p?.sharedEmails || [];
-    } else {
-      const f = await db.folder.findUnique({
-        where: { id: targetId },
-        include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
-      });
-      allowedEmails = f?.sharedEmails || [];
+      if (p) {
+        currentPrice = p.price;
+        currentCurrency = p.currency || "USD";
+        currentCountryPricing = (p.countryPricing as any[]) || [];
+      }
     }
 
     return NextResponse.json({
       success: true,
       shareUrl,
       accessMode: currentAccessMode,
+      price: currentPrice,
+      currency: currentCurrency,
+      countryPricing: currentCountryPricing,
       allowedEmails,
       targetType,
       targetId,
@@ -278,3 +290,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message || "Failed to update share settings" }, { status: 500 });
   }
 }
+

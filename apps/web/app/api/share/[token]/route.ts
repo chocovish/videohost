@@ -217,6 +217,122 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       }
     }
 
+    // 5.5 Check PURCHASABLE Access Mode
+    if (accessMode === "PURCHASABLE") {
+      let isPurchasedOrAllowed = false;
+
+      if (session?.user?.id) {
+        // Check 1: Organization Member has full access
+        const member = await db.organizationMember.findUnique({
+          where: {
+            organizationId_userId: {
+              organizationId: item.organizationId,
+              userId: session.user.id,
+            },
+          },
+        });
+        if (member) {
+          isPurchasedOrAllowed = true;
+        }
+
+        // Check 2: Direct purchase of Video or Playlist
+        if (!isPurchasedOrAllowed) {
+          const directPurchase = await db.contentPurchase.findFirst({
+            where: {
+              userId: session.user.id,
+              status: "COMPLETED",
+              OR: [
+                { videoId: token },
+                { playlistId: token },
+              ],
+            },
+          });
+          if (directPurchase) {
+            isPurchasedOrAllowed = true;
+          }
+        }
+
+        // Check 3: Playlist Purchase Cascade (if this is a video in a purchased playlist)
+        if (!isPurchasedOrAllowed && isVideo && video) {
+          const playlistItems = await db.playlistItem.findMany({
+            where: { videoId: video.id },
+            select: { playlistId: true },
+          });
+          const playlistIds = playlistItems.map((pi) => pi.playlistId);
+
+          if (playlistIds.length > 0) {
+            const playlistPurchase = await db.contentPurchase.findFirst({
+              where: {
+                userId: session.user.id,
+                playlistId: { in: playlistIds },
+                status: "COMPLETED",
+              },
+            });
+            if (playlistPurchase) {
+              isPurchasedOrAllowed = true;
+            }
+          }
+        }
+      }
+
+      // If not purchased, return Purchasable paywall payload
+      if (!isPurchasedOrAllowed) {
+        const firstThumbnailKey = isVideo
+          ? video?.thumbnailKey
+          : playlist?.items[0]?.video?.thumbnailKey;
+        const previewThumbnailUrl = firstThumbnailKey
+          ? await getPresignedPlaybackUrl(firstThumbnailKey)
+          : null;
+
+        const headerCountry =
+          req.headers.get("cf-ipcountry") ||
+          req.headers.get("x-vercel-ip-country") ||
+          req.headers.get("x-country-code") ||
+          null;
+
+        return NextResponse.json({
+          type: targetType,
+          accessMode: "PURCHASABLE",
+          isPurchased: false,
+          isLoggedIn: Boolean(session?.user?.id),
+          token,
+          organization,
+          sharePageConfig,
+          itemTitle,
+          price: item.price,
+          currency: item.currency || "USD",
+          countryPricing: item.countryPricing || [],
+          detectedCountryCode: headerCountry ? headerCountry.toUpperCase() : undefined,
+          video: isVideo && video ? {
+            id: video.id,
+            title: video.title,
+            description: video.description,
+            status: video.status,
+            durationSeconds: video.durationSeconds,
+            thumbnailUrl: previewThumbnailUrl,
+            createdAt: video.createdAt,
+          } : undefined,
+          playlist: isPlaylist && playlist ? {
+            id: playlist.id,
+            title: playlist.title,
+            description: playlist.description,
+            itemCount: playlist.items.length,
+            totalDurationSeconds: playlist.items.reduce((acc: number, it: any) => acc + (it.video?.durationSeconds || 0), 0),
+            thumbnailUrl: previewThumbnailUrl,
+            createdAt: playlist.createdAt,
+          } : undefined,
+          videos: isPlaylist && playlist ? playlist.items.map((it: any) => ({
+            id: it.video.id,
+            itemId: it.id,
+            order: it.order,
+            title: it.video.title,
+            durationSeconds: it.video.durationSeconds,
+            status: it.video.status,
+          })) : undefined,
+        });
+      }
+    }
+
     // 6. Return Video Response
     if (isVideo && video) {
       const folderIdParam = url.searchParams.get("folderId") || url.searchParams.get("fromFolder") || url.searchParams.get("fromFolderId");

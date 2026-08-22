@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -123,17 +130,21 @@ export default function ContactForm() {
               <label className="font-bold text-foreground text-xs">
                 Category
               </label>
-              <select
+              <Select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl bg-black/5 dark:bg-slate-900 border border-border focus:outline-hidden focus:ring-2 focus:ring-primary text-xs sm:text-sm transition-all"
+                onValueChange={(val) => setFormData({ ...formData, category: val || "General Inquiry" })}
               >
-                <option value="General Inquiry">General Support</option>
-                <option value="Billing & Refund">Billing & Refund Request</option>
-                <option value="Technical Issue">Technical / Video Player Issue</option>
-                <option value="API & Webhooks">Developer APIs & Webhooks</option>
-                <option value="Enterprise & Custom">Business & Enterprise Sales</option>
-              </select>
+                <SelectTrigger className="w-full h-11 px-4 py-3 rounded-xl bg-black/5 dark:bg-slate-900 border-border text-xs sm:text-sm">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General Inquiry">General Support</SelectItem>
+                  <SelectItem value="Billing & Refund">Billing & Refund Request</SelectItem>
+                  <SelectItem value="Technical Issue">Technical / Video Player Issue</SelectItem>
+                  <SelectItem value="API & Webhooks">Developer APIs & Webhooks</SelectItem>
+                  <SelectItem value="Enterprise & Custom">Business & Enterprise Sales</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Disc,
   LayoutGrid,
   User,
@@ -318,20 +325,21 @@ export default function RecordOptionsModal({
                   </span>
                 </label>
 
-                <div className="relative">
-                  <select
-                    value={selectedParticipantIdentity}
-                    onChange={(e) => setSelectedParticipantIdentity(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-primary appearance-none cursor-pointer pr-10"
-                  >
+                <Select
+                  value={selectedParticipantIdentity}
+                  onValueChange={(val) => setSelectedParticipantIdentity(val || "")}
+                >
+                  <SelectTrigger className="w-full bg-slate-900 border-slate-700 text-white rounded-xl h-10 text-xs font-medium">
+                    <SelectValue placeholder="Select target participant" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {enrichedParticipants.map((p) => (
-                      <option key={p.identity} value={p.identity}>
+                      <SelectItem key={p.identity} value={p.identity}>
                         {p.displayName} {p.isLocal ? "(You)" : ""} {p.isHost ? "[Host]" : ""} {p.isScreenSharing ? "• 🖥️ Presenting" : ""}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Stream Channels Selection Checkboxes */}

@@ -25,6 +25,8 @@ model User {
   createdApiKeys ApiKey[]
   paymentOrders PaymentOrder[]
   createdMeetings Meeting[]
+  contentPurchases ContentPurchase[]
+  withdrawalRequests WithdrawalRequest[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -99,6 +101,9 @@ model Organization {
   offeringsConfig OfferingsPageConfig?
   offeringItems   OfferingItem[]
   offeringInquiries OfferingInquiry[]
+  contentPurchases ContentPurchase[]
+  bankAccount     BankAccount?
+  withdrawalRequests WithdrawalRequest[]
 }
 
 model SharePageConfig {
@@ -233,9 +238,13 @@ model Video {
   folder          Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
   renditions      VideoRendition[]
   shareAccessMode ShareAccessMode  @default(PUBLIC)
+  price            Float?
+  currency         String?          @default("USD")
+  countryPricing   Json?
   sharedEmails    SharedEmail[]
   meetingRecordings Meeting[]      @relation("MeetingRecordedVideo")
   playlistItems   PlaylistItem[]
+  purchases       ContentPurchase[]
 }
 
 // --------------------------------------------------------
@@ -254,6 +263,10 @@ model Playlist {
   organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   items           PlaylistItem[]
   sharedEmails    SharedEmail[]
+  price           Float?
+  currency        String?         @default("USD")
+  countryPricing  Json?
+  purchases       ContentPurchase[]
 
   @@index([organizationId])
 }
@@ -328,6 +341,7 @@ enum ShareAccessMode {
   PUBLIC
   RESTRICTED
   PRIVATE
+  PURCHASABLE
 }
 
 model SharedEmail {
@@ -558,6 +572,76 @@ model OfferingInquiry {
   status         String        @default("PENDING") // "PENDING" | "CONTACTED" | "RESOLVED"
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// --------------------------------------------------------
+// Content Purchases, Bank Accounts & Withdrawals
+// --------------------------------------------------------
+
+model ContentPurchase {
+  id              String        @id @default(cuid())
+  organizationId  String
+  userId          String
+  contentType     String        // "VIDEO" | "PLAYLIST"
+  videoId         String?
+  playlistId      String?
+  amount          Float
+  currency        String        @default("USD")
+  countryCode     String?       // purchaser country code, e.g. "US", "IN"
+  paymentMethod   String?       @default("CARD") // "CARD" | "RAZORPAY" | "CASHFREE" | "STRIPE" | "TEST_PAY"
+  paymentId       String?       // reference ID
+  status          String        @default("COMPLETED") // "COMPLETED" | "PENDING" | "REFUNDED"
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video           Video?        @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  playlist        Playlist?     @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([videoId])
+  @@index([playlistId])
+  @@index([createdAt])
+}
+
+model BankAccount {
+  id                String       @id @default(cuid())
+  organizationId    String       @unique
+  accountHolderName String
+  accountNumber     String
+  routingNumber     String?      // or IFSC code
+  bankName          String
+  swiftCode         String?
+  accountType       String?      @default("CHECKING") // "CHECKING" | "SAVINGS"
+  country           String?      @default("US")
+  currency          String?      @default("USD")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model WithdrawalRequest {
+  id             String       @id @default(cuid())
+  organizationId String
+  requestedById  String
+  amount         Float
+  currency       String       @default("USD")
+  status         String       @default("PENDING") // "PENDING" | "PROCESSING" | "COMPLETED" | "REJECTED"
+  bankDetails    Json?        // snapshot of bank details at time of request
+  adminNotes     String?
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedBy    User         @relation(fields: [requestedById], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])

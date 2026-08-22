@@ -96,7 +96,7 @@ function UploadedVideosContent() {
   const [renameFolderTarget, setRenameFolderTarget] = useState<{ id: string; name: string } | null>(null);
   const [isDeletingCurrentFolder, setIsDeletingCurrentFolder] = useState(false);
   const [shareTarget, setShareTarget] = useState<{
-    type: "video" | "folder";
+    type: "video";
     id: string;
     name: string;
   } | null>(null);
@@ -548,21 +548,6 @@ function UploadedVideosContent() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setShareTarget({
-                    type: "folder",
-                    id: currentFolder.id,
-                    name: currentFolder.name,
-                  })
-                }
-                className="gap-1.5"
-              >
-                <Share2 className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
-                <span>Share</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
                 onClick={handleDeleteCurrentFolder}
                 disabled={isDeletingCurrentFolder}
                 className="gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
@@ -714,13 +699,6 @@ function UploadedVideosContent() {
                             >
                               <FolderInput className="w-4 h-4 text-slate-500" />
                               Move Folder
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setShareTarget({ type: "folder", id: folder.id, name: folder.name })}
-                              className="gap-2 font-medium cursor-pointer"
-                            >
-                              <Share2 className="w-4 h-4 text-slate-500" />
-                              Share Folder
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem

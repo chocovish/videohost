@@ -31,6 +31,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     sizeBytes: computedSizeBytes,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     shareAccessMode: video.shareAccessMode,
+    price: video.price,
+    currency: video.currency || "USD",
+    countryPricing: video.countryPricing || [],
     playbackUrl,
     thumbnailUrl,
     renditions: video.renditions.map((r) => ({
@@ -58,7 +61,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const dataToUpdate: any = {};
   if (body.title !== undefined) dataToUpdate.title = body.title.trim();
   if (body.description !== undefined) dataToUpdate.description = body.description ? body.description.trim() : null;
-  if (body.shareAccessMode !== undefined) dataToUpdate.shareAccessMode = body.shareAccessMode;
+  if (body.shareAccessMode !== undefined) {
+    if (["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"].includes(body.shareAccessMode)) {
+      dataToUpdate.shareAccessMode = body.shareAccessMode;
+    }
+  }
+  if (body.price !== undefined) dataToUpdate.price = body.price !== null ? parseFloat(body.price) : null;
+  if (body.currency !== undefined) dataToUpdate.currency = body.currency;
+  if (body.countryPricing !== undefined) dataToUpdate.countryPricing = body.countryPricing;
 
   if (body.removeThumbnail === true || body.thumbnailKey === null) {
     if (video.thumbnailKey) {
@@ -104,6 +114,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     sizeBytes: computedSizeBytes,
     sourceResolution: updated.sourceWidth ? `${updated.sourceWidth}x${updated.sourceHeight}` : null,
     shareAccessMode: updated.shareAccessMode,
+    price: updated.price,
+    currency: updated.currency || "USD",
+    countryPricing: updated.countryPricing || [],
     playbackUrl,
     thumbnailUrl,
     renditions: updated.renditions.map((r) => ({

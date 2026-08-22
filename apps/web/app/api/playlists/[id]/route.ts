@@ -78,6 +78,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         title: playlist.title,
         description: playlist.description,
         shareAccessMode: playlist.shareAccessMode,
+        price: playlist.price,
+        currency: playlist.currency || "USD",
+        countryPricing: playlist.countryPricing || [],
         shareUrl,
         itemCount: playlist.items.length,
         totalDurationSeconds,
@@ -128,10 +131,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (body.shareAccessMode !== undefined) {
-      if (!["PUBLIC", "RESTRICTED", "PRIVATE"].includes(body.shareAccessMode)) {
+      if (!["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"].includes(body.shareAccessMode)) {
         return NextResponse.json({ error: "Invalid share access mode" }, { status: 400 });
       }
       dataToUpdate.shareAccessMode = body.shareAccessMode;
+    }
+
+    if (body.price !== undefined) {
+      dataToUpdate.price = body.price !== null ? parseFloat(body.price) : null;
+    }
+    if (body.currency !== undefined) {
+      dataToUpdate.currency = body.currency;
+    }
+    if (body.countryPricing !== undefined) {
+      dataToUpdate.countryPricing = body.countryPricing;
     }
 
     const updated = await db.playlist.update({

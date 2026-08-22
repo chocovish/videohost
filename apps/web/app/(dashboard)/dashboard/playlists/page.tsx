@@ -20,6 +20,7 @@ import {
   Layers,
   Sparkles,
   ArrowRight,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,9 @@ interface PlaylistItemSummary {
   id: string;
   title: string;
   description: string | null;
-  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
+  shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
   itemCount: number;
   totalDurationSeconds: number;
   thumbnailUrl: string | null;
@@ -203,6 +206,12 @@ export default function PlaylistsPage() {
         return (
           <Badge variant="outline" className="gap-1 text-indigo-600 border-indigo-500/30 bg-indigo-500/10">
             <Lock className="w-3 h-3" /> Restricted
+          </Badge>
+        );
+      case "PURCHASABLE":
+        return (
+          <Badge variant="outline" className="gap-1 text-lime-600 border-lime-500/30 bg-lime-500/10">
+            <DollarSign className="w-3 h-3" /> Purchasable
           </Badge>
         );
       case "PRIVATE":

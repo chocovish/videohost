@@ -19,6 +19,7 @@ import {
   UserPlus,
   ShieldCheck,
   ShieldAlert,
+  Shield,
   UserX,
   Copy,
   Check,
@@ -37,9 +38,23 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader2,
+  DollarSign,
+  CreditCard,
+  Tag,
+  ShoppingBag,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export interface SharePageConfigData {
   themePreset?: string;
@@ -66,6 +81,12 @@ export interface SharePageConfigData {
 export interface SharedData {
   type: "video" | "folder" | "playlist";
   accessMode?: string;
+  isPurchased?: boolean;
+  isLoggedIn?: boolean;
+  price?: number | null;
+  currency?: string;
+  countryPricing?: Array<{ countryCode: string; countryName: string; amount: number; currency: string }>;
+  detectedCountryCode?: string;
   organization: {
     name: string;
     logoUrl?: string | null;
@@ -92,6 +113,7 @@ export interface SharedData {
     description?: string;
     itemCount: number;
     totalDurationSeconds: number;
+    thumbnailUrl?: string | null;
     createdAt: string;
   };
   rootFolder?: {
@@ -152,6 +174,284 @@ export default function SharedContentClient({
     itemTitle?: string;
     type?: string;
   } | null>(null);
+
+  // Purchase & Checkout state
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [selectedBuyerCountry, setSelectedBuyerCountry] = useState<string>("US");
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+  const [checkoutSuccess, setCheckoutSuccess] = useState("");
+
+  // Detect visitor's local country on client
+  useEffect(() => {
+    if (data?.detectedCountryCode) {
+      setSelectedBuyerCountry(data.detectedCountryCode.toUpperCase());
+      return;
+    }
+    try {
+      if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+        if (tz.includes("Calcutta") || tz.includes("Kolkata") || tz.startsWith("Asia/Kolkata")) {
+          setSelectedBuyerCountry("IN");
+          return;
+        }
+        if (tz.startsWith("America/New_York") || tz.startsWith("America/Chicago") || tz.startsWith("America/Los_Angeles") || tz.startsWith("America/Denver") || tz.startsWith("US/")) {
+          setSelectedBuyerCountry("US");
+          return;
+        }
+        if (tz.startsWith("Europe/London")) { setSelectedBuyerCountry("GB"); return; }
+        if (tz.startsWith("Europe/Paris")) { setSelectedBuyerCountry("FR"); return; }
+        if (tz.startsWith("Europe/Berlin")) { setSelectedBuyerCountry("DE"); return; }
+        if (tz.startsWith("Asia/Tokyo")) { setSelectedBuyerCountry("JP"); return; }
+        if (tz.startsWith("Australia/")) { setSelectedBuyerCountry("AU"); return; }
+        if (tz.startsWith("America/Toronto") || tz.startsWith("Canada/")) { setSelectedBuyerCountry("CA"); return; }
+        if (tz.startsWith("Asia/Singapore")) { setSelectedBuyerCountry("SG"); return; }
+        if (tz.startsWith("Asia/Dubai")) { setSelectedBuyerCountry("AE"); return; }
+        if (tz.startsWith("America/Sao_Paulo")) { setSelectedBuyerCountry("BR"); return; }
+      }
+      if (typeof navigator !== "undefined") {
+        const lang = navigator.language || (navigator.languages && navigator.languages[0]) || "";
+        const parts = lang.split("-");
+        if (parts.length > 1 && parts[1].length === 2) {
+          setSelectedBuyerCountry(parts[1].toUpperCase());
+          return;
+        }
+      }
+    } catch (e) {}
+  }, [data?.detectedCountryCode]);
+
+  const getCalculatedPrice = (dataObj: SharedData | null, targetCountryCode: string) => {
+    if (!dataObj) return { amount: 0, currency: "USD", formatted: "$0.00" };
+    let finalAmount = dataObj.price || 0;
+    let finalCurrency = dataObj.currency || "USD";
+
+    if (dataObj.countryPricing && Array.isArray(dataObj.countryPricing)) {
+      const matched = dataObj.countryPricing.find(
+        (cp) => cp.countryCode?.toUpperCase() === targetCountryCode?.toUpperCase()
+      );
+      if (matched && matched.amount !== undefined) {
+        finalAmount = Number(matched.amount);
+        if (matched.currency) finalCurrency = matched.currency;
+      }
+    }
+
+    const symbolMap: Record<string, string> = {
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      INR: "₹",
+      CAD: "CA$",
+      AUD: "AU$",
+      JPY: "¥",
+      SGD: "SG$",
+      AED: "AED ",
+      BRL: "R$",
+    };
+
+    const sym = symbolMap[finalCurrency] || `${finalCurrency} `;
+    return {
+      amount: finalAmount,
+      currency: finalCurrency,
+      formatted: `${sym}${finalAmount.toFixed(2)}`,
+    };
+  };
+
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const loadCashfreeScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Cashfree) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleExecuteCheckout = async () => {
+    if (!token) return;
+    setIsCheckingOut(true);
+    setCheckoutError("");
+    setCheckoutSuccess("");
+
+    try {
+      // 1. Create order on backend with active payment gateway
+      const res = await fetch("/api/content-purchases/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contentType: data?.type || "video",
+          contentId: token,
+          countryCode: selectedBuyerCountry,
+        }),
+      });
+
+      const orderData = await res.json();
+      if (!res.ok) {
+        if (orderData.error === "LOGIN_REQUIRED") {
+          const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+          router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+          return;
+        }
+        throw new Error(orderData.message || orderData.error || "Failed to initialize payment gateway order.");
+      }
+
+      // If already purchased or unlocked
+      if (orderData.alreadyPurchased) {
+        setCheckoutSuccess(orderData.message || "You own access to this content! Unlocking...");
+        setTimeout(async () => {
+          setIsCheckoutOpen(false);
+          setCheckoutSuccess("");
+          await fetchSharedContent();
+        }, 1000);
+        return;
+      }
+
+      // 2A. CASHFREE GATEWAY CHECKOUT
+      if (orderData.gateway === "cashfree") {
+        const scriptLoaded = await loadCashfreeScript();
+        if (!scriptLoaded || !(window as any).Cashfree) {
+          throw new Error("Cashfree payment gateway SDK failed to load. Please check your network connection.");
+        }
+
+        const cashfree = (window as any).Cashfree({
+          mode: orderData.cfEnv === "production" ? "production" : "sandbox",
+        });
+
+        const checkoutOptions = {
+          paymentSessionId: orderData.paymentSessionId,
+          redirectTarget: "_modal",
+        };
+
+        cashfree.checkout(checkoutOptions).then(async (result: any) => {
+          if (result.error) {
+            console.warn("[Cashfree Modal Result]:", result.error);
+            if (result.error.message && result.error.message !== "User closed the popup") {
+              setCheckoutError(result.error.message || "Payment cancelled or failed.");
+            }
+            setIsCheckingOut(false);
+            return;
+          }
+
+          // Verify Cashfree Payment
+          try {
+            const verifyRes = await fetch("/api/content-purchases/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                gateway: "cashfree",
+                order_id: orderData.orderId,
+                contentType: data?.type || "video",
+                contentId: token,
+                countryCode: selectedBuyerCountry,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok) {
+              throw new Error(verifyData.error || "Payment verification failed.");
+            }
+
+            setCheckoutSuccess(verifyData.message || "Payment verified! Unlocking content...");
+            setTimeout(async () => {
+              setIsCheckoutOpen(false);
+              setCheckoutSuccess("");
+              await fetchSharedContent();
+            }, 1200);
+          } catch (verifyErr: any) {
+            setCheckoutError(verifyErr.message || "Payment verification failed.");
+          } finally {
+            setIsCheckingOut(false);
+          }
+        });
+
+        return;
+      }
+
+      // 2B. RAZORPAY GATEWAY CHECKOUT (Default)
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded || !(window as any).Razorpay) {
+        throw new Error("Razorpay payment gateway SDK failed to load. Please check your network connection.");
+      }
+
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: data?.organization?.name || "Taped",
+        description: `Purchase: ${orderData.contentTitle || "Content Access"}`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: orderData.prefill?.name || "",
+          email: orderData.prefill?.email || "",
+        },
+        theme: {
+          color: accentHex || "#84cc16",
+        },
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch("/api/content-purchases/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                gateway: "razorpay",
+                contentType: data?.type || "video",
+                contentId: token,
+                countryCode: selectedBuyerCountry,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (!verifyRes.ok) {
+              throw new Error(verifyData.error || "Payment verification failed.");
+            }
+
+            setCheckoutSuccess(verifyData.message || "Payment verified! Unlocking content...");
+            setTimeout(async () => {
+              setIsCheckoutOpen(false);
+              setCheckoutSuccess("");
+              await fetchSharedContent();
+            }, 1200);
+          } catch (verifyErr: any) {
+            setCheckoutError(verifyErr.message || "Payment verification failed.");
+          } finally {
+            setIsCheckingOut(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsCheckingOut(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        console.warn("[Razorpay Payment Failed]:", response.error);
+        setCheckoutError(response.error?.description || "Payment failed.");
+        setIsCheckingOut(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      setCheckoutError(err.message || "An unexpected error occurred during checkout.");
+      setIsCheckingOut(false);
+    }
+  };
 
   // One-time OTP state
   const [authViewMode, setAuthViewMode] = useState<"options" | "otp">("options");
@@ -929,10 +1229,75 @@ export default function SharedContentClient({
               </div>
             )}
 
-            {/* Video Player */}
+            {/* Video Player or Purchasable Paywall */}
             <div className="aspect-video w-full rounded-xl overflow-hidden shadow-2xl">
               {data.video.playbackUrl ? (
                 <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-xl" />
+              ) : data.accessMode === "PURCHASABLE" ? (
+                <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 overflow-hidden border border-slate-800">
+                  {/* Poster Backdrop with Blur */}
+                  {data.video.thumbnailUrl && (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center filter blur-lg opacity-25 scale-105"
+                      style={{ backgroundImage: `url(${data.video.thumbnailUrl})` }}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+
+                  <div className="relative z-10 max-w-md space-y-4 flex flex-col items-center">
+                    <div
+                      className="p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
+                      style={{
+                        backgroundColor: `${accentHex}20`,
+                        borderColor: `${accentHex}40`,
+                        color: accentHex,
+                      }}
+                    >
+                      <Lock className="w-7 h-7" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                        Purchasable Video
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+                        {data.video.title}
+                      </h3>
+                    </div>
+
+                    {/* Listed price based on current country */}
+                    <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[200px] shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</p>
+                      <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
+                        {getCalculatedPrice(data, selectedBuyerCountry).formatted}
+                      </p>
+                    </div>
+
+                    {/* Action Button */}
+                    {!data.isLoggedIn ? (
+                      <button
+                        onClick={() => {
+                          const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+                          router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+                        }}
+                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                        style={{ backgroundColor: accentHex }}
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Sign in to Purchase</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setIsCheckoutOpen(true)}
+                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                        style={{ backgroundColor: accentHex }}
+                      >
+                        <DollarSign className="w-4 h-4 stroke-[3]" />
+                        <span>Buy Now &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6 border border-slate-800">
                   <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
@@ -1153,7 +1518,7 @@ export default function SharedContentClient({
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                     {/* Left Column (2 cols): Video Player & Info */}
                     <div className="lg:col-span-2 space-y-5">
-                      {/* Video Player Box */}
+                      {/* Video Player Box or Purchasable Paywall */}
                       <div className="relative group/player rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800">
                         <div className="aspect-video w-full">
                           {currentVideo?.playbackUrl ? (
@@ -1164,6 +1529,69 @@ export default function SharedContentClient({
                               autoplay={activePlaylistIndex > 0 || config.autoPlayMuted}
                               className="w-full h-full"
                             />
+                          ) : data.accessMode === "PURCHASABLE" ? (
+                            <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 overflow-hidden">
+                              {data.playlist.thumbnailUrl && (
+                                <div
+                                  className="absolute inset-0 bg-cover bg-center filter blur-lg opacity-25 scale-105"
+                                  style={{ backgroundImage: `url(${data.playlist.thumbnailUrl})` }}
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+
+                              <div className="relative z-10 max-w-md space-y-4 flex flex-col items-center">
+                                <div
+                                  className="p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
+                                  style={{
+                                    backgroundColor: `${accentHex}20`,
+                                    borderColor: `${accentHex}40`,
+                                    color: accentHex,
+                                  }}
+                                >
+                                  <Lock className="w-7 h-7" />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                                    Purchasable Playlist &bull; {data.videos?.length || 0} Videos Included
+                                  </span>
+                                  <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+                                    {data.playlist.title}
+                                  </h3>
+                                </div>
+
+                                {/* Listed price based on current country */}
+                                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[200px] shadow-sm">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Playlist Price</p>
+                                  <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
+                                    {getCalculatedPrice(data, selectedBuyerCountry).formatted}
+                                  </p>
+                                </div>
+
+                                {!data.isLoggedIn ? (
+                                  <button
+                                    onClick={() => {
+                                      const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+                                      router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+                                    }}
+                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                                    style={{ backgroundColor: accentHex }}
+                                  >
+                                    <LogIn className="w-4 h-4" />
+                                    <span>Sign in to Unlock Playlist</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => setIsCheckoutOpen(true)}
+                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                                    style={{ backgroundColor: accentHex }}
+                                  >
+                                    <DollarSign className="w-4 h-4 stroke-[3]" />
+                                    <span>Unlock Full Playlist &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           ) : (
                             <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6">
                               <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
@@ -1507,6 +1935,116 @@ export default function SharedContentClient({
           </div>
         )}
       </main>
+
+      {/* VISITOR CONTENT CHECKOUT MODAL */}
+      <Dialog open={isCheckoutOpen} onOpenChange={(open) => !open && setIsCheckoutOpen(false)}>
+        <DialogContent className="max-w-md p-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div
+                className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
+              >
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-white">
+                  Unlock {data?.type === "playlist" ? "Playlist" : "Video"}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-400">
+                  Instant permanent access with lifetime streaming
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2 text-xs">
+            {checkoutError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{checkoutError}</span>
+              </div>
+            )}
+
+            {checkoutSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{checkoutSuccess}</span>
+              </div>
+            )}
+
+            {/* Order Summary Box */}
+            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                    {data?.type === "playlist" ? "Playlist Collection" : "Single Video"}
+                  </span>
+                  <p className="font-bold text-sm text-slate-100 mt-1">
+                    {data?.type === "playlist" ? data?.playlist?.title : data?.video?.title}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Provided by {data?.organization?.name}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-xs font-semibold text-slate-400">Total</span>
+                  <p className="text-lg font-black" style={{ color: accentHex }}>
+                    {getCalculatedPrice(data, selectedBuyerCountry).formatted}
+                  </p>
+                </div>
+              </div>
+
+              {data?.type === "playlist" && (
+                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" style={{ color: accentHex }} />
+                  <span>Unlocks all {data.videos?.length || 0} videos in this playlist</span>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Method Notice */}
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4" style={{ color: accentHex }} />
+                <span className="font-semibold text-slate-200">Encrypted Payment Gateway</span>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded">
+                Verified
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setIsCheckoutOpen(false)}
+              disabled={isCheckingOut}
+              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-200 rounded-xl cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExecuteCheckout}
+              disabled={isCheckingOut}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+              style={{ backgroundColor: accentHex }}
+            >
+              {isCheckingOut ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Processing Payment...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4" /> Pay & Unlock {getCalculatedPrice(data, selectedBuyerCountry).formatted}
+                </>
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer Text */}
       <footer className="py-6 border-t border-slate-800/40 text-center text-xs text-slate-400 relative z-10">
