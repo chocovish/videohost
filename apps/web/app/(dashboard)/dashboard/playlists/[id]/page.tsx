@@ -46,6 +46,11 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShareModal from "@/components/ShareModal";
+import {
+  ShareAccessMode,
+  CountryPriceItem,
+  ShareAccessModeSelector,
+} from "@/components/share";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
@@ -146,10 +151,14 @@ export default function PlaylistDetailPage() {
   const [addingFolder, setAddingFolder] = useState(false);
   const [folderAddSuccessMsg, setFolderAddSuccessMsg] = useState<string | null>(null);
 
-  // Rename Modal
+  // Edit / Rename Modal State
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
   const [renameDescription, setRenameDescription] = useState("");
+  const [renameShareAccessMode, setRenameShareAccessMode] = useState<ShareAccessMode>("PUBLIC");
+  const [renamePrice, setRenamePrice] = useState("19.99");
+  const [renameCurrency, setRenameCurrency] = useState("USD");
+  const [renameCountryPricing, setRenameCountryPricing] = useState<CountryPriceItem[]>([]);
   const [renaming, setRenaming] = useState(false);
 
   // Delete Dialog
@@ -417,19 +426,24 @@ export default function PlaylistDetailPage() {
     persistOrder(updated);
   };
 
-  // Handle Playlist Rename
+  // Handle Playlist Rename & Settings
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!renameTitle.trim()) return;
 
     setRenaming(true);
     try {
+      const isPurchasable = renameShareAccessMode === "PURCHASABLE";
       const res = await fetch(`/api/playlists/${playlistId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: renameTitle.trim(),
           description: renameDescription.trim() || null,
+          shareAccessMode: renameShareAccessMode,
+          price: isPurchasable && renamePrice ? parseFloat(renamePrice) : null,
+          currency: isPurchasable ? renameCurrency : "USD",
+          countryPricing: isPurchasable ? renameCountryPricing : [],
         }),
       });
       const data = await res.json();
@@ -568,11 +582,15 @@ export default function PlaylistDetailPage() {
             onClick={() => {
               setRenameTitle(playlist.title);
               setRenameDescription(playlist.description || "");
+              setRenameShareAccessMode(playlist.shareAccessMode || (playlist.price ? "PURCHASABLE" : "PUBLIC"));
+              setRenamePrice(playlist.price !== undefined && playlist.price !== null ? String(playlist.price) : "19.99");
+              setRenameCurrency(playlist.currency || "USD");
+              setRenameCountryPricing(Array.isArray(playlist.countryPricing) ? playlist.countryPricing : []);
               setIsRenameOpen(true);
             }}
             className="gap-2"
           >
-            <Pencil className="w-4 h-4" /> Edit Playlist
+            <Pencil className="w-4 h-4" /> Edit Playlist & Access
           </Button>
 
           <Button
@@ -1107,36 +1125,57 @@ export default function PlaylistDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Rename Playlist Modal */}
-      <Dialog open={isRenameOpen} onOpenChange={(open) => !open && setIsRenameOpen(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Playlist Details</DialogTitle>
-            <DialogDescription>Update the title and description for this playlist</DialogDescription>
+      {/* Rename & Settings Playlist Modal */}
+      <Dialog open={isRenameOpen} onOpenChange={(open) => !open && !renaming && setIsRenameOpen(false)}>
+        <DialogContent className="max-w-xl max-h-[88vh] flex flex-col p-6 overflow-hidden">
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Edit Playlist Settings</DialogTitle>
+            <DialogDescription>Update the title, description, and share access mode</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleRenameSubmit} className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Playlist Title *</label>
-              <Input
-                value={renameTitle}
-                onChange={(e) => setRenameTitle(e.target.value)}
-                required
-                className="rounded-xl"
-              />
+          <form onSubmit={handleRenameSubmit} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Playlist Title *</label>
+                <Input
+                  value={renameTitle}
+                  onChange={(e) => setRenameTitle(e.target.value)}
+                  required
+                  disabled={renaming}
+                  className="rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Description (optional)</label>
+                <textarea
+                  value={renameDescription}
+                  onChange={(e) => setRenameDescription(e.target.value)}
+                  disabled={renaming}
+                  rows={2}
+                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                />
+              </div>
+
+              {/* Share & Access Mode Section */}
+              <div className="pt-2 border-t border-border">
+                <ShareAccessModeSelector
+                  targetType="playlist"
+                  modeContext="edit"
+                  accessMode={renameShareAccessMode}
+                  onChangeAccessMode={setRenameShareAccessMode}
+                  price={renamePrice}
+                  onChangePrice={setRenamePrice}
+                  currency={renameCurrency}
+                  onChangeCurrency={setRenameCurrency}
+                  countryPricing={renameCountryPricing}
+                  onChangeCountryPricing={setRenameCountryPricing}
+                  disabled={renaming}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Description (optional)</label>
-              <textarea
-                value={renameDescription}
-                onChange={(e) => setRenameDescription(e.target.value)}
-                rows={3}
-                className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
-              />
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"

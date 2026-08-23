@@ -42,6 +42,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ShareModal from "@/components/ShareModal";
+import {
+  ShareAccessMode,
+  CountryPriceItem,
+  ShareAccessModeSelector,
+} from "@/components/share";
 import { formatDuration } from "@/lib/video-utils";
 
 interface PlaylistItemSummary {
@@ -51,6 +56,7 @@ interface PlaylistItemSummary {
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
   price?: number | null;
   currency?: string | null;
+  countryPricing?: any;
   itemCount: number;
   totalDurationSeconds: number;
   thumbnailUrl: string | null;
@@ -68,13 +74,22 @@ export default function PlaylistsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createDescription, setCreateDescription] = useState("");
+  const [createShareAccessMode, setCreateShareAccessMode] = useState<ShareAccessMode>("PUBLIC");
+  const [createPrice, setCreatePrice] = useState("19.99");
+  const [createCurrency, setCreateCurrency] = useState("USD");
+  const [createCountryPricing, setCreateCountryPricing] = useState<CountryPriceItem[]>([]);
+  const [createInviteEmails, setCreateInviteEmails] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  // Rename Modal
+  // Rename/Edit Modal
   const [renameTarget, setRenameTarget] = useState<PlaylistItemSummary | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [renameDescription, setRenameDescription] = useState("");
+  const [renameShareAccessMode, setRenameShareAccessMode] = useState<ShareAccessMode>("PUBLIC");
+  const [renamePrice, setRenamePrice] = useState("19.99");
+  const [renameCurrency, setRenameCurrency] = useState("USD");
+  const [renameCountryPricing, setRenameCountryPricing] = useState<CountryPriceItem[]>([]);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
 
@@ -114,12 +129,18 @@ export default function PlaylistsPage() {
     setCreating(true);
     setCreateError(null);
     try {
+      const isPurchasable = createShareAccessMode === "PURCHASABLE";
       const res = await fetch("/api/playlists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: createTitle.trim(),
           description: createDescription.trim() || undefined,
+          shareAccessMode: createShareAccessMode,
+          price: isPurchasable && createPrice ? parseFloat(createPrice) : null,
+          currency: isPurchasable ? createCurrency : "USD",
+          countryPricing: isPurchasable ? createCountryPricing : [],
+          inviteEmails: createShareAccessMode === "RESTRICTED" ? createInviteEmails : [],
         }),
       });
       const data = await res.json();
@@ -127,6 +148,11 @@ export default function PlaylistsPage() {
         setIsCreateOpen(false);
         setCreateTitle("");
         setCreateDescription("");
+        setCreateShareAccessMode("PUBLIC");
+        setCreatePrice("19.99");
+        setCreateCurrency("USD");
+        setCreateCountryPricing([]);
+        setCreateInviteEmails([]);
         router.push(`/dashboard/playlists/${data.playlist.id}`);
       } else {
         setCreateError(data.error || "Failed to create playlist");
@@ -145,12 +171,17 @@ export default function PlaylistsPage() {
     setRenaming(true);
     setRenameError(null);
     try {
+      const isPurchasable = renameShareAccessMode === "PURCHASABLE";
       const res = await fetch(`/api/playlists/${renameTarget.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: renameTitle.trim(),
           description: renameDescription.trim() || null,
+          shareAccessMode: renameShareAccessMode,
+          price: isPurchasable && renamePrice ? parseFloat(renamePrice) : null,
+          currency: isPurchasable ? renameCurrency : "USD",
+          countryPricing: isPurchasable ? renameCountryPricing : [],
         }),
       });
       const data = await res.json();
@@ -388,12 +419,16 @@ export default function PlaylistsPage() {
                             setRenameTarget(pl);
                             setRenameTitle(pl.title);
                             setRenameDescription(pl.description || "");
+                            setRenameShareAccessMode(pl.shareAccessMode || (pl.price ? "PURCHASABLE" : "PUBLIC"));
+                            setRenamePrice(pl.price !== undefined && pl.price !== null ? String(pl.price) : "19.99");
+                            setRenameCurrency(pl.currency || "USD");
+                            setRenameCountryPricing(Array.isArray(pl.countryPricing) ? pl.countryPricing : []);
                             setRenameError(null);
                           }}
                           className="gap-2 font-medium cursor-pointer"
                         >
                           <Pencil className="w-4 h-4 text-slate-500" />
-                          Rename
+                          Rename & Settings
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -420,9 +455,9 @@ export default function PlaylistsPage() {
       )}
 
       {/* Create Playlist Modal */}
-      <Dialog open={isCreateOpen} onOpenChange={(open) => !open && setIsCreateOpen(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+      <Dialog open={isCreateOpen} onOpenChange={(open) => !open && !creating && setIsCreateOpen(false)}>
+        <DialogContent className="max-w-xl max-h-[88vh] flex flex-col p-6 overflow-hidden">
+          <DialogHeader className="shrink-0">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
                 <ListVideo className="w-5 h-5" />
@@ -434,37 +469,60 @@ export default function PlaylistsPage() {
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleCreatePlaylist} className="space-y-4 pt-2">
-            {createError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
-                {createError}
+          <form onSubmit={handleCreatePlaylist} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
+            <div className="space-y-4">
+              {createError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
+                  {createError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Playlist Title *</label>
+                <Input
+                  placeholder="e.g. Masterclass Series 2026, Onboarding Modules"
+                  value={createTitle}
+                  onChange={(e) => setCreateTitle(e.target.value)}
+                  required
+                  autoFocus
+                  disabled={creating}
+                  className="rounded-xl"
+                />
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Playlist Title *</label>
-              <Input
-                placeholder="e.g. Masterclass Series 2026, Onboarding Modules"
-                value={createTitle}
-                onChange={(e) => setCreateTitle(e.target.value)}
-                required
-                autoFocus
-                className="rounded-xl"
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Description (optional)</label>
+                <textarea
+                  placeholder="Brief summary of what this playlist contains..."
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
+                  disabled={creating}
+                  rows={2}
+                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                />
+              </div>
+
+              {/* Share & Access Mode Section */}
+              <div className="pt-2 border-t border-border">
+                <ShareAccessModeSelector
+                  targetType="playlist"
+                  modeContext="create"
+                  accessMode={createShareAccessMode}
+                  onChangeAccessMode={setCreateShareAccessMode}
+                  price={createPrice}
+                  onChangePrice={setCreatePrice}
+                  currency={createCurrency}
+                  onChangeCurrency={setCreateCurrency}
+                  countryPricing={createCountryPricing}
+                  onChangeCountryPricing={setCreateCountryPricing}
+                  inviteEmails={createInviteEmails}
+                  onChangeInviteEmails={setCreateInviteEmails}
+                  disabled={creating}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Description (optional)</label>
-              <textarea
-                placeholder="Brief summary of what this playlist contains..."
-                value={createDescription}
-                onChange={(e) => setCreateDescription(e.target.value)}
-                rows={3}
-                className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
-              />
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -486,42 +544,63 @@ export default function PlaylistsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Rename Playlist Modal */}
-      <Dialog open={Boolean(renameTarget)} onOpenChange={(open) => !open && setRenameTarget(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Rename Playlist</DialogTitle>
-            <DialogDescription>Update the title and description for this playlist</DialogDescription>
+      {/* Rename & Settings Playlist Modal */}
+      <Dialog open={Boolean(renameTarget)} onOpenChange={(open) => !open && !renaming && setRenameTarget(null)}>
+        <DialogContent className="max-w-xl max-h-[88vh] flex flex-col p-6 overflow-hidden">
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Edit Playlist Settings</DialogTitle>
+            <DialogDescription>Update the title, description, and share access mode</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleRenamePlaylist} className="space-y-4 pt-2">
-            {renameError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
-                {renameError}
+          <form onSubmit={handleRenamePlaylist} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
+            <div className="space-y-4">
+              {renameError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
+                  {renameError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Playlist Title *</label>
+                <Input
+                  value={renameTitle}
+                  onChange={(e) => setRenameTitle(e.target.value)}
+                  required
+                  disabled={renaming}
+                  className="rounded-xl"
+                />
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Playlist Title *</label>
-              <Input
-                value={renameTitle}
-                onChange={(e) => setRenameTitle(e.target.value)}
-                required
-                className="rounded-xl"
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-foreground">Description (optional)</label>
+                <textarea
+                  value={renameDescription}
+                  onChange={(e) => setRenameDescription(e.target.value)}
+                  disabled={renaming}
+                  rows={2}
+                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                />
+              </div>
+
+              {/* Share & Access Mode Section */}
+              <div className="pt-2 border-t border-border">
+                <ShareAccessModeSelector
+                  targetType="playlist"
+                  modeContext="edit"
+                  accessMode={renameShareAccessMode}
+                  onChangeAccessMode={setRenameShareAccessMode}
+                  price={renamePrice}
+                  onChangePrice={setRenamePrice}
+                  currency={renameCurrency}
+                  onChangeCurrency={setRenameCurrency}
+                  countryPricing={renameCountryPricing}
+                  onChangeCountryPricing={setRenameCountryPricing}
+                  disabled={renaming}
+                />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-foreground">Description (optional)</label>
-              <textarea
-                value={renameDescription}
-                onChange={(e) => setRenameDescription(e.target.value)}
-                rows={3}
-                className="w-full p-2.5 text-sm bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
-              />
-            </div>
-
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"

@@ -1,9 +1,16 @@
+import { ShareAccessMode, CountryPriceItem } from "@/components/share";
+
 export interface UploadVideoOptions {
   file: File;
   title: string;
   description?: string;
   requireHls: boolean;
   currentFolderId?: string | null;
+  shareAccessMode?: ShareAccessMode;
+  price?: number | null;
+  currency?: string;
+  countryPricing?: CountryPriceItem[];
+  inviteEmails?: string[];
   metadata?: {
     durationSeconds?: number;
     sourceWidth?: number;
@@ -14,7 +21,20 @@ export interface UploadVideoOptions {
 }
 
 export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ videoId: string }> {
-  const { file, title, description, requireHls, currentFolderId, metadata, onProgress } = options;
+  const {
+    file,
+    title,
+    description,
+    requireHls,
+    currentFolderId,
+    shareAccessMode,
+    price,
+    currency,
+    countryPricing,
+    inviteEmails,
+    metadata,
+    onProgress,
+  } = options;
 
   onProgress?.(5, "Initializing upload session...");
 
@@ -28,6 +48,11 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
       fileName: file.name,
       contentType: file.type || (file.name.endsWith(".mkv") ? "video/x-matroska" : "video/mp4"),
       requireHls,
+      shareAccessMode: shareAccessMode || "PUBLIC",
+      price: price !== undefined ? price : undefined,
+      currency: currency || "USD",
+      countryPricing: countryPricing || undefined,
+      inviteEmails: inviteEmails || undefined,
       sizeBytes: file.size,
       durationSeconds: metadata?.durationSeconds || undefined,
       sourceWidth: metadata?.sourceWidth || undefined,

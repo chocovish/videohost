@@ -25,12 +25,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { processThumbnail } from "@/lib/video-utils";
+import {
+  ShareAccessMode,
+  CountryPriceItem,
+  ShareAccessModeSelector,
+} from "@/components/share";
 
 export interface EditVideoData {
   id: string;
   title: string;
   description?: string | null;
   thumbnailUrl?: string | null;
+  shareAccessMode?: ShareAccessMode;
+  price?: number | null;
+  currency?: string | null;
+  countryPricing?: CountryPriceItem[] | null;
 }
 
 interface EditVideoModalProps {
@@ -51,6 +60,13 @@ export default function EditVideoModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isThumbnailRemoved, setIsThumbnailRemoved] = useState(false);
+
+  // Share & Access Mode State
+  const [shareAccessMode, setShareAccessMode] = useState<ShareAccessMode>("PUBLIC");
+  const [price, setPrice] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [countryPricing, setCountryPricing] = useState<CountryPriceItem[]>([]);
+
   const [loading, setLoading] = useState(false);
   const [uploadStep, setUploadStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +80,10 @@ export default function EditVideoModal({
       setSelectedFile(null);
       setPreviewUrl(video.thumbnailUrl || null);
       setIsThumbnailRemoved(false);
+      setShareAccessMode(video.shareAccessMode || (video.price ? "PURCHASABLE" : "PUBLIC"));
+      setPrice(video.price !== undefined && video.price !== null ? String(video.price) : "");
+      setCurrency(video.currency || "USD");
+      setCountryPricing(Array.isArray(video.countryPricing) ? video.countryPricing : []);
       setError(null);
       setUploadStep(null);
     }
@@ -169,11 +189,16 @@ export default function EditVideoModal({
         finalThumbnailUrl = thumbData.thumbnailUrl || null;
       }
 
-      // 2. Update video metadata (title, description, removeThumbnail)
+      // 2. Update video metadata (title, description, share access mode, pricing, removeThumbnail)
       setUploadStep("Saving video details...");
+      const isPurchasable = shareAccessMode === "PURCHASABLE";
       const patchPayload: Record<string, any> = {
         title: title.trim(),
         description: description.trim() || null,
+        shareAccessMode,
+        price: isPurchasable && price ? parseFloat(price) : null,
+        currency: isPurchasable ? currency : "USD",
+        countryPricing: isPurchasable ? countryPricing : [],
       };
 
       if (isThumbnailRemoved && !selectedFile) {
@@ -356,6 +381,23 @@ export default function EditVideoModal({
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Share & Access Mode Section */}
+            <div className="pt-2 border-t border-border">
+              <ShareAccessModeSelector
+                targetType="video"
+                modeContext="edit"
+                accessMode={shareAccessMode}
+                onChangeAccessMode={setShareAccessMode}
+                price={price}
+                onChangePrice={setPrice}
+                currency={currency}
+                onChangeCurrency={setCurrency}
+                countryPricing={countryPricing}
+                onChangeCountryPricing={setCountryPricing}
+                disabled={loading}
+              />
             </div>
           </div>
 

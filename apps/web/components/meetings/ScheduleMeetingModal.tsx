@@ -5,22 +5,9 @@ import {
   Calendar,
   Clock,
   Disc,
-  Users,
-  Plus,
   Loader2,
   Sparkles,
-  Mail,
   AlertCircle,
-  X,
-  Ticket,
-  DollarSign,
-  Globe,
-  Tag,
-  Trash2,
-  Lock,
-  Shield,
-  Check,
-  Share2,
   Pencil,
 } from "lucide-react";
 import {
@@ -43,9 +30,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { POPULAR_COUNTRIES, SUPPORTED_CURRENCIES, CountryPriceItem } from "@/components/ShareModal";
+import {
+  ShareAccessMode,
+  CountryPriceItem,
+  ShareAccessModeSelector,
+} from "@/components/share";
 
-export type ShareAccessMode = "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+export type { ShareAccessMode };
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -76,7 +67,6 @@ export default function ScheduleMeetingModal({
   const [scheduledStart, setScheduledStart] = useState(getDefaultDateTime());
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [recordOnStart, setRecordOnStart] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
   const [inviteEmails, setInviteEmails] = useState<string[]>([]);
 
   // Share & Access Mode State
@@ -86,10 +76,6 @@ export default function ScheduleMeetingModal({
   const [price, setPrice] = useState("19.99");
   const [currency, setCurrency] = useState("USD");
   const [countryPricing, setCountryPricing] = useState<CountryPriceItem[]>([]);
-  const [showAddCountry, setShowAddCountry] = useState(false);
-  const [selectedCountryCode, setSelectedCountryCode] = useState("IN");
-  const [countryAmount, setCountryAmount] = useState("");
-  const [countryCurrency, setCountryCurrency] = useState("INR");
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -137,75 +123,9 @@ export default function ScheduleMeetingModal({
         setCountryPricing([]);
         setInviteEmails([]);
       }
-      setEmailInput("");
-      setShowAddCountry(false);
       setError(null);
     }
   }, [isOpen, meeting]);
-
-  const handleAddCountryPrice = () => {
-    const num = parseFloat(countryAmount);
-    if (!countryAmount || isNaN(num) || num <= 0) {
-      setError("Please enter a valid country price greater than 0");
-      return;
-    }
-    const countryObj = POPULAR_COUNTRIES.find((c) => c.code === selectedCountryCode);
-    const countryName = countryObj ? countryObj.name : selectedCountryCode;
-
-    const existingIdx = countryPricing.findIndex((c) => c.countryCode === selectedCountryCode);
-    let updated = [...countryPricing];
-    if (existingIdx >= 0) {
-      updated[existingIdx] = {
-        countryCode: selectedCountryCode,
-        countryName,
-        amount: num,
-        currency: countryCurrency,
-      };
-    } else {
-      updated.push({
-        countryCode: selectedCountryCode,
-        countryName,
-        amount: num,
-        currency: countryCurrency,
-      });
-    }
-
-    setCountryPricing(updated);
-    setCountryAmount("");
-    setShowAddCountry(false);
-    setError(null);
-  };
-
-  const handleRemoveCountryPrice = (code: string) => {
-    setCountryPricing(countryPricing.filter((c) => c.countryCode !== code));
-  };
-
-  const handleAddEmail = () => {
-    const trimmed = emailInput.trim().toLowerCase();
-    if (!trimmed) return;
-    if (!trimmed.includes("@") || !trimmed.includes(".")) {
-      setError("Please enter a valid email address");
-      return;
-    }
-    if (inviteEmails.includes(trimmed)) {
-      setEmailInput("");
-      return;
-    }
-    setInviteEmails([...inviteEmails, trimmed]);
-    setEmailInput("");
-    setError(null);
-  };
-
-  const handleRemoveEmail = (emailToRemove: string) => {
-    setInviteEmails(inviteEmails.filter((e) => e !== emailToRemove));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      handleAddEmail();
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,6 +161,7 @@ export default function ScheduleMeetingModal({
         price: isPurchasable ? parseFloat(price) : null,
         currency: isPurchasable ? currency : "USD",
         countryPricing: isPurchasable ? countryPricing : [],
+        inviteEmails: shareAccessMode === "RESTRICTED" ? inviteEmails : [],
       };
 
       if (isEditing && meeting?.id) {
@@ -282,37 +203,6 @@ export default function ScheduleMeetingModal({
       setIsLoading(false);
     }
   };
-
-  const ACCESS_MODES = [
-    {
-      mode: "PUBLIC" as const,
-      title: "Public Event",
-      desc: "Anyone with the link can access lobby and join",
-      icon: Globe,
-      color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
-    },
-    {
-      mode: "RESTRICTED" as const,
-      title: "Restricted",
-      desc: "Only invited attendees & org members can join",
-      icon: Users,
-      color: "text-blue-500 bg-blue-500/10 border-blue-500/30",
-    },
-    {
-      mode: "PRIVATE" as const,
-      title: "Host Only",
-      desc: "Private — only the creator and host can join",
-      icon: Lock,
-      color: "text-purple-500 bg-purple-500/10 border-purple-500/30",
-    },
-    {
-      mode: "PURCHASABLE" as const,
-      title: "Purchasable Pass",
-      desc: "Paid entry ticket required to join the session",
-      icon: Ticket,
-      color: "text-amber-500 bg-amber-500/10 border-amber-500/30",
-    },
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
@@ -417,7 +307,7 @@ export default function ScheduleMeetingModal({
               />
             </div>
 
-            {/* Record Meeting Option (Moved before Share Mode) */}
+            {/* Record Meeting Option */}
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg mt-0.5 ${recordOnStart ? "bg-rose-500/15 text-rose-600 dark:text-rose-400" : "bg-muted text-muted-foreground"}`}>
@@ -447,283 +337,23 @@ export default function ScheduleMeetingModal({
               />
             </div>
 
-            {/* SHARE & ACCESS MODE SECTION */}
-            <div className="space-y-2.5 pt-1">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                  <Share2 className="w-3.5 h-3.5 text-primary" /> Share & Access Mode
-                </Label>
-                <span className="text-[11px] text-muted-foreground">Controls who can enter the meeting</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {ACCESS_MODES.map((item) => {
-                  const Icon = item.icon;
-                  const isSelected = shareAccessMode === item.mode;
-                  return (
-                    <button
-                      key={item.mode}
-                      type="button"
-                      onClick={() => setShareAccessMode(item.mode)}
-                      className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
-                        isSelected
-                          ? "bg-primary/5 border-primary shadow-xs ring-1 ring-primary/20"
-                          : "bg-card border-border hover:border-border/80 hover:bg-muted/30"
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg shrink-0 mt-0.5 ${item.color}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className={`text-xs font-bold ${isSelected ? "text-foreground" : "text-foreground/90"}`}>
-                            {item.title}
-                          </span>
-                          {isSelected && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
-                          {item.desc}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* RESTRICTED MODE ATTENDEE INVITES (ONLY WHEN RESTRICTED MODE IS SELECTED) */}
-              {shareAccessMode === "RESTRICTED" && !isEditing && (
-                <div className="p-4 rounded-xl border-2 border-blue-500/30 bg-blue-500/5 dark:bg-blue-500/10 space-y-3 animate-in fade-in-50 duration-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-blue-500" />
-                      <Label htmlFor="schedule-invite-email" className="text-xs font-bold uppercase tracking-wider text-blue-500">
-                        Invite Restricted Attendees
-                      </Label>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">Press Enter or Add</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      id="schedule-invite-email"
-                      type="email"
-                      placeholder="colleague@company.com"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      disabled={isLoading}
-                      className="flex-1 bg-background"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleAddEmail}
-                      disabled={isLoading || !emailInput.trim()}
-                      className="shrink-0 cursor-pointer bg-background"
-                    >
-                      <Plus className="w-4 h-4 mr-1.5" />
-                      <span>Add</span>
-                    </Button>
-                  </div>
-
-                  {inviteEmails.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {inviteEmails.map((email) => (
-                        <Badge
-                          key={email}
-                          variant="secondary"
-                          className="gap-1.5 py-1 px-2.5 text-xs font-normal bg-background"
-                        >
-                          <span>{email}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveEmail(email)}
-                            className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                            aria-label={`Remove ${email}`}
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* PURCHASABLE PASS PRICING CONTROLS (EXPANDS WHEN PURCHASABLE IS SELECTED) */}
-              {shareAccessMode === "PURCHASABLE" && (
-                <div className="p-4 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 space-y-3.5 animate-in fade-in-50 duration-200">
-                  <div className="flex items-center gap-2">
-                    <Ticket className="w-4 h-4 text-amber-500" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
-                      Entry Pass Pricing Settings
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pass-price" className="text-xs font-medium flex items-center gap-1.5">
-                        <DollarSign className="w-3.5 h-3.5 text-muted-foreground" /> Base Pass Price
-                      </Label>
-                      <Input
-                        id="pass-price"
-                        type="number"
-                        step="0.01"
-                        min="0.5"
-                        placeholder="19.99"
-                        value={price}
-                        onChange={(e) => setPrice(e.target.value)}
-                        disabled={isLoading}
-                        className="font-medium bg-background"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-medium flex items-center gap-1.5">
-                        <Globe className="w-3.5 h-3.5 text-muted-foreground" /> Currency
-                      </Label>
-                      <Select
-                        value={currency}
-                        onValueChange={(val) => setCurrency(val || "USD")}
-                        disabled={isLoading}
-                      >
-                        <SelectTrigger className="w-full bg-background">
-                          <SelectValue placeholder="Select Currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SUPPORTED_CURRENCIES.map((curr) => (
-                            <SelectItem key={curr} value={curr}>
-                              {curr}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Country-Specific Pricing Section */}
-                  <div className="pt-2 border-t border-amber-500/20 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-muted-foreground" />
-                        Country-Specific Pricing Overrides
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowAddCountry(!showAddCountry)}
-                        className="h-6 px-2 text-[11px] text-amber-500 hover:text-amber-600 gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>{showAddCountry ? "Cancel" : "Add Country Price"}</span>
-                      </Button>
-                    </div>
-
-                    {showAddCountry && (
-                      <div className="p-3 bg-background border border-border rounded-lg space-y-2.5">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                          <div>
-                            <Label className="text-[10px] text-muted-foreground">Country</Label>
-                            <Select
-                              value={selectedCountryCode}
-                              onValueChange={(val) => {
-                                if (!val) return;
-                                setSelectedCountryCode(val);
-                                const found = POPULAR_COUNTRIES.find((c) => c.code === val);
-                                if (found?.defaultCurrency) setCountryCurrency(found.defaultCurrency);
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {POPULAR_COUNTRIES.map((c) => (
-                                  <SelectItem key={c.code} value={c.code} className="text-xs">
-                                    {c.name} ({c.code})
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label className="text-[10px] text-muted-foreground">Amount</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="e.g. 1999"
-                              value={countryAmount}
-                              onChange={(e) => setCountryAmount(e.target.value)}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-
-                          <div>
-                            <Label className="text-[10px] text-muted-foreground">Currency</Label>
-                            <Select
-                              value={countryCurrency}
-                              onValueChange={(val) => setCountryCurrency(val || "USD")}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {SUPPORTED_CURRENCIES.map((curr) => (
-                                  <SelectItem key={curr} value={curr} className="text-xs">
-                                    {curr}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end">
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={handleAddCountryPrice}
-                            disabled={!countryAmount}
-                            className="h-7 text-xs px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold cursor-pointer"
-                          >
-                            Add Override
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {countryPricing.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        {countryPricing.map((item) => (
-                          <div
-                            key={item.countryCode}
-                            className="flex items-center justify-between p-2 bg-background/80 border border-border/80 rounded-md text-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold text-foreground">{item.countryName}</span>
-                              <span className="text-muted-foreground font-mono">({item.countryCode})</span>
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                              <span className="font-bold text-amber-500">
-                                {item.currency} {item.amount}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveCountryPrice(item.countryCode)}
-                                className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                                aria-label={`Remove ${item.countryCode}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+            {/* REUSABLE SHARE & ACCESS MODE SECTION */}
+            <div className="pt-2 border-t border-border">
+              <ShareAccessModeSelector
+                targetType="meeting"
+                modeContext={isEditing ? "edit" : "create"}
+                accessMode={shareAccessMode}
+                onChangeAccessMode={setShareAccessMode}
+                price={price}
+                onChangePrice={setPrice}
+                currency={currency}
+                onChangeCurrency={setCurrency}
+                countryPricing={countryPricing}
+                onChangeCountryPricing={setCountryPricing}
+                inviteEmails={inviteEmails}
+                onChangeInviteEmails={setInviteEmails}
+                disabled={isLoading}
+              />
             </div>
           </div>
 

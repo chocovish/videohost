@@ -24,6 +24,11 @@ export async function POST(req: Request) {
       sourceHeight,
       fileName,
       contentType,
+      shareAccessMode = "PUBLIC",
+      price,
+      currency = "USD",
+      countryPricing,
+      inviteEmails = [],
     } = await req.json();
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -41,6 +46,9 @@ export async function POST(req: Request) {
     }
 
     const isHls = Boolean(requireHls);
+    const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
+    const resolvedMode = validModes.includes(shareAccessMode) ? shareAccessMode : "PUBLIC";
+    const parsedPrice = resolvedMode === "PURCHASABLE" && price !== undefined && price !== null ? parseFloat(String(price)) : null;
 
     const video = await db.video.create({
       data: {
@@ -51,7 +59,10 @@ export async function POST(req: Request) {
         description: description || null,
         status: "UPLOADING",
         originalKey: "temp",
-        shareAccessMode: "PUBLIC",
+        shareAccessMode: resolvedMode as any,
+        price: parsedPrice,
+        currency: currency || "USD",
+        countryPricing: resolvedMode === "PURCHASABLE" && countryPricing ? countryPricing : undefined,
         requireHls: isHls,
         sizeBytes: sizeBytes ? BigInt(sizeBytes) : null,
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
@@ -59,6 +70,20 @@ export async function POST(req: Request) {
         sourceHeight: sourceHeight ? Math.round(Number(sourceHeight)) : null,
       },
     });
+
+    if (resolvedMode === "RESTRICTED" && Array.isArray(inviteEmails) && inviteEmails.length > 0) {
+      try {
+        await db.sharedEmail.createMany({
+          data: inviteEmails.map((email: string) => ({
+            videoId: video.id,
+            email: email.trim().toLowerCase(),
+          })),
+          skipDuplicates: true,
+        });
+      } catch (emailErr) {
+        console.warn("Failed to create initial shared emails for video:", emailErr);
+      }
+    }
 
     let ext = "mp4";
     if (fileName && typeof fileName === "string" && fileName.includes(".")) {

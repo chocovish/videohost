@@ -198,58 +198,69 @@ export default function InMeetingInviteModal({
           </div>
 
           {/* Send Instant Email Invite Form */}
-          <form onSubmit={handleSendInvites} className="space-y-3 pt-3 border-t border-border">
+          <form onSubmit={handleSendInvites} className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 space-y-3">
             <div className="flex items-center justify-between">
-              <Label htmlFor="in-meeting-invite-email" className="text-xs font-medium flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Send Email Invitation
-              </Label>
-              <span className="text-[11px] text-muted-foreground">Press Enter to add</span>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-blue-500" />
+                <Label htmlFor="in-meeting-invite-email" className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  Invite Attendees via Email
+                </Label>
+              </div>
+              {inviteEmails.length > 0 && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {inviteEmails.length} added
+                </Badge>
+              )}
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+              <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
+              <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center gap-2">
                 <Check className="w-4 h-4 shrink-0" />
                 <span>{successMsg}</span>
               </div>
             )}
 
             <div className="flex gap-2">
-              <Input
-                id="in-meeting-invite-email"
-                type="email"
-                placeholder="colleague@domain.com"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                disabled={isSending}
-                className="flex-1"
-              />
+              <div className="relative flex-1">
+                <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="in-meeting-invite-email"
+                  type="email"
+                  placeholder="colleague@domain.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isSending}
+                  className="pl-8 text-xs bg-background h-9 rounded-xl"
+                />
+              </div>
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleAddEmail}
                 disabled={isSending || !emailInput.trim()}
-                className="shrink-0"
+                className="shrink-0 bg-background h-9 rounded-xl gap-1 text-xs font-semibold cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add</span>
               </Button>
             </div>
 
             {/* Email tags */}
             {inviteEmails.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-1.5 pt-1 max-h-32 overflow-y-auto">
                 {inviteEmails.map((email) => (
                   <Badge
                     key={email}
                     variant="secondary"
-                    className="gap-1.5 py-1 px-2.5 text-xs font-normal"
+                    className="gap-1.5 py-1 px-2.5 text-xs font-normal bg-background border border-border"
                   >
                     <span>{email}</span>
                     <button
@@ -265,21 +276,21 @@ export default function InMeetingInviteModal({
               </div>
             )}
 
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-end pt-1">
               <Button
                 type="submit"
                 disabled={isSending || (inviteEmails.length === 0 && !emailInput.trim())}
-                className="gap-2"
+                className="gap-1.5 text-xs font-bold rounded-xl h-9"
               >
                 {isSending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Sending...
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Sending...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    Send Invites
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Send Invites</span>
                   </>
                 )}
               </Button>

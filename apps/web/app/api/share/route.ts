@@ -160,8 +160,140 @@ export async function POST(req: Request) {
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
     const shareUrl = `${baseUrl}/share/${targetId}`;
 
-    // Handle Action 1: UPDATE_MODE
-    if (action === "UPDATE_MODE" || accessMode) {
+    // Handle Action: SAVE_ALL (Comprehensive batch save of mode, pricing, and allowed emails)
+    if (action === "SAVE_ALL") {
+      const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
+      const newMode = accessMode && validModes.includes(accessMode) ? accessMode : currentAccessMode;
+
+      const updateData: any = {
+        shareAccessMode: newMode,
+      };
+
+      if (price !== undefined) {
+        updateData.price = price !== null && price !== "" ? parseFloat(String(price)) : null;
+      }
+      if (currency !== undefined) {
+        updateData.currency = currency;
+      }
+      if (countryPricing !== undefined) {
+        updateData.countryPricing = countryPricing;
+      }
+
+      if (targetType === "video") {
+        await db.video.update({
+          where: { id: targetId },
+          data: updateData,
+        });
+      } else if (targetType === "playlist") {
+        await db.playlist.update({
+          where: { id: targetId },
+          data: updateData,
+        });
+      } else {
+        await db.meeting.update({
+          where: { id: targetId },
+          data: updateData,
+        });
+      }
+      currentAccessMode = newMode;
+      if (updateData.price !== undefined) currentPrice = updateData.price;
+      if (updateData.currency !== undefined) currentCurrency = updateData.currency;
+      if (updateData.countryPricing !== undefined) currentCountryPricing = updateData.countryPricing;
+
+      // Synchronize allowed emails if provided
+      const rawEmails = body.emails || body.allowedEmails;
+      if (Array.isArray(rawEmails)) {
+        const normalizedEmails: { email: string; message?: string }[] = rawEmails
+          .map((item: any) => {
+            if (typeof item === "string") return { email: item.trim().toLowerCase() };
+            if (item && typeof item.email === "string") {
+              return { email: item.email.trim().toLowerCase(), message: item.message };
+            }
+            return null;
+          })
+          .filter((item): item is { email: string; message?: string } => Boolean(item && item.email && item.email.includes("@")));
+
+        const targetEmailSet = new Set(normalizedEmails.map((e) => e.email));
+
+        const user = await db.user.findUnique({
+          where: { id: authCtx.userId },
+          select: { name: true, email: true },
+        });
+        const senderName = user?.name || user?.email?.split("@")[0] || "A teammate";
+
+        if (targetType === "meeting") {
+          const existing = await db.meetingInvite.findMany({
+            where: { meetingId: targetId },
+          });
+          const existingEmailSet = new Set(existing.map((e) => e.email.toLowerCase()));
+
+          // Remove deleted emails
+          const emailsToRemove = existing.filter((e) => !targetEmailSet.has(e.email.toLowerCase())).map((e) => e.id);
+          if (emailsToRemove.length > 0) {
+            await db.meetingInvite.deleteMany({
+              where: { id: { in: emailsToRemove } },
+            });
+          }
+
+          // Add newly added emails
+          const newlyAdded = normalizedEmails.filter((e) => !existingEmailSet.has(e.email));
+          for (const item of newlyAdded) {
+            await db.meetingInvite.upsert({
+              where: { meetingId_email: { meetingId: targetId, email: item.email } },
+              create: { meetingId: targetId, email: item.email, role: "attendee" },
+              update: {},
+            });
+          }
+        } else {
+          const existing = await db.sharedEmail.findMany({
+            where: targetType === "video" ? { videoId: targetId } : { playlistId: targetId },
+          });
+          const existingEmailSet = new Set(existing.map((e) => e.email.toLowerCase()));
+
+          // Remove deleted emails
+          const emailsToRemove = existing.filter((e) => !targetEmailSet.has(e.email.toLowerCase())).map((e) => e.id);
+          if (emailsToRemove.length > 0) {
+            await db.sharedEmail.deleteMany({
+              where: { id: { in: emailsToRemove } },
+            });
+          }
+
+          // Add newly added emails & send notification
+          const newlyAdded = normalizedEmails.filter((e) => !existingEmailSet.has(e.email));
+          for (const item of newlyAdded) {
+            await db.sharedEmail.upsert({
+              where:
+                targetType === "video"
+                  ? { videoId_email: { videoId: targetId, email: item.email } }
+                  : { playlistId_email: { playlistId: targetId, email: item.email } },
+              create: {
+                videoId: targetType === "video" ? targetId : null,
+                playlistId: targetType === "playlist" ? targetId : null,
+                email: item.email,
+              },
+              update: {},
+            });
+
+            try {
+              await sendShareEmail({
+                toEmail: item.email,
+                senderName,
+                organizationName: org.name,
+                targetType: targetType as "video" | "playlist",
+                targetTitle,
+                shareUrl,
+                message: item.message || undefined,
+              });
+            } catch (mailErr) {
+              console.error("[Share API] Error sending batch email invite:", mailErr);
+            }
+          }
+        }
+      }
+    }
+
+    // Handle Action 1: UPDATE_MODE (Legacy individual update)
+    else if (action === "UPDATE_MODE" || accessMode) {
       const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
       const newMode = accessMode && validModes.includes(accessMode) ? accessMode : currentAccessMode;
 
@@ -202,7 +334,7 @@ export async function POST(req: Request) {
     }
 
     // Handle Action 2: ADD_EMAIL
-    if (action === "ADD_EMAIL" || (email && !emailId && action !== "REMOVE_EMAIL")) {
+    if (action === "ADD_EMAIL" || (email && !emailId && action !== "REMOVE_EMAIL" && action !== "SAVE_ALL")) {
       const cleanEmail = email.trim().toLowerCase();
       if (!cleanEmail || !cleanEmail.includes("@")) {
         return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });

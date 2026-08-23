@@ -84,19 +84,45 @@ export async function POST(req: Request) {
     const body = await req.json();
     const title = body.title?.trim();
     const description = body.description ? body.description.trim() : null;
+    const shareAccessMode = body.shareAccessMode || "PUBLIC";
+    const price = body.price;
+    const currency = body.currency || "USD";
+    const countryPricing = body.countryPricing;
+    const inviteEmails = body.inviteEmails || [];
 
     if (!title) {
       return NextResponse.json({ error: "Playlist title is required" }, { status: 400 });
     }
+
+    const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
+    const resolvedMode = validModes.includes(shareAccessMode) ? shareAccessMode : "PUBLIC";
+    const parsedPrice = resolvedMode === "PURCHASABLE" && price !== undefined && price !== null ? parseFloat(String(price)) : null;
 
     const playlist = await db.playlist.create({
       data: {
         organizationId: authCtx.orgId,
         title,
         description,
-        shareAccessMode: "PUBLIC",
+        shareAccessMode: resolvedMode as any,
+        price: parsedPrice,
+        currency: currency || "USD",
+        countryPricing: resolvedMode === "PURCHASABLE" && countryPricing ? countryPricing : undefined,
       },
     });
+
+    if (resolvedMode === "RESTRICTED" && Array.isArray(inviteEmails) && inviteEmails.length > 0) {
+      try {
+        await db.sharedEmail.createMany({
+          data: inviteEmails.map((email: string) => ({
+            playlistId: playlist.id,
+            email: email.trim().toLowerCase(),
+          })),
+          skipDuplicates: true,
+        });
+      } catch (emailErr) {
+        console.warn("Failed to create initial shared emails for playlist:", emailErr);
+      }
+    }
 
     return NextResponse.json({ playlist }, { status: 201 });
   } catch (error: any) {

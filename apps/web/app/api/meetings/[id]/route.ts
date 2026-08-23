@@ -208,6 +208,37 @@ export async function PATCH(
     if (typeof body.isRecording === "boolean") updateData.isRecording = body.isRecording;
     if (body.recordedVideoId) updateData.recordedVideoId = body.recordedVideoId;
 
+    // Synchronize restricted inviteEmails if provided
+    if (Array.isArray(body.inviteEmails)) {
+      const cleanEmails = body.inviteEmails
+        .map((e: any) => (typeof e === "string" ? e.trim().toLowerCase() : ""))
+        .filter((e: string) => e.includes("@"));
+
+      const currentInvites = await db.meetingInvite.findMany({
+        where: { meetingId: meeting.id },
+      });
+      const currentEmailSet = new Set(currentInvites.map((i) => i.email.toLowerCase()));
+      const targetEmailSet = new Set(cleanEmails);
+
+      // Remove deleted
+      const toDelete = currentInvites.filter((i) => !targetEmailSet.has(i.email.toLowerCase())).map((i) => i.id);
+      if (toDelete.length > 0) {
+        await db.meetingInvite.deleteMany({ where: { id: { in: toDelete } } });
+      }
+
+      // Add new
+      const toAdd = cleanEmails.filter((e: string) => !currentEmailSet.has(e));
+      if (toAdd.length > 0) {
+        for (const email of toAdd) {
+          await db.meetingInvite.upsert({
+            where: { meetingId_email: { meetingId: meeting.id, email } },
+            create: { meetingId: meeting.id, email, role: "attendee" },
+            update: {},
+          });
+        }
+      }
+    }
+
     const updated = await db.meeting.update({
       where: { id: meeting.id },
       data: updateData,

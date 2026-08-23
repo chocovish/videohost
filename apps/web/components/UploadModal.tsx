@@ -33,6 +33,11 @@ import {
 } from "@/lib/mediabunny-remux";
 import UnsupportedVideoModal from "@/components/UnsupportedVideoModal";
 import { ThumbnailSelector } from "@/components/ThumbnailSelector";
+import {
+  ShareAccessMode,
+  CountryPriceItem,
+  ShareAccessModeSelector,
+} from "@/components/share";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -53,6 +58,14 @@ export default function UploadModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [requireHls, setRequireHls] = useState(false);
+
+  // Share & Access Mode State
+  const [shareAccessMode, setShareAccessMode] = useState<ShareAccessMode>("PUBLIC");
+  const [price, setPrice] = useState("19.99");
+  const [currency, setCurrency] = useState("USD");
+  const [countryPricing, setCountryPricing] = useState<CountryPriceItem[]>([]);
+  const [inviteEmails, setInviteEmails] = useState<string[]>([]);
+
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("");
@@ -75,6 +88,11 @@ export default function UploadModal({
     setTitle("");
     setDescription("");
     setRequireHls(false);
+    setShareAccessMode("PUBLIC");
+    setPrice("19.99");
+    setCurrency("USD");
+    setCountryPricing([]);
+    setInviteEmails([]);
     setError("");
     setProgress(0);
     setStatusText("");
@@ -303,12 +321,20 @@ export default function UploadModal({
     }
 
     try {
+      const isPurchasable = shareAccessMode === "PURCHASABLE";
+      const isRestricted = shareAccessMode === "RESTRICTED";
+
       await uploadVideoFile({
         file: convertedFile,
         title: title.trim(),
         description: description.trim() || undefined,
         requireHls,
         currentFolderId,
+        shareAccessMode,
+        price: isPurchasable && price ? parseFloat(price) : null,
+        currency: isPurchasable ? currency : "USD",
+        countryPricing: isPurchasable ? countryPricing : [],
+        inviteEmails: isRestricted ? inviteEmails : [],
         metadata: {
           ...metadata,
           thumbnailBlob: customThumbBlob || metadata?.thumbnailBlob,
@@ -542,6 +568,25 @@ export default function UploadModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details about this video..."
               className="flex w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
+            />
+          </div>
+
+          {/* Share & Access Mode Section */}
+          <div className="pt-2 border-t border-border">
+            <ShareAccessModeSelector
+              targetType="video"
+              modeContext="create"
+              accessMode={shareAccessMode}
+              onChangeAccessMode={setShareAccessMode}
+              price={price}
+              onChangePrice={setPrice}
+              currency={currency}
+              onChangeCurrency={setCurrency}
+              countryPricing={countryPricing}
+              onChangeCountryPricing={setCountryPricing}
+              inviteEmails={inviteEmails}
+              onChangeInviteEmails={setInviteEmails}
+              disabled={uploading}
             />
           </div>
 
