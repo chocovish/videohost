@@ -19,6 +19,9 @@ model User {
   passwordHash  String?
   viewMode             String               @default("CREATOR") // "CREATOR" | "VIEWER"
   activeOrganizationId String?
+  isBlocked            Boolean              @default(false)
+  blockedReason        String?
+  blockedAt            DateTime?
   accounts             Account[]
   sessions      Session[]
   memberships   OrganizationMember[]
@@ -183,6 +186,7 @@ model Plan {
   seatLimit         Int
   priceMonthlyCents Int
   isCustom          Boolean        @default(false)
+  commissionPercent Float          @default(6.5) // Platform fee on sales: Free 6.5%, Basic 5.5%, Pro 4.0%, Enterprise 3.5%
   organizations     Organization[]
   paymentOrders     PaymentOrder[]
 }
@@ -598,6 +602,12 @@ model ContentPurchase {
   amount          Float
   currency        String        @default("USD")
   countryCode     String?       // purchaser country code, e.g. "US", "IN"
+  commissionPercent Float       @default(6.5) // Plan-tiered platform fee percentage at purchase
+  commissionAmount Float        @default(0)   // Platform fee deducted: (amount * commissionPercent / 100)
+  gatewayFeePercent Float       @default(3.0) // Constant 3% payment gateway fee percentage
+  gatewayFeeAmount Float        @default(0)   // Gateway processing fee deducted: (amount * gatewayFeePercent / 100)
+  creatorEarnings  Float        @default(0)   // Net creator earnings: (amount - commissionAmount - gatewayFeeAmount)
+  planSnapshot    String?       // Creator's plan at purchase time, e.g. "FREE", "BASIC", "PRO", "ENTERPRISE"
   paymentMethod   String?       @default("CARD") // "CARD" | "RAZORPAY" | "CASHFREE" | "STRIPE" | "TEST_PAY"
   paymentId       String?       // reference ID
   status          String        @default("COMPLETED") // "COMPLETED" | "PENDING" | "REFUNDED"
@@ -644,6 +654,8 @@ model WithdrawalRequest {
   status         String       @default("PENDING") // "PENDING" | "PROCESSING" | "COMPLETED" | "REJECTED"
   bankDetails    Json?        // snapshot of bank details at time of request
   adminNotes     String?
+  transactionId  String?      // e.g. UTR / Wire ref / Payment ID
+  transactionProof String?    // optional transaction note or receipt link
   processedAt    DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

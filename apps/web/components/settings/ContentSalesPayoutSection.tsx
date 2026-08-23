@@ -1,0 +1,1378 @@
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+import {
+  DollarSign,
+  Receipt,
+  Wallet,
+  Landmark,
+  BadgePercent,
+  TrendingUp,
+  ArrowDownToLine,
+  ArrowUpRight,
+  Sparkles,
+  RefreshCw,
+  Filter,
+  Search,
+  X,
+  Loader2,
+  Film,
+  ListVideo,
+  Users,
+  Check,
+  Copy,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Save,
+  ChevronRight,
+  CreditCard,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatMoney, getCurrencySymbol } from "@/lib/utils";
+import { PLAN_COMMISSION_RATES, PAYMENT_GATEWAY_FEE_PERCENT } from "@/lib/platform-fees";
+import { OrganizationItem } from "./OrganizationSwitcherSection";
+
+export interface PurchasesStats {
+  totalGrossRevenue: number;
+  totalPlatformFees: number;
+  totalGatewayFees?: number;
+  totalNetEarnings: number;
+  availableBalance: number;
+  totalWithdrawnOrPending: number;
+  totalPurchasesCount: number;
+  videoPurchasesCount: number;
+  playlistPurchasesCount: number;
+  meetingPurchasesCount?: number;
+  activePlanName?: string;
+  activeCommissionPercent?: number;
+  gatewayFeePercent?: number;
+  currency?: string;
+}
+
+export interface BankFormData {
+  accountHolderName: string;
+  accountNumber: string;
+  routingNumber: string;
+  bankName: string;
+  swiftCode: string;
+  accountType: string;
+  country: string;
+  currency: string;
+}
+
+interface ContentSalesPayoutSectionProps {
+  purchases: any[];
+  purchasesStats: PurchasesStats | null;
+  bankAccount: any;
+  withdrawals: any[];
+  hasPendingWithdrawal: boolean;
+  monetizationTab: "purchases" | "withdrawals" | "bank" | "tiers";
+  setMonetizationTab: (tab: "purchases" | "withdrawals" | "bank" | "tiers") => void;
+  purchaseFilterType: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING";
+  setPurchaseFilterType: (type: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING") => void;
+  purchaseSearchQuery: string;
+  setPurchaseSearchQuery: (query: string) => void;
+  copiedPaymentId: string | null;
+  setCopiedPaymentId: (id: string | null) => void;
+  withdrawalPresetPct: number | null;
+  setWithdrawalPresetPct: (pct: number | null) => void;
+  loadingMonetization: boolean;
+  fetchMonetizationData: () => Promise<void>;
+  bankFormData: BankFormData;
+  setBankFormData: React.Dispatch<React.SetStateAction<BankFormData>>;
+  activeCurrency: string;
+  showAccountNumber: boolean;
+  setShowAccountNumber: (show: boolean) => void;
+  isSavingBank: boolean;
+  bankSuccessMsg: string;
+  bankErrorMsg: string;
+  handleSaveBankAccount: (e: React.FormEvent) => Promise<void>;
+  withdrawalAmount: string;
+  setWithdrawalAmount: (amt: string) => void;
+  isRequestingWithdrawal: boolean;
+  withdrawalSuccessMsg: string;
+  withdrawalErrorMsg: string;
+  handleRequestWithdrawal: (e: React.FormEvent) => Promise<void>;
+  activeOrg?: OrganizationItem;
+}
+
+export function ContentSalesPayoutSection({
+  purchases,
+  purchasesStats,
+  bankAccount,
+  withdrawals,
+  hasPendingWithdrawal,
+  monetizationTab,
+  setMonetizationTab,
+  purchaseFilterType,
+  setPurchaseFilterType,
+  purchaseSearchQuery,
+  setPurchaseSearchQuery,
+  copiedPaymentId,
+  setCopiedPaymentId,
+  withdrawalPresetPct,
+  setWithdrawalPresetPct,
+  loadingMonetization,
+  fetchMonetizationData,
+  bankFormData,
+  setBankFormData,
+  activeCurrency,
+  showAccountNumber,
+  setShowAccountNumber,
+  isSavingBank,
+  bankSuccessMsg,
+  bankErrorMsg,
+  handleSaveBankAccount,
+  withdrawalAmount,
+  setWithdrawalAmount,
+  isRequestingWithdrawal,
+  withdrawalSuccessMsg,
+  withdrawalErrorMsg,
+  handleRequestWithdrawal,
+  activeOrg,
+}: ContentSalesPayoutSectionProps) {
+  const router = useRouter();
+
+  const currentActivePlan = (purchasesStats?.activePlanName || activeOrg?.planName || "free").toLowerCase();
+  const currentCommissionPercent =
+    purchasesStats?.activeCommissionPercent ??
+    (PLAN_COMMISSION_RATES[currentActivePlan] ?? 6.5);
+  const gatewayFeeRate = purchasesStats?.gatewayFeePercent ?? PAYMENT_GATEWAY_FEE_PERCENT;
+  const totalDeductionPercent = currentCommissionPercent + gatewayFeeRate;
+
+  const filteredPurchases = purchases.filter((p) => {
+    if (purchaseFilterType !== "ALL" && p.contentType !== purchaseFilterType) {
+      return false;
+    }
+    if (purchaseSearchQuery.trim()) {
+      const q = purchaseSearchQuery.toLowerCase();
+      const title = (p.video?.title || p.playlist?.title || p.meeting?.title || "").toLowerCase();
+      const userName = (p.user?.name || "").toLowerCase();
+      const userEmail = (p.user?.email || "").toLowerCase();
+      const paymentId = (p.paymentId || "").toLowerCase();
+      if (!title.includes(q) && !userName.includes(q) && !userEmail.includes(q) && !paymentId.includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const handleSetPresetAmount = (pct: number) => {
+    setWithdrawalPresetPct(pct);
+    const available = purchasesStats?.availableBalance || 0;
+    if (available <= 0) return;
+    const calc = Math.floor((available * (pct / 100)) * 100) / 100;
+    setWithdrawalAmount(calc.toFixed(2));
+  };
+
+  const handleCopyRef = (id: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(id);
+      setCopiedPaymentId(id);
+      setTimeout(() => setCopiedPaymentId(null), 2000);
+    }
+  };
+
+  const remainingBalanceAfterWithdraw =
+    withdrawalAmount && !isNaN(parseFloat(withdrawalAmount))
+      ? Math.max(0, (purchasesStats?.availableBalance || 0) - parseFloat(withdrawalAmount))
+      : purchasesStats?.availableBalance || 0;
+
+  return (
+    <div className="glass-card rounded-3xl p-5 sm:p-7 border border-border/80 shadow-xl space-y-7 backdrop-blur-md">
+      {/* Section Header & Active Plan Platform Fee Pill */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-border/60">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="p-2.5 rounded-2xl bg-lime-500/15 text-lime-500 border border-lime-500/20 shadow-xs shrink-0">
+              <DollarSign className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-xl text-foreground tracking-tight flex items-center gap-2">
+                Content Sales & Payout Center
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Track sales revenues, automatic plan platform fees, 3% gateway processing fees, net creator earnings, bank direct deposit, and payouts.
+              </p>
+            </div>
+          </div>
+
+          {/* Plan Commission Benefit Highlight Banner */}
+          <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary font-bold">
+              <BadgePercent className="w-3.5 h-3.5" />
+              <span>
+                Active Plan: <span className="capitalize">{currentActivePlan}</span> (
+                {currentCommissionPercent}% Platform Fee + {gatewayFeeRate}% Gateway Fee = {totalDeductionPercent}% Total)
+              </span>
+            </div>
+
+            {currentActivePlan === "free" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 font-medium">
+                <span>Upgrade to Basic (5.5%), Pro (4.0%), or Enterprise (3.5%) to reduce platform fees!</span>
+                <button
+                  onClick={() => router.push("/dashboard/pricing")}
+                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                >
+                  Upgrade <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {currentActivePlan === "basic" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-400 font-medium">
+                <span>Upgrade to Pro (4.0%) or Enterprise (3.5%) to lower your platform fee even further.</span>
+                <button
+                  onClick={() => router.push("/dashboard/pricing")}
+                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                >
+                  Upgrade <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {currentActivePlan === "pro" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">
+                <span>Enterprise tier unlocks our lowest 3.5% creator platform fee rate.</span>
+                <button
+                  onClick={() => router.push("/dashboard/pricing")}
+                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                >
+                  Explore Enterprise <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {currentActivePlan === "enterprise" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 font-bold">
+                <Sparkles className="w-3 h-3 text-purple-500" />
+                <span>Lowest Platform Fee Tier (3.5%) Unlocked across all content & meeting passes!</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation Tabs Pill Switcher */}
+        <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/60 rounded-2xl border border-border self-start lg:self-center shrink-0">
+          <button
+            onClick={() => setMonetizationTab("purchases")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              monetizationTab === "purchases"
+                ? "bg-card text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            <span>Sales Ledger</span>
+            <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-primary/15 text-primary font-mono">
+              {purchases.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setMonetizationTab("withdrawals")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              monetizationTab === "withdrawals"
+                ? "bg-card text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Wallet className="w-3.5 h-3.5 text-lime-500" />
+            <span>Payouts</span>
+            {hasPendingWithdrawal && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="1 withdrawal in review" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setMonetizationTab("bank")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              monetizationTab === "bank"
+                ? "bg-card text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Landmark className="w-3.5 h-3.5 text-primary" />
+            <span>Bank Account</span>
+            {bankAccount ? (
+              <span className="text-[11px] text-emerald-500 font-bold">✓</span>
+            ) : (
+              <span className="text-[9px] px-1 rounded bg-amber-500/20 text-amber-600 font-bold">Set up</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setMonetizationTab("tiers")}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              monetizationTab === "tiers"
+                ? "bg-card text-foreground shadow-sm border border-border"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BadgePercent className="w-3.5 h-3.5 text-purple-500" />
+            <span>Fee Tiers</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 6 High-Impact Financial KPI Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        {/* Card 1: Gross Sales */}
+        <div className="p-4 rounded-2xl bg-card border border-border/70 shadow-xs space-y-1.5 hover:border-border transition-colors">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Receipt className="w-3.5 h-3.5 text-blue-500" /> Gross Sales
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
+              {purchasesStats?.totalPurchasesCount || 0} orders
+            </span>
+          </span>
+          <p className="text-xl font-black text-foreground tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalGrossRevenue : 0, activeCurrency)}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {purchasesStats?.videoPurchasesCount || 0} vids &bull; {purchasesStats?.playlistPurchasesCount || 0} playlists &bull; {purchasesStats?.meetingPurchasesCount || 0} meets
+          </p>
+        </div>
+
+        {/* Card 2: Platform Commission Fee */}
+        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-xs space-y-1.5">
+          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <BadgePercent className="w-3.5 h-3.5 text-amber-500" /> Platform Fee
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold">
+              {currentCommissionPercent}%
+            </span>
+          </span>
+          <p className="text-xl font-black text-amber-700 dark:text-amber-400 tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalPlatformFees : 0, activeCurrency)}
+          </p>
+          <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 truncate">
+            Plan-based fee on sales
+          </p>
+        </div>
+
+        {/* Card 3: Payment Gateway Fee (Constant 3%) */}
+        <div className="p-4 rounded-2xl bg-sky-500/5 border border-sky-500/20 shadow-xs space-y-1.5">
+          <span className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-sky-500" /> Gateway Fee
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 font-bold">
+              {gatewayFeeRate}%
+            </span>
+          </span>
+          <p className="text-xl font-black text-sky-700 dark:text-sky-400 tracking-tight">
+            {formatMoney(purchasesStats?.totalGatewayFees ?? 0, activeCurrency)}
+          </p>
+          <p className="text-[10px] text-sky-600/80 dark:text-sky-400/80 truncate">
+            Payment processing cost
+          </p>
+        </div>
+
+        {/* Card 4: Net Creator Earnings */}
+        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-xs space-y-1.5">
+          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> Net Earnings
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
+              Take-home
+            </span>
+          </span>
+          <p className="text-xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalNetEarnings : 0, activeCurrency)}
+          </p>
+          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 truncate">
+            Sales minus all fees
+          </p>
+        </div>
+
+        {/* Card 5: Available for Payout (Featured Hero Card) */}
+        <div className="p-4 rounded-2xl bg-lime-500/10 border-2 border-lime-500/30 shadow-md space-y-1.5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-lime-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
+          <span className="text-[11px] font-extrabold text-lime-700 dark:text-lime-400 uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Wallet className="w-3.5 h-3.5" /> Available Payout
+            </span>
+            <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
+          </span>
+          <p className="text-xl font-black text-lime-700 dark:text-lime-300 tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
+          </p>
+          <div className="flex items-center justify-between pt-0.5">
+            <span className="text-[10px] text-muted-foreground font-mono">
+              Ready in {activeCurrency}
+            </span>
+            <button
+              onClick={() => setMonetizationTab("withdrawals")}
+              disabled={(purchasesStats?.availableBalance || 0) <= 0 || hasPendingWithdrawal}
+              className="text-[11px] font-bold text-lime-600 dark:text-lime-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-0.5"
+            >
+              Withdraw <ChevronRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Card 6: Pending & Paid Out */}
+        <div className="p-4 rounded-2xl bg-card border border-border/70 shadow-xs space-y-1.5 hover:border-border transition-colors">
+          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <ArrowDownToLine className="w-3.5 h-3.5 text-purple-500" /> Withdrawn / Pending
+            </span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
+              {withdrawals.length} reqs
+            </span>
+          </span>
+          <p className="text-xl font-black text-foreground tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalWithdrawnOrPending : 0, activeCurrency)}
+          </p>
+          <p className="text-[10px] text-muted-foreground truncate">
+            {hasPendingWithdrawal ? (
+              <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+                <Clock className="w-3 h-3" /> 1 under review
+              </span>
+            ) : (
+              "No pending requests"
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* TAB 1: SALES LEDGER & TRANSACTION HISTORY */}
+      {monetizationTab === "purchases" && (
+        <div className="space-y-4 pt-1">
+          {/* Search & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card/60 p-3 rounded-2xl border border-border/60">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 mr-1">
+                <Filter className="w-3.5 h-3.5" /> Type:
+              </span>
+              {(["ALL", "VIDEO", "PLAYLIST", "MEETING"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setPurchaseFilterType(type)}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    purchaseFilterType === type
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {type === "ALL" ? "All Orders" : type === "VIDEO" ? "Videos" : type === "PLAYLIST" ? "Playlists" : "Meetings"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search buyer, title, or ref ID..."
+                  value={purchaseSearchQuery}
+                  onChange={(e) => setPurchaseSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs rounded-xl bg-background border-border"
+                />
+                {purchaseSearchQuery && (
+                  <button
+                    onClick={() => setPurchaseSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={fetchMonetizationData}
+                disabled={loadingMonetization}
+                title="Refresh Ledger"
+                className="p-2 rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingMonetization ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+          </div>
+
+          {loadingMonetization ? (
+            <div className="py-16 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" /> Loading sales transaction ledger...
+            </div>
+          ) : filteredPurchases.length === 0 ? (
+            <div className="py-14 text-center border border-dashed border-border/80 rounded-2xl space-y-3 p-6 bg-muted/10">
+              <Receipt className="w-12 h-12 text-muted-foreground mx-auto opacity-40" />
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  {purchases.length === 0 ? "No sales recorded yet" : "No orders matching search filter"}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-md mx-auto mt-1">
+                  {purchases.length === 0
+                    ? "Set your videos, playlists, or meetings to 'Purchasable' mode to start selling. Platform fees and gateway fees will be automatically calculated and displayed here."
+                    : "Try adjusting your search query or switching filters to view other transactions."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto border border-border/80 rounded-2xl shadow-xs">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
+                  <tr>
+                    <th className="py-3 px-4">Item & Content</th>
+                    <th className="py-3 px-4">Buyer Details</th>
+                    <th className="py-3 px-4">Gross Sale</th>
+                    <th className="py-3 px-4">Platform Fee</th>
+                    <th className="py-3 px-4">Gateway Fee (3%)</th>
+                    <th className="py-3 px-4">Net Creator Take-Home</th>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Payment Reference</th>
+                    <th className="py-3 px-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {filteredPurchases.map((purchase) => (
+                    <tr key={purchase.id} className="hover:bg-muted/30 transition-colors">
+                      {/* Item & Type */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-start gap-2.5">
+                          <div className="p-2 rounded-xl bg-muted/60 text-foreground shrink-0 mt-0.5">
+                            {purchase.contentType === "PLAYLIST" ? (
+                              <ListVideo className="w-4 h-4 text-purple-500" />
+                            ) : purchase.contentType === "MEETING" ? (
+                              <Users className="w-4 h-4 text-amber-500" />
+                            ) : (
+                              <Film className="w-4 h-4 text-blue-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-foreground line-clamp-1 max-w-[200px]">
+                              {purchase.video?.title ||
+                                purchase.playlist?.title ||
+                                purchase.meeting?.title ||
+                                "Purchasable Content"}
+                            </p>
+                            <span
+                              className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mt-0.5 ${
+                                purchase.contentType === "PLAYLIST"
+                                  ? "bg-purple-500/15 text-purple-600 border border-purple-500/20"
+                                  : purchase.contentType === "MEETING"
+                                  ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
+                                  : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
+                              }`}
+                            >
+                              {purchase.contentType}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Buyer */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-foreground">
+                          {purchase.user?.name || "Guest Purchaser"}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]">
+                          {purchase.user?.email || "—"}
+                        </div>
+                        {purchase.countryCode && (
+                          <span className="inline-block text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground font-mono mt-0.5">
+                            🌍 {purchase.countryCode}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Gross Sale */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-extrabold text-foreground text-sm">
+                          {formatMoney(purchase.amount, purchase.currency)}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          ({purchase.currency})
+                        </span>
+                      </td>
+
+                      {/* Platform Fee */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-amber-600 dark:text-amber-400">
+                          -{formatMoney(purchase.commissionAmount || 0, purchase.currency)}
+                        </div>
+                        <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono">
+                          {purchase.commissionPercent}% ({purchase.planSnapshot || "FREE"})
+                        </span>
+                      </td>
+
+                      {/* Gateway Fee (Constant 3%) */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-sky-600 dark:text-sky-400">
+                          -{formatMoney(purchase.gatewayFeeAmount || 0, purchase.currency)}
+                        </div>
+                        <span className="text-[10px] text-sky-700/80 dark:text-sky-400/80 font-mono">
+                          {purchase.gatewayFeePercent ?? 3.0}% Gateway
+                        </span>
+                      </td>
+
+                      {/* Net Take-Home */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                          +{formatMoney(purchase.creatorEarnings || purchase.amount, purchase.currency)}
+                        </div>
+                        <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-mono">
+                          Net to balance
+                        </span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="py-3.5 px-4 text-muted-foreground whitespace-nowrap">
+                        <div className="font-medium text-foreground">
+                          {new Date(purchase.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {new Date(purchase.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      </td>
+
+                      {/* Payment Ref */}
+                      <td className="py-3.5 px-4">
+                        <button
+                          onClick={() => handleCopyRef(purchase.paymentId || purchase.id)}
+                          title="Click to copy payment reference ID"
+                          className="group inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          <span>{(purchase.paymentId || purchase.id).slice(0, 12)}...</span>
+                          {copiedPaymentId === (purchase.paymentId || purchase.id) ? (
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+                          )}
+                        </button>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          {purchase.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: PAYOUTS & WITHDRAWAL CENTER */}
+      {monetizationTab === "withdrawals" && (
+        <div className="space-y-6 pt-1">
+          {/* Hero Payout Request Module */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-card border border-border/80 shadow-md space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
+              <div className="space-y-1">
+                <h4 className="text-base font-extrabold text-foreground flex items-center gap-2">
+                  <ArrowDownToLine className="w-4 h-4 text-lime-500" /> Request Payout to Bank
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Withdraw available net sales revenue directly to your official connected bank account.
+                </p>
+              </div>
+
+              {/* Linked Bank Preview Tag */}
+              {bankAccount ? (
+                <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-xs text-foreground shrink-0">
+                  <Landmark className="w-4 h-4 text-primary" />
+                  <div>
+                    <div className="font-bold flex items-center gap-1">
+                      {bankAccount.bankName}{" "}
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        (••••{bankAccount.accountNumber?.slice(-4)})
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {bankAccount.currency || activeCurrency} &bull; {bankAccount.accountType || "Checking"}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setMonetizationTab("bank")}
+                  className="px-3.5 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                >
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" /> Connect Bank Account First
+                </button>
+              )}
+            </div>
+
+            {/* Strict Requirement Notice: Single pending withdrawal constraint */}
+            {hasPendingWithdrawal && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-start gap-3">
+                <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-500 animate-spin" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block">Active Withdrawal In Progress</span>
+                  <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90">
+                    You currently have a withdrawal request under review. Per financial safety policies, new withdrawals can be submitted once your current pending request is completed.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!bankAccount && (
+              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <Landmark className="w-5 h-5 shrink-0 text-purple-600" />
+                  <div>
+                    <p className="font-bold">No payout bank account connected yet</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Configure your direct deposit routing or IFSC details to initiate wire payouts.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => setMonetizationTab("bank")}
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shrink-0"
+                >
+                  Add Bank Account
+                </Button>
+              </div>
+            )}
+
+            {withdrawalSuccessMsg && (
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{withdrawalSuccessMsg}</span>
+              </div>
+            )}
+
+            {withdrawalErrorMsg && (
+              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{withdrawalErrorMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleRequestWithdrawal} className="space-y-5">
+              {/* Amount Input with Quick Preset Percentage Buttons */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="withdraw-amt-input" className="text-xs font-bold text-foreground">
+                    Withdrawal Amount ({getCurrencySymbol(activeCurrency)} {activeCurrency})
+                  </Label>
+                  <div className="text-xs text-muted-foreground">
+                    Max Available:{" "}
+                    <strong className="text-lime-600 dark:text-lime-400 font-bold">
+                      {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground font-mono text-sm font-bold">
+                      {getCurrencySymbol(activeCurrency)}
+                    </span>
+                    <Input
+                      id="withdraw-amt-input"
+                      type="number"
+                      step="0.01"
+                      min="1"
+                      max={purchasesStats?.availableBalance || 0}
+                      disabled={
+                        hasPendingWithdrawal ||
+                        !bankAccount ||
+                        (purchasesStats?.availableBalance || 0) <= 0 ||
+                        isRequestingWithdrawal
+                      }
+                      placeholder={`e.g. ${
+                        purchasesStats?.availableBalance ? purchasesStats.availableBalance.toFixed(2) : "50.00"
+                      }`}
+                      value={withdrawalAmount}
+                      onChange={(e) => {
+                        setWithdrawalAmount(e.target.value);
+                        setWithdrawalPresetPct(null);
+                      }}
+                      className="pl-8 text-base font-black h-11 rounded-2xl bg-background border-border"
+                    />
+                  </div>
+
+                  {/* Preset Quick Buttons */}
+                  <div className="flex items-center gap-1.5">
+                    {[25, 50, 75, 100].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => handleSetPresetAmount(pct)}
+                        disabled={
+                          hasPendingWithdrawal ||
+                          !bankAccount ||
+                          (purchasesStats?.availableBalance || 0) <= 0 ||
+                          isRequestingWithdrawal
+                        }
+                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                          withdrawalPresetPct === pct
+                            ? "bg-lime-500 text-black shadow-xs font-black"
+                            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {pct === 100 ? "MAX" : `${pct}%`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Calculation Preview Card */}
+              {withdrawalAmount && parseFloat(withdrawalAmount) > 0 && (
+                <div className="p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Amount Requested:</span>
+                    <span className="font-bold text-foreground">
+                      {formatMoney(parseFloat(withdrawalAmount), activeCurrency)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Transfer Destination:</span>
+                    <span className="font-bold text-foreground">
+                      {bankAccount?.bankName || "Configured Bank"} (••••
+                      {bankAccount?.accountNumber?.slice(-4) || "—"})
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-muted-foreground">
+                    <span>Estimated Processing Window:</span>
+                    <span className="font-bold text-foreground">1-3 Business Days</span>
+                  </div>
+                  <div className="pt-2 border-t border-border/50 flex items-center justify-between font-bold">
+                    <span className="text-foreground">Remaining Available Balance:</span>
+                    <span className="text-lime-600 dark:text-lime-400">
+                      {formatMoney(remainingBalanceAfterWithdraw, activeCurrency)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-1">
+                <Button
+                  type="submit"
+                  disabled={
+                    hasPendingWithdrawal ||
+                    !bankAccount ||
+                    !withdrawalAmount ||
+                    parseFloat(withdrawalAmount) <= 0 ||
+                    (purchasesStats && parseFloat(withdrawalAmount) > purchasesStats.availableBalance) ||
+                    isRequestingWithdrawal
+                  }
+                  className="w-full sm:w-auto min-w-[200px] h-11 rounded-2xl bg-lime-500 hover:bg-lime-600 text-black font-extrabold text-xs shadow-md transition-transform active:scale-95"
+                >
+                  {isRequestingWithdrawal ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting Request...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowDownToLine className="w-4 h-4 mr-2" /> Submit Payout Request
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+
+          {/* Withdrawal History Table */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" /> Payout Withdrawal History ({withdrawals.length})
+              </h4>
+              <button
+                onClick={fetchMonetizationData}
+                disabled={loadingMonetization}
+                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingMonetization ? "animate-spin" : ""}`} /> Refresh
+              </button>
+            </div>
+
+            {withdrawals.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-border/80 rounded-2xl text-xs text-muted-foreground bg-muted/10">
+                <Clock className="w-8 h-8 text-muted-foreground mx-auto opacity-40 mb-2" />
+                <p className="font-semibold text-foreground">No withdrawal requests yet</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  When you submit a payout request, processing status and bank transaction receipts will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto border border-border/80 rounded-2xl shadow-xs">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Requested Date</th>
+                      <th className="py-3 px-4">Withdrawal Amount</th>
+                      <th className="py-3 px-4">Bank Destination</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Processed Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {withdrawals.map((w) => (
+                      <tr key={w.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-3.5 px-4 font-medium text-foreground whitespace-nowrap">
+                          <div>{new Date(w.createdAt).toLocaleDateString()}</div>
+                          <div className="text-[10px] text-muted-foreground">
+                            {new Date(w.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-black text-foreground text-sm">
+                          {formatMoney(w.amount, w.currency)}{" "}
+                          <span className="text-[10px] text-muted-foreground font-normal font-mono">
+                            ({w.currency})
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-muted-foreground">
+                          {w.bankDetails?.bankName ? (
+                            <div className="font-medium text-foreground">
+                              {w.bankDetails.bankName}{" "}
+                              <span className="text-[11px] text-muted-foreground font-mono">
+                                &bull; ••••{w.bankDetails.accountNumber?.slice(-4)}
+                              </span>
+                            </div>
+                          ) : (
+                            "Saved Bank Account"
+                          )}
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 ${
+                              w.status === "PENDING"
+                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                                : w.status === "PROCESSING"
+                                ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
+                                : w.status === "COMPLETED" || w.status === "APPROVED"
+                                ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+                                : "bg-red-500/15 text-red-600 border border-red-500/30"
+                            }`}
+                          >
+                            {w.status === "PENDING" && <Clock className="w-2.5 h-2.5 animate-spin" />}
+                            {w.status}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-muted-foreground">
+                          {w.processedAt ? (
+                            <span className="font-medium text-foreground">
+                              {new Date(w.processedAt).toLocaleDateString()}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-muted-foreground italic">Under Review</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: BANK & DIRECT DEPOSIT SETTINGS */}
+      {monetizationTab === "bank" && (
+        <div className="space-y-6 max-w-3xl pt-1">
+          <div className="space-y-1">
+            <h4 className="text-base font-extrabold text-foreground flex items-center gap-2">
+              <Landmark className="w-4 h-4 text-primary" /> Direct Deposit Bank Account
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Enter your official verified bank details. Requested payout earnings will be directly wired to this account.
+            </p>
+          </div>
+
+          {bankSuccessMsg && (
+            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{bankSuccessMsg}</span>
+            </div>
+          )}
+
+          {bankErrorMsg && (
+            <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{bankErrorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveBankAccount} className="space-y-5 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-holder-input" className="text-xs font-semibold">
+                  Account Holder Full Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="bank-holder-input"
+                  required
+                  placeholder="e.g. John Doe / Studio Corp LLC"
+                  value={bankFormData.accountHolderName}
+                  onChange={(e) => setBankFormData({ ...bankFormData, accountHolderName: e.target.value })}
+                  className="h-10 rounded-xl bg-background border-border"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-name-input" className="text-xs font-semibold">
+                  Bank Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="bank-name-input"
+                  required
+                  placeholder="e.g. JPMorgan Chase / HDFC Bank"
+                  value={bankFormData.bankName}
+                  onChange={(e) => setBankFormData({ ...bankFormData, bankName: e.target.value })}
+                  className="h-10 rounded-xl bg-background border-border"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="bank-acc-input" className="text-xs font-semibold">
+                    Account / IBAN Number <span className="text-red-500">*</span>
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowAccountNumber(!showAccountNumber)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                  >
+                    {showAccountNumber ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    {showAccountNumber ? "Hide" : "Show"}
+                  </button>
+                </div>
+                <Input
+                  id="bank-acc-input"
+                  required
+                  type={showAccountNumber ? "text" : "password"}
+                  placeholder="e.g. 123456789012"
+                  value={bankFormData.accountNumber}
+                  onChange={(e) => setBankFormData({ ...bankFormData, accountNumber: e.target.value })}
+                  className="h-10 rounded-xl bg-background border-border font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-routing-input" className="text-xs font-semibold">
+                  Routing / IFSC / Sort Code
+                </Label>
+                <Input
+                  id="bank-routing-input"
+                  placeholder="e.g. 021000021 / HDFC0001234"
+                  value={bankFormData.routingNumber}
+                  onChange={(e) => setBankFormData({ ...bankFormData, routingNumber: e.target.value })}
+                  className="h-10 rounded-xl bg-background border-border font-mono uppercase"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-swift-input" className="text-xs font-semibold">
+                  SWIFT / BIC Code (Optional for International)
+                </Label>
+                <Input
+                  id="bank-swift-input"
+                  placeholder="e.g. CHASUS33XXX"
+                  value={bankFormData.swiftCode}
+                  onChange={(e) => setBankFormData({ ...bankFormData, swiftCode: e.target.value })}
+                  className="h-10 rounded-xl bg-background border-border font-mono uppercase"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-type-select" className="text-xs font-semibold">
+                  Account Type
+                </Label>
+                <Select
+                  value={bankFormData.accountType}
+                  onValueChange={(val) => setBankFormData({ ...bankFormData, accountType: val || "CHECKING" })}
+                >
+                  <SelectTrigger
+                    id="bank-type-select"
+                    className="w-full h-10 rounded-xl bg-background border-border text-foreground text-xs font-medium"
+                  >
+                    <SelectValue placeholder="Select Account Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CHECKING">Checking / Current Account</SelectItem>
+                    <SelectItem value="SAVINGS">Savings Account</SelectItem>
+                    <SelectItem value="BUSINESS">Business Corporate Account</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-country-select" className="text-xs font-semibold">
+                  Bank Country
+                </Label>
+                <Select
+                  value={bankFormData.country}
+                  onValueChange={(val) => {
+                    const country = val || "US";
+                    const countryCurrencyMap: Record<string, string> = {
+                      US: "USD",
+                      IN: "INR",
+                      GB: "GBP",
+                      DE: "EUR",
+                      FR: "EUR",
+                      CA: "CAD",
+                      AU: "AUD",
+                      SG: "SGD",
+                      AE: "AED",
+                    };
+                    setBankFormData((prev) => ({
+                      ...prev,
+                      country,
+                      currency: countryCurrencyMap[country] || prev.currency,
+                    }));
+                  }}
+                >
+                  <SelectTrigger
+                    id="bank-country-select"
+                    className="w-full h-10 rounded-xl bg-background border-border text-foreground text-xs font-medium"
+                  >
+                    <SelectValue placeholder="Select Country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="US">🇺🇸 United States</SelectItem>
+                    <SelectItem value="IN">🇮🇳 India</SelectItem>
+                    <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
+                    <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                    <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                    <SelectItem value="FR">🇫🇷 France</SelectItem>
+                    <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                    <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
+                    <SelectItem value="AE">🇦🇪 United Arab Emirates</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="bank-currency-select" className="text-xs font-semibold">
+                  Payout Currency
+                </Label>
+                <Select
+                  value={bankFormData.currency}
+                  onValueChange={(val) => setBankFormData({ ...bankFormData, currency: val || "USD" })}
+                >
+                  <SelectTrigger
+                    id="bank-currency-select"
+                    className="w-full h-10 rounded-xl bg-background border-border text-foreground text-xs font-medium"
+                  >
+                    <SelectValue placeholder="Select Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="EUR">EUR (€)</SelectItem>
+                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="CAD">CAD (CA$)</SelectItem>
+                    <SelectItem value="AUD">AUD (AU$)</SelectItem>
+                    <SelectItem value="SGD">SGD (SG$)</SelectItem>
+                    <SelectItem value="AED">AED (AED)</SelectItem>
+                    <SelectItem value="JPY">JPY (¥)</SelectItem>
+                    <SelectItem value="BRL">BRL (R$)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={
+                  isSavingBank ||
+                  !bankFormData.accountHolderName.trim() ||
+                  !bankFormData.accountNumber.trim() ||
+                  !bankFormData.bankName.trim()
+                }
+                className="w-full sm:w-auto font-bold text-xs h-10 px-5 rounded-xl shadow-sm"
+              >
+                {isSavingBank ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving Bank Details...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" /> Save Direct Deposit Account
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* TAB 4: COMMISSION RATES & TIERS MATRIX */}
+      {monetizationTab === "tiers" && (
+        <div className="space-y-6 pt-1">
+          <div className="space-y-1">
+            <h4 className="text-base font-extrabold text-foreground flex items-center gap-2">
+              <BadgePercent className="w-4 h-4 text-purple-500" /> Platform Fee & Gateway Processing Tiers
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Every content sale includes a plan-tiered platform fee plus a flat 3.0% payment gateway processing fee. Creator net take-home earnings are credited automatically to your available balance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Tier 1: Free */}
+            <div
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${
+                currentActivePlan === "free"
+                  ? "bg-primary/10 border-primary shadow-md ring-2 ring-primary/20"
+                  : "bg-card border-border/70"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-sm text-foreground">Free Plan</span>
+                {currentActivePlan === "free" && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">
+                    Active Tier
+                  </span>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-2xl font-black text-foreground">6.5% + 3.0%</div>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  9.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">90.5% Net Payout</span>
+                </p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
+                <li>&bull; 2GB cloud hosting</li>
+                <li>&bull; Unlimited screen recording</li>
+                <li>&bull; Monetize videos & playlists</li>
+              </ul>
+            </div>
+
+            {/* Tier 2: Basic */}
+            <div
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${
+                currentActivePlan === "basic"
+                  ? "bg-sky-500/10 border-sky-500 shadow-md ring-2 ring-sky-500/20"
+                  : "bg-card border-border/70"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-sm text-foreground">Basic Plan</span>
+                {currentActivePlan === "basic" && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-sky-500 text-white">
+                    Active Tier
+                  </span>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-2xl font-black text-sky-600 dark:text-sky-400">5.5% + 3.0%</div>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  8.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">91.5% Net Payout</span>
+                </p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
+                <li>&bull; 50GB cloud storage</li>
+                <li>&bull; Meeting recordings included</li>
+                <li>&bull; Save 1.0% on platform fee</li>
+              </ul>
+            </div>
+
+            {/* Tier 3: Pro */}
+            <div
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${
+                currentActivePlan === "pro"
+                  ? "bg-primary/15 border-primary shadow-md ring-2 ring-primary/20"
+                  : "bg-card border-border/70"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-sm text-foreground">Pro Plan</span>
+                {currentActivePlan === "pro" && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">
+                    Active Tier
+                  </span>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-2xl font-black text-primary">4.0% + 3.0%</div>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  7.0% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">93.0% Net Payout</span>
+                </p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
+                <li>&bull; 200GB cloud storage</li>
+                <li>&bull; Adaptive bitrate HLS streaming</li>
+                <li>&bull; Save 2.5% on platform fee</li>
+              </ul>
+            </div>
+
+            {/* Tier 4: Enterprise */}
+            <div
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${
+                currentActivePlan === "enterprise"
+                  ? "bg-purple-500/15 border-purple-500 shadow-md ring-2 ring-purple-500/20"
+                  : "bg-card border-border/70"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-sm text-foreground">Enterprise</span>
+                {currentActivePlan === "enterprise" ? (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-600 text-white">
+                    Active Tier
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-600">
+                    Lowest Rate
+                  </span>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-2xl font-black text-purple-600 dark:text-purple-400">3.5% + 3.0%</div>
+                <p className="text-[11px] font-semibold text-muted-foreground">
+                  6.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">93.5% Net Payout</span>
+                </p>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
+                <li>&bull; Unlimited cloud storage</li>
+                <li>&bull; Up to 5 team workspaces</li>
+                <li>&bull; Lowest 3.5% platform fee</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-muted/40 border border-border/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-0.5">
+              <p className="font-bold text-foreground">Want to lower your platform fee rate?</p>
+              <p className="text-muted-foreground">
+                Upgrading your workspace subscription unlocks lower sales commission and increased cloud storage immediately.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => router.push("/dashboard/pricing")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs shrink-0"
+            >
+              View All Plans <ArrowUpRight className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

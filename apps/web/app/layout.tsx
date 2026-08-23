@@ -3,6 +3,8 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import { Noto_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+import { getImpersonationSession } from "@/lib/admin-auth";
 
 const notoSans = Noto_Sans({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -86,7 +88,9 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const impersonation = await getImpersonationSession();
+
   return (
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <head>
@@ -95,9 +99,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased selection:bg-primary/20 selection:text-primary min-h-screen">
-        <Providers>{children}</Providers>
+        <Providers>
+          <ImpersonationBanner initialImpersonation={impersonation} />
+          {children}
+        </Providers>
       </body>
     </html>
   );
 }
+
 

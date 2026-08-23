@@ -34,6 +34,17 @@ export async function GET(req: NextRequest) {
       };
     }
 
+    const organization = await db.organization.findUnique({
+      where: { id: orgId },
+      select: {
+        id: true,
+        name: true,
+        plan: { select: { id: true, name: true } },
+      },
+    });
+
+    const isFreePlan = (organization?.plan?.name?.toLowerCase() || "free") === "free";
+
     const meetings = await db.meeting.findMany({
       where: whereClause,
       include: {
@@ -62,7 +73,11 @@ export async function GET(req: NextRequest) {
       ],
     });
 
-    return NextResponse.json({ meetings });
+    return NextResponse.json({
+      meetings,
+      planName: organization?.plan?.name || "free",
+      isFreePlan,
+    });
   } catch (err: any) {
     console.error("GET /api/meetings error:", err);
     return NextResponse.json({ error: err.message || "Failed to fetch meetings" }, { status: 500 });
@@ -105,9 +120,14 @@ export async function POST(req: NextRequest) {
 
     const organization = await db.organization.findUnique({
       where: { id: orgId },
-      select: { name: true },
+      select: {
+        name: true,
+        plan: { select: { id: true, name: true } },
+      },
     });
 
+    const isFreePlan = (organization?.plan?.name?.toLowerCase() || "free") === "free";
+    const finalRecordOnStart = !isFreePlan && Boolean(recordOnStart);
     const orgName = organization?.name || "Taped Organization";
 
     const meeting = await db.meeting.create({
@@ -119,7 +139,7 @@ export async function POST(req: NextRequest) {
         scheduledStart: scheduledStart ? new Date(scheduledStart) : (isInstant ? new Date() : null),
         scheduledEnd: scheduledEnd ? new Date(scheduledEnd) : null,
         isInstant: Boolean(isInstant),
-        recordOnStart: Boolean(recordOnStart),
+        recordOnStart: finalRecordOnStart,
         allowGuests: Boolean(allowGuests),
         status: isInstant ? "ACTIVE" : "SCHEDULED",
         shareAccessMode: isPurchasable ? "PURCHASABLE" : (shareAccessMode as any || "PUBLIC"),

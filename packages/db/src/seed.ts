@@ -13,6 +13,7 @@ async function main() {
     update: {
       storageLimitGb: 2,
       priceMonthlyCents: 0,
+      commissionPercent: 6.5,
     },
     create: {
       id: "plan_free",
@@ -22,6 +23,7 @@ async function main() {
       maxResolution: "1080p",
       seatLimit: 1,
       priceMonthlyCents: 0,
+      commissionPercent: 6.5,
       isCustom: false,
     },
   });
@@ -31,6 +33,7 @@ async function main() {
     update: {
       storageLimitGb: 50,
       priceMonthlyCents: 39900,
+      commissionPercent: 5.5,
     },
     create: {
       id: "plan_basic",
@@ -40,6 +43,7 @@ async function main() {
       maxResolution: "1080p",
       seatLimit: 1,
       priceMonthlyCents: 39900,
+      commissionPercent: 5.5,
       isCustom: false,
     },
   });
@@ -49,6 +53,7 @@ async function main() {
     update: {
       storageLimitGb: 200,
       priceMonthlyCents: 99900,
+      commissionPercent: 4.0,
     },
     create: {
       id: "plan_pro",
@@ -58,6 +63,7 @@ async function main() {
       maxResolution: "4k",
       seatLimit: 1,
       priceMonthlyCents: 99900,
+      commissionPercent: 4.0,
       isCustom: false,
     },
   });
@@ -67,6 +73,7 @@ async function main() {
     update: {
       storageLimitGb: 0,
       priceMonthlyCents: 299900,
+      commissionPercent: 3.5,
     },
     create: {
       id: "plan_enterprise",
@@ -76,6 +83,7 @@ async function main() {
       maxResolution: "4k",
       seatLimit: 1000,
       priceMonthlyCents: 299900,
+      commissionPercent: 3.5,
       isCustom: true,
     },
   });

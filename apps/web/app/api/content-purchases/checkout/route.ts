@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
+import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     if (contentType === "video") {
       const video = await db.video.findUnique({
         where: { id: contentId },
-        include: { organization: true },
+        include: { organization: { include: { plan: true } } },
       });
 
       if (!video) {
@@ -79,6 +80,12 @@ export async function POST(req: Request) {
         });
       }
 
+      const split = calculateSaleSplit(
+        targetPrice,
+        video.organization?.plan?.name || "free",
+        video.organization?.plan?.commissionPercent
+      );
+
       // Create purchase record
       const purchase = await db.contentPurchase.create({
         data: {
@@ -89,6 +96,12 @@ export async function POST(req: Request) {
           amount: targetPrice,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
+          commissionPercent: split.commissionPercent,
+          commissionAmount: split.commissionAmount,
+          gatewayFeePercent: split.gatewayFeePercent,
+          gatewayFeeAmount: split.gatewayFeeAmount,
+          creatorEarnings: split.creatorEarnings,
+          planSnapshot: split.planSnapshot,
           paymentMethod,
           paymentId: paymentId || `pay_vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           status: "COMPLETED",
@@ -104,7 +117,7 @@ export async function POST(req: Request) {
       // MEETING ENTRY PASS PURCHASE
       const meeting = await db.meeting.findUnique({
         where: { id: contentId },
-        include: { organization: true },
+        include: { organization: { include: { plan: true } } },
       });
 
       if (!meeting) {
@@ -159,6 +172,12 @@ export async function POST(req: Request) {
         });
       }
 
+      const split = calculateSaleSplit(
+        targetPrice,
+        meeting.organization?.plan?.name || "free",
+        meeting.organization?.plan?.commissionPercent
+      );
+
       // Create purchase record
       const purchase = await db.contentPurchase.create({
         data: {
@@ -169,6 +188,12 @@ export async function POST(req: Request) {
           amount: targetPrice,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
+          commissionPercent: split.commissionPercent,
+          commissionAmount: split.commissionAmount,
+          gatewayFeePercent: split.gatewayFeePercent,
+          gatewayFeeAmount: split.gatewayFeeAmount,
+          creatorEarnings: split.creatorEarnings,
+          planSnapshot: split.planSnapshot,
           paymentMethod,
           paymentId: paymentId || `pay_meet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           status: "COMPLETED",
@@ -184,7 +209,7 @@ export async function POST(req: Request) {
       // PLAYLIST PURCHASE
       const playlist = await db.playlist.findUnique({
         where: { id: contentId },
-        include: { organization: true },
+        include: { organization: { include: { plan: true } } },
       });
 
       if (!playlist) {
@@ -231,6 +256,12 @@ export async function POST(req: Request) {
         });
       }
 
+      const split = calculateSaleSplit(
+        targetPrice,
+        playlist.organization?.plan?.name || "free",
+        playlist.organization?.plan?.commissionPercent
+      );
+
       // Create purchase record
       const purchase = await db.contentPurchase.create({
         data: {
@@ -241,6 +272,12 @@ export async function POST(req: Request) {
           amount: targetPrice,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
+          commissionPercent: split.commissionPercent,
+          commissionAmount: split.commissionAmount,
+          gatewayFeePercent: split.gatewayFeePercent,
+          gatewayFeeAmount: split.gatewayFeeAmount,
+          creatorEarnings: split.creatorEarnings,
+          planSnapshot: split.planSnapshot,
           paymentMethod,
           paymentId: paymentId || `pay_pl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           status: "COMPLETED",

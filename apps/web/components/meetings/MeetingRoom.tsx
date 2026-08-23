@@ -33,6 +33,7 @@ import {
   Sliders,
   X,
   MoreVertical,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +48,7 @@ import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
 import MeetingSettingsModal from "@/components/meetings/MeetingSettingsModal";
 import ParticipantsPanel from "@/components/meetings/ParticipantsPanel";
 import RecordOptionsModal from "@/components/meetings/RecordOptionsModal";
+import RecordingUpgradeModal from "@/components/meetings/RecordingUpgradeModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MeetingRoomProps {
@@ -65,6 +67,8 @@ interface MeetingRoomProps {
     isOrgMember?: boolean;
     canModerate?: boolean;
     canRecord?: boolean;
+    isFreePlan?: boolean;
+    planName?: string;
   };
   audioEnabled?: boolean;
   videoEnabled?: boolean;
@@ -269,6 +273,7 @@ function RoomContent({
   const [meetingSeconds, setMeetingSeconds] = useState(0);
   const [isUpdatingRecord, setIsUpdatingRecord] = useState(false);
   const [isRecordOptionsOpen, setIsRecordOptionsOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [recordingFallbackUrl, setRecordingFallbackUrl] = useState<string | null>(null);
 
@@ -324,8 +329,12 @@ function RoomContent({
     pipPosition: "bottom-right",
   });
 
-  // Trigger Record Button Click: If not recording, open options popup
+  // Trigger Record Button Click: If not recording, open options popup or upgrade popup on Free plan
   const handleRecordButtonClick = () => {
+    if (meeting.isFreePlan) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
     setRecordingError(null);
     setIsRecordOptionsOpen(true);
   };
@@ -646,41 +655,59 @@ function RoomContent({
           {/* --- Desktop Controls (hidden on mobile, visible on sm/md and up) --- */}
           <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
             {/* Recording Controls for Host / Authorized Members */}
-            {(meeting.canRecord || meeting.isHost) && (
+            {(meeting.canRecord || meeting.isHost || meeting.isOrgMember) && (
               <div className="flex items-center gap-1.5">
-                {/* If Recording: Show Live Adjust Layout Button */}
-                {isRecording && (
+                {meeting.isFreePlan ? (
                   <Button
-                    variant="dark"
+                    variant="darkOutline"
                     size="sm"
-                    onClick={() => {
-                      setRecordingError(null);
-                      setIsRecordOptionsOpen(true);
-                    }}
-                    className="inline-flex gap-1.5 text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
-                    title="Adjust live recording layout"
+                    onClick={() => setIsUpgradeModalOpen(true)}
+                    className="inline-flex gap-1.5 text-slate-300 hover:text-white border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 transition-colors shadow-xs"
+                    title="Meeting recording is not available on the Free plan. Click to view upgrade options."
                   >
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span className="hidden md:inline">REC Layout</span>
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden md:inline">Record</span>
+                    <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-1 py-0.2 rounded border border-amber-500/20">
+                      Upgrade
+                    </span>
                   </Button>
-                )}
+                ) : (
+                  <>
+                    {/* If Recording: Show Live Adjust Layout Button */}
+                    {isRecording && (
+                      <Button
+                        variant="dark"
+                        size="sm"
+                        onClick={() => {
+                          setRecordingError(null);
+                          setIsRecordOptionsOpen(true);
+                        }}
+                        className="inline-flex gap-1.5 text-amber-300 hover:text-amber-200 border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20"
+                        title="Adjust live recording layout"
+                      >
+                        <Sliders className="w-3.5 h-3.5" />
+                        <span className="hidden md:inline">REC Layout</span>
+                      </Button>
+                    )}
 
-                {/* Start Record or Stop Record Button */}
-                <Button
-                  variant={isRecording ? "dangerOutline" : "dark"}
-                  size="sm"
-                  onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
-                  disabled={isUpdatingRecord}
-                  className="inline-flex gap-1.5"
-                  title={isRecording ? "Stop Recording" : "Record Meeting"}
-                >
-                  {isUpdatingRecord ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
-                  )}
-                  <span className="hidden md:inline">{isRecording ? "Stop REC" : "Record"}</span>
-                </Button>
+                    {/* Start Record or Stop Record Button */}
+                    <Button
+                      variant={isRecording ? "dangerOutline" : "dark"}
+                      size="sm"
+                      onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
+                      disabled={isUpdatingRecord}
+                      className="inline-flex gap-1.5"
+                      title={isRecording ? "Stop Recording" : "Record Meeting"}
+                    >
+                      {isUpdatingRecord ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Disc className={`w-3.5 h-3.5 ${isRecording ? "animate-pulse" : ""}`} />
+                      )}
+                      <span className="hidden md:inline">{isRecording ? "Stop REC" : "Record"}</span>
+                    </Button>
+                  </>
+                )}
               </div>
             )}
 
@@ -770,41 +797,59 @@ function RoomContent({
                 <DropdownMenuSeparator className="bg-slate-800 my-1" />
 
                 {/* Recording Controls in 3-dot Menu */}
-                {(meeting.canRecord || meeting.isHost) && (
+                {(meeting.canRecord || meeting.isHost || meeting.isOrgMember) && (
                   <>
-                    <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1">
-                      Recording
-                    </DropdownMenuLabel>
-                    <DropdownMenuItem
-                      onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
-                      disabled={isUpdatingRecord}
-                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
-                    >
-                      {isUpdatingRecord ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      ) : (
-                        <Disc
-                          className={`w-4 h-4 ${
-                            isRecording ? "text-rose-400 animate-pulse" : "text-slate-400"
-                          }`}
-                        />
+                    <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1 flex items-center justify-between">
+                      <span>Recording</span>
+                      {meeting.isFreePlan && (
+                        <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                          Paid Plan
+                        </span>
                       )}
-                      <span className={isRecording ? "text-rose-300 font-semibold" : ""}>
-                        {isRecording ? "Stop Recording" : "Start Recording"}
-                      </span>
-                    </DropdownMenuItem>
+                    </DropdownMenuLabel>
 
-                    {isRecording && (
+                    {meeting.isFreePlan ? (
                       <DropdownMenuItem
-                        onClick={() => {
-                          setRecordingError(null);
-                          setIsRecordOptionsOpen(true);
-                        }}
-                        className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-amber-300"
+                        onClick={() => setIsUpgradeModalOpen(true)}
+                        className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-slate-300"
                       >
-                        <Sliders className="w-4 h-4 text-amber-400" />
-                        <span>Adjust REC Layout</span>
+                        <Lock className="w-4 h-4 text-amber-400" />
+                        <span>Record Meeting (Upgrade)</span>
                       </DropdownMenuItem>
+                    ) : (
+                      <>
+                        <DropdownMenuItem
+                          onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
+                          disabled={isUpdatingRecord}
+                          className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
+                        >
+                          {isUpdatingRecord ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          ) : (
+                            <Disc
+                              className={`w-4 h-4 ${
+                                isRecording ? "text-rose-400 animate-pulse" : "text-slate-400"
+                              }`}
+                            />
+                          )}
+                          <span className={isRecording ? "text-rose-300 font-semibold" : ""}>
+                            {isRecording ? "Stop Recording" : "Start Recording"}
+                          </span>
+                        </DropdownMenuItem>
+
+                        {isRecording && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setRecordingError(null);
+                              setIsRecordOptionsOpen(true);
+                            }}
+                            className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-amber-300"
+                          >
+                            <Sliders className="w-4 h-4 text-amber-400" />
+                            <span>Adjust REC Layout</span>
+                          </DropdownMenuItem>
+                        )}
+                      </>
                     )}
                     <DropdownMenuSeparator className="bg-slate-800 my-1" />
                   </>
@@ -909,6 +954,13 @@ function RoomContent({
           onClearError={() => setRecordingError(null)}
         />
       )}
+
+      {/* Recording Upgrade Modal for Free Plan Users */}
+      <RecordingUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        planName={meeting.planName || (meeting.isFreePlan ? "free" : "paid")}
+      />
 
       {/* End Meeting for All Confirmation Dialog */}
       <ConfirmDialog

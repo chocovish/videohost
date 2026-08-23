@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { verifyRazorpaySignature } from "@/lib/razorpay";
 import { getCashfreeOrder, getCashfreeOrderPayments } from "@/lib/cashfree";
+import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -197,6 +198,18 @@ export async function POST(req: Request) {
       });
     }
 
+    // Query seller organization's active plan to compute plan-tiered platform fee
+    const sellerOrg = await db.organization.findUnique({
+      where: { id: organizationId },
+      include: { plan: true },
+    });
+
+    const split = calculateSaleSplit(
+      targetPrice,
+      sellerOrg?.plan?.name || "free",
+      sellerOrg?.plan?.commissionPercent
+    );
+
     // Create Verified Purchase Record
     const purchase = await db.contentPurchase.create({
       data: {
@@ -209,6 +222,12 @@ export async function POST(req: Request) {
         amount: targetPrice,
         currency: targetCurrency,
         countryCode: countryCode ? countryCode.toUpperCase() : null,
+        commissionPercent: split.commissionPercent,
+        commissionAmount: split.commissionAmount,
+        gatewayFeePercent: split.gatewayFeePercent,
+        gatewayFeeAmount: split.gatewayFeeAmount,
+        creatorEarnings: split.creatorEarnings,
+        planSnapshot: split.planSnapshot,
         paymentMethod: paymentProvider,
         paymentId: verifiedPaymentId,
         status: "COMPLETED",

@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { verifyApiKey } from "@/lib/api-keys";
+import { db } from "@videohost/db";
 
 export interface AuthContext {
   orgId: string;
@@ -15,6 +16,14 @@ export async function authenticateRequest(req: Request): Promise<AuthContext | n
     const token = authHeader.substring(7);
     const keyRecord = await verifyApiKey(token);
     if (keyRecord) {
+      const user = await db.user.findUnique({
+        where: { id: keyRecord.createdById },
+        select: { isBlocked: true },
+      });
+      if (user?.isBlocked) {
+        return null;
+      }
+
       return {
         orgId: keyRecord.organizationId,
         userId: keyRecord.createdById,
@@ -27,6 +36,14 @@ export async function authenticateRequest(req: Request): Promise<AuthContext | n
   // 2. Fall back to NextAuth session
   const session = await auth();
   if (session && session.user && session.user.id && (session as any).organizationId) {
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { isBlocked: true },
+    });
+    if (user?.isBlocked) {
+      return null;
+    }
+
     return {
       orgId: (session as any).organizationId as string,
       userId: session.user.id as string,
@@ -37,3 +54,4 @@ export async function authenticateRequest(req: Request): Promise<AuthContext | n
 
   return null;
 }
+

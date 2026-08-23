@@ -14,6 +14,10 @@ class EmailNotVerifiedError extends CredentialsSignin {
   code = "EMAIL_NOT_VERIFIED";
 }
 
+class UserBlockedError extends CredentialsSignin {
+  code = "ACCOUNT_BLOCKED";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
@@ -45,6 +49,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user || !user.passwordHash) return null;
 
+        if (user.isBlocked) {
+          throw new UserBlockedError();
+        }
+
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) return null;
 
@@ -74,6 +82,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: user.email },
           include: { memberships: true },
         });
+
+        if (dbUser?.isBlocked) {
+          return false;
+        }
 
         if (!dbUser) {
           dbUser = await db.user.create({
@@ -186,10 +198,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id) {
         const dbUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { id: true, name: true, email: true, viewMode: true, activeOrganizationId: true },
+          select: { id: true, name: true, email: true, viewMode: true, activeOrganizationId: true, isBlocked: true },
         });
 
-        if (!dbUser) {
+        if (!dbUser || dbUser.isBlocked) {
           token.id = undefined;
           token.organizationId = undefined;
           return token;

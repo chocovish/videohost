@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { formatMoney } from "@/lib/utils";
+import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -76,7 +77,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Calculate Available Balance
+    // 3. Calculate Available Balance based on Net Creator Earnings
+    const org = await db.organization.findUnique({
+      where: { id: authCtx.orgId },
+      include: { plan: true },
+    });
+    const activePlanName = org?.plan?.name || "free";
+
     const purchases = await db.contentPurchase.findMany({
       where: {
         organizationId: authCtx.orgId,
@@ -84,7 +91,17 @@ export async function POST(req: Request) {
       },
     });
 
-    const totalGrossRevenue = purchases.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const totalNetEarnings = purchases.reduce((acc, p) => {
+      if (typeof p.creatorEarnings === "number" && p.creatorEarnings > 0) {
+        return acc + p.creatorEarnings;
+      }
+      const split = calculateSaleSplit(
+        p.amount,
+        p.planSnapshot || activePlanName,
+        p.commissionPercent
+      );
+      return acc + split.creatorEarnings;
+    }, 0);
 
     const pastWithdrawals = await db.withdrawalRequest.findMany({
       where: {
@@ -94,7 +111,7 @@ export async function POST(req: Request) {
     });
 
     const totalWithdrawn = pastWithdrawals.reduce((acc, w) => acc + (w.amount || 0), 0);
-    const availableBalance = Math.max(0, totalGrossRevenue - totalWithdrawn);
+    const availableBalance = Math.max(0, Math.round((totalNetEarnings - totalWithdrawn) * 100) / 100);
 
     const payoutCurrency = bankAccount.currency || currency || "USD";
 

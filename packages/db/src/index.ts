@@ -2,7 +2,9 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Try loading from root .env and current directory .env
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+if (typeof __dirname !== "undefined") {
+  dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+}
 dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 dotenv.config();

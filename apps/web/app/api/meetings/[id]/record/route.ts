@@ -63,11 +63,19 @@ export async function POST(
 
     const meeting = await db.meeting.findUnique({
       where: { id },
+      include: {
+        organization: {
+          include: { plan: true },
+        },
+      },
     });
 
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
+
+    const orgPlanName = meeting.organization?.plan?.name?.toLowerCase() || "free";
+    const isFreePlan = orgPlanName === "free";
 
     const session = await auth();
     const userId = session?.user?.id;
@@ -98,6 +106,16 @@ export async function POST(
     if (action === "start") nextRecordingState = true;
     else if (action === "stop") nextRecordingState = false;
     else if (action === "toggle") nextRecordingState = !meeting.isRecording;
+
+    if (nextRecordingState && isFreePlan) {
+      return NextResponse.json(
+        {
+          error: "Meeting recording is not available on the Free plan. Please upgrade your organization plan to enable recording.",
+          code: "PLAN_RESTRICTION",
+        },
+        { status: 403 }
+      );
+    }
 
     const providedEgressId = body.egressId || body.recordingId;
     let createdVideoId: string | null = null;

@@ -17,7 +17,13 @@ export async function GET(
       where: { id },
       include: {
         organization: {
-          select: { id: true, name: true, logoUrl: true, themeId: true },
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            themeId: true,
+            plan: { select: { id: true, name: true } },
+          },
         },
         createdBy: {
           select: { id: true, name: true, email: true, image: true },
@@ -39,6 +45,9 @@ export async function GET(
     if (meeting.organization) {
       meeting.organization.logoUrl = await getPresignedPlaybackUrl(meeting.organization.logoUrl);
     }
+
+    const planName = meeting.organization?.plan?.name?.toLowerCase() || "free";
+    const isFreePlan = planName === "free";
 
     const session = await auth();
     let isHost = false;
@@ -84,7 +93,9 @@ export async function GET(
       isOrgMember,
       hasPurchasedPass,
       canModerate: isHost || isOrgMember,
-      canRecord: isHost || isOrgMember,
+      canRecord: (isHost || isOrgMember) && !isFreePlan,
+      isFreePlan,
+      planName,
     });
   } catch (err: any) {
     console.error("GET /api/meetings/[id] error:", err);
@@ -107,6 +118,11 @@ export async function PATCH(
 
     const meeting = await db.meeting.findUnique({
       where: { id },
+      include: {
+        organization: {
+          include: { plan: true },
+        },
+      },
     });
 
     if (!meeting) {
@@ -136,6 +152,19 @@ export async function PATCH(
       );
     }
 
+    const orgPlanName = meeting.organization?.plan?.name?.toLowerCase() || "free";
+    const isFreePlan = orgPlanName === "free";
+
+    if (body.recordOnStart === true && isFreePlan) {
+      return NextResponse.json(
+        {
+          error: "Meeting recording is not available on the Free plan. Please upgrade your organization plan to enable recording.",
+          code: "PLAN_RESTRICTION",
+        },
+        { status: 403 }
+      );
+    }
+
     const updateData: any = {};
     if (typeof body.title === "string") updateData.title = body.title.trim();
     if (typeof body.description === "string") updateData.description = body.description.trim();
@@ -153,7 +182,7 @@ export async function PATCH(
     if (typeof body.currency === "string") updateData.currency = body.currency;
     if (body.countryPricing !== undefined) updateData.countryPricing = body.countryPricing;
     if (typeof body.allowGuests === "boolean") updateData.allowGuests = body.allowGuests;
-    if (typeof body.recordOnStart === "boolean") updateData.recordOnStart = body.recordOnStart;
+    if (typeof body.recordOnStart === "boolean") updateData.recordOnStart = isFreePlan ? false : body.recordOnStart;
 
     if (typeof body.status === "string") {
       updateData.status = body.status;

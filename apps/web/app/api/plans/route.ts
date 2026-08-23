@@ -16,6 +16,7 @@ export async function GET() {
         maxResolution: true,
         seatLimit: true,
         priceMonthlyCents: true,
+        commissionPercent: true,
         isCustom: true,
       },
     });

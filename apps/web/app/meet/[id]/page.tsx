@@ -41,6 +41,8 @@ export default function MeetPage() {
   const [isOrgMember, setIsOrgMember] = useState(false);
   const [canModerate, setCanModerate] = useState(false);
   const [canRecord, setCanRecord] = useState(false);
+  const [isFreePlan, setIsFreePlan] = useState(false);
+  const [planName, setPlanName] = useState<string>("free");
   const [requiresAuth, setRequiresAuth] = useState(false);
   const [requiresPass, setRequiresPass] = useState(false);
 
@@ -83,11 +85,18 @@ export default function MeetPage() {
           (currentUserId && data.meeting?.createdById === currentUserId)
         );
         const userIsOrgMember = Boolean(data.isOrgMember || userIsHost);
+        const freePlan = Boolean(
+          data.isFreePlan ||
+          data.planName === "free" ||
+          data.meeting?.organization?.plan?.name?.toLowerCase() === "free"
+        );
 
         setIsHost(userIsHost);
         setIsOrgMember(userIsOrgMember);
         setCanModerate(Boolean(data.canModerate || userIsHost || userIsOrgMember));
-        setCanRecord(Boolean(data.canRecord || userIsHost || userIsOrgMember));
+        setCanRecord(Boolean((data.canRecord || userIsHost || userIsOrgMember) && !freePlan));
+        setIsFreePlan(freePlan);
+        if (data.planName) setPlanName(data.planName);
         setMeeting(data.meeting);
 
         // Check if purchasable pass is required
@@ -208,6 +217,8 @@ export default function MeetPage() {
       setCanRecord(Boolean(data.canRecord));
       setIsOrgMember(Boolean(data.isOrgMember || data.isHost));
       setCanModerate(Boolean(data.canModerate || data.isHost || data.isOrgMember));
+      if (typeof data.isFreePlan === "boolean") setIsFreePlan(data.isFreePlan);
+      if (data.planName) setPlanName(data.planName);
       setAudioEnabled(options.audioEnabled);
       setVideoEnabled(options.videoEnabled);
       setIsInRoom(true);
@@ -445,6 +456,8 @@ export default function MeetPage() {
           isOrgMember,
           canModerate,
           canRecord,
+          isFreePlan,
+          planName,
         }}
         audioEnabled={audioEnabled}
         videoEnabled={videoEnabled}

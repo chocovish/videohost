@@ -96,6 +96,8 @@ export default function MeetingsDashboardPage() {
 
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isInstantOpen, setIsInstantOpen] = useState(false);
+  const [isFreePlan, setIsFreePlan] = useState<boolean>(false);
+  const [planName, setPlanName] = useState<string>("free");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
@@ -107,6 +109,12 @@ export default function MeetingsDashboardPage() {
       if (!res.ok) throw new Error("Failed to fetch meetings");
       const data = await res.json();
       setMeetings(data.meetings || []);
+      if (typeof data.isFreePlan === "boolean") {
+        setIsFreePlan(data.isFreePlan);
+      }
+      if (data.planName) {
+        setPlanName(data.planName);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load meetings");
     } finally {
@@ -121,6 +129,12 @@ export default function MeetingsDashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setMeetings(data.meetings || []);
+        if (typeof data.isFreePlan === "boolean") {
+          setIsFreePlan(data.isFreePlan);
+        }
+        if (data.planName) {
+          setPlanName(data.planName);
+        }
       }
     } finally {
       setIsRefreshing(false);
@@ -592,6 +606,7 @@ export default function MeetingsDashboardPage() {
       <ScheduleMeetingModal
         isOpen={isScheduleOpen}
         onClose={() => setIsScheduleOpen(false)}
+        isFreePlan={isFreePlan}
         onSuccess={(newMeeting) => {
           setMeetings([newMeeting, ...meetings]);
         }}
@@ -603,6 +618,7 @@ export default function MeetingsDashboardPage() {
           isOpen={Boolean(editingMeeting)}
           onClose={() => setEditingMeeting(null)}
           meeting={editingMeeting}
+          isFreePlan={isFreePlan}
           onSuccess={(updated) => {
             setMeetings((prev) =>
               prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
@@ -615,6 +631,7 @@ export default function MeetingsDashboardPage() {
       <InstantMeetingModal
         isOpen={isInstantOpen}
         onClose={() => setIsInstantOpen(false)}
+        isFreePlan={isFreePlan}
       />
 
       {/* Meeting Purchases Modal */}

@@ -16,7 +16,13 @@ export async function POST(
       where: { id },
       include: {
         organization: {
-          select: { id: true, name: true, logoUrl: true, themeId: true },
+          select: {
+            id: true,
+            name: true,
+            logoUrl: true,
+            themeId: true,
+            plan: { select: { id: true, name: true } },
+          },
         },
         createdBy: {
           select: { id: true, name: true, email: true, image: true },
@@ -27,6 +33,9 @@ export async function POST(
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
+
+    const orgPlanName = meeting.organization?.plan?.name?.toLowerCase() || "free";
+    const isFreePlan = orgPlanName === "free";
 
     if (meeting.status === "CANCELLED") {
       return NextResponse.json({ error: "This meeting has been cancelled." }, { status: 410 });
@@ -64,7 +73,7 @@ export async function POST(
     const isHost = isCreator;
     const isOrgUser = Boolean(isCreator || isOrgMember);
     const canModerate = isOrgUser;
-    const canRecord = isOrgUser;
+    const canRecord = isOrgUser && !isFreePlan;
 
     // Check PURCHASABLE Entry Pass Requirement:
     if (meeting.shareAccessMode === "PURCHASABLE" && !isOrgUser) {
@@ -159,6 +168,8 @@ export async function POST(
       isOrgMember: isOrgUser,
       canModerate,
       canRecord,
+      isFreePlan,
+      planName: orgPlanName,
       participantName,
       identity,
       meeting: {
@@ -171,6 +182,8 @@ export async function POST(
         isRecording: meeting.isRecording,
         canRecord,
         canModerate,
+        isFreePlan,
+        planName: orgPlanName,
         organizationName: meeting.organization?.name,
         themeId: meeting.organization?.themeId || "lime",
         createdById: meeting.createdById,

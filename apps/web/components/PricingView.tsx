@@ -22,6 +22,7 @@ import {
   ArrowRight,
   AlertCircle,
   AlertTriangle,
+  BadgePercent,
 } from "lucide-react";
 import {
   Dialog,
@@ -54,7 +55,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const [currentPlan, setCurrentPlan] = useState<string>("free");
   const [loadingPlan, setLoadingPlan] = useState<boolean>(true);
   const [dbPlans, setDbPlans] = useState<DbPlanRecord[]>([]);
-  const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("MONTHLY");
+  const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "YEARLY">("YEARLY");
   const [billingMode, setBillingMode] = useState<"ONE_TIME" | "RECURRING">("ONE_TIME");
   const [orgDetails, setOrgDetails] = useState<any>(null);
   const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
@@ -490,12 +491,13 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
   const proPlanRecord = getDbPlan("pro");
   const enterprisePlanRecord = getDbPlan("enterprise");
 
-  // Format price helper
+  // Format price helper - computes effective per-month price
   const formatPrice = (priceMonthlyCents: number) => {
     if (priceMonthlyCents <= 0) return "₹0";
     if (billingCycle === "YEARLY") {
       const yearlyRupees = (priceMonthlyCents * 10) / 100;
-      return `₹${Math.round(yearlyRupees).toLocaleString("en-IN")}`;
+      const perMonthRupees = yearlyRupees / 12;
+      return `₹${Math.round(perMonthRupees).toLocaleString("en-IN")}`;
     }
     const monthlyRupees = priceMonthlyCents / 100;
     return `₹${Math.round(monthlyRupees).toLocaleString("en-IN")}`;
@@ -503,7 +505,17 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
   const formatPeriod = (priceMonthlyCents: number) => {
     if (priceMonthlyCents <= 0) return "forever";
-    return billingCycle === "YEARLY" ? "per year (2 months free)" : "per month";
+    return "month";
+  };
+
+  const formatTotalBilled = (priceMonthlyCents: number) => {
+    if (priceMonthlyCents <= 0) return "Free forever";
+    if (billingCycle === "YEARLY") {
+      const yearlyRupees = (priceMonthlyCents * 10) / 100;
+      return `Total ₹${Math.round(yearlyRupees).toLocaleString("en-IN")} to be paid now (billed annually)`;
+    }
+    const monthlyRupees = priceMonthlyCents / 100;
+    return `Total ₹${Math.round(monthlyRupees).toLocaleString("en-IN")} to be paid now (billed monthly)`;
   };
 
   const formatStorageText = (storageGb: number | undefined, defaultGb: number) => {
@@ -517,7 +529,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       name: "Free",
       price: formatPrice(freePlanRecord?.priceMonthlyCents ?? 0),
       period: formatPeriod(freePlanRecord?.priceMonthlyCents ?? 0),
-      tagline: "Essential tools for personal screen recording & email-secured sharing",
+      totalBilled: formatTotalBilled(freePlanRecord?.priceMonthlyCents ?? 0),
+      tagline: "Essential tools for personal screen recording, branded meetings & monetization",
       popular: false,
       badge: "Get Started",
       accentColor: "border-slate-200 dark:border-slate-800",
@@ -531,13 +544,24 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           highlight: true,
         },
         {
+          title: "Host meetings with your branding",
+          icon: Users,
+          highlight: true,
+        },
+        {
           title: "Share videos with specific email users or make them publicly accessible.",
           icon: Share2,
+          highlight: true,
+        },
+        {
+          title: "Sell your videos, playlists & meeting passes (6.5% platform fee + 3% gateway fee)*",
+          icon: BadgePercent,
           highlight: true,
         },
         { title: "Email based support", icon: Mail, highlight: false },
       ],
       notIncluded: [
+        "Meeting recording support (full room / single person)",
         "Adaptive bitrate HLS conversion",
         "Multiple organizations creation",
         "Team member invitations",
@@ -548,10 +572,11 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       name: "Basic",
       price: formatPrice(basicPlanRecord?.priceMonthlyCents ?? 39900),
       period: formatPeriod(basicPlanRecord?.priceMonthlyCents ?? 39900),
+      totalBilled: formatTotalBilled(basicPlanRecord?.priceMonthlyCents ?? 39900),
       tagline:
         (basicPlanRecord?.storageLimitGb ?? 50) === 0
-          ? "Expanded unlimited cloud storage on top of Free plan for active creators"
-          : `Expanded ${basicPlanRecord?.storageLimitGb ?? 50}GB cloud storage on top of Free plan for active creators`,
+          ? "Expanded unlimited cloud storage & meeting recording on top of Free plan"
+          : `Expanded ${basicPlanRecord?.storageLimitGb ?? 50}GB cloud storage & meeting recording on top of Free plan`,
       popular: false,
       badge: "Budget Friendly",
       accentColor: "border-sky-500/40 dark:border-sky-500/30 hover:border-sky-500 shadow-md",
@@ -563,9 +588,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           icon: HardDrive,
           highlight: true,
         },
-        { title: "Unlimited screen recordings & uploads", icon: Video, highlight: true },
-        { title: "Granular email-restricted & public sharing", icon: Share2, highlight: true },
-        { title: "Standard email support", icon: Mail, highlight: false },
+        {
+          title: "Meeting recording support (record full room or a single person)",
+          icon: Video,
+          highlight: true,
+        },
+        {
+          title: "Sell your videos, playlists & meeting passes (5.5% platform fee + 3% gateway fee)*",
+          icon: BadgePercent,
+          highlight: true,
+        },
       ],
       notIncluded: [
         "Adaptive bitrate HLS conversion",
@@ -578,6 +610,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       name: "Pro",
       price: formatPrice(proPlanRecord?.priceMonthlyCents ?? 99900),
       period: formatPeriod(proPlanRecord?.priceMonthlyCents ?? 99900),
+      totalBilled: formatTotalBilled(proPlanRecord?.priceMonthlyCents ?? 99900),
       tagline: "For professional creators needing adaptive bitrate & high storage",
       popular: true,
       badge: "Popular",
@@ -591,8 +624,18 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           highlight: true,
         },
         {
+          title: "Meeting recording support (record full room or a single person)",
+          icon: Video,
+          highlight: true,
+        },
+        {
           title: "Store videos in adaptive bitrate (multi-quality HLS for weak connections)",
           icon: Zap,
+          highlight: true,
+        },
+        {
+          title: "Sell your videos, playlists & meeting passes (4.0% platform fee + 3% gateway fee)*",
+          icon: BadgePercent,
           highlight: true,
         },
         { title: "Live chat support", icon: MessageSquare, highlight: true },
@@ -607,6 +650,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       name: "Enterprise",
       price: formatPrice(enterprisePlanRecord?.priceMonthlyCents ?? 299900),
       period: formatPeriod(enterprisePlanRecord?.priceMonthlyCents ?? 299900),
+      totalBilled: formatTotalBilled(enterprisePlanRecord?.priceMonthlyCents ?? 299900),
       tagline: "For teams & multi-org teams requiring unlimited storage & full controls",
       popular: false,
       badge: "Full Access",
@@ -624,7 +668,17 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           icon: Building2,
           highlight: true,
         },
+        {
+          title: "Meeting recording support (record full room or a single person)",
+          icon: Video,
+          highlight: true,
+        },
         { title: "Invite team members & manage roles", icon: Users, highlight: true },
+        {
+          title: "Sell your videos, playlists & meeting passes (3.5% platform fee + 3% gateway fee — lowest rate)*",
+          icon: BadgePercent,
+          highlight: true,
+        },
         { title: "Dedicated call support", icon: Headphones, highlight: true },
       ],
       notIncluded: [],
@@ -660,8 +714,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                 Active Plan: <span className="uppercase text-primary font-extrabold">{currentPlan}</span>
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border ${orgDetails.subscriptionStatus === "CANCELLED"
-                      ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                      : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                    : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
                     }`}
                 >
                   {orgDetails.subscriptionStatus || "ACTIVE"}
@@ -698,7 +752,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           <button
             type="button"
             onClick={() => setBillingCycle("MONTHLY")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingCycle === "MONTHLY"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${billingCycle === "MONTHLY"
               ? "bg-card text-foreground shadow-md"
               : "text-muted-foreground hover:text-foreground"
               }`}
@@ -708,8 +762,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           <button
             type="button"
             onClick={() => setBillingCycle("YEARLY")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${billingCycle === "YEARLY"
-              ? "bg-primary text-white shadow-md"
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${billingCycle === "YEARLY"
+              ? "bg-primary text-primary-foreground shadow-md"
               : "text-muted-foreground hover:text-foreground"
               }`}
           >
@@ -815,6 +869,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                       {plan.price}
                     </span>
                     <span className="text-xs font-semibold text-muted-foreground">/{plan.period}</span>
+                  </div>
+                  <div className="mt-2 flex items-center flex-wrap gap-1.5 min-h-[22px]">
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {plan.totalBilled}
+                    </span>
+                    {billingCycle === "YEARLY" && plan.id !== "free" && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wide">
+                        2 Months Free
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -922,6 +986,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         })}
       </div>
 
+      {/* Payment Gateway Charges Footnote */}
+      <div className="flex items-center justify-center pt-3">
+        <div className="max-w-2xl text-center text-xs sm:text-sm text-muted-foreground bg-muted/40 px-5 py-3 rounded-2xl border border-border/60 shadow-2xs leading-relaxed">
+          <p>
+            <span className="text-primary font-bold mr-1">*</span>
+            <strong>Payment gateway charges are extra.</strong> We can&apos;t help it — we have to pay that directly to the gateway providers! Everybody else charges that too, they just don&apos;t show it on their pricing page... <span className="italic font-medium text-foreground">clever people!</span> 😉
+          </p>
+        </div>
+      </div>
+
       {/* Feature Comparison Table / FAQ Footer */}
       <div className="glass-card rounded-3xl p-6 sm:p-8 border border-border space-y-6 mt-12">
         <h3 className="font-extrabold text-xl text-foreground text-center">
@@ -937,9 +1011,16 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </div>
 
           <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
-            <h4 className="font-bold text-foreground">What video sharing options are available on Free and Basic plans?</h4>
+            <h4 className="font-bold text-foreground">How does selling videos, playlists, and meeting passes work?</h4>
             <p className="text-xs text-muted-foreground">
-              Both Free and Basic plan users enjoy full public link sharing (anyone with link can watch) and granular email-restricted sharing (only specified authenticated emails can access).
+              Every plan includes the ability to monetize your content and sell meeting passes. We only charge a small platform commission when you make sales (Free: 6.5%, Basic: 5.5%, Pro: 4%, Enterprise: 3.5%). Standard payment gateway charges apply separately per transaction.
+            </p>
+          </div>
+
+          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
+            <h4 className="font-bold text-foreground">What meeting and recording features are available?</h4>
+            <p className="text-xs text-muted-foreground">
+              All plans allow you to host meetings with your custom branding. Cloud meeting recording (recording the entire room gallery or isolating single individual speakers directly into your video library) is available from Basic plan onwards.
             </p>
           </div>
 
@@ -947,13 +1028,6 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             <h4 className="font-bold text-foreground">Can I switch plans at any time?</h4>
             <p className="text-xs text-muted-foreground">
               Yes! Organization owners can switch between Free, Basic, Pro, and Enterprise plans at any time. Your limits and feature entitlements update instantly.
-            </p>
-          </div>
-
-          <div className="space-y-1.5 p-4 rounded-2xl bg-muted/40">
-            <h4 className="font-bold text-foreground">Who needs the Enterprise plan?</h4>
-            <p className="text-xs text-muted-foreground">
-              Teams that require multiple separate workspace organizations, team member role invitations, unlimited storage, and dedicated phone support.
             </p>
           </div>
         </div>

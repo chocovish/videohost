@@ -30,6 +30,7 @@ export async function GET(req: Request) {
     const organization = await db.organization.findUnique({
       where: { id: authCtx.orgId },
       include: {
+        plan: true,
         members: {
           include: {
             user: {
@@ -65,6 +66,8 @@ export async function GET(req: Request) {
         slug: organization.slug,
         logoUrl,
         planId: organization.planId,
+        planName: organization.plan?.name || "free",
+        plan: organization.plan,
         planExpiresAt: organization.planExpiresAt,
         billingMode: organization.billingMode,
         billingCycle: organization.billingCycle,
