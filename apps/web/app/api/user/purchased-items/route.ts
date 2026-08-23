@@ -60,7 +60,18 @@ export async function GET(req: Request) {
                 },
               },
             },
-            _count: { select: { items: true } },
+          },
+        },
+        meeting: {
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+                image: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -73,6 +84,7 @@ export async function GET(req: Request) {
       rawPurchases.map(async (purchase) => {
         const isVideo = purchase.contentType === "VIDEO";
         const isPlaylist = purchase.contentType === "PLAYLIST";
+        const isMeeting = purchase.contentType === "MEETING";
 
         let title = "Unknown Item";
         let description: string | null = null;
@@ -85,6 +97,8 @@ export async function GET(req: Request) {
           durationSeconds: number | null;
           thumbnailUrl: string | null;
         }> = [];
+
+        let meetingInfo: any = null;
 
         if (isVideo && purchase.video) {
           title = purchase.video.title;
@@ -100,7 +114,7 @@ export async function GET(req: Request) {
         } else if (isPlaylist && purchase.playlist) {
           title = purchase.playlist.title;
           description = purchase.playlist.description;
-          itemCount = purchase.playlist._count.items;
+          itemCount = purchase.playlist.items?.length || 0;
 
           // Compute total duration for playlist
           durationSeconds = purchase.playlist.items.reduce(
@@ -129,6 +143,30 @@ export async function GET(req: Request) {
                 : null,
             }))
           );
+        } else if (isMeeting && purchase.meeting) {
+          title = purchase.meeting.title;
+          description = purchase.meeting.description;
+
+          let hostImage = purchase.meeting.createdBy?.image || null;
+          if (hostImage && !hostImage.startsWith("http")) {
+            try {
+              hostImage = await getPresignedPlaybackUrl(hostImage);
+            } catch (e) {
+              console.error("Error signing host avatar in purchases route:", e);
+            }
+          }
+          thumbnailUrl = hostImage;
+
+          meetingInfo = {
+            scheduledStart: purchase.meeting.scheduledStart ? purchase.meeting.scheduledStart.toISOString() : null,
+            scheduledEnd: purchase.meeting.scheduledEnd ? purchase.meeting.scheduledEnd.toISOString() : null,
+            status: purchase.meeting.status,
+            isInstant: purchase.meeting.isInstant,
+            recordOnStart: purchase.meeting.recordOnStart,
+            hostName: purchase.meeting.createdBy?.name || "Host",
+            hostImage,
+            joinUrl: `/meet/${purchase.meeting.id}`,
+          };
         }
 
         let orgLogoUrl: string | null = null;
@@ -144,18 +182,21 @@ export async function GET(req: Request) {
           ? `${baseUrl}/share/${purchase.videoId}`
           : isPlaylist && purchase.playlistId
           ? `${baseUrl}/share/${purchase.playlistId}`
+          : isMeeting && purchase.meetingId
+          ? `${baseUrl}/share/${purchase.meetingId}`
           : "";
 
         return {
           id: purchase.id,
-          contentType: purchase.contentType as "VIDEO" | "PLAYLIST",
-          contentId: purchase.videoId || purchase.playlistId || "",
+          contentType: purchase.contentType as "VIDEO" | "PLAYLIST" | "MEETING",
+          contentId: purchase.videoId || purchase.playlistId || purchase.meetingId || "",
           title,
           description,
           thumbnailUrl,
           durationSeconds,
           itemCount,
           playlistVideos,
+          meetingInfo,
           shareUrl,
           amount: purchase.amount,
           currency: purchase.currency || "USD",
@@ -178,6 +219,7 @@ export async function GET(req: Request) {
     const totalPurchases = purchases.length;
     const totalVideos = purchases.filter((p) => p.contentType === "VIDEO").length;
     const totalPlaylists = purchases.filter((p) => p.contentType === "PLAYLIST").length;
+    const totalMeetings = purchases.filter((p) => p.contentType === "MEETING").length;
 
     const totalSpentByCurrency: Record<string, number> = {};
     for (const p of purchases) {
@@ -192,6 +234,7 @@ export async function GET(req: Request) {
         totalPurchases,
         totalVideos,
         totalPlaylists,
+        totalMeetings,
         totalSpentByCurrency,
       },
     });

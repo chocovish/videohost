@@ -22,6 +22,9 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Ticket,
+  Calendar,
+  Video,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +48,7 @@ interface PlaylistVideoItem {
 
 interface PurchasedItem {
   id: string;
-  contentType: "VIDEO" | "PLAYLIST";
+  contentType: "VIDEO" | "PLAYLIST" | "MEETING";
   contentId: string;
   title: string;
   description?: string | null;
@@ -53,6 +56,16 @@ interface PurchasedItem {
   durationSeconds?: number | null;
   itemCount?: number | null;
   playlistVideos: PlaylistVideoItem[];
+  meetingInfo?: {
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+    status?: string;
+    isInstant?: boolean;
+    recordOnStart?: boolean;
+    hostName?: string;
+    hostImage?: string | null;
+    joinUrl?: string;
+  };
   shareUrl: string;
   amount: number;
   currency: string;
@@ -73,6 +86,7 @@ interface PurchasesStats {
   totalPurchases: number;
   totalVideos: number;
   totalPlaylists: number;
+  totalMeetings?: number;
   totalSpentByCurrency: Record<string, number>;
 }
 
@@ -82,13 +96,14 @@ export default function PurchasedItemsPage() {
     totalPurchases: 0,
     totalVideos: 0,
     totalPlaylists: 0,
+    totalMeetings: 0,
     totalSpentByCurrency: {},
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "VIDEO" | "PLAYLIST">("all");
+  const [filterType, setFilterType] = useState<"all" | "VIDEO" | "PLAYLIST" | "MEETING">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title" | "price">("newest");
   const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
   const [selectedReceipt, setSelectedReceipt] = useState<PurchasedItem | null>(null);
@@ -324,6 +339,14 @@ export default function PurchasedItemsPage() {
             >
               <ListVideo className="w-3.5 h-3.5 text-purple-500" /> Playlists
             </Button>
+            <Button
+              size="sm"
+              variant={filterType === "MEETING" ? "default" : "ghost"}
+              onClick={() => setFilterType("MEETING")}
+              className="h-8 text-xs font-medium gap-1.5"
+            >
+              <Ticket className="w-3.5 h-3.5 text-amber-500" /> Meeting Passes
+            </Button>
           </div>
 
           {/* Sort Selector */}
@@ -354,7 +377,7 @@ export default function PurchasedItemsPage() {
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto mt-1 mb-6">
             {items.length === 0
-              ? "When you buy premium videos, courses, or playlists from creators, they will be unlocked and listed here."
+              ? "When you buy premium videos, courses, or meeting entry passes from creators, they will be unlocked and listed here."
               : "Try adjusting your search query or filter criteria to find what you are looking for."}
           </p>
           {items.length === 0 && (
@@ -370,6 +393,7 @@ export default function PurchasedItemsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => {
             const isPlaylist = item.contentType === "PLAYLIST";
+            const isMeeting = item.contentType === "MEETING";
             const isExpanded = expandedPlaylists[item.id] || false;
 
             return (
@@ -386,6 +410,13 @@ export default function PurchasedItemsPage() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
+                    ) : isMeeting ? (
+                      <div className="flex flex-col items-center gap-2 text-amber-400 p-4 text-center">
+                        <Ticket className="w-12 h-12" />
+                        <span className="text-xs font-bold uppercase tracking-wider">
+                          Digital Entry Pass
+                        </span>
+                      </div>
                     ) : isPlaylist ? (
                       <div className="flex flex-col items-center gap-2 text-primary p-4 text-center">
                         <ListVideo className="w-12 h-12" />
@@ -408,10 +439,16 @@ export default function PurchasedItemsPage() {
                     {/* Type Badge (Top Left) */}
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                       <Badge
-                        variant={isPlaylist ? "default" : "secondary"}
-                        className="gap-1 text-[10px] font-extrabold uppercase backdrop-blur-md shadow-xs"
+                        variant={isMeeting ? "outline" : isPlaylist ? "default" : "secondary"}
+                        className={`gap-1 text-[10px] font-extrabold uppercase backdrop-blur-md shadow-xs ${
+                          isMeeting ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : ""
+                        }`}
                       >
-                        {isPlaylist ? (
+                        {isMeeting ? (
+                          <>
+                            <Ticket className="w-3 h-3" /> Meeting Pass
+                          </>
+                        ) : isPlaylist ? (
                           <>
                             <ListVideo className="w-3 h-3" /> Playlist
                           </>
@@ -426,9 +463,19 @@ export default function PurchasedItemsPage() {
                       </Badge>
                     </div>
 
-                    {/* Duration / Item Count (Bottom Right) */}
+                    {/* Duration / Item Count / Meeting Start (Bottom Right) */}
                     <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
-                      {item.durationSeconds ? (
+                      {isMeeting && item.meetingInfo?.scheduledStart ? (
+                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-[11px] font-bold text-slate-100 rounded-md flex items-center gap-1 border border-white/10">
+                          <Calendar className="w-3 h-3 text-amber-400" />
+                          {new Date(item.meetingInfo.scheduledStart).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      ) : item.durationSeconds ? (
                         <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-[11px] font-bold text-slate-100 rounded-md flex items-center gap-1 border border-white/10">
                           <Clock className="w-3 h-3 text-primary" />
                           {formatDuration(item.durationSeconds)}
@@ -551,12 +598,29 @@ export default function PurchasedItemsPage() {
                 {/* Primary Action Button */}
                 <div className="p-4 pt-0">
                   <Link
-                    href={item.shareUrl || `/share/${item.contentId}`}
-                    target="_blank"
-                    className={cn(buttonVariants({ variant: "default" }), "w-full gap-2 font-bold shadow-xs")}
+                    href={
+                      isMeeting
+                        ? item.meetingInfo?.joinUrl || `/meet/${item.contentId}`
+                        : item.shareUrl || `/share/${item.contentId}`
+                    }
+                    target={isMeeting ? "_self" : "_blank"}
+                    className={cn(
+                      buttonVariants({ variant: "default" }),
+                      "w-full gap-2 font-bold shadow-xs",
+                      isMeeting ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : ""
+                    )}
                   >
-                    <PlayCircle className="w-4 h-4" />
-                    <span>Watch {isPlaylist ? "Playlist" : "Video"}</span>
+                    {isMeeting ? (
+                      <>
+                        <Video className="w-4 h-4" />
+                        <span>Join Live Meeting Room</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlayCircle className="w-4 h-4" />
+                        <span>Watch {isPlaylist ? "Playlist" : "Video"}</span>
+                      </>
+                    )}
                     <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                   </Link>
                 </div>
@@ -692,12 +756,29 @@ export default function PurchasedItemsPage() {
               {/* Action Buttons inside Receipt */}
               <div className="flex items-center gap-2 pt-2">
                 <Link
-                  href={selectedReceipt.shareUrl || `/share/${selectedReceipt.contentId}`}
-                  target="_blank"
-                  className={cn(buttonVariants({ variant: "default" }), "w-full gap-2 font-bold")}
+                  href={
+                    selectedReceipt.contentType === "MEETING"
+                      ? selectedReceipt.meetingInfo?.joinUrl || `/meet/${selectedReceipt.contentId}`
+                      : selectedReceipt.shareUrl || `/share/${selectedReceipt.contentId}`
+                  }
+                  target={selectedReceipt.contentType === "MEETING" ? "_self" : "_blank"}
+                  className={cn(
+                    buttonVariants({ variant: "default" }),
+                    "w-full gap-2 font-bold",
+                    selectedReceipt.contentType === "MEETING" ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : ""
+                  )}
                 >
-                  <PlayCircle className="w-4 h-4" />
-                  <span>Launch Content</span>
+                  {selectedReceipt.contentType === "MEETING" ? (
+                    <>
+                      <Video className="w-4 h-4" />
+                      <span>Enter Meeting Room</span>
+                    </>
+                  ) : (
+                    <>
+                      <PlayCircle className="w-4 h-4" />
+                      <span>Launch Content</span>
+                    </>
+                  )}
                   <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                 </Link>
               </div>

@@ -408,7 +408,7 @@ model PaymentOrder {
 // --------------------------------------------------------
 
 model Meeting {
-  id              String        @id @default(cuid())
+  id              String          @id @default(cuid())
   organizationId  String
   createdById     String
   folderId        String?
@@ -416,21 +416,26 @@ model Meeting {
   description     String?
   scheduledStart  DateTime?
   scheduledEnd    DateTime?
-  status          MeetingStatus @default(SCHEDULED)
-  isInstant       Boolean       @default(false)
-  recordOnStart   Boolean       @default(false)
-  allowGuests     Boolean       @default(true)
-  isRecording     Boolean       @default(false)
+  status          MeetingStatus   @default(SCHEDULED)
+  isInstant       Boolean         @default(false)
+  recordOnStart   Boolean         @default(false)
+  allowGuests     Boolean         @default(true)
+  isRecording     Boolean         @default(false)
   recordedVideoId String?
   endedAt         DateTime?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  shareAccessMode ShareAccessMode @default(PUBLIC)
+  price           Float?
+  currency        String?         @default("USD")
+  countryPricing  Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
-  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy       User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  folder          Folder?       @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy       User            @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  folder          Folder?         @relation(fields: [folderId], references: [id], onDelete: SetNull)
   invites         MeetingInvite[]
-  recordedVideo   Video?        @relation("MeetingRecordedVideo", fields: [recordedVideoId], references: [id], onDelete: SetNull)
+  recordedVideo   Video?          @relation("MeetingRecordedVideo", fields: [recordedVideoId], references: [id], onDelete: SetNull)
+  purchases       ContentPurchase[]
 
   @@index([organizationId])
   @@index([createdById])
@@ -586,9 +591,10 @@ model ContentPurchase {
   id              String        @id @default(cuid())
   organizationId  String
   userId          String
-  contentType     String        // "VIDEO" | "PLAYLIST"
+  contentType     String        // "VIDEO" | "PLAYLIST" | "MEETING"
   videoId         String?
   playlistId      String?
+  meetingId       String?
   amount          Float
   currency        String        @default("USD")
   countryCode     String?       // purchaser country code, e.g. "US", "IN"
@@ -602,11 +608,13 @@ model ContentPurchase {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   video           Video?        @relation(fields: [videoId], references: [id], onDelete: SetNull)
   playlist        Playlist?     @relation(fields: [playlistId], references: [id], onDelete: SetNull)
+  meeting         Meeting?      @relation(fields: [meetingId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([userId])
   @@index([videoId])
   @@index([playlistId])
+  @@index([meetingId])
   @@index([createdAt])
 }
 

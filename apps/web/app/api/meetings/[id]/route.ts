@@ -43,11 +43,14 @@ export async function GET(
     const session = await auth();
     let isHost = false;
     let isOrgMember = false;
+    let hasPurchasedPass = false;
+
     if (session?.user?.id) {
       const userId = session.user.id;
       isHost = meeting.createdById === userId;
       if (isHost) {
         isOrgMember = true;
+        hasPurchasedPass = true;
       } else {
         const membership = await db.organizationMember.findUnique({
           where: {
@@ -57,7 +60,21 @@ export async function GET(
             },
           },
         });
-        if (membership) isOrgMember = true;
+        if (membership) {
+          isOrgMember = true;
+          hasPurchasedPass = true;
+        } else {
+          const purchase = await db.contentPurchase.findFirst({
+            where: {
+              userId,
+              meetingId: meeting.id,
+              status: "COMPLETED",
+            },
+          });
+          if (purchase) {
+            hasPurchasedPass = true;
+          }
+        }
       }
     }
 
@@ -65,6 +82,7 @@ export async function GET(
       meeting,
       isHost,
       isOrgMember,
+      hasPurchasedPass,
       canModerate: isHost || isOrgMember,
       canRecord: isHost || isOrgMember,
     });
@@ -123,6 +141,20 @@ export async function PATCH(
     if (typeof body.description === "string") updateData.description = body.description.trim();
     if (body.scheduledStart) updateData.scheduledStart = new Date(body.scheduledStart);
     if (body.scheduledEnd) updateData.scheduledEnd = new Date(body.scheduledEnd);
+    if (typeof body.shareAccessMode === "string") {
+      const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
+      if (validModes.includes(body.shareAccessMode)) {
+        updateData.shareAccessMode = body.shareAccessMode;
+      }
+    }
+    if (body.price !== undefined) {
+      updateData.price = body.price !== null ? parseFloat(String(body.price)) : null;
+    }
+    if (typeof body.currency === "string") updateData.currency = body.currency;
+    if (body.countryPricing !== undefined) updateData.countryPricing = body.countryPricing;
+    if (typeof body.allowGuests === "boolean") updateData.allowGuests = body.allowGuests;
+    if (typeof body.recordOnStart === "boolean") updateData.recordOnStart = body.recordOnStart;
+
     if (typeof body.status === "string") {
       updateData.status = body.status;
       if (body.status === "ENDED") {

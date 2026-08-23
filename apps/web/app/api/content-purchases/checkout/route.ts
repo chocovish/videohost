@@ -13,11 +13,12 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { contentType, contentId, countryCode, paymentMethod = "CARD", paymentId } = body;
+    const { contentType: rawContentType, contentId, countryCode, paymentMethod = "CARD", paymentId } = body;
+    const contentType = (rawContentType || "").toLowerCase();
 
-    if (!contentType || !["video", "playlist"].includes(contentType) || !contentId) {
+    if (!contentType || !["video", "playlist", "meeting"].includes(contentType) || !contentId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required contentType ('video' | 'playlist') and contentId." },
+        { error: "Invalid parameters. Required contentType ('video' | 'playlist' | 'meeting') and contentId." },
         { status: 400 }
       );
     }
@@ -97,6 +98,86 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         message: `Successfully purchased "${contentTitle}"!`,
+        purchase,
+      });
+    } else if (contentType === "meeting") {
+      // MEETING ENTRY PASS PURCHASE
+      const meeting = await db.meeting.findUnique({
+        where: { id: contentId },
+        include: { organization: true },
+      });
+
+      if (!meeting) {
+        return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      }
+
+      if (meeting.shareAccessMode !== "PURCHASABLE") {
+        return NextResponse.json(
+          { error: "This meeting is not configured for paid entry pass." },
+          { status: 400 }
+        );
+      }
+
+      organizationId = meeting.organizationId;
+      contentTitle = meeting.title;
+      targetPrice = meeting.price || 0;
+      targetCurrency = meeting.currency || "USD";
+
+      // Check country pricing override
+      if (countryCode && Array.isArray(meeting.countryPricing)) {
+        const countryRule = (meeting.countryPricing as any[]).find(
+          (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
+        );
+        if (countryRule && countryRule.amount !== undefined) {
+          targetPrice = Number(countryRule.amount);
+          if (countryRule.currency) targetCurrency = countryRule.currency;
+        }
+      }
+
+      // Check if user is host
+      if (meeting.createdById === userId) {
+        return NextResponse.json({
+          success: true,
+          message: "You are the host of this meeting.",
+        });
+      }
+
+      // Check if already purchased
+      const existingPurchase = await db.contentPurchase.findFirst({
+        where: {
+          userId,
+          meetingId: contentId,
+          status: "COMPLETED",
+        },
+      });
+
+      if (existingPurchase) {
+        return NextResponse.json({
+          success: true,
+          message: "You already own an entry pass for this meeting.",
+          purchase: existingPurchase,
+        });
+      }
+
+      // Create purchase record
+      const purchase = await db.contentPurchase.create({
+        data: {
+          organizationId,
+          userId,
+          contentType: "MEETING",
+          meetingId: contentId,
+          amount: targetPrice,
+          currency: targetCurrency,
+          countryCode: countryCode ? countryCode.toUpperCase() : null,
+          paymentMethod,
+          paymentId: paymentId || `pay_meet_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          status: "COMPLETED",
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Successfully purchased entry pass for "${contentTitle}"!`,
         purchase,
       });
     } else {

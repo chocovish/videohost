@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Disc, Sparkles, Loader2, AlertCircle, Users } from "lucide-react";
+import { Video, Disc, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,6 @@ export default function InstantMeetingModal({
     `Instant Meeting - ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" }).format(new Date())}`
   );
   const [recordOnStart, setRecordOnStart] = useState(false);
-  const [allowGuests, setAllowGuests] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,7 +47,8 @@ export default function InstantMeetingModal({
           title: title.trim() || "Instant Meeting",
           isInstant: true,
           recordOnStart,
-          allowGuests,
+          allowGuests: true,
+          shareAccessMode: "PUBLIC",
         }),
       });
 
@@ -132,36 +132,6 @@ export default function InstantMeetingModal({
             />
           </div>
 
-          {/* Guest Access Option */}
-          <div className="p-3.5 rounded-xl border border-border bg-card flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg mt-0.5 ${allowGuests ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="instant-guest-access" className="text-xs font-semibold cursor-pointer">
-                    Guest Access
-                  </Label>
-                  {allowGuests && (
-                    <Badge variant="outline" className="uppercase text-emerald-600 border-emerald-500/30">
-                      Open
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Attendees can enter their name and join without needing an account.
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="instant-guest-access"
-              checked={allowGuests}
-              onCheckedChange={setAllowGuests}
-              disabled={isLoading}
-            />
-          </div>
-
           <DialogFooter className="pt-3 border-t border-border mt-4">
             <Button
               type="button"
@@ -174,7 +144,7 @@ export default function InstantMeetingModal({
             <Button
               type="submit"
               disabled={isLoading || !title.trim()}
-              className="gap-2"
+              className="gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>

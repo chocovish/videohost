@@ -47,6 +47,13 @@ export async function GET(req: NextRequest) {
         folder: {
           select: { id: true, name: true },
         },
+        _count: {
+          select: {
+            purchases: {
+              where: { status: "COMPLETED" },
+            },
+          },
+        },
       },
       orderBy: [
         { status: "asc" },
@@ -83,11 +90,18 @@ export async function POST(req: NextRequest) {
       recordOnStart = false,
       allowGuests = true,
       inviteEmails = [],
+      shareAccessMode = "PUBLIC",
+      price,
+      currency = "USD",
+      countryPricing,
     } = body;
 
     if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "Meeting title is required" }, { status: 400 });
     }
+
+    const isPurchasable = shareAccessMode === "PURCHASABLE" || (price !== undefined && price !== null && Number(price) > 0);
+    const parsedPrice = isPurchasable && price !== undefined && price !== null ? parseFloat(String(price)) : null;
 
     const organization = await db.organization.findUnique({
       where: { id: orgId },
@@ -108,6 +122,10 @@ export async function POST(req: NextRequest) {
         recordOnStart: Boolean(recordOnStart),
         allowGuests: Boolean(allowGuests),
         status: isInstant ? "ACTIVE" : "SCHEDULED",
+        shareAccessMode: isPurchasable ? "PURCHASABLE" : (shareAccessMode as any || "PUBLIC"),
+        price: parsedPrice,
+        currency: currency || "USD",
+        countryPricing: Array.isArray(countryPricing) ? countryPricing : undefined,
         invites: {
           create: Array.isArray(inviteEmails)
             ? inviteEmails
@@ -125,6 +143,13 @@ export async function POST(req: NextRequest) {
           select: { id: true, name: true, email: true, image: true },
         },
         invites: true,
+        _count: {
+          select: {
+            purchases: {
+              where: { status: "COMPLETED" },
+            },
+          },
+        },
       },
     });
 

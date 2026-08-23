@@ -21,6 +21,8 @@ import {
   Plus,
   Tag,
   Sparkles,
+  Calendar,
+  Ticket,
 } from "lucide-react";
 import {
   Dialog,
@@ -86,7 +88,7 @@ interface SharedEmailItem {
 interface ShareModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: "video" | "playlist";
+  targetType: "video" | "playlist" | "meeting";
   targetId: string;
   targetName: string;
   onAccessModeChange?: (newMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE") => void;
@@ -365,16 +367,18 @@ export default function ShareModal({
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
               {targetType === "video" ? (
                 <Film className="w-5 h-5" />
+              ) : targetType === "meeting" ? (
+                <Calendar className="w-5 h-5" />
               ) : (
                 <ListVideo className="w-5 h-5" />
               )}
             </div>
             <div className="min-w-0 flex-1">
               <DialogTitle className="truncate text-base font-bold text-foreground">
-                Share {targetType === "video" ? "Video" : "Playlist"}
+                Share {targetType === "video" ? "Video" : targetType === "meeting" ? "Meeting" : "Playlist"}
               </DialogTitle>
               <DialogDescription className="truncate mt-0.5 text-xs text-muted-foreground">
-                {targetName || "Manage access, set purchasable pricing, and invite viewers"}
+                {targetName || (targetType === "meeting" ? "Manage entry pass pricing and share meeting link" : "Manage access, set purchasable pricing, and invite viewers")}
               </DialogDescription>
             </div>
           </div>
@@ -432,13 +436,13 @@ export default function ShareModal({
                   id: "PUBLIC",
                   title: "Public",
                   icon: Globe,
-                  desc: "Anyone with link",
+                  desc: targetType === "meeting" ? "Anyone can join" : "Anyone with link",
                 },
                 {
                   id: "PURCHASABLE",
                   title: "Purchasable",
                   icon: DollarSign,
-                  desc: "Pay to watch",
+                  desc: targetType === "meeting" ? "Paid entry pass" : "Pay to watch",
                   highlight: true,
                 },
                 {

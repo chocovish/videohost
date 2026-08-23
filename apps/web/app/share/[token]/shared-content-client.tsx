@@ -42,6 +42,13 @@ import {
   CreditCard,
   Tag,
   ShoppingBag,
+  Calendar,
+  Ticket,
+  Video,
+  Mic,
+  Radio,
+  Users,
+  Tv,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
@@ -79,7 +86,7 @@ export interface SharePageConfigData {
 }
 
 export interface SharedData {
-  type: "video" | "folder" | "playlist";
+  type: "video" | "folder" | "playlist" | "meeting";
   accessMode?: string;
   isPurchased?: boolean;
   isLoggedIn?: boolean;
@@ -87,6 +94,8 @@ export interface SharedData {
   currency?: string;
   countryPricing?: Array<{ countryCode: string; countryName: string; amount: number; currency: string }>;
   detectedCountryCode?: string;
+  itemTitle?: string;
+  joinUrl?: string;
   organization: {
     name: string;
     logoUrl?: string | null;
@@ -97,6 +106,22 @@ export interface SharedData {
     id: string;
     name: string;
   } | null;
+  meeting?: {
+    id: string;
+    title: string;
+    description?: string | null;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+    status: string;
+    isInstant: boolean;
+    recordOnStart: boolean;
+    allowGuests?: boolean;
+    createdAt: string;
+    createdBy?: {
+      name: string;
+      image?: string | null;
+    };
+  };
   video?: {
     id: string;
     title: string;
@@ -146,6 +171,93 @@ export interface SharedData {
 interface SharedContentClientProps {
   overrideConfig?: SharePageConfigData;
   previewData?: SharedData;
+}
+
+function MeetingCountdown({
+  scheduledStart,
+  accentHex,
+}: {
+  scheduledStart: string;
+  accentHex: string;
+}) {
+  const [timeLeft, setTimeLeft] = useState<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+    isPast: boolean;
+  }>({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false });
+
+  useEffect(() => {
+    const calculate = () => {
+      const target = new Date(scheduledStart).getTime();
+      const now = new Date().getTime();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeLeft({ days, hours, minutes, seconds, isPast: false });
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [scheduledStart]);
+
+  if (timeLeft.isPast) {
+    return (
+      <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3 text-emerald-400 text-xs font-bold shadow-inner">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+          </span>
+          <span>Meeting room is open and ready for attendees to join!</span>
+        </div>
+        <span className="hidden sm:inline-block uppercase tracking-wider text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/40 font-mono">
+          Ready
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3 backdrop-blur-md">
+      <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+        <span className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" style={{ color: accentHex }} />
+          <span>Countdown to Session Start</span>
+        </span>
+        <span className="text-[11px] text-slate-400 font-mono">Live Timer</span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
+        {[
+          { label: "Days", val: timeLeft.days },
+          { label: "Hours", val: timeLeft.hours },
+          { label: "Minutes", val: timeLeft.minutes },
+          { label: "Seconds", val: timeLeft.seconds },
+        ].map((item, idx) => (
+          <div key={idx} className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 shadow-xs">
+            <p className="text-xl sm:text-2xl font-black font-mono text-white tracking-tight">
+              {String(item.val).padStart(2, "0")}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+              {item.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function SharedContentClient({
@@ -287,6 +399,24 @@ export default function SharedContentClient({
       currency: finalCurrency,
       formatted: `${sym}${finalAmount.toFixed(2)}`,
     };
+  };
+
+  const formatMeetingTime = (dateStr?: string | null) => {
+    if (!dateStr) return "Flexible / Scheduled Conference";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
   const loadRazorpayScript = (): Promise<boolean> => {
@@ -1055,6 +1185,7 @@ export default function SharedContentClient({
   const isVideo = data.type === "video";
   const isPlaylist = data.type === "playlist";
   const isFolder = data.type === "folder";
+  const isMeeting = data.type === "meeting";
 
   // Dynamic Theme Preset Class & Style Mapping
   const preset = config.themePreset || "obsidian";
@@ -1113,7 +1244,9 @@ export default function SharedContentClient({
     ? `${data.video.title} — ${displayTitle}`
     : data.playlist?.title
       ? `${data.playlist.title} (Playlist) — ${displayTitle}`
-      : displayTitle;
+      : data.meeting?.title
+        ? `${data.meeting.title} (Meeting) — ${displayTitle}`
+        : displayTitle;
 
   return (
     <div
@@ -1262,6 +1395,248 @@ export default function SharedContentClient({
                 })()}
               </div>
             )}
+          </div>
+        )}
+
+        {/* MEETING SHARE & ENTRY PASS VIEW */}
+        {isMeeting && data.meeting && (
+          <div className="relative group max-w-4xl mx-auto space-y-6">
+            {/* Ambient Glow */}
+            <div
+              className="absolute -inset-1 rounded-3xl blur-3xl opacity-35 group-hover:opacity-70 transition-opacity duration-1000 -z-10 pointer-events-none"
+              style={{ backgroundColor: accentHex }}
+            />
+
+            {/* Hero Conference Card */}
+            <div className={`overflow-hidden border backdrop-blur-2xl shadow-2xl ${cardBgClass} ${roundnessClass}`}>
+              {/* Top Banner / Status Strip */}
+              <div className="px-6 py-4 border-b border-slate-800/80 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                    {data.meeting.status === "ACTIVE"
+                      ? "Live Meeting In Progress"
+                      : data.meeting.status === "COMPLETED"
+                      ? "Meeting Concluded"
+                      : "Live Scheduled Conference"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {data.accessMode === "PURCHASABLE" && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs font-bold gap-1 px-3 py-1 bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    >
+                      <Ticket className="w-3.5 h-3.5" />
+                      <span>{data.isPurchased ? "Entry Pass Verified" : "Purchasable Entry Pass"}</span>
+                    </Badge>
+                  )}
+                  {data.meeting.recordOnStart && (
+                    <Badge variant="destructive" className="text-[10px] uppercase font-bold tracking-wide">
+                      Auto-Record
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 sm:p-10 space-y-8">
+                {/* Main Title & Host Section */}
+                <div className="space-y-4">
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+                    {data.meeting.title}
+                  </h1>
+
+                  {data.meeting.description && (
+                    <p className="text-base text-slate-300 leading-relaxed max-w-3xl whitespace-pre-wrap">
+                      {data.meeting.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Host Profile & Organization Card */}
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 backdrop-blur-md">
+                  <div className="flex items-center gap-3.5">
+                    {data.meeting.createdBy?.image ? (
+                      <img
+                        src={data.meeting.createdBy.image}
+                        alt={data.meeting.createdBy.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 shadow-md"
+                      />
+                    ) : (
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base text-slate-950 shadow-md"
+                        style={{ backgroundColor: accentHex }}
+                      >
+                        {(data.meeting.createdBy?.name || "H").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-extrabold text-slate-100">
+                          {data.meeting.createdBy?.name || "Meeting Host"}
+                        </p>
+                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                          Host
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400">
+                        Organized by {organization.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Scheduled Date/Time Badge */}
+                  {data.meeting.scheduledStart && (
+                    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                      <Calendar className="w-5 h-5" style={{ color: accentHex }} />
+                      <div className="text-left">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Scheduled For</p>
+                        <p className="text-xs font-bold text-slate-200">
+                          {formatMeetingTime(data.meeting.scheduledStart)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Live Countdown & Event Room Readiness */}
+                {data.meeting.scheduledStart && (
+                  <MeetingCountdown scheduledStart={data.meeting.scheduledStart} accentHex={accentHex} />
+                )}
+
+                {/* TICKET STUB / PASS PURCHASE OR JOIN ACTION SECTION */}
+                {data.accessMode === "PURCHASABLE" && !data.isPurchased ? (
+                  /* UNPURCHASED PASS STATE */
+                  <div className="relative p-6 sm:p-8 rounded-2xl bg-linear-to-b from-slate-950 to-slate-900 border-2 border-dashed border-slate-700 space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Ticket className="w-5 h-5 text-amber-400" />
+                          <span className="text-xs font-extrabold uppercase tracking-widest text-amber-400">
+                            Official Entry Pass Required
+                          </span>
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-white">
+                          Buy Entry Ticket for this Meeting
+                        </h2>
+                        <p className="text-xs text-slate-400">
+                          One-time pass grants full attendee access when the meeting starts.
+                        </p>
+                      </div>
+
+                      {/* Price & Currency Display */}
+                      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-center sm:text-right shrink-0">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pass Price</p>
+                        <p className="text-3xl font-black mt-0.5" style={{ color: accentHex }}>
+                          {getCalculatedPrice(data, selectedBuyerCountry).formatted}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Country Selector for Dynamic Pricing */}
+                    {data.countryPricing && data.countryPricing.length > 0 && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                        <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
+                          <Globe className="w-3.5 h-3.5 text-slate-400" /> Billing Country:
+                        </span>
+                        <select
+                          value={selectedBuyerCountry}
+                          onChange={(e) => setSelectedBuyerCountry(e.target.value)}
+                          className="bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 rounded-lg px-3 py-1.5 focus:outline-hidden"
+                        >
+                          <option value="">Default International ({data.currency || "USD"})</option>
+                          {data.countryPricing.map((cp) => (
+                            <option key={cp.countryCode} value={cp.countryCode}>
+                              {cp.countryName || cp.countryCode} ({cp.currency} {cp.amount})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Primary Action Button */}
+                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-4">
+                      {!data.isLoggedIn ? (
+                        <button
+                          onClick={() => {
+                            const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+                            router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+                          }}
+                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                          style={{ backgroundColor: accentHex }}
+                        >
+                          <LogIn className="w-4 h-4" />
+                          <span>Sign in to Purchase Pass &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setIsCheckoutOpen(true)}
+                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                          style={{ backgroundColor: accentHex }}
+                        >
+                          <Ticket className="w-4 h-4 stroke-[2.5]" />
+                          <span>Purchase Entry Pass &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      <span>Instant Digital Pass • 256-bit Encrypted Checkout • Money-Back Guarantee</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* PURCHASED OR OPEN ACCESS STATE */
+                  <div className="p-6 sm:p-8 rounded-2xl bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 border-2 border-emerald-500/40 shadow-xl space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                            Attendee Pass Confirmed
+                          </span>
+                        </div>
+                        <h2 className="text-xl sm:text-2xl font-black text-white">
+                          You Have Access to this Meeting
+                        </h2>
+                        <p className="text-xs text-slate-400">
+                          Your seat is reserved. Click below to enter the live conference room when ready.
+                        </p>
+                      </div>
+
+                      <div className="px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold text-center shrink-0">
+                        <span>Pass Status: ACTIVE</span>
+                      </div>
+                    </div>
+
+                    {/* Join Meeting Action */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                      <button
+                        onClick={() => router.push(`/meet/${data.meeting?.id || token}`)}
+                        className="w-full sm:flex-1 py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                        style={{ backgroundColor: accentHex }}
+                      >
+                        <Video className="w-5 h-5" />
+                        <span>Join Meeting Room Now</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={handleCopyLink}
+                        className="w-full sm:w-auto px-5 py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                      >
+                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        <span>{copied ? "Copied Link" : "Copy Invite"}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -2021,14 +2396,24 @@ export default function SharedContentClient({
                 className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
                 style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
               >
-                <ShoppingBag className="w-5 h-5" />
+                {data?.type === "meeting" ? (
+                  <Ticket className="w-5 h-5" />
+                ) : (
+                  <ShoppingBag className="w-5 h-5" />
+                )}
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold text-white">
-                  Unlock {data?.type === "playlist" ? "Playlist" : "Video"}
+                  {data?.type === "meeting"
+                    ? "Purchase Meeting Entry Pass"
+                    : data?.type === "playlist"
+                    ? "Unlock Playlist"
+                    : "Unlock Video"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">
-                  Instant permanent access with lifetime streaming
+                  {data?.type === "meeting"
+                    ? "Confirmed digital entry ticket to join the live session"
+                    : "Instant permanent access with lifetime streaming"}
                 </DialogDescription>
               </div>
             </div>
@@ -2054,10 +2439,18 @@ export default function SharedContentClient({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                    {data?.type === "playlist" ? "Playlist Collection" : "Single Video"}
+                    {data?.type === "meeting"
+                      ? "Live Meeting Pass"
+                      : data?.type === "playlist"
+                      ? "Playlist Collection"
+                      : "Single Video"}
                   </span>
                   <p className="font-bold text-sm text-slate-100 mt-1">
-                    {data?.type === "playlist" ? data?.playlist?.title : data?.video?.title}
+                    {data?.type === "meeting"
+                      ? data?.meeting?.title
+                      : data?.type === "playlist"
+                      ? data?.playlist?.title
+                      : data?.video?.title}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     Provided by {data?.organization?.name}
@@ -2071,6 +2464,13 @@ export default function SharedContentClient({
                   </p>
                 </div>
               </div>
+
+              {data?.type === "meeting" && data?.meeting?.scheduledStart && (
+                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" style={{ color: accentHex }} />
+                  <span>Scheduled: {formatMeetingTime(data.meeting.scheduledStart)}</span>
+                </div>
+              )}
 
               {data?.type === "playlist" && (
                 <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">

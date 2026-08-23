@@ -66,6 +66,43 @@ export async function POST(
     const canModerate = isOrgUser;
     const canRecord = isOrgUser;
 
+    // Check PURCHASABLE Entry Pass Requirement:
+    if (meeting.shareAccessMode === "PURCHASABLE" && !isOrgUser) {
+      if (!isAuthUser) {
+        return NextResponse.json(
+          {
+            error: "Please sign in to verify or purchase your entry pass for this meeting.",
+            requireAuth: true,
+            passRequired: true,
+            price: meeting.price,
+            currency: meeting.currency,
+          },
+          { status: 403 }
+        );
+      }
+
+      const passPurchase = await db.contentPurchase.findFirst({
+        where: {
+          userId,
+          meetingId: meeting.id,
+          status: "COMPLETED",
+        },
+      });
+
+      if (!passPurchase) {
+        return NextResponse.json(
+          {
+            error: "A valid entry pass is required to join this meeting.",
+            passRequired: true,
+            price: meeting.price,
+            currency: meeting.currency,
+            countryPricing: meeting.countryPricing,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // Check meeting ENDED status:
     if (meeting.status === "ENDED") {
       if (isHost || isOrgUser) {

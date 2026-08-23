@@ -57,17 +57,45 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       });
     }
 
+    let meeting: any = null;
     if (!video && !folder && !playlist) {
+      // 4. Try finding as Meeting
+      meeting = await db.meeting.findUnique({
+        where: { id: token },
+        include: {
+          organization: true,
+          createdBy: {
+            select: { id: true, name: true, image: true, email: true },
+          },
+          invites: true,
+        },
+      });
+    }
+
+    if (!video && !folder && !playlist && !meeting) {
       return NextResponse.json({ error: "Shared item not found or has expired." }, { status: 404 });
     }
 
-    const item = video || folder || playlist;
+    const item = video || folder || playlist || meeting;
     const isVideo = Boolean(video);
     const isFolder = Boolean(folder);
     const isPlaylist = Boolean(playlist);
+    const isMeeting = Boolean(meeting);
 
-    const targetType: "video" | "folder" | "playlist" = isVideo ? "video" : isPlaylist ? "playlist" : "folder";
-    const itemTitle = isVideo ? video!.title : isPlaylist ? playlist!.title : folder!.name;
+    const targetType: "video" | "folder" | "playlist" | "meeting" = isVideo
+      ? "video"
+      : isPlaylist
+      ? "playlist"
+      : isMeeting
+      ? "meeting"
+      : "folder";
+    const itemTitle = isVideo
+      ? video!.title
+      : isPlaylist
+      ? playlist!.title
+      : isMeeting
+      ? meeting!.title
+      : folder!.name;
 
     const organization = {
       name: item.organization.name,
@@ -76,7 +104,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     };
 
     const accessMode = item.shareAccessMode;
-    const sharedEmails: Array<{ email: string }> = item.sharedEmails;
+    const sharedEmails: Array<{ email: string }> = isMeeting ? meeting.invites : item.sharedEmails;
 
     // Fetch customization config for this organization
     const rawShareConfig = await db.sharePageConfig.findUnique({
@@ -235,7 +263,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           isPurchasedOrAllowed = true;
         }
 
-        // Check 2: Direct purchase of Video or Playlist
+        // Check 2: Direct purchase of Video or Playlist or Meeting
         if (!isPurchasedOrAllowed) {
           const directPurchase = await db.contentPurchase.findFirst({
             where: {
@@ -244,6 +272,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
               OR: [
                 { videoId: token },
                 { playlistId: token },
+                { meetingId: token },
               ],
             },
           });
@@ -252,7 +281,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           }
         }
 
-        // Check 3: Playlist Purchase Cascade (if this is a video in a purchased playlist)
+        // Check 3: Host or Member check for Meeting
+        if (!isPurchasedOrAllowed && isMeeting && meeting) {
+          if (meeting.createdById === session.user.id) {
+            isPurchasedOrAllowed = true;
+          }
+        }
+
+        // Check 4: Playlist Purchase Cascade (if this is a video in a purchased playlist)
         if (!isPurchasedOrAllowed && isVideo && video) {
           const playlistItems = await db.playlistItem.findMany({
             where: { videoId: video.id },
@@ -277,18 +313,58 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
 
       // If not purchased, return Purchasable paywall payload
       if (!isPurchasedOrAllowed) {
+        const headerCountry =
+          req.headers.get("cf-ipcountry") ||
+          req.headers.get("x-vercel-ip-country") ||
+          req.headers.get("x-country-code") ||
+          null;
+
+        if (isMeeting && meeting) {
+          let hostAvatarUrl = meeting.createdBy?.image || null;
+          if (hostAvatarUrl && !hostAvatarUrl.startsWith("http")) {
+            try {
+              hostAvatarUrl = await getPresignedPlaybackUrl(hostAvatarUrl);
+            } catch {}
+          }
+
+          return NextResponse.json({
+            type: "meeting",
+            accessMode: "PURCHASABLE",
+            isPurchased: false,
+            isLoggedIn: Boolean(session?.user?.id),
+            token,
+            organization,
+            sharePageConfig,
+            itemTitle: meeting.title,
+            price: meeting.price,
+            currency: meeting.currency || "USD",
+            countryPricing: meeting.countryPricing || [],
+            detectedCountryCode: headerCountry ? headerCountry.toUpperCase() : undefined,
+            meeting: {
+              id: meeting.id,
+              title: meeting.title,
+              description: meeting.description,
+              scheduledStart: meeting.scheduledStart,
+              scheduledEnd: meeting.scheduledEnd,
+              status: meeting.status,
+              isInstant: meeting.isInstant,
+              recordOnStart: meeting.recordOnStart,
+              allowGuests: meeting.allowGuests,
+              createdAt: meeting.createdAt,
+              createdBy: {
+                name: meeting.createdBy?.name || "Host",
+                image: hostAvatarUrl,
+              },
+            },
+          });
+        }
+
         const firstThumbnailKey = isVideo
           ? video?.thumbnailKey
           : playlist?.items[0]?.video?.thumbnailKey;
         const previewThumbnailUrl = firstThumbnailKey
           ? await getPresignedPlaybackUrl(firstThumbnailKey)
           : null;
-
-        const headerCountry =
-          req.headers.get("cf-ipcountry") ||
-          req.headers.get("x-vercel-ip-country") ||
-          req.headers.get("x-country-code") ||
-          null;
 
         return NextResponse.json({
           type: targetType,
@@ -471,6 +547,47 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         },
         videos,
         subfolders: subfolders.map((sf) => ({ id: sf.id, name: sf.name })),
+      });
+    }
+
+    // 9. Return Meeting Response (Public, Purchased, Host or Allowed)
+    if (isMeeting && meeting) {
+      let hostAvatarUrl = meeting.createdBy?.image || null;
+      if (hostAvatarUrl && !hostAvatarUrl.startsWith("http")) {
+        try {
+          hostAvatarUrl = await getPresignedPlaybackUrl(hostAvatarUrl);
+        } catch {}
+      }
+
+      return NextResponse.json({
+        type: "meeting",
+        accessMode: meeting.shareAccessMode,
+        isPurchased: true,
+        isLoggedIn: Boolean(session?.user?.id),
+        token,
+        organization,
+        sharePageConfig,
+        itemTitle: meeting.title,
+        price: meeting.price,
+        currency: meeting.currency || "USD",
+        countryPricing: meeting.countryPricing || [],
+        joinUrl: `/meet/${meeting.id}`,
+        meeting: {
+          id: meeting.id,
+          title: meeting.title,
+          description: meeting.description,
+          scheduledStart: meeting.scheduledStart,
+          scheduledEnd: meeting.scheduledEnd,
+          status: meeting.status,
+          isInstant: meeting.isInstant,
+          recordOnStart: meeting.recordOnStart,
+          allowGuests: meeting.allowGuests,
+          createdAt: meeting.createdAt,
+          createdBy: {
+            name: meeting.createdBy?.name || "Host",
+            image: hostAvatarUrl,
+          },
+        },
       });
     }
 

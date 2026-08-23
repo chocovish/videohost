@@ -11,12 +11,12 @@ export async function GET(req: Request) {
 
   try {
     const { searchParams } = new URL(req.url);
-    const targetType = searchParams.get("targetType") as "video" | "playlist" | null;
+    const targetType = searchParams.get("targetType") as "video" | "playlist" | "meeting" | null;
     const targetId = searchParams.get("targetId");
 
-    if (!targetType || !["video", "playlist"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "playlist", "meeting"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'playlist') and targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'playlist'|'meeting') and targetId." },
         { status: 400 }
       );
     }
@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       currency = video.currency || "USD";
       countryPricing = (video.countryPricing as any[]) || [];
       allowedEmails = video.sharedEmails;
-    } else {
+    } else if (targetType === "playlist") {
       const playlist = await db.playlist.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
@@ -56,6 +56,20 @@ export async function GET(req: Request) {
       currency = playlist.currency || "USD";
       countryPricing = (playlist.countryPricing as any[]) || [];
       allowedEmails = playlist.sharedEmails;
+    } else {
+      const meeting = await db.meeting.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+        include: { invites: true },
+      });
+      if (!meeting) {
+        return NextResponse.json({ error: "Meeting not found in organization" }, { status: 404 });
+      }
+      targetTitle = meeting.title;
+      accessMode = meeting.shareAccessMode as any;
+      price = meeting.price;
+      currency = meeting.currency || "USD";
+      countryPricing = (meeting.countryPricing as any[]) || [];
+      allowedEmails = meeting.invites.map((i) => ({ id: i.id, email: i.email, createdAt: i.sentAt.toISOString() }));
     }
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
@@ -90,9 +104,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { action, targetType, targetId, accessMode, price, currency, countryPricing, email, emailId, message } = body;
 
-    if (!targetType || !["video", "playlist"].includes(targetType) || !targetId) {
+    if (!targetType || !["video", "playlist", "meeting"].includes(targetType) || !targetId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required: targetType ('video'|'playlist'), targetId." },
+        { error: "Invalid parameters. Required: targetType ('video'|'playlist'|'meeting'), targetId." },
         { status: 400 }
       );
     }
@@ -121,7 +135,7 @@ export async function POST(req: Request) {
       currentPrice = video.price;
       currentCurrency = video.currency || "USD";
       currentCountryPricing = (video.countryPricing as any[]) || [];
-    } else {
+    } else if (targetType === "playlist") {
       const playlist = await db.playlist.findFirst({
         where: { id: targetId, organizationId: authCtx.orgId },
       });
@@ -131,6 +145,16 @@ export async function POST(req: Request) {
       currentPrice = playlist.price;
       currentCurrency = playlist.currency || "USD";
       currentCountryPricing = (playlist.countryPricing as any[]) || [];
+    } else {
+      const meeting = await db.meeting.findFirst({
+        where: { id: targetId, organizationId: authCtx.orgId },
+      });
+      if (!meeting) return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      targetTitle = meeting.title;
+      currentAccessMode = meeting.shareAccessMode as any;
+      currentPrice = meeting.price;
+      currentCurrency = meeting.currency || "USD";
+      currentCountryPricing = (meeting.countryPricing as any[]) || [];
     }
 
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
@@ -160,8 +184,13 @@ export async function POST(req: Request) {
           where: { id: targetId },
           data: updateData,
         });
-      } else {
+      } else if (targetType === "playlist") {
         await db.playlist.update({
+          where: { id: targetId },
+          data: updateData,
+        });
+      } else {
+        await db.meeting.update({
           where: { id: targetId },
           data: updateData,
         });
@@ -179,19 +208,27 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
       }
 
-      // Upsert into SharedEmail table
-      await db.sharedEmail.upsert({
-        where:
-          targetType === "video"
-            ? { videoId_email: { videoId: targetId, email: cleanEmail } }
-            : { playlistId_email: { playlistId: targetId, email: cleanEmail } },
-        create: {
-          videoId: targetType === "video" ? targetId : null,
-          playlistId: targetType === "playlist" ? targetId : null,
-          email: cleanEmail,
-        },
-        update: {},
-      });
+      if (targetType === "meeting") {
+        await db.meetingInvite.upsert({
+          where: { meetingId_email: { meetingId: targetId, email: cleanEmail } },
+          create: { meetingId: targetId, email: cleanEmail, role: "attendee" },
+          update: {},
+        });
+      } else {
+        // Upsert into SharedEmail table
+        await db.sharedEmail.upsert({
+          where:
+            targetType === "video"
+              ? { videoId_email: { videoId: targetId, email: cleanEmail } }
+              : { playlistId_email: { playlistId: targetId, email: cleanEmail } },
+          create: {
+            videoId: targetType === "video" ? targetId : null,
+            playlistId: targetType === "playlist" ? targetId : null,
+            email: cleanEmail,
+          },
+          update: {},
+        });
+      }
 
       // Switch mode to RESTRICTED if currently PUBLIC
       if (currentAccessMode === "PUBLIC") {
@@ -201,8 +238,13 @@ export async function POST(req: Request) {
             where: { id: targetId },
             data: { shareAccessMode: "RESTRICTED" },
           });
-        } else {
+        } else if (targetType === "playlist") {
           await db.playlist.update({
+            where: { id: targetId },
+            data: { shareAccessMode: "RESTRICTED" },
+          });
+        } else {
+          await db.meeting.update({
             where: { id: targetId },
             data: { shareAccessMode: "RESTRICTED" },
           });
@@ -232,18 +274,26 @@ export async function POST(req: Request) {
 
     // Handle Action 3: REMOVE_EMAIL
     if (action === "REMOVE_EMAIL" || emailId) {
-      if (emailId) {
-        await db.sharedEmail.deleteMany({
-          where: { id: emailId },
-        });
-      } else if (email) {
-        const cleanEmail = email.trim().toLowerCase();
-        await db.sharedEmail.deleteMany({
-          where:
-            targetType === "video"
-              ? { videoId: targetId, email: cleanEmail }
-              : { playlistId: targetId, email: cleanEmail },
-        });
+      if (targetType === "meeting") {
+        if (emailId) {
+          await db.meetingInvite.deleteMany({ where: { id: emailId } });
+        } else if (email) {
+          await db.meetingInvite.deleteMany({ where: { meetingId: targetId, email: email.trim().toLowerCase() } });
+        }
+      } else {
+        if (emailId) {
+          await db.sharedEmail.deleteMany({
+            where: { id: emailId },
+          });
+        } else if (email) {
+          const cleanEmail = email.trim().toLowerCase();
+          await db.sharedEmail.deleteMany({
+            where:
+              targetType === "video"
+                ? { videoId: targetId, email: cleanEmail }
+                : { playlistId: targetId, email: cleanEmail },
+          });
+        }
       }
     }
 
@@ -260,7 +310,7 @@ export async function POST(req: Request) {
         currentCurrency = v.currency || "USD";
         currentCountryPricing = (v.countryPricing as any[]) || [];
       }
-    } else {
+    } else if (targetType === "playlist") {
       const p = await db.playlist.findUnique({
         where: { id: targetId },
         include: { sharedEmails: { orderBy: { createdAt: "desc" } } },
@@ -270,6 +320,17 @@ export async function POST(req: Request) {
         currentPrice = p.price;
         currentCurrency = p.currency || "USD";
         currentCountryPricing = (p.countryPricing as any[]) || [];
+      }
+    } else {
+      const m = await db.meeting.findUnique({
+        where: { id: targetId },
+        include: { invites: true },
+      });
+      allowedEmails = (m?.invites || []).map((i) => ({ id: i.id, email: i.email, createdAt: i.sentAt.toISOString() }));
+      if (m) {
+        currentPrice = m.price;
+        currentCurrency = m.currency || "USD";
+        currentCountryPricing = (m.countryPricing as any[]) || [];
       }
     }
 

@@ -23,12 +23,23 @@ import {
   CalendarPlus,
   ShieldAlert,
   RefreshCw,
+  Ticket,
+  DollarSign,
+  Pencil,
+  MoreVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import ScheduleMeetingModal from "@/components/meetings/ScheduleMeetingModal";
 import InstantMeetingModal from "@/components/meetings/InstantMeetingModal";
-import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
+import ShareModal from "@/components/ShareModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface MeetingItem {
@@ -43,6 +54,12 @@ interface MeetingItem {
   recordOnStart: boolean;
   isRecording: boolean;
   recordedVideoId: string | null;
+  shareAccessMode?: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
+  price?: number | null;
+  currency?: string | null;
+  _count?: {
+    purchases?: number;
+  };
   createdAt: string;
   createdBy: {
     id: string;
@@ -68,6 +85,8 @@ interface MeetingItem {
 export default function MeetingsDashboardPage() {
   const router = useRouter();
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
+  const [shareModalData, setShareModalData] = useState<{ id: string; title: string } | null>(null);
+  const [editingMeeting, setEditingMeeting] = useState<MeetingItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +94,6 @@ export default function MeetingsDashboardPage() {
 
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [isInstantOpen, setIsInstantOpen] = useState(false);
-  const [inviteModalData, setInviteModalData] = useState<{ id: string; title: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
@@ -200,7 +218,7 @@ export default function MeetingsDashboardPage() {
             onClick={refreshMeetings}
             disabled={isRefreshing}
             title="Refresh meetings list"
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none cursor-pointer"
           >
             <RefreshCw className={`w-4 h-4 text-muted-foreground ${isRefreshing ? "animate-spin text-primary" : ""}`} />
             <span>Refresh</span>
@@ -208,14 +226,14 @@ export default function MeetingsDashboardPage() {
           <Button
             variant="outline"
             onClick={() => setIsScheduleOpen(true)}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none cursor-pointer"
           >
             <CalendarPlus className="w-4 h-4 text-primary" />
             <span>Schedule Meeting</span>
           </Button>
           <Button
             onClick={() => setIsInstantOpen(true)}
-            className="flex-1 sm:flex-none"
+            className="flex-1 sm:flex-none cursor-pointer"
           >
             <Video className="w-4 h-4" />
             <span>Start Instant Meet</span>
@@ -229,7 +247,7 @@ export default function MeetingsDashboardPage() {
           variant={activeTab === "upcoming" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("upcoming")}
-          className="gap-2"
+          className="gap-2 cursor-pointer"
         >
           <Calendar className="w-4 h-4" />
           Upcoming & Live ({upcomingMeetings.length})
@@ -238,7 +256,7 @@ export default function MeetingsDashboardPage() {
           variant={activeTab === "past" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("past")}
-          className="gap-2"
+          className="gap-2 cursor-pointer"
         >
           <Clock className="w-4 h-4" />
           Past & Recorded ({pastMeetings.length})
@@ -302,15 +320,28 @@ export default function MeetingsDashboardPage() {
                         </Badge>
                       )}
 
-                      {meeting.recordOnStart && (
-                        <Badge
-                          variant="destructive"
-                          className="gap-1 uppercase"
-                          title="This meeting will be recorded automatically"
-                        >
-                          <Disc className="w-3 h-3" /> Auto-Record
-                        </Badge>
-                      )}
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        {meeting.shareAccessMode === "PURCHASABLE" && (
+                          <Badge variant="outline" className="gap-1 bg-amber-500/10 border-amber-500/30 text-amber-500 text-[10px] font-bold">
+                            <Ticket className="w-3 h-3" />
+                            <span>Pass: {meeting.currency || "USD"} {meeting.price || 0}</span>
+                            {Boolean(meeting._count?.purchases) && (
+                              <span className="ml-1 text-[9px] bg-amber-500/20 px-1 py-0.2 rounded font-mono">
+                                {meeting._count?.purchases} sold
+                              </span>
+                            )}
+                          </Badge>
+                        )}
+                        {meeting.recordOnStart && (
+                          <Badge
+                            variant="destructive"
+                            className="gap-1 uppercase"
+                            title="This meeting will be recorded automatically"
+                          >
+                            <Disc className="w-3 h-3" /> Auto-Record
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <div>
@@ -356,40 +387,58 @@ export default function MeetingsDashboardPage() {
 
                   {/* Card Footer Actions */}
                   <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between gap-2 mt-2">
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setInviteModalData({ id: meeting.id, title: meeting.title })}
-                        className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg gap-1 cursor-pointer"
-                        title="Invite participants"
-                      >
-                        <Users className="w-3.5 h-3.5" />
-                        <span>Invite</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
-                        className="h-8 px-2 text-xs text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 rounded-lg cursor-pointer"
-                        title="Delete meeting"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-
                     <Link href={`/meet/${meeting.id}`}>
                       <Button
                         size="sm"
-                        className={`gap-1.5 cursor-pointer ${isLive
+                        className={`gap-1.5 cursor-pointer ${
+                          isLive
                             ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
                             : ""
-                          }`}
+                        }`}
                       >
                         <span>Join Room</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
                     </Link>
+
+                    {/* 3-Dot Options Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                          title="More options"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                          <span className="sr-only">More options</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => setEditingMeeting(meeting)}
+                          className="cursor-pointer gap-2 text-xs"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>Edit Details</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setShareModalData({ id: meeting.id, title: meeting.title })}
+                          className="cursor-pointer gap-2 text-xs"
+                        >
+                          <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>Share & Pass Pricing</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
+                          className="cursor-pointer gap-2 text-xs text-destructive focus:text-destructive focus:bg-destructive/10"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete Meeting</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               );
@@ -410,7 +459,7 @@ export default function MeetingsDashboardPage() {
             <div className="flex items-center justify-center gap-3">
               <Button
                 onClick={() => setIsInstantOpen(true)}
-                className="gap-2"
+                className="gap-2 cursor-pointer"
               >
                 <Video className="w-4 h-4" />
                 <span>Start Instant Meet</span>
@@ -430,6 +479,12 @@ export default function MeetingsDashboardPage() {
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-muted-foreground border border-border">
                       {meeting.id}
                     </span>
+                    {meeting.shareAccessMode === "PURCHASABLE" && (
+                      <Badge variant="outline" className="gap-1 bg-amber-500/10 border-amber-500/30 text-amber-500 text-[10px] font-bold">
+                        <Ticket className="w-3 h-3" />
+                        <span>Pass: {meeting.currency || "USD"} {meeting.price || 0}</span>
+                      </Badge>
+                    )}
                     {meeting.recordedVideoId && (
                       <Badge variant="destructive" className="gap-1">
                         <Disc className="w-3 h-3" /> Recorded
@@ -438,35 +493,30 @@ export default function MeetingsDashboardPage() {
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                     <span>Ended: {new Date(meeting.createdAt).toLocaleDateString()}</span>
-                    <span>•</span>
-                    <span>Host: {meeting.createdBy?.name || "Host"}</span>
-                    {meeting.invites.length > 0 && (
-                      <>
-                        <span>•</span>
-                        <span>{meeting.invites.length} attendee(s)</span>
-                      </>
-                    )}
+                    <span>{meeting.invites.length} invitee(s)</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  {meeting.recordedVideoId ? (
-                    <Link href={`/dashboard/uploaded-videos`}>
+                <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
+                  {meeting.recordedVideoId && (
+                    <Link href={`/videos/${meeting.recordedVideoId}`}>
                       <Button
                         size="sm"
-                        className="bg-primary text-white hover:opacity-90 font-bold text-xs gap-1.5 cursor-pointer"
+                        variant="outline"
+                        className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10 cursor-pointer"
                       >
-                        <Play className="w-3.5 h-3.5 fill-current" />
-                        Watch Video
+                        <Play className="w-3.5 h-3.5" />
+                        <span>Watch Recording</span>
                       </Button>
                     </Link>
-                  ) : (
+                  )}
+                  {meeting.status === "ENDED" && (
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={reopeningId === meeting.id}
                       onClick={() => handleReopenMeeting(meeting.id)}
-                      className="border-border hover:bg-slate-100 dark:hover:bg-slate-800 text-foreground text-xs gap-1.5 cursor-pointer"
+                      className="gap-1.5 text-xs cursor-pointer"
                     >
                       {reopeningId === meeting.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -476,15 +526,45 @@ export default function MeetingsDashboardPage() {
                       <span>{reopeningId === meeting.id ? "Reopening..." : "Re-open Room"}</span>
                     </Button>
                   )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
-                    className="text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 h-8 w-8 p-0 cursor-pointer"
-                    title="Delete record"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
+
+                  {/* 3-Dot Options Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
+                        title="More options"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                        <span className="sr-only">More options</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem
+                        onClick={() => setEditingMeeting(meeting)}
+                        className="cursor-pointer gap-2 text-xs"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Edit Details</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setShareModalData({ id: meeting.id, title: meeting.title })}
+                        className="cursor-pointer gap-2 text-xs"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Share Link</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
+                        className="cursor-pointer gap-2 text-xs text-destructive focus:text-destructive focus:bg-destructive/10"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Record</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
@@ -501,17 +581,34 @@ export default function MeetingsDashboardPage() {
         }}
       />
 
+      {/* Edit Meeting Modal */}
+      {editingMeeting && (
+        <ScheduleMeetingModal
+          isOpen={Boolean(editingMeeting)}
+          onClose={() => setEditingMeeting(null)}
+          meeting={editingMeeting}
+          onSuccess={(updated) => {
+            setMeetings((prev) =>
+              prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+            );
+            setEditingMeeting(null);
+          }}
+        />
+      )}
+
       <InstantMeetingModal
         isOpen={isInstantOpen}
         onClose={() => setIsInstantOpen(false)}
       />
 
-      {inviteModalData && (
-        <InMeetingInviteModal
-          isOpen={Boolean(inviteModalData)}
-          onClose={() => setInviteModalData(null)}
-          meetingId={inviteModalData.id}
-          meetingTitle={inviteModalData.title}
+      {shareModalData && (
+        <ShareModal
+          isOpen={Boolean(shareModalData)}
+          onClose={() => setShareModalData(null)}
+          targetType="meeting"
+          targetId={shareModalData.id}
+          targetName={shareModalData.title}
+          onAccessModeChange={() => refreshMeetings()}
         />
       )}
 
@@ -533,4 +630,3 @@ export default function MeetingsDashboardPage() {
     </div>
   );
 }
-

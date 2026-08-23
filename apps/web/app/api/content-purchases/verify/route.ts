@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       gateway,
-      contentType,
+      contentType: rawContentType,
       contentId,
       countryCode,
       // Razorpay parameters
@@ -29,7 +29,9 @@ export async function POST(req: Request) {
       cf_order_id,
     } = body;
 
-    if (!contentType || !["video", "playlist"].includes(contentType) || !contentId) {
+    const contentType = (rawContentType || "").toLowerCase();
+
+    if (!contentType || !["video", "playlist", "meeting"].includes(contentType) || !contentId) {
       return NextResponse.json(
         { error: "Invalid parameters. Required contentType and contentId." },
         { status: 400 }
@@ -60,6 +62,30 @@ export async function POST(req: Request) {
 
       if (countryCode && Array.isArray(video.countryPricing)) {
         const countryRule = (video.countryPricing as any[]).find(
+          (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
+        );
+        if (countryRule && countryRule.amount !== undefined) {
+          targetPrice = Number(countryRule.amount);
+          if (countryRule.currency) targetCurrency = countryRule.currency;
+        }
+      }
+    } else if (contentType === "meeting") {
+      const meeting = await db.meeting.findUnique({
+        where: { id: contentId },
+      });
+
+      if (!meeting) {
+        return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      }
+
+      organizationId = meeting.organizationId;
+      contentTitle = meeting.title;
+      targetPrice = meeting.price || 0;
+      targetCurrency = meeting.currency || "USD";
+      internalId = meeting.id;
+
+      if (countryCode && Array.isArray(meeting.countryPricing)) {
+        const countryRule = (meeting.countryPricing as any[]).find(
           (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
         );
         if (countryRule && countryRule.amount !== undefined) {
@@ -153,8 +179,12 @@ export async function POST(req: Request) {
     const existing = await db.contentPurchase.findFirst({
       where: {
         userId,
-        contentType: contentType === "video" ? "VIDEO" : "PLAYLIST",
-        ...(contentType === "video" ? { videoId: internalId } : { playlistId: internalId }),
+        contentType: contentType === "video" ? "VIDEO" : contentType === "meeting" ? "MEETING" : "PLAYLIST",
+        ...(contentType === "video"
+          ? { videoId: internalId }
+          : contentType === "meeting"
+          ? { meetingId: internalId }
+          : { playlistId: internalId }),
         status: "COMPLETED",
       },
     });
@@ -172,8 +202,9 @@ export async function POST(req: Request) {
       data: {
         organizationId,
         userId,
-        contentType: contentType === "video" ? "VIDEO" : "PLAYLIST",
+        contentType: contentType === "video" ? "VIDEO" : contentType === "meeting" ? "MEETING" : "PLAYLIST",
         videoId: contentType === "video" ? internalId : null,
+        meetingId: contentType === "meeting" ? internalId : null,
         playlistId: contentType === "playlist" ? internalId : null,
         amount: targetPrice,
         currency: targetCurrency,

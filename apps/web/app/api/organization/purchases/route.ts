@@ -35,6 +35,12 @@ export async function GET(req: Request) {
             title: true,
           },
         },
+        meeting: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -57,6 +63,7 @@ export async function GET(req: Request) {
 
     const videoPurchasesCount = purchases.filter((p) => p.contentType === "VIDEO" && p.status === "COMPLETED").length;
     const playlistPurchasesCount = purchases.filter((p) => p.contentType === "PLAYLIST" && p.status === "COMPLETED").length;
+    const meetingPurchasesCount = purchases.filter((p) => p.contentType === "MEETING" && p.status === "COMPLETED").length;
 
     // Fetch bank account to determine configured payout currency
     const bankAccount = await db.bankAccount.findUnique({
@@ -74,6 +81,7 @@ export async function GET(req: Request) {
         totalPurchasesCount: purchases.filter((p) => p.status === "COMPLETED").length,
         videoPurchasesCount,
         playlistPurchasesCount,
+        meetingPurchasesCount,
         currency,
       },
     });

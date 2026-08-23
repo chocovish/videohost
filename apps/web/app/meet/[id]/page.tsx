@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   RotateCcw,
   ShieldAlert,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MeetingLobby from "@/components/meetings/MeetingLobby";
@@ -41,6 +42,7 @@ export default function MeetPage() {
   const [canModerate, setCanModerate] = useState(false);
   const [canRecord, setCanRecord] = useState(false);
   const [requiresAuth, setRequiresAuth] = useState(false);
+  const [requiresPass, setRequiresPass] = useState(false);
 
   // Distinguish exit / disconnect states
   const [leaveState, setLeaveState] = useState<{
@@ -59,6 +61,7 @@ export default function MeetPage() {
         setError(null);
         setLeaveState(null);
         setRequiresAuth(false);
+        setRequiresPass(false);
 
         const res = await fetch(`/api/meetings/${id}`);
         const data = await res.json().catch(() => ({}));
@@ -86,6 +89,16 @@ export default function MeetPage() {
         setCanModerate(Boolean(data.canModerate || userIsHost || userIsOrgMember));
         setCanRecord(Boolean(data.canRecord || userIsHost || userIsOrgMember));
         setMeeting(data.meeting);
+
+        // Check if purchasable pass is required
+        if (
+          data.meeting?.shareAccessMode === "PURCHASABLE" &&
+          !userIsHost &&
+          !userIsOrgMember &&
+          !data.hasPurchasedPass
+        ) {
+          setRequiresPass(true);
+        }
 
         if (data.meeting?.status === "CANCELLED") {
           setError("This meeting has been cancelled.");
@@ -160,6 +173,7 @@ export default function MeetPage() {
       setError(null);
       setLeaveState(null);
       setRequiresAuth(false);
+      setRequiresPass(false);
 
       const res = await fetch(`/api/meetings/${id}/token`, {
         method: "POST",
@@ -171,6 +185,10 @@ export default function MeetPage() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (data.passRequired) {
+          setRequiresPass(true);
+          return;
+        }
         if (data.requireAuth) {
           setRequiresAuth(true);
         }
@@ -305,6 +323,63 @@ export default function MeetPage() {
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render Entry Pass Required Barrier
+  if (requiresPass && !isHost && !isOrgMember && !isInRoom) {
+    const formattedPrice = meeting?.price ? `${meeting.currency || "USD"} ${meeting.price}` : "Paid Pass";
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-black">
+        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border bg-amber-500/10 border-amber-500/30 text-amber-400">
+            <Ticket className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+              Entry Pass Required
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              {meeting?.title || "Live Conference Meeting"}
+            </h2>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              This session requires a purchased entry pass. Please visit the share page to get your attendee pass.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+            <div className="text-left">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entry Ticket</p>
+              <p className="text-xs font-semibold text-slate-200">Live Access Pass</p>
+            </div>
+            <div className="text-right">
+              <span className="text-lg font-black text-amber-400">{formattedPrice}</span>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-2">
+            <Button
+              variant="lime"
+              size="lg"
+              onClick={() => router.push(`/share/${id}`)}
+              className="w-full gap-2 font-black cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950"
+            >
+              <Ticket className="w-4 h-4" />
+              <span>Get Entry Pass &bull; {formattedPrice}</span>
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
+              className="w-full text-xs text-slate-400 hover:text-white"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {session?.user ? "Back to Meetings" : "Go to Home"}
             </Button>
           </div>
         </div>

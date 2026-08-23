@@ -16,11 +16,12 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { contentType, contentId, countryCode, preferredGateway } = body;
+    const { contentType: rawContentType, contentId, countryCode, preferredGateway } = body;
+    const contentType = (rawContentType || "").toLowerCase();
 
-    if (!contentType || !["video", "playlist"].includes(contentType) || !contentId) {
+    if (!contentType || !["video", "playlist", "meeting"].includes(contentType) || !contentId) {
       return NextResponse.json(
-        { error: "Invalid parameters. Required contentType ('video' | 'playlist') and contentId." },
+        { error: "Invalid parameters. Required contentType ('video' | 'playlist' | 'meeting') and contentId." },
         { status: 400 }
       );
     }
@@ -104,6 +105,64 @@ export async function POST(req: Request) {
             purchase: existingPlaylistPurchase,
           });
         }
+      }
+    } else if (contentType === "meeting") {
+      const meeting = await db.meeting.findUnique({
+        where: { id: contentId },
+        include: { organization: true },
+      });
+
+      if (!meeting) {
+        return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+      }
+
+      if (meeting.shareAccessMode !== "PURCHASABLE") {
+        return NextResponse.json(
+          { error: "This meeting is not available for purchase." },
+          { status: 400 }
+        );
+      }
+
+      organizationId = meeting.organizationId;
+      contentTitle = meeting.title;
+      targetPrice = meeting.price || 0;
+      targetCurrency = meeting.currency || "USD";
+      internalId = meeting.id;
+
+      // Check country pricing override
+      if (countryCode && Array.isArray(meeting.countryPricing)) {
+        const countryRule = (meeting.countryPricing as any[]).find(
+          (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
+        );
+        if (countryRule && countryRule.amount !== undefined) {
+          targetPrice = Number(countryRule.amount);
+          if (countryRule.currency) targetCurrency = countryRule.currency;
+        }
+      }
+
+      // Check if host
+      if (meeting.createdById === userId) {
+        return NextResponse.json({
+          alreadyPurchased: true,
+          message: "You are the host of this meeting.",
+        });
+      }
+
+      // Check if already purchased
+      const existingPurchase = await db.contentPurchase.findFirst({
+        where: {
+          userId,
+          meetingId: meeting.id,
+          status: "COMPLETED",
+        },
+      });
+
+      if (existingPurchase) {
+        return NextResponse.json({
+          alreadyPurchased: true,
+          message: "You have already purchased an entry pass for this meeting.",
+          purchase: existingPurchase,
+        });
       }
     } else {
       // PLAYLIST

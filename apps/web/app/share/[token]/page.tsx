@@ -132,6 +132,47 @@ export async function generateMetadata({
         },
       };
     }
+
+    const meeting = await db.meeting.findUnique({
+      where: { id: token },
+      include: {
+        organization: true,
+        createdBy: true,
+      },
+    });
+
+    if (meeting) {
+      const title = `${meeting.title} (Meeting) — ${meeting.organization.name}`;
+      const description =
+        meeting.description ||
+        `Join live meeting "${meeting.title}" hosted by ${meeting.createdBy?.name || meeting.organization.name} on Taped.`;
+
+      return {
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: `/share/${token}`,
+          siteName: meeting.organization.name,
+          images: [
+            {
+              url: "/og-image.png",
+              width: 1200,
+              height: 630,
+              alt: meeting.title,
+            },
+          ],
+          type: "website",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: ["/og-image.png"],
+        },
+      };
+    }
   } catch (err) {
     console.error("[generateMetadata Share Error]:", err);
   }
