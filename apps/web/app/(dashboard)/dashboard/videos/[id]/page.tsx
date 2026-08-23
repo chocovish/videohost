@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { formatBytes } from "@/lib/video-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatMoney } from "@/lib/utils";
 
 interface VideoDetail {
   id: string;
@@ -574,7 +575,7 @@ export default function VideoDetailPage() {
                       <Receipt className="w-3.5 h-3.5 text-primary" /> Total Video Revenue
                     </span>
                     <p className="text-xl font-black text-foreground">
-                      ${purchasesStats ? purchasesStats.totalRevenue.toFixed(2) : "0.00"}
+                      {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, video?.currency || "USD")}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
@@ -591,7 +592,7 @@ export default function VideoDetailPage() {
                       </Badge>
                       {video.shareAccessMode === "PURCHASABLE" && (
                         <span className="font-bold text-sm text-foreground">
-                          ${video.price?.toFixed(2) || "0.00"} {video.currency || "USD"}
+                          {formatMoney(video.price, video.currency || "USD")} <span className="text-xs text-muted-foreground font-normal">({video.currency || "USD"})</span>
                         </span>
                       )}
                     </div>
@@ -651,7 +652,7 @@ export default function VideoDetailPage() {
                               </div>
                             </td>
                             <td className="py-3 px-4 font-bold text-foreground">
-                              ${p.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{p.currency}</span>
+                              {formatMoney(p.amount, p.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({p.currency})</span>
                             </td>
                             <td className="py-3 px-4 text-muted-foreground font-mono">
                               {p.countryCode || "GLOBAL"}

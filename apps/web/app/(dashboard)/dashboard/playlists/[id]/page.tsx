@@ -49,6 +49,7 @@ import ShareModal from "@/components/ShareModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
+import { formatMoney } from "@/lib/utils";
 
 interface PlaylistItem {
   itemId: string;
@@ -792,7 +793,7 @@ export default function PlaylistDetailPage() {
                 <Receipt className="w-3.5 h-3.5 text-primary" /> Total Playlist Revenue
               </span>
               <p className="text-xl font-black text-foreground">
-                ${purchasesStats ? purchasesStats.totalRevenue.toFixed(2) : "0.00"}
+                {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, playlist?.currency || "USD")}
               </p>
               <p className="text-[11px] text-muted-foreground">
                 {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
@@ -809,7 +810,7 @@ export default function PlaylistDetailPage() {
                 </Badge>
                 {playlist.shareAccessMode === "PURCHASABLE" && (
                   <span className="font-bold text-sm text-foreground">
-                    ${playlist.price?.toFixed(2) || "0.00"} {playlist.currency || "USD"}
+                    {formatMoney(playlist.price, playlist.currency || "USD")} <span className="text-xs text-muted-foreground font-normal">({playlist.currency || "USD"})</span>
                   </span>
                 )}
               </div>
@@ -869,7 +870,7 @@ export default function PlaylistDetailPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 font-bold text-foreground">
-                        ${p.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{p.currency}</span>
+                        {formatMoney(p.amount, p.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({p.currency})</span>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground font-mono">
                         {p.countryCode || "GLOBAL"}

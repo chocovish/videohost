@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
+import { formatMoney } from "@/lib/utils";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -95,10 +96,12 @@ export async function POST(req: Request) {
     const totalWithdrawn = pastWithdrawals.reduce((acc, w) => acc + (w.amount || 0), 0);
     const availableBalance = Math.max(0, totalGrossRevenue - totalWithdrawn);
 
+    const payoutCurrency = bankAccount.currency || currency || "USD";
+
     if (requestAmount > availableBalance) {
       return NextResponse.json(
         {
-          error: `Requested amount ($${requestAmount.toFixed(2)}) exceeds your available balance ($${availableBalance.toFixed(2)}).`,
+          error: `Requested amount (${formatMoney(requestAmount, payoutCurrency)}) exceeds your available balance (${formatMoney(availableBalance, payoutCurrency)}).`,
         },
         { status: 400 }
       );
@@ -110,7 +113,7 @@ export async function POST(req: Request) {
         organizationId: authCtx.orgId,
         requestedById: authCtx.userId,
         amount: requestAmount,
-        currency,
+        currency: payoutCurrency,
         status: "PENDING",
         bankDetails: {
           accountHolderName: bankAccount.accountHolderName,
@@ -120,13 +123,14 @@ export async function POST(req: Request) {
           swiftCode: bankAccount.swiftCode,
           accountType: bankAccount.accountType,
           country: bankAccount.country,
+          currency: payoutCurrency,
         },
       },
     });
 
     return NextResponse.json({
       success: true,
-      message: `Withdrawal request for $${requestAmount.toFixed(2)} submitted successfully.`,
+      message: `Withdrawal request for ${formatMoney(requestAmount, payoutCurrency)} submitted successfully.`,
       withdrawal,
       availableBalance: availableBalance - requestAmount,
     });

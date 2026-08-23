@@ -58,6 +58,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { formatBytes } from "@/lib/video-utils";
 import ImageCropper1to1Modal from "@/components/ImageCropper1to1Modal";
+import { formatMoney, getCurrencySymbol } from "@/lib/utils";
 
 interface Member {
   id: string;
@@ -150,13 +151,13 @@ export default function SettingsPage() {
     totalPurchasesCount: number;
     videoPurchasesCount: number;
     playlistPurchasesCount: number;
+    currency?: string;
   } | null>(null);
   const [bankAccount, setBankAccount] = useState<any>(null);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
   const [monetizationTab, setMonetizationTab] = useState<"purchases" | "bank" | "withdrawals">("purchases");
   const [loadingMonetization, setLoadingMonetization] = useState(false);
-
   // Bank Form state
   const [bankFormData, setBankFormData] = useState({
     accountHolderName: "",
@@ -168,6 +169,9 @@ export default function SettingsPage() {
     country: "US",
     currency: "USD",
   });
+
+  // Active Payout / Monetization Currency
+  const activeCurrency = bankAccount?.currency || purchasesStats?.currency || bankFormData.currency || (purchases.length > 0 && purchases[0].currency) || "USD";
   const [showAccountNumber, setShowAccountNumber] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
   const [bankSuccessMsg, setBankSuccessMsg] = useState("");
@@ -318,7 +322,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/organization/withdrawals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt, currency: bankAccount?.currency || "USD" }),
+        body: JSON.stringify({ amount: amt, currency: activeCurrency }),
       });
 
       const data = await res.json();
@@ -1353,7 +1357,7 @@ export default function SettingsPage() {
               <Receipt className="w-3.5 h-3.5 text-primary" /> Gross Sales Revenue
             </span>
             <p className="text-2xl font-black text-foreground">
-              ${purchasesStats ? purchasesStats.totalGrossRevenue.toFixed(2) : "0.00"}
+              {formatMoney(purchasesStats ? purchasesStats.totalGrossRevenue : 0, activeCurrency)}
             </p>
             <p className="text-[11px] text-muted-foreground">
               From {purchasesStats?.totalPurchasesCount || 0} completed orders
@@ -1365,10 +1369,10 @@ export default function SettingsPage() {
               <Wallet className="w-3.5 h-3.5" /> Available for Payout
             </span>
             <p className="text-2xl font-black text-lime-600 dark:text-lime-400">
-              ${purchasesStats ? purchasesStats.availableBalance.toFixed(2) : "0.00"}
+              {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Ready for withdrawal to bank
+              Ready for withdrawal to bank ({activeCurrency})
             </p>
           </div>
 
@@ -1389,7 +1393,7 @@ export default function SettingsPage() {
               <ArrowDownToLine className="w-3.5 h-3.5 text-amber-500" /> Pending / Paid Out
             </span>
             <p className="text-2xl font-black text-foreground">
-              ${purchasesStats ? purchasesStats.totalWithdrawnOrPending.toFixed(2) : "0.00"}
+              {formatMoney(purchasesStats ? purchasesStats.totalWithdrawnOrPending : 0, activeCurrency)}
             </p>
             <p className="text-[11px] text-muted-foreground">
               {hasPendingWithdrawal ? "⚠️ 1 request currently pending" : "No pending requests"}
@@ -1464,7 +1468,7 @@ export default function SettingsPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 font-bold text-foreground">
-                          ${purchase.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{purchase.currency}</span>
+                          {formatMoney(purchase.amount, purchase.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({purchase.currency})</span>
                         </td>
                         <td className="py-3 px-4 text-muted-foreground font-mono">
                           {purchase.countryCode || "GLOBAL"}
@@ -1602,7 +1606,25 @@ export default function SettingsPage() {
                   <Label htmlFor="bank-country-select">Bank Country</Label>
                   <Select
                     value={bankFormData.country}
-                    onValueChange={(val) => setBankFormData({ ...bankFormData, country: val || "US" })}
+                    onValueChange={(val) => {
+                      const country = val || "US";
+                      const countryCurrencyMap: Record<string, string> = {
+                        US: "USD",
+                        IN: "INR",
+                        GB: "GBP",
+                        DE: "EUR",
+                        FR: "EUR",
+                        CA: "CAD",
+                        AU: "AUD",
+                        SG: "SGD",
+                        AE: "AED",
+                      };
+                      setBankFormData((prev) => ({
+                        ...prev,
+                        country,
+                        currency: countryCurrencyMap[country] || prev.currency,
+                      }));
+                    }}
                   >
                     <SelectTrigger id="bank-country-select" className="w-full h-9 rounded-xl bg-card border-input text-foreground text-xs font-medium">
                       <SelectValue placeholder="Select Country" />
@@ -1635,10 +1657,12 @@ export default function SettingsPage() {
                       <SelectItem value="INR">INR (₹)</SelectItem>
                       <SelectItem value="EUR">EUR (€)</SelectItem>
                       <SelectItem value="GBP">GBP (£)</SelectItem>
-                      <SelectItem value="CAD">CAD ($)</SelectItem>
-                      <SelectItem value="AUD">AUD ($)</SelectItem>
-                      <SelectItem value="SGD">SGD ($)</SelectItem>
-                      <SelectItem value="AED">AED</SelectItem>
+                      <SelectItem value="CAD">CAD (CA$)</SelectItem>
+                      <SelectItem value="AUD">AUD (AU$)</SelectItem>
+                      <SelectItem value="SGD">SGD (SG$)</SelectItem>
+                      <SelectItem value="AED">AED (AED)</SelectItem>
+                      <SelectItem value="JPY">JPY (¥)</SelectItem>
+                      <SelectItem value="BRL">BRL (R$)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1675,7 +1699,7 @@ export default function SettingsPage() {
                   <ArrowDownToLine className="w-4 h-4 text-primary" /> Request Payout Withdrawal
                 </h4>
                 <p className="text-xs text-muted-foreground">
-                  Available for withdrawal: <strong className="text-foreground">${purchasesStats ? purchasesStats.availableBalance.toFixed(2) : "0.00"}</strong>. Withdrawals are processed to your saved bank account.
+                  Available for withdrawal: <strong className="text-foreground">{formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}</strong>. Withdrawals are processed in {activeCurrency} to your saved bank account.
                 </p>
               </div>
 
@@ -1721,7 +1745,7 @@ export default function SettingsPage() {
               <form onSubmit={handleRequestWithdrawal} className="flex flex-col sm:flex-row gap-3 items-end">
                 <div className="space-y-1.5 flex-1 w-full">
                   <Label htmlFor="withdraw-amt-input" className="text-xs">
-                    Withdrawal Amount ($ USD)
+                    Withdrawal Amount ({getCurrencySymbol(activeCurrency)} {activeCurrency})
                   </Label>
                   <Input
                     id="withdraw-amt-input"
@@ -1790,7 +1814,7 @@ export default function SettingsPage() {
                             {new Date(w.createdAt).toLocaleDateString()} {new Date(w.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </td>
                           <td className="py-3 px-4 font-black text-foreground">
-                            ${w.amount.toFixed(2)} <span className="text-[10px] text-muted-foreground font-normal">{w.currency}</span>
+                            {formatMoney(w.amount, w.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({w.currency})</span>
                           </td>
                           <td className="py-3 px-4 text-muted-foreground">
                             {w.bankDetails?.bankName ? (

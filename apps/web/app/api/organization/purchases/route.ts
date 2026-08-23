@@ -58,6 +58,12 @@ export async function GET(req: Request) {
     const videoPurchasesCount = purchases.filter((p) => p.contentType === "VIDEO" && p.status === "COMPLETED").length;
     const playlistPurchasesCount = purchases.filter((p) => p.contentType === "PLAYLIST" && p.status === "COMPLETED").length;
 
+    // Fetch bank account to determine configured payout currency
+    const bankAccount = await db.bankAccount.findUnique({
+      where: { organizationId: authCtx.orgId },
+    });
+    const currency = bankAccount?.currency || (purchases.length > 0 && purchases[0].currency ? purchases[0].currency : "USD");
+
     return NextResponse.json({
       success: true,
       purchases,
@@ -68,6 +74,7 @@ export async function GET(req: Request) {
         totalPurchasesCount: purchases.filter((p) => p.status === "COMPLETED").length,
         videoPurchasesCount,
         playlistPurchasesCount,
+        currency,
       },
     });
   } catch (err: any) {
