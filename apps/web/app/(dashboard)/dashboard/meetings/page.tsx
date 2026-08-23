@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ScheduleMeetingModal from "@/components/meetings/ScheduleMeetingModal";
 import InstantMeetingModal from "@/components/meetings/InstantMeetingModal";
+import MeetingPurchasesModal from "@/components/meetings/MeetingPurchasesModal";
 import ShareModal from "@/components/ShareModal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -86,6 +87,7 @@ export default function MeetingsDashboardPage() {
   const router = useRouter();
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [shareModalData, setShareModalData] = useState<{ id: string; title: string } | null>(null);
+  const [purchasesMeeting, setPurchasesMeeting] = useState<MeetingItem | null>(null);
   const [editingMeeting, setEditingMeeting] = useState<MeetingItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -423,6 +425,13 @@ export default function MeetingsDashboardPage() {
                           <span>Edit Details</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
+                          onClick={() => setPurchasesMeeting(meeting)}
+                          className="cursor-pointer gap-2 text-xs"
+                        >
+                          <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>Purchases</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={() => setShareModalData({ id: meeting.id, title: meeting.title })}
                           className="cursor-pointer gap-2 text-xs"
                         >
@@ -549,6 +558,13 @@ export default function MeetingsDashboardPage() {
                         <span>Edit Details</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        onClick={() => setPurchasesMeeting(meeting)}
+                        className="cursor-pointer gap-2 text-xs"
+                      >
+                        <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span>Purchases</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
                         onClick={() => setShareModalData({ id: meeting.id, title: meeting.title })}
                         className="cursor-pointer gap-2 text-xs"
                       >
@@ -600,6 +616,15 @@ export default function MeetingsDashboardPage() {
         isOpen={isInstantOpen}
         onClose={() => setIsInstantOpen(false)}
       />
+
+      {/* Meeting Purchases Modal */}
+      {purchasesMeeting && (
+        <MeetingPurchasesModal
+          isOpen={Boolean(purchasesMeeting)}
+          onClose={() => setPurchasesMeeting(null)}
+          meeting={purchasesMeeting}
+        />
+      )}
 
       {shareModalData && (
         <ShareModal

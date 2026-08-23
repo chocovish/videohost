@@ -151,6 +151,7 @@ export default function SettingsPage() {
     totalPurchasesCount: number;
     videoPurchasesCount: number;
     playlistPurchasesCount: number;
+    meetingPurchasesCount?: number;
     currency?: string;
   } | null>(null);
   const [bankAccount, setBankAccount] = useState<any>(null);
@@ -1378,10 +1379,10 @@ export default function SettingsPage() {
 
           <div className="p-4 rounded-xl bg-card border border-border space-y-1">
             <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
-              <Film className="w-3.5 h-3.5 text-primary" /> Video / Playlist Sales
+              <Film className="w-3.5 h-3.5 text-primary" /> Content & Meet Sales
             </span>
             <p className="text-2xl font-black text-foreground">
-              {purchasesStats?.videoPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">vids</span> / {purchasesStats?.playlistPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">playlists</span>
+              {purchasesStats?.videoPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">vids</span> / {purchasesStats?.playlistPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">playlists</span> / {purchasesStats?.meetingPurchasesCount || 0} <span className="text-xs text-muted-foreground font-normal">meets</span>
             </p>
             <p className="text-[11px] text-muted-foreground">
               Individual content unlock sales
@@ -1456,12 +1457,14 @@ export default function SettingsPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 font-semibold text-foreground">
-                          {purchase.video?.title || purchase.playlist?.title || "Shared Content"}
+                          {purchase.video?.title || purchase.playlist?.title || purchase.meeting?.title || "Shared Content"}
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
                             purchase.contentType === "PLAYLIST"
                               ? "bg-purple-500/15 text-purple-600 border border-purple-500/20"
+                              : purchase.contentType === "MEETING"
+                              ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
                               : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
                           }`}>
                             {purchase.contentType}
