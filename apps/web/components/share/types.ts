@@ -13,6 +13,7 @@ export interface SharedEmailItem {
   id: string;
   email: string;
   createdAt: string;
+  isNew?: boolean;
 }
 
 export const POPULAR_COUNTRIES = [

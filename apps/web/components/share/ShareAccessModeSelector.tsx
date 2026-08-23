@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Globe,
   DollarSign,
@@ -10,15 +10,14 @@ import {
   Plus,
   Trash2,
   Mail,
-  Send,
   Loader2,
   Users,
   Check,
   Copy,
   Link as LinkIcon,
-  Ticket,
   X,
   Sparkles,
+  Search,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -118,8 +117,19 @@ export function ShareAccessModeSelector({
   const [addingEmail, setAddingEmail] = useState(false);
   const [deletingEmailId, setDeletingEmailId] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [emailSearch, setEmailSearch] = useState("");
 
   const isInteractiveDisabled = disabled || isSaving;
+
+  const emailQuery = emailSearch.trim().toLowerCase();
+  const filteredAllowedEmails = useMemo(() => {
+    if (!emailQuery) return allowedEmails;
+    return allowedEmails.filter((item) => item.email.toLowerCase().includes(emailQuery));
+  }, [allowedEmails, emailQuery]);
+  const filteredInviteEmails = useMemo(() => {
+    if (!emailQuery) return inviteEmails;
+    return inviteEmails.filter((email) => email.toLowerCase().includes(emailQuery));
+  }, [inviteEmails, emailQuery]);
 
   // Copy share URL
   const handleCopyLink = () => {
@@ -673,24 +683,52 @@ export function ShareAccessModeSelector({
               </div>
 
               {inviteEmails.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1 max-h-32 overflow-y-auto">
-                  {inviteEmails.map((email) => (
-                    <Badge
-                      key={email}
-                      variant="secondary"
-                      className="gap-1.5 py-1 px-2.5 text-xs font-normal bg-background border border-border"
-                    >
-                      <span>{email}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveLocalEmail(email)}
-                        className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-                        aria-label={`Remove ${email}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                <div className="space-y-1.5 pt-1">
+                  {inviteEmails.length > 4 && (
+                    <div className="relative">
+                      <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        value={emailSearch}
+                        onChange={(e) => setEmailSearch(e.target.value)}
+                        placeholder="Search emails..."
+                        className="h-7 pl-7 pr-7 text-[11px] bg-background"
+                      />
+                      {emailSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setEmailSearch("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          aria-label="Clear search"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto">
+                    {filteredInviteEmails.length === 0 ? (
+                      <p className="text-[11px] text-muted-foreground px-0.5 py-1">No matching emails</p>
+                    ) : (
+                      filteredInviteEmails.map((email) => (
+                        <Badge
+                          key={email}
+                          variant="secondary"
+                          className="gap-1 py-0 px-1.5 h-6 text-[11px] font-normal bg-background border border-border"
+                        >
+                          <span className="max-w-[180px] truncate">{email}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveLocalEmail(email)}
+                            className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                            aria-label={`Remove ${email}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </Badge>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -698,40 +736,72 @@ export function ShareAccessModeSelector({
 
           {/* People with Access List (Server Sync) */}
           {allowedEmails.length > 0 && onAddEmail && (
-            <div className="pt-2 border-t border-border space-y-2">
-              <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> People with access ({allowedEmails.length})
-              </p>
+            <div className="pt-2 border-t border-border space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5" />
+                  Access ({emailQuery ? `${filteredAllowedEmails.length}/${allowedEmails.length}` : allowedEmails.length})
+                </p>
+              </div>
 
-              <div className="max-h-32 overflow-y-auto divide-y divide-border rounded-lg border border-border bg-card">
-                {allowedEmails.map((item) => (
-                  <div
-                    key={item.id}
-                    className="px-3 py-2 flex items-center justify-between text-xs hover:bg-muted/50 transition-colors"
+              <div className="relative">
+                <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={emailSearch}
+                  onChange={(e) => setEmailSearch(e.target.value)}
+                  placeholder="Search emails..."
+                  className="h-7 pl-7 pr-7 text-[11px] bg-background"
+                />
+                {emailSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setEmailSearch("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    aria-label="Clear search"
                   >
-                    <div className="min-w-0 pr-2">
-                      <p className="font-medium text-foreground truncate">{item.email}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        Added {new Date(item.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      disabled={isInteractiveDisabled || deletingEmailId === item.id}
-                      onClick={() => handleRemoveLiveEmail(item.id, item.email)}
-                      title="Remove access"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                    >
-                      {deletingEmailId === item.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-destructive" />
-                      ) : (
-                        <Trash2 className="w-3.5 h-3.5" />
-                      )}
-                    </Button>
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-card p-1.5">
+                {filteredAllowedEmails.length === 0 ? (
+                  <p className="px-1 py-1 text-[11px] text-muted-foreground">No matching emails</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {filteredAllowedEmails.map((item) => (
+                      <span
+                        key={item.id}
+                        className="inline-flex items-center gap-0.5 max-w-full h-6 pl-1.5 pr-0.5 rounded-md border border-border bg-muted/40 text-[11px] hover:bg-muted/70 transition-colors"
+                        title={item.email}
+                      >
+                        <span className="truncate font-medium text-foreground max-w-[11rem]">
+                          {item.email}
+                        </span>
+                        {item.isNew && (
+                          <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                            new
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          disabled={isInteractiveDisabled || deletingEmailId === item.id}
+                          onClick={() => handleRemoveLiveEmail(item.id, item.email)}
+                          title="Remove access"
+                          aria-label={`Remove ${item.email}`}
+                          className="shrink-0 h-4 w-4 inline-flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingEmailId === item.id ? (
+                            <Loader2 className="w-2.5 h-2.5 animate-spin text-destructive" />
+                          ) : (
+                            <X className="w-2.5 h-2.5" />
+                          )}
+                        </button>
+                      </span>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
