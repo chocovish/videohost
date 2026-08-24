@@ -360,22 +360,19 @@ export default function LandingPage() {
               {PILLARS.map((pillar) => (
                 <article
                   key={pillar.title}
-                  className={`rounded-2xl border-2 p-6 ${
-                    pillar.highlight
+                  className={`rounded-2xl border-2 p-6 ${pillar.highlight
                       ? "border-primary bg-primary/5"
                       : "border-border bg-card"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-5">
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center ${
-                        pillar.highlight ? "bg-primary" : "bg-primary/10"
-                      }`}
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center ${pillar.highlight ? "bg-primary" : "bg-primary/10"
+                        }`}
                     >
                       <pillar.icon
-                        className={`w-5 h-5 ${
-                          pillar.highlight ? "text-primary-foreground" : "text-primary"
-                        }`}
+                        className={`w-5 h-5 ${pillar.highlight ? "text-primary-foreground" : "text-primary"
+                          }`}
                       />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -512,9 +509,6 @@ export default function LandingPage() {
             <p className="mt-8 text-sm font-semibold text-muted-foreground">
               Plus testimonials, FAQs, social links, featured videos and inquiry forms — fully
               configurable, published under your own slug.{" "}
-              <Link href="/offerings" className="text-primary underline underline-offset-4">
-                See an example page →
-              </Link>
             </p>
           </div>
         </section>
