@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatMoney, getCurrencySymbol } from "@/lib/utils";
-import { PLAN_COMMISSION_RATES, PAYMENT_GATEWAY_FEE_PERCENT } from "@/lib/platform-fees";
+import { PLAN_COMMISSION_RATES } from "@/lib/platform-fees";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 
 export interface PurchasesStats {
@@ -150,8 +150,6 @@ export function ContentSalesPayoutSection({
   const currentCommissionPercent =
     purchasesStats?.activeCommissionPercent ??
     (PLAN_COMMISSION_RATES[currentActivePlan] ?? 6.5);
-  const gatewayFeeRate = purchasesStats?.gatewayFeePercent ?? PAYMENT_GATEWAY_FEE_PERCENT;
-  const totalDeductionPercent = currentCommissionPercent + gatewayFeeRate;
 
   const filteredPurchases = purchases.filter((p) => {
     if (purchaseFilterType !== "ALL" && p.contentType !== purchaseFilterType) {
@@ -205,7 +203,7 @@ export function ContentSalesPayoutSection({
                 Content Sales & Payout Center
               </h3>
               <p className="text-xs text-muted-foreground">
-                Track sales revenues, automatic plan platform fees, 3% gateway processing fees, net creator earnings, bank direct deposit, and payouts.
+                Track sales revenues, automatic plan platform fees, real payment gateway charges & taxes (Razorpay & Cashfree), net creator earnings, bank direct deposit, and payouts.
               </p>
             </div>
           </div>
@@ -215,8 +213,7 @@ export function ContentSalesPayoutSection({
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary font-bold">
               <BadgePercent className="w-3.5 h-3.5" />
               <span>
-                Active Plan: <span className="capitalize">{currentActivePlan}</span> (
-                {currentCommissionPercent}% Platform Fee + {gatewayFeeRate}% Gateway Fee = {totalDeductionPercent}% Total)
+                Active Plan: <span className="capitalize">{currentActivePlan}</span> ({currentCommissionPercent}% Platform Fee)
               </span>
             </div>
 
@@ -328,126 +325,54 @@ export function ContentSalesPayoutSection({
         </div>
       </div>
 
-      {/* 6 High-Impact Financial KPI Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-        {/* Card 1: Gross Sales */}
-        <div className="p-4 rounded-2xl bg-card border border-border/70 shadow-xs space-y-1.5 hover:border-border transition-colors">
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Receipt className="w-3.5 h-3.5 text-blue-500" /> Gross Sales
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
-              {purchasesStats?.totalPurchasesCount || 0} orders
-            </span>
-          </span>
-          <p className="text-xl font-black text-foreground tracking-tight">
-            {formatMoney(purchasesStats ? purchasesStats.totalGrossRevenue : 0, activeCurrency)}
-          </p>
-          <p className="text-[10px] text-muted-foreground truncate">
-            {purchasesStats?.videoPurchasesCount || 0} vids &bull; {purchasesStats?.playlistPurchasesCount || 0} playlists &bull; {purchasesStats?.meetingPurchasesCount || 0} meets
-          </p>
-        </div>
-
-        {/* Card 2: Platform Commission Fee */}
-        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-xs space-y-1.5">
-          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <BadgePercent className="w-3.5 h-3.5 text-amber-500" /> Platform Fee
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold">
-              {currentCommissionPercent}%
-            </span>
-          </span>
-          <p className="text-xl font-black text-amber-700 dark:text-amber-400 tracking-tight">
-            {formatMoney(purchasesStats ? purchasesStats.totalPlatformFees : 0, activeCurrency)}
-          </p>
-          <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 truncate">
-            Plan-based fee on sales
-          </p>
-        </div>
-
-        {/* Card 3: Payment Gateway Fee (Constant 3%) */}
-        <div className="p-4 rounded-2xl bg-sky-500/5 border border-sky-500/20 shadow-xs space-y-1.5">
-          <span className="text-[11px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-sky-500" /> Gateway Fee
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-700 dark:text-sky-300 font-bold">
-              {gatewayFeeRate}%
-            </span>
-          </span>
-          <p className="text-xl font-black text-sky-700 dark:text-sky-400 tracking-tight">
-            {formatMoney(purchasesStats?.totalGatewayFees ?? 0, activeCurrency)}
-          </p>
-          <p className="text-[10px] text-sky-600/80 dark:text-sky-400/80 truncate">
-            Payment processing cost
-          </p>
-        </div>
-
-        {/* Card 4: Net Creator Earnings */}
-        <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-xs space-y-1.5">
-          <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> Net Earnings
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold">
-              Take-home
-            </span>
-          </span>
-          <p className="text-xl font-black text-emerald-700 dark:text-emerald-400 tracking-tight">
-            {formatMoney(purchasesStats ? purchasesStats.totalNetEarnings : 0, activeCurrency)}
-          </p>
-          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 truncate">
-            Sales minus all fees
-          </p>
-        </div>
-
-        {/* Card 5: Available for Payout (Featured Hero Card) */}
-        <div className="p-4 rounded-2xl bg-lime-500/10 border-2 border-lime-500/30 shadow-md space-y-1.5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-lime-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
+      {/* Available Balance & Payout Financial KPI Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Card 1: Available for Payout (Featured Hero Card) */}
+        <div className="p-5 rounded-3xl bg-lime-500/10 border-2 border-lime-500/30 shadow-md space-y-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-lime-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
           <span className="text-[11px] font-extrabold text-lime-700 dark:text-lime-400 uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Wallet className="w-3.5 h-3.5" /> Available Payout
+              <Wallet className="w-4 h-4" /> Available Payout Balance
             </span>
-            <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-lime-500 animate-ping" />
           </span>
-          <p className="text-xl font-black text-lime-700 dark:text-lime-300 tracking-tight">
+          <p className="text-2xl sm:text-3xl font-black text-lime-700 dark:text-lime-300 tracking-tight">
             {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
           </p>
-          <div className="flex items-center justify-between pt-0.5">
-            <span className="text-[10px] text-muted-foreground font-mono">
-              Ready in {activeCurrency}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs text-muted-foreground font-mono">
+              Ready to withdraw in {activeCurrency}
             </span>
             <button
               onClick={() => setMonetizationTab("withdrawals")}
               disabled={(purchasesStats?.availableBalance || 0) <= 0 || hasPendingWithdrawal}
-              className="text-[11px] font-bold text-lime-600 dark:text-lime-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-0.5"
+              className="text-xs font-bold text-lime-600 dark:text-lime-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
             >
-              Withdraw <ChevronRight className="w-3 h-3" />
+              Withdraw <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Card 6: Pending & Paid Out */}
-        <div className="p-4 rounded-2xl bg-card border border-border/70 shadow-xs space-y-1.5 hover:border-border transition-colors">
+        {/* Card 2: Pending & Paid Out */}
+        <div className="p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-2 hover:border-border transition-colors">
           <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ArrowDownToLine className="w-3.5 h-3.5 text-purple-500" /> Withdrawn / Pending
+              <ArrowDownToLine className="w-4 h-4 text-purple-500" /> Total Withdrawn / Pending
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
-              {withdrawals.length} reqs
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
+              {withdrawals.length} requests
             </span>
           </span>
-          <p className="text-xl font-black text-foreground tracking-tight">
+          <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             {formatMoney(purchasesStats ? purchasesStats.totalWithdrawnOrPending : 0, activeCurrency)}
           </p>
-          <p className="text-[10px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate pt-1">
             {hasPendingWithdrawal ? (
               <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
-                <Clock className="w-3 h-3" /> 1 under review
+                <Clock className="w-3.5 h-3.5 animate-spin" /> 1 request under review
               </span>
             ) : (
-              "No pending requests"
+              "No pending withdrawal requests"
             )}
           </p>
         </div>
@@ -535,7 +460,7 @@ export function ContentSalesPayoutSection({
                     <th className="py-3 px-4">Buyer Details</th>
                     <th className="py-3 px-4">Gross Sale</th>
                     <th className="py-3 px-4">Platform Fee</th>
-                    <th className="py-3 px-4">Gateway Fee (3%)</th>
+                    <th className="py-3 px-4">Gateway Fee & Taxes</th>
                     <th className="py-3 px-4">Net Creator Take-Home</th>
                     <th className="py-3 px-4">Date</th>
                     <th className="py-3 px-4">Payment Reference</th>
@@ -614,13 +539,17 @@ export function ContentSalesPayoutSection({
                         </span>
                       </td>
 
-                      {/* Gateway Fee (Constant 3%) */}
+                      {/* Gateway Fee & Taxes (Actual) */}
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-sky-600 dark:text-sky-400">
                           -{formatMoney(purchase.gatewayFeeAmount || 0, purchase.currency)}
                         </div>
                         <span className="text-[10px] text-sky-700/80 dark:text-sky-400/80 font-mono">
-                          {purchase.gatewayFeePercent ?? 3.0}% Gateway
+                          {purchase.gatewayFeePercent !== undefined && purchase.gatewayFeePercent !== null && purchase.gatewayFeePercent > 0
+                            ? `${purchase.gatewayFeePercent.toFixed(2)}%`
+                            : purchase.amount > 0 && purchase.gatewayFeeAmount
+                            ? `${((purchase.gatewayFeeAmount / purchase.amount) * 100).toFixed(2)}%`
+                            : "0.00%"} ({purchase.paymentMethod || "Gateway"})
                         </span>
                       </td>
 
@@ -1230,7 +1159,7 @@ export function ContentSalesPayoutSection({
               <BadgePercent className="w-4 h-4 text-purple-500" /> Platform Fee & Gateway Processing Tiers
             </h4>
             <p className="text-xs text-muted-foreground">
-              Every content sale includes a plan-tiered platform fee plus a flat 3.0% payment gateway processing fee. Creator net take-home earnings are credited automatically to your available balance.
+              Every content sale includes a plan-tiered platform fee plus real-time payment gateway processing charges & taxes taken by the payment provider (Razorpay / Cashfree). Creator net take-home earnings are credited automatically to your available balance.
             </p>
           </div>
 
@@ -1252,9 +1181,9 @@ export function ContentSalesPayoutSection({
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-foreground">6.5% + 3.0%</div>
+                <div className="text-2xl font-black text-foreground">6.5%</div>
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  9.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">90.5% Net Payout</span>
+                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1281,9 +1210,9 @@ export function ContentSalesPayoutSection({
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-sky-600 dark:text-sky-400">5.5% + 3.0%</div>
+                <div className="text-2xl font-black text-sky-600 dark:text-sky-400">5.5%</div>
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  8.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">91.5% Net Payout</span>
+                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1310,9 +1239,9 @@ export function ContentSalesPayoutSection({
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-primary">4.0% + 3.0%</div>
+                <div className="text-2xl font-black text-primary">4.0%</div>
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  7.0% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">93.0% Net Payout</span>
+                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1343,9 +1272,9 @@ export function ContentSalesPayoutSection({
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-purple-600 dark:text-purple-400">3.5% + 3.0%</div>
+                <div className="text-2xl font-black text-purple-600 dark:text-purple-400">3.5%</div>
                 <p className="text-[11px] font-semibold text-muted-foreground">
-                  6.5% Total Fees &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">93.5% Net Payout</span>
+                  Lowest Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">

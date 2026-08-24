@@ -395,6 +395,8 @@ model PaymentOrder {
   billingMode            String        @default("ONE_TIME") // "ONE_TIME" | "RECURRING"
   billingCycle           String        @default("MONTHLY")  // "MONTHLY" | "YEARLY"
   status                 PaymentStatus @default(PENDING)
+  gatewayFeeAmount       Float?        @default(0) // Actual gateway processing charges including taxes
+  gatewayFeePercent      Float?        @default(0) // Effective gateway fee percentage
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
 
@@ -604,8 +606,8 @@ model ContentPurchase {
   countryCode     String?       // purchaser country code, e.g. "US", "IN"
   commissionPercent Float       @default(6.5) // Plan-tiered platform fee percentage at purchase
   commissionAmount Float        @default(0)   // Platform fee deducted: (amount * commissionPercent / 100)
-  gatewayFeePercent Float       @default(3.0) // Constant 3% payment gateway fee percentage
-  gatewayFeeAmount Float        @default(0)   // Gateway processing fee deducted: (amount * gatewayFeePercent / 100)
+  gatewayFeePercent Float       @default(0)   // Actual payment gateway fee percentage
+  gatewayFeeAmount Float        @default(0)   // Gateway processing fee deducted: actual gateway charges including taxes
   creatorEarnings  Float        @default(0)   // Net creator earnings: (amount - commissionAmount - gatewayFeeAmount)
   planSnapshot    String?       // Creator's plan at purchase time, e.g. "FREE", "BASIC", "PRO", "ENTERPRISE"
   paymentMethod   String?       @default("CARD") // "CARD" | "RAZORPAY" | "CASHFREE" | "STRIPE" | "TEST_PAY"
@@ -621,6 +623,7 @@ model ContentPurchase {
   meeting         Meeting?      @relation(fields: [meetingId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+  @@index([organizationId, status])
   @@index([userId])
   @@index([videoId])
   @@index([playlistId])
@@ -664,6 +667,7 @@ model WithdrawalRequest {
   requestedBy    User         @relation(fields: [requestedById], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([organizationId, status])
   @@index([status])
   @@index([createdAt])
 }

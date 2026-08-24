@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { formatMoney } from "@/lib/utils";
-import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -77,40 +76,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Calculate Available Balance based on Net Creator Earnings
-    const org = await db.organization.findUnique({
-      where: { id: authCtx.orgId },
-      include: { plan: true },
-    });
-    const activePlanName = org?.plan?.name || "free";
+    // 3. Fast DB-level aggregation of Available Balance based on Net Creator Earnings
+    const [salesAgg, withdrawalsAgg] = await Promise.all([
+      db.contentPurchase.aggregate({
+        where: {
+          organizationId: authCtx.orgId,
+          status: "COMPLETED",
+        },
+        _sum: {
+          creatorEarnings: true,
+        },
+      }),
+      db.withdrawalRequest.aggregate({
+        where: {
+          organizationId: authCtx.orgId,
+          status: { in: ["PENDING", "PROCESSING", "APPROVED", "COMPLETED"] },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
 
-    const purchases = await db.contentPurchase.findMany({
-      where: {
-        organizationId: authCtx.orgId,
-        status: "COMPLETED",
-      },
-    });
-
-    const totalNetEarnings = purchases.reduce((acc, p) => {
-      if (typeof p.creatorEarnings === "number" && p.creatorEarnings > 0) {
-        return acc + p.creatorEarnings;
-      }
-      const split = calculateSaleSplit(
-        p.amount,
-        p.planSnapshot || activePlanName,
-        p.commissionPercent
-      );
-      return acc + split.creatorEarnings;
-    }, 0);
-
-    const pastWithdrawals = await db.withdrawalRequest.findMany({
-      where: {
-        organizationId: authCtx.orgId,
-        status: { in: ["PENDING", "PROCESSING", "APPROVED", "COMPLETED"] },
-      },
-    });
-
-    const totalWithdrawn = pastWithdrawals.reduce((acc, w) => acc + (w.amount || 0), 0);
+    const totalNetEarnings = salesAgg._sum.creatorEarnings || 0;
+    const totalWithdrawn = withdrawalsAgg._sum.amount || 0;
     const availableBalance = Math.max(0, Math.round((totalNetEarnings - totalWithdrawn) * 100) / 100);
 
     const payoutCurrency = bankAccount.currency || currency || "USD";

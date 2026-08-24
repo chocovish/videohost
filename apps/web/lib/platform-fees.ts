@@ -45,31 +45,57 @@ export function getCommissionRateForPlan(planName?: string | null): number {
 }
 
 /**
- * Computes exact split between platform commission fee, payment gateway fee (3%), and net creator earnings.
+ * Computes exact split between platform commission fee, payment gateway fee (actual or calculated with taxes), and net creator earnings.
  * All amounts are cleanly rounded to 2 decimal places.
  */
 export function calculateSaleSplit(
   grossAmount: number,
   planName?: string | null,
-  customRate?: number | null,
-  customGatewayRate?: number | null
+  customCommissionRate?: number | null,
+  customGatewayRateOrAmount?: number | null,
+  options?: {
+    isExactGatewayAmount?: boolean;
+    actualGatewayFeeAmount?: number | null;
+    actualGatewayFeePercent?: number | null;
+  }
 ): SaleSplitResult {
   const safeGross = Math.max(0, Number(grossAmount) || 0);
   const commissionPercent =
-    typeof customRate === "number" && !isNaN(customRate) && customRate >= 0
-      ? customRate
+    typeof customCommissionRate === "number" && !isNaN(customCommissionRate) && customCommissionRate >= 0
+      ? customCommissionRate
       : getCommissionRateForPlan(planName);
-
-  const gatewayFeePercent =
-    typeof customGatewayRate === "number" && !isNaN(customGatewayRate) && customGatewayRate >= 0
-      ? customGatewayRate
-      : PAYMENT_GATEWAY_FEE_PERCENT;
 
   const rawCommissionAmount = safeGross * (commissionPercent / 100);
   const commissionAmount = Math.round(rawCommissionAmount * 100) / 100;
 
-  const rawGatewayAmount = safeGross * (gatewayFeePercent / 100);
-  const gatewayFeeAmount = Math.round(rawGatewayAmount * 100) / 100;
+  let gatewayFeeAmount = 0;
+  let gatewayFeePercent = 0;
+
+  if (options?.actualGatewayFeeAmount !== undefined && options.actualGatewayFeeAmount !== null) {
+    gatewayFeeAmount = Math.round(Math.max(0, Number(options.actualGatewayFeeAmount)) * 100) / 100;
+    gatewayFeePercent =
+      options.actualGatewayFeePercent !== undefined && options.actualGatewayFeePercent !== null
+        ? Number(options.actualGatewayFeePercent)
+        : safeGross > 0
+        ? Math.round(((gatewayFeeAmount / safeGross) * 100) * 100) / 100
+        : 0;
+  } else if (options?.isExactGatewayAmount && typeof customGatewayRateOrAmount === "number") {
+    gatewayFeeAmount = Math.round(Math.max(0, customGatewayRateOrAmount) * 100) / 100;
+    gatewayFeePercent =
+      safeGross > 0
+        ? Math.round(((gatewayFeeAmount / safeGross) * 100) * 100) / 100
+        : 0;
+  } else {
+    // If customGatewayRateOrAmount is provided and represents a percentage (default fallback)
+    const feeRate =
+      typeof customGatewayRateOrAmount === "number" && !isNaN(customGatewayRateOrAmount) && customGatewayRateOrAmount >= 0
+        ? customGatewayRateOrAmount
+        : PAYMENT_GATEWAY_FEE_PERCENT;
+
+    gatewayFeePercent = feeRate;
+    const rawGatewayAmount = safeGross * (feeRate / 100);
+    gatewayFeeAmount = Math.round(rawGatewayAmount * 100) / 100;
+  }
 
   const totalFeeAmount = Math.round((commissionAmount + gatewayFeeAmount) * 100) / 100;
   const creatorEarnings = Math.max(0, Math.round((safeGross - totalFeeAmount) * 100) / 100);
@@ -87,3 +113,4 @@ export function calculateSaleSplit(
     planSnapshot,
   };
 }
+

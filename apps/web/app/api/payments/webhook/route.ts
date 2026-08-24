@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { verifyRazorpayWebhookSignature } from "@/lib/razorpay";
-import { verifyCashfreeWebhookSignature } from "@/lib/cashfree";
+import { verifyRazorpayWebhookSignature, extractRazorpayFeeFromPayload } from "@/lib/razorpay";
+import { verifyCashfreeWebhookSignature, extractCashfreePaymentCharges } from "@/lib/cashfree";
+import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +29,11 @@ export async function POST(req: Request) {
       const event = JSON.parse(rawBody);
       const eventType = event.type || event.event;
       console.log(`[Cashfree Webhook]: Received event ${eventType}`);
+
+      // Extract real payment gateway charges (including taxes)
+      const cfCharges = extractCashfreePaymentCharges(
+        event.data?.payment || event.data || event.data?.order
+      );
 
       // Handle Cashfree Subscription Recurring Payment Success
       if (
@@ -66,6 +72,8 @@ export async function POST(req: Request) {
                 status: "SUCCESS",
                 cashfreePaymentId: paymentId || orderRecord.cashfreePaymentId,
                 cashfreeSubscriptionId: subscriptionId,
+                gatewayFeeAmount: cfCharges.totalChargesAmount > 0 ? cfCharges.totalChargesAmount : orderRecord.gatewayFeeAmount,
+                gatewayFeePercent: cfCharges.feePercent !== undefined ? cfCharges.feePercent : orderRecord.gatewayFeePercent,
               },
             });
 
@@ -154,8 +162,10 @@ export async function POST(req: Request) {
         const paymentId = String(
           event.data?.payment?.cf_payment_id || event.data?.payment?.payment_id || ""
         );
+        const orderTags = event.data?.order?.order_tags || event.data?.order_tags || {};
 
         if (orderId) {
+          // Check if this belongs to PaymentOrder (workspace subscription)
           const orderRecord = await db.paymentOrder.findFirst({
             where: {
               OR: [
@@ -175,6 +185,8 @@ export async function POST(req: Request) {
               data: {
                 status: "SUCCESS",
                 cashfreePaymentId: paymentId || orderRecord.cashfreePaymentId,
+                gatewayFeeAmount: cfCharges.totalChargesAmount > 0 ? cfCharges.totalChargesAmount : orderRecord.gatewayFeeAmount,
+                gatewayFeePercent: cfCharges.feePercent !== undefined ? cfCharges.feePercent : orderRecord.gatewayFeePercent,
               },
             });
 
@@ -193,6 +205,83 @@ export async function POST(req: Request) {
             console.log(
               `[Cashfree Webhook]: Organization ${orderRecord.organizationId} plan updated & extended until ${expiresAt.toISOString()}.`
             );
+          }
+
+          // Check if this belongs to a ContentPurchase (video/playlist/meeting purchase)
+          const isContentPurchase =
+            orderId.startsWith("cf_ord_buy_") ||
+            Boolean(orderTags.contentType && orderTags.contentId);
+
+          if (isContentPurchase && orderTags.userId && orderTags.organizationId) {
+            const contentType = (orderTags.contentType || "video").toUpperCase();
+            const contentId = orderTags.contentId;
+            const userId = orderTags.userId;
+            const organizationId = orderTags.organizationId;
+            const grossAmount = Number(event.data?.order?.order_amount || event.data?.payment?.payment_amount || 0);
+
+            const existingPurchase = await db.contentPurchase.findFirst({
+              where: {
+                userId,
+                contentType,
+                ...(contentType === "VIDEO"
+                  ? { videoId: contentId }
+                  : contentType === "MEETING"
+                  ? { meetingId: contentId }
+                  : { playlistId: contentId }),
+              },
+            });
+
+            const sellerOrg = await db.organization.findUnique({
+              where: { id: organizationId },
+              include: { plan: true },
+            });
+
+            const split = calculateSaleSplit(
+              grossAmount,
+              sellerOrg?.plan?.name || "free",
+              sellerOrg?.plan?.commissionPercent,
+              null,
+              {
+                actualGatewayFeeAmount: cfCharges.totalChargesAmount > 0 ? cfCharges.totalChargesAmount : null,
+                actualGatewayFeePercent: cfCharges.feePercent || null,
+              }
+            );
+
+            if (existingPurchase) {
+              await db.contentPurchase.update({
+                where: { id: existingPurchase.id },
+                data: {
+                  status: "COMPLETED",
+                  paymentId: paymentId || existingPurchase.paymentId,
+                  gatewayFeeAmount: split.gatewayFeeAmount,
+                  gatewayFeePercent: split.gatewayFeePercent,
+                  creatorEarnings: split.creatorEarnings,
+                },
+              });
+            } else {
+              await db.contentPurchase.create({
+                data: {
+                  organizationId,
+                  userId,
+                  contentType,
+                  videoId: contentType === "VIDEO" ? contentId : null,
+                  meetingId: contentType === "MEETING" ? contentId : null,
+                  playlistId: contentType === "PLAYLIST" ? contentId : null,
+                  amount: grossAmount,
+                  currency: event.data?.order?.order_currency || "INR",
+                  countryCode: orderTags.countryCode || null,
+                  commissionPercent: split.commissionPercent,
+                  commissionAmount: split.commissionAmount,
+                  gatewayFeePercent: split.gatewayFeePercent,
+                  gatewayFeeAmount: split.gatewayFeeAmount,
+                  creatorEarnings: split.creatorEarnings,
+                  planSnapshot: split.planSnapshot,
+                  paymentMethod: "CASHFREE",
+                  paymentId: paymentId || orderId,
+                  status: "COMPLETED",
+                },
+              });
+            }
           }
         }
       }
@@ -222,8 +311,13 @@ export async function POST(req: Request) {
         const paymentEntity = event.payload?.payment?.entity;
         const razorpayOrderId = paymentEntity?.order_id || event.payload?.order?.entity?.id;
         const razorpayPaymentId = paymentEntity?.id;
+        const notes = paymentEntity?.notes || event.payload?.order?.entity?.notes || {};
+
+        // Extract real Razorpay payment fee and tax taken for transaction
+        const rzpFeeDetails = extractRazorpayFeeFromPayload(paymentEntity);
 
         if (razorpayOrderId) {
+          // 1. Check workspace subscription PaymentOrder
           const orderRecord = await db.paymentOrder.findFirst({
             where: {
               OR: [
@@ -242,6 +336,8 @@ export async function POST(req: Request) {
               data: {
                 status: "SUCCESS",
                 razorpayPaymentId: razorpayPaymentId || orderRecord.razorpayPaymentId,
+                gatewayFeeAmount: rzpFeeDetails.totalFeeAmount > 0 ? rzpFeeDetails.totalFeeAmount : orderRecord.gatewayFeeAmount,
+                gatewayFeePercent: rzpFeeDetails.feePercent !== undefined ? rzpFeeDetails.feePercent : orderRecord.gatewayFeePercent,
               },
             });
 
@@ -260,6 +356,79 @@ export async function POST(req: Request) {
             console.log(
               `[Razorpay Webhook]: Organization ${orderRecord.organizationId} plan updated & extended until ${expiresAt.toISOString()}.`
             );
+          }
+
+          // 2. Check ContentPurchase (video/playlist/meeting purchase)
+          if (notes.contentType && notes.contentId && notes.userId && notes.organizationId) {
+            const contentType = String(notes.contentType).toUpperCase();
+            const contentId = notes.contentId;
+            const userId = notes.userId;
+            const organizationId = notes.organizationId;
+            const grossAmount = paymentEntity?.amount ? Number(paymentEntity.amount) / 100 : 0;
+
+            const existingPurchase = await db.contentPurchase.findFirst({
+              where: {
+                userId,
+                contentType,
+                ...(contentType === "VIDEO"
+                  ? { videoId: contentId }
+                  : contentType === "MEETING"
+                  ? { meetingId: contentId }
+                  : { playlistId: contentId }),
+              },
+            });
+
+            const sellerOrg = await db.organization.findUnique({
+              where: { id: organizationId },
+              include: { plan: true },
+            });
+
+            const split = calculateSaleSplit(
+              grossAmount,
+              sellerOrg?.plan?.name || "free",
+              sellerOrg?.plan?.commissionPercent,
+              null,
+              {
+                actualGatewayFeeAmount: rzpFeeDetails.totalFeeAmount > 0 ? rzpFeeDetails.totalFeeAmount : null,
+                actualGatewayFeePercent: rzpFeeDetails.feePercent || null,
+              }
+            );
+
+            if (existingPurchase) {
+              await db.contentPurchase.update({
+                where: { id: existingPurchase.id },
+                data: {
+                  status: "COMPLETED",
+                  paymentId: razorpayPaymentId || existingPurchase.paymentId,
+                  gatewayFeeAmount: split.gatewayFeeAmount,
+                  gatewayFeePercent: split.gatewayFeePercent,
+                  creatorEarnings: split.creatorEarnings,
+                },
+              });
+            } else {
+              await db.contentPurchase.create({
+                data: {
+                  organizationId,
+                  userId,
+                  contentType,
+                  videoId: contentType === "VIDEO" ? contentId : null,
+                  meetingId: contentType === "MEETING" ? contentId : null,
+                  playlistId: contentType === "PLAYLIST" ? contentId : null,
+                  amount: grossAmount,
+                  currency: paymentEntity?.currency || "USD",
+                  countryCode: notes.countryCode || null,
+                  commissionPercent: split.commissionPercent,
+                  commissionAmount: split.commissionAmount,
+                  gatewayFeePercent: split.gatewayFeePercent,
+                  gatewayFeeAmount: split.gatewayFeeAmount,
+                  creatorEarnings: split.creatorEarnings,
+                  planSnapshot: split.planSnapshot,
+                  paymentMethod: "RAZORPAY",
+                  paymentId: razorpayPaymentId || razorpayOrderId,
+                  status: "COMPLETED",
+                },
+              });
+            }
           }
         }
       } else if (eventType === "subscription.halted" || eventType === "subscription.cancelled") {
@@ -305,3 +474,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

@@ -495,3 +495,113 @@ export async function getCashfreeSubscriptionPayments(
 
   return (Array.isArray(data) ? data : []) as CashfreePaymentEntity[];
 }
+
+export interface CashfreeChargesDetails {
+  totalChargesAmount: number; // Total charges including taxes
+  serviceCharge: number;      // Base gateway processing fee
+  serviceTax: number;         // GST / Service tax on gateway charges
+  feePercent?: number;        // Effective fee percentage if gross amount available
+}
+
+/**
+ * Extracts real payment gateway charges and taxes from Cashfree payment object or webhook payload.
+ * Supports payment_charge_details, payment_charges, charges_details, and settlement details.
+ */
+export function extractCashfreePaymentCharges(
+  paymentOrData: any,
+  grossAmount?: number
+): CashfreeChargesDetails {
+  if (!paymentOrData) {
+    return { totalChargesAmount: 0, serviceCharge: 0, serviceTax: 0 };
+  }
+
+  const chargeObj =
+    paymentOrData.payment_charge_details ||
+    paymentOrData.charges_details ||
+    paymentOrData.charge_details ||
+    paymentOrData.order_charge_details ||
+    {};
+
+  const serviceCharge = Number(chargeObj.service_charge || paymentOrData.service_charge || 0);
+  const serviceTax = Number(
+    chargeObj.service_tax ||
+    chargeObj.tax ||
+    paymentOrData.service_tax ||
+    paymentOrData.payment_tax ||
+    0
+  );
+
+  let totalCharges = 0;
+  if (chargeObj.total_charge !== undefined && chargeObj.total_charge !== null) {
+    totalCharges = Number(chargeObj.total_charge);
+  } else if (serviceCharge > 0 || serviceTax > 0) {
+    totalCharges = serviceCharge + serviceTax;
+  } else if (
+    paymentOrData.payment_charges !== undefined &&
+    paymentOrData.payment_charges !== null &&
+    !isNaN(Number(paymentOrData.payment_charges))
+  ) {
+    totalCharges = Number(paymentOrData.payment_charges);
+  } else if (
+    paymentOrData.order_charges !== undefined &&
+    paymentOrData.order_charges !== null &&
+    !isNaN(Number(paymentOrData.order_charges))
+  ) {
+    totalCharges = Number(paymentOrData.order_charges);
+  } else if (
+    paymentOrData.settlement_charge !== undefined ||
+    paymentOrData.settlement_tax !== undefined
+  ) {
+    totalCharges =
+      Number(paymentOrData.settlement_charge || 0) + Number(paymentOrData.settlement_tax || 0);
+  }
+
+  const totalChargesAmount = Math.round(Math.max(0, totalCharges) * 100) / 100;
+  const safeGross =
+    Number(grossAmount) ||
+    Number(paymentOrData.payment_amount || paymentOrData.order_amount || 0);
+  const feePercent =
+    safeGross > 0
+      ? Math.round(((totalChargesAmount / safeGross) * 100) * 100) / 100
+      : undefined;
+
+  return {
+    totalChargesAmount,
+    serviceCharge: Math.round(serviceCharge * 100) / 100,
+    serviceTax: Math.round(serviceTax * 100) / 100,
+    feePercent,
+  };
+}
+
+/**
+ * Fetches payments for a Cashfree order and extracts actual gateway charges & taxes.
+ */
+export async function fetchCashfreeOrderPaymentCharges(
+  orderId: string,
+  grossAmount?: number
+): Promise<CashfreeChargesDetails> {
+  try {
+    if (!orderId || orderId.startsWith("test_") || orderId.startsWith("free_")) {
+      return { totalChargesAmount: 0, serviceCharge: 0, serviceTax: 0 };
+    }
+
+    const payments = await getCashfreeOrderPayments(orderId).catch(() => []);
+    const successfulPayment = payments.find((p) => p.payment_status === "SUCCESS") || payments[0];
+
+    if (successfulPayment) {
+      return extractCashfreePaymentCharges(successfulPayment, grossAmount);
+    }
+
+    // Try fetching the order itself for order_charges
+    const order = await getCashfreeOrder(orderId).catch(() => null);
+    if (order) {
+      return extractCashfreePaymentCharges(order, grossAmount);
+    }
+
+    return { totalChargesAmount: 0, serviceCharge: 0, serviceTax: 0 };
+  } catch (err: any) {
+    console.warn(`[Cashfree fetchOrderPaymentCharges Error for ${orderId}]:`, err?.message || err);
+    return { totalChargesAmount: 0, serviceCharge: 0, serviceTax: 0 };
+  }
+}
+

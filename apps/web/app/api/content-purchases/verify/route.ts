@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { verifyRazorpaySignature } from "@/lib/razorpay";
-import { getCashfreeOrder, getCashfreeOrderPayments } from "@/lib/cashfree";
+import { verifyRazorpaySignature, fetchRazorpayPaymentFee } from "@/lib/razorpay";
+import {
+  getCashfreeOrder,
+  getCashfreeOrderPayments,
+  extractCashfreePaymentCharges,
+} from "@/lib/cashfree";
 import { calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function POST(req: Request) {
@@ -122,6 +126,8 @@ export async function POST(req: Request) {
 
     let verifiedPaymentId = "";
     let paymentProvider = "RAZORPAY";
+    let actualGatewayFeeAmount: number | null = null;
+    let actualGatewayFeePercent: number | null = null;
 
     // 1. CASHFREE GATEWAY VERIFICATION
     if (gateway === "cashfree" || (!razorpay_order_id && Boolean(order_id || cf_order_id))) {
@@ -150,6 +156,13 @@ export async function POST(req: Request) {
         cfOrder?.cf_order_id ||
         String(targetOrderId);
       paymentProvider = "CASHFREE";
+
+      // Extract real payment gateway charges (including taxes) from Cashfree
+      const cfCharges = extractCashfreePaymentCharges(successfulPayment || cfOrder, targetPrice);
+      if (cfCharges.totalChargesAmount > 0) {
+        actualGatewayFeeAmount = cfCharges.totalChargesAmount;
+        actualGatewayFeePercent = cfCharges.feePercent || null;
+      }
     } else {
       // 2. RAZORPAY GATEWAY VERIFICATION
       if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -174,6 +187,13 @@ export async function POST(req: Request) {
 
       verifiedPaymentId = razorpay_payment_id;
       paymentProvider = "RAZORPAY";
+
+      // Fetch real Razorpay payment fee and tax taken for transaction
+      const rzpFeeDetails = await fetchRazorpayPaymentFee(razorpay_payment_id, targetPrice);
+      if (rzpFeeDetails.totalFeeAmount > 0) {
+        actualGatewayFeeAmount = rzpFeeDetails.totalFeeAmount;
+        actualGatewayFeePercent = rzpFeeDetails.feePercent || null;
+      }
     }
 
     // Check if purchase record already created to prevent duplicate entries
@@ -207,10 +227,15 @@ export async function POST(req: Request) {
     const split = calculateSaleSplit(
       targetPrice,
       sellerOrg?.plan?.name || "free",
-      sellerOrg?.plan?.commissionPercent
+      sellerOrg?.plan?.commissionPercent,
+      null,
+      {
+        actualGatewayFeeAmount,
+        actualGatewayFeePercent,
+      }
     );
 
-    // Create Verified Purchase Record
+    // Create Verified Purchase Record with exact gateway charges & taxes stored
     const purchase = await db.contentPurchase.create({
       data: {
         organizationId,
