@@ -80,7 +80,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
@@ -95,7 +94,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={cn("font-sans", notoSans.variable)}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="antialiased selection:bg-primary/20 selection:text-primary min-h-screen">

@@ -34,6 +34,7 @@ import {
   Mail,
   FileText,
   SlidersHorizontal,
+  Crop,
 } from "lucide-react";
 import {
   OfferingsConfigData,
@@ -1106,6 +1107,22 @@ export default function OfferingsDashboardPage() {
                       </button>
                     )}
                   </div>
+                  {config.bannerUrl && (
+                    <div className="relative group rounded-xl overflow-hidden border border-border aspect-[3/1] bg-muted/40 shadow-xs">
+                      <img
+                        src={config.bannerUrl}
+                        alt="Current Banner"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div
+                        onClick={() => bannerInputRef.current?.click()}
+                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold cursor-pointer backdrop-blur-xs"
+                      >
+                        <Crop className="w-4 h-4 text-primary" />
+                        <span>Change / Crop</span>
+                      </div>
+                    </div>
+                  )}
                   <input
                     type="file"
                     ref={bannerInputRef}
