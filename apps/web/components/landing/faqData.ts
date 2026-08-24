@@ -35,6 +35,16 @@ export const FAQ_DATA: FaqItem[] = [
       "Yes. You can organize videos into sequential playlists ideal for onboarding modules, online courses, and video documentation. Playlists can be shared via single URLs or embedded directly onto your website, blog, or Notion workspace with automated continuous playback.",
   },
   {
+    question: "Do I get a dedicated page to list my offerings and events?",
+    answer:
+      "Yes. Every account includes its own public offerings page under your own slug — a polished storefront where you can list courses, playlists, services, 1:1 sessions, products, and upcoming events with pricing, badges, highlights and cover images. Visitors can send inquiries directly, and the whole page is configurable with your headline, bio, avatar, testimonials, FAQs and social links.",
+  },
+  {
+    question: "Can I sell my videos, playlists, and meeting passes on Taped?",
+    answer:
+      "Yes. Taped lets you price any video — or an entire playlist as a course — as a one-time purchase, and sell passes to your live meeting rooms. Buyers pay securely through our payment gateway and get instant access. Platform commissions start at just 6.5% and drop to as low as 3.5% on paid plans — the lowest commission in the market.",
+  },
+  {
     question: "Can I integrate Taped with my own applications via API and webhooks?",
     answer:
       "Yes! Taped provides standard REST API endpoints for uploading and managing videos programmatically, along with real-time webhooks that notify your backend system whenever video processing completes.",

@@ -554,7 +554,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           highlight: true,
         },
         {
-          title: "Sell your videos, playlists & meeting passes (6.5% platform fee + 3% gateway fee)*",
+          title: "Sell your videos, playlists & meeting passes (6.5% platform fee)*",
           icon: BadgePercent,
           highlight: true,
         },
@@ -594,7 +594,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           highlight: true,
         },
         {
-          title: "Sell your videos, playlists & meeting passes (5.5% platform fee + 3% gateway fee)*",
+          title: "Sell your videos, playlists & meeting passes (5.5% platform fee)*",
           icon: BadgePercent,
           highlight: true,
         },
@@ -634,7 +634,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           highlight: true,
         },
         {
-          title: "Sell your videos, playlists & meeting passes (4.0% platform fee + 3% gateway fee)*",
+          title: "Sell your videos, playlists & meeting passes (4.0% platform fee)*",
           icon: BadgePercent,
           highlight: true,
         },
@@ -675,7 +675,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         },
         { title: "Invite team members & manage roles", icon: Users, highlight: true },
         {
-          title: "Sell your videos, playlists & meeting passes (3.5% platform fee + 3% gateway fee — lowest rate)*",
+          title: "Sell your videos, playlists & meeting passes (3.5% platform fee — lowest rate)*",
           icon: BadgePercent,
           highlight: true,
         },
