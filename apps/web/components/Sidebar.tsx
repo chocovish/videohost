@@ -24,6 +24,7 @@ import {
   Sun,
   Moon,
   ShoppingBag,
+  BadgeDollarSign,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSidebar } from "@/components/SidebarContext";
@@ -162,23 +163,53 @@ export default function Sidebar({
     }
   };
 
-  const creatorNavItems = [
-    { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
-    { label: "Playlists", href: "/dashboard/playlists", icon: ListVideo },
-    { label: "Meetings", href: "/dashboard/meetings", icon: Users2 },
-    { label: "Offerings Portfolio", href: "/dashboard/offerings", icon: Layers },
-    { label: "Customize share page", href: "/dashboard/customize-share-page", icon: Paintbrush },
-    { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },
-    { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
-    { label: "Organization", href: "/dashboard/settings", icon: Settings },
+  interface NavSection {
+    title?: string;
+    items: {
+      label: string;
+      href: string;
+      icon: React.ElementType;
+    }[];
+  }
+
+  const creatorNavSections: NavSection[] = [
+    {
+      title: "Manage Contents",
+      items: [
+        { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
+        { label: "Playlists", href: "/dashboard/playlists", icon: ListVideo },
+        { label: "Meetings", href: "/dashboard/meetings", icon: Users2 },
+      ],
+    },
+    {
+      title: "Customizations",
+      items: [
+        { label: "Offerings Portfolio", href: "/dashboard/offerings", icon: Layers },
+        { label: "Customize share page", href: "/dashboard/customize-share-page", icon: Paintbrush },
+      ],
+    },
+    {
+      title: "General",
+      items: [
+        { label: "Sales & Payouts", href: "/dashboard/sales-and-payouts", icon: BadgeDollarSign },
+        { label: "Plans & Pricing", href: "/dashboard/pricing", icon: Sparkles },
+        { label: "Developer API", href: "/dashboard/developer", icon: Code2 },
+        { label: "Organization", href: "/dashboard/settings", icon: Settings },
+      ],
+    },
   ];
 
-  const viewerNavItems = [
-    { label: "Shared with me", href: "/dashboard/shared-with-me", icon: Share2 },
-    { label: "Purchased Items", href: "/dashboard/purchased-items", icon: ShoppingBag },
+  const viewerNavSections: NavSection[] = [
+    {
+      title: "Library",
+      items: [
+        { label: "Shared with me", href: "/dashboard/shared-with-me", icon: Share2 },
+        { label: "Purchased Items", href: "/dashboard/purchased-items", icon: ShoppingBag },
+      ],
+    },
   ];
 
-  const navItems = viewMode === "VIEWER" ? viewerNavItems : creatorNavItems;
+  const navSections = viewMode === "VIEWER" ? viewerNavSections : creatorNavSections;
 
   const SidebarInner = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col justify-between h-full p-4 overflow-y-auto">
@@ -283,33 +314,47 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="space-y-1">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
-              (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/uploaded-videos"));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => {
-                  if (isMobile) closeMobile();
-                }}
-                title={isCollapsed && !isMobile ? item.label : undefined}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isCollapsed && !isMobile ? "justify-center px-2" : ""
-                  } ${isActive
-                    ? "bg-primary text-white shadow-xs font-semibold"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {(!isCollapsed || isMobile) && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
+        {/* Navigation Sections */}
+        <nav className="space-y-4">
+          {navSections.map((section, idx) => (
+            <div key={section.title || idx} className="space-y-1">
+              {section.title && (!isCollapsed || isMobile) && (
+                <div className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground/70 px-2 py-0.5">
+                  {section.title}
+                </div>
+              )}
+              {section.title && isCollapsed && !isMobile && idx > 0 && (
+                <div className="w-8 h-[1px] bg-border/60 mx-auto my-2" />
+              )}
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive =
+                    pathname === item.href ||
+                    (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
+                    (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/uploaded-videos"));
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => {
+                        if (isMobile) closeMobile();
+                      }}
+                      title={isCollapsed && !isMobile ? item.label : undefined}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isCollapsed && !isMobile ? "justify-center px-2" : ""
+                        } ${isActive
+                          ? "bg-primary text-white shadow-xs font-semibold"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {(!isCollapsed || isMobile) && <span className="truncate">{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </div>
 

@@ -190,7 +190,7 @@ export function ContentSalesPayoutSection({
       : purchasesStats?.availableBalance || 0;
 
   return (
-    <div className="glass-card rounded-3xl p-5 sm:p-7 border border-border/80 shadow-xl space-y-7 backdrop-blur-md">
+    <div className="">
       {/* Section Header & Active Plan Platform Fee Pill */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-border/60">
         <div className="space-y-2">
@@ -266,11 +266,10 @@ export function ContentSalesPayoutSection({
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/60 rounded-2xl border border-border self-start lg:self-center shrink-0">
           <button
             onClick={() => setMonetizationTab("purchases")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              monetizationTab === "purchases"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "purchases"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <Receipt className="w-3.5 h-3.5" />
             <span>Sales Ledger</span>
@@ -281,11 +280,10 @@ export function ContentSalesPayoutSection({
 
           <button
             onClick={() => setMonetizationTab("withdrawals")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              monetizationTab === "withdrawals"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "withdrawals"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <Wallet className="w-3.5 h-3.5 text-lime-500" />
             <span>Payouts</span>
@@ -296,11 +294,10 @@ export function ContentSalesPayoutSection({
 
           <button
             onClick={() => setMonetizationTab("bank")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              monetizationTab === "bank"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "bank"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <Landmark className="w-3.5 h-3.5 text-primary" />
             <span>Bank Account</span>
@@ -313,11 +310,10 @@ export function ContentSalesPayoutSection({
 
           <button
             onClick={() => setMonetizationTab("tiers")}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              monetizationTab === "tiers"
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "tiers"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <BadgePercent className="w-3.5 h-3.5 text-purple-500" />
             <span>Fee Tiers</span>
@@ -391,11 +387,10 @@ export function ContentSalesPayoutSection({
                 <button
                   key={type}
                   onClick={() => setPurchaseFilterType(type)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    purchaseFilterType === type
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${purchaseFilterType === type
                       ? "bg-primary text-primary-foreground shadow-xs"
                       : "bg-muted/50 text-muted-foreground hover:text-foreground"
-                  }`}
+                    }`}
                 >
                   {type === "ALL" ? "All Orders" : type === "VIDEO" ? "Videos" : type === "PLAYLIST" ? "Playlists" : "Meetings"}
                 </button>
@@ -490,13 +485,12 @@ export function ContentSalesPayoutSection({
                                 "Purchasable Content"}
                             </p>
                             <span
-                              className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mt-0.5 ${
-                                purchase.contentType === "PLAYLIST"
+                              className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mt-0.5 ${purchase.contentType === "PLAYLIST"
                                   ? "bg-purple-500/15 text-purple-600 border border-purple-500/20"
                                   : purchase.contentType === "MEETING"
-                                  ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
-                                  : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
-                              }`}
+                                    ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
+                                    : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
+                                }`}
                             >
                               {purchase.contentType}
                             </span>
@@ -548,8 +542,8 @@ export function ContentSalesPayoutSection({
                           {purchase.gatewayFeePercent !== undefined && purchase.gatewayFeePercent !== null && purchase.gatewayFeePercent > 0
                             ? `${purchase.gatewayFeePercent.toFixed(2)}%`
                             : purchase.amount > 0 && purchase.gatewayFeeAmount
-                            ? `${((purchase.gatewayFeeAmount / purchase.amount) * 100).toFixed(2)}%`
-                            : "0.00%"} ({purchase.paymentMethod || "Gateway"})
+                              ? `${((purchase.gatewayFeeAmount / purchase.amount) * 100).toFixed(2)}%`
+                              : "0.00%"} ({purchase.paymentMethod || "Gateway"})
                         </span>
                       </td>
 
@@ -725,9 +719,8 @@ export function ContentSalesPayoutSection({
                         (purchasesStats?.availableBalance || 0) <= 0 ||
                         isRequestingWithdrawal
                       }
-                      placeholder={`e.g. ${
-                        purchasesStats?.availableBalance ? purchasesStats.availableBalance.toFixed(2) : "50.00"
-                      }`}
+                      placeholder={`e.g. ${purchasesStats?.availableBalance ? purchasesStats.availableBalance.toFixed(2) : "50.00"
+                        }`}
                       value={withdrawalAmount}
                       onChange={(e) => {
                         setWithdrawalAmount(e.target.value);
@@ -750,11 +743,10 @@ export function ContentSalesPayoutSection({
                           (purchasesStats?.availableBalance || 0) <= 0 ||
                           isRequestingWithdrawal
                         }
-                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                          withdrawalPresetPct === pct
+                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${withdrawalPresetPct === pct
                             ? "bg-lime-500 text-black shadow-xs font-black"
                             : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
-                        }`}
+                          }`}
                       >
                         {pct === 100 ? "MAX" : `${pct}%`}
                       </button>
@@ -886,15 +878,14 @@ export function ContentSalesPayoutSection({
 
                         <td className="py-3.5 px-4">
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 ${
-                              w.status === "PENDING"
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 ${w.status === "PENDING"
                                 ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
                                 : w.status === "PROCESSING"
-                                ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
-                                : w.status === "COMPLETED" || w.status === "APPROVED"
-                                ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-                                : "bg-red-500/15 text-red-600 border border-red-500/30"
-                            }`}
+                                  ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
+                                  : w.status === "COMPLETED" || w.status === "APPROVED"
+                                    ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+                                    : "bg-red-500/15 text-red-600 border border-red-500/30"
+                              }`}
                           >
                             {w.status === "PENDING" && <Clock className="w-2.5 h-2.5 animate-spin" />}
                             {w.status}
@@ -1166,11 +1157,10 @@ export function ContentSalesPayoutSection({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Tier 1: Free */}
             <div
-              className={`p-5 rounded-2xl border space-y-3 transition-all ${
-                currentActivePlan === "free"
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "free"
                   ? "bg-primary/10 border-primary shadow-md ring-2 ring-primary/20"
                   : "bg-card border-border/70"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Free Plan</span>
@@ -1195,11 +1185,10 @@ export function ContentSalesPayoutSection({
 
             {/* Tier 2: Basic */}
             <div
-              className={`p-5 rounded-2xl border space-y-3 transition-all ${
-                currentActivePlan === "basic"
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "basic"
                   ? "bg-sky-500/10 border-sky-500 shadow-md ring-2 ring-sky-500/20"
                   : "bg-card border-border/70"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Basic Plan</span>
@@ -1224,11 +1213,10 @@ export function ContentSalesPayoutSection({
 
             {/* Tier 3: Pro */}
             <div
-              className={`p-5 rounded-2xl border space-y-3 transition-all ${
-                currentActivePlan === "pro"
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "pro"
                   ? "bg-primary/15 border-primary shadow-md ring-2 ring-primary/20"
                   : "bg-card border-border/70"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Pro Plan</span>
@@ -1253,11 +1241,10 @@ export function ContentSalesPayoutSection({
 
             {/* Tier 4: Enterprise */}
             <div
-              className={`p-5 rounded-2xl border space-y-3 transition-all ${
-                currentActivePlan === "enterprise"
+              className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "enterprise"
                   ? "bg-purple-500/15 border-purple-500 shadow-md ring-2 ring-purple-500/20"
                   : "bg-card border-border/70"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Enterprise</span>
