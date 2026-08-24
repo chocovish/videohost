@@ -1751,11 +1751,11 @@ export default function SharedContentClient({
             )}
 
             {/* Video Player or Purchasable Paywall */}
-            <div className="aspect-video w-full rounded-xl overflow-hidden shadow-2xl">
+            <div className={data.video.playbackUrl ? "aspect-video w-full rounded-xl overflow-hidden shadow-2xl" : "w-full min-h-[440px] sm:min-h-[480px] sm:aspect-video rounded-2xl overflow-hidden shadow-2xl relative"}>
               {data.video.playbackUrl ? (
                 <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-xl" />
               ) : data.accessMode === "PURCHASABLE" ? (
-                <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 overflow-hidden border border-slate-800">
+                <div className="relative w-full h-full min-h-[440px] sm:min-h-0 bg-slate-950 flex flex-col items-center justify-center text-center p-5 sm:p-8 overflow-hidden border border-slate-800">
                   {/* Poster Backdrop with Blur */}
                   {data.video.thumbnailUrl && (
                     <div
@@ -1765,34 +1765,55 @@ export default function SharedContentClient({
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
 
-                  <div className="relative z-10 max-w-md space-y-4 flex flex-col items-center">
+                  <div className="relative z-10 max-w-md w-full mx-auto space-y-3.5 sm:space-y-4 flex flex-col items-center">
                     <div
-                      className="p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
+                      className="p-3 sm:p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
                       style={{
                         backgroundColor: `${accentHex}20`,
                         borderColor: `${accentHex}40`,
                         color: accentHex,
                       }}
                     >
-                      <Lock className="w-7 h-7" />
+                      <Lock className="w-6 h-6 sm:w-7 sm:h-7" />
                     </div>
 
                     <div className="space-y-1">
                       <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                         Purchasable Video
                       </span>
-                      <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+                      <h3 className="text-lg sm:text-2xl font-black text-white leading-snug">
                         {data.video.title}
                       </h3>
                     </div>
 
                     {/* Listed price based on current country */}
-                    <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[200px] shadow-sm">
+                    <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[180px] sm:min-w-[200px] shadow-sm">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</p>
                       <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
                         {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                       </p>
                     </div>
+
+                    {/* Country Selector for Dynamic Pricing */}
+                    {data.countryPricing && data.countryPricing.length > 0 && (
+                      <div className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+                        <span className="text-slate-400 font-semibold flex items-center gap-1.5 shrink-0 text-[11px] sm:text-xs">
+                          <Globe className="w-3.5 h-3.5 text-slate-400" /> Billing Country:
+                        </span>
+                        <select
+                          value={selectedBuyerCountry}
+                          onChange={(e) => setSelectedBuyerCountry(e.target.value)}
+                          className="bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 rounded-lg px-2.5 py-1 focus:outline-hidden"
+                        >
+                          <option value="">Default ({data.currency || "USD"})</option>
+                          {data.countryPricing.map((cp) => (
+                            <option key={cp.countryCode} value={cp.countryCode}>
+                              {cp.countryName || cp.countryCode} ({cp.currency} {cp.amount})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     {/* Action Button */}
                     {!data.isLoggedIn ? (
@@ -1801,17 +1822,17 @@ export default function SharedContentClient({
                           const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                           router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                         }}
-                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
                         style={{ backgroundColor: accentHex }}
                       >
                         <LogIn className="w-4 h-4" />
-                        <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Sign in to Claim for Free" : "Sign in to Purchase"}</span>
+                        <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Sign in to Claim for Free" : `Sign in to Purchase • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
                       </button>
                     ) : (
                       <button
                         onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                         disabled={isCheckingOut}
-                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: accentHex }}
                       >
                         {isCheckingOut ? (
@@ -1831,10 +1852,15 @@ export default function SharedContentClient({
                         )}
                       </button>
                     )}
+
+                    <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span>Instant Access &bull; Secure Checkout</span>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6 border border-slate-800">
+                <div className="w-full h-full min-h-[300px] bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6 border border-slate-800">
                   <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
                   <p className="text-sm font-semibold">Video is processing or unplayable.</p>
                 </div>
@@ -1887,6 +1913,36 @@ export default function SharedContentClient({
                   </button>
                 )}
               </div>
+
+              {/* Purchasable Video Quick Action Banner */}
+              {data.accessMode === "PURCHASABLE" && !data.isPurchased && (
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                  <div className="flex items-center gap-3 text-left w-full sm:w-auto">
+                    <div
+                      className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
+                    >
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Full Video Access Required</h4>
+                      <p className="text-xs text-slate-400">One-time purchase unlocks instant permanent playback</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={!data.isLoggedIn ? () => {
+                      const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+                      router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+                    } : (getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true))}
+                    disabled={isCheckingOut}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                    style={{ backgroundColor: accentHex }}
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5" />
+                    <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Claim for Free" : `Buy Now • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
+                  </button>
+                </div>
+              )}
 
               {data.video.description && (
                 <div className="space-y-1.5">
@@ -2055,7 +2111,7 @@ export default function SharedContentClient({
                     <div className="lg:col-span-2 space-y-5">
                       {/* Video Player Box or Purchasable Paywall */}
                       <div className="relative group/player rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800">
-                        <div className="aspect-video w-full">
+                        <div className={currentVideo?.playbackUrl ? "aspect-video w-full" : "w-full min-h-[440px] sm:min-h-[480px] sm:aspect-video"}>
                           {currentVideo?.playbackUrl ? (
                             <VideoPlayer
                               key={currentVideo.id}
@@ -2065,7 +2121,7 @@ export default function SharedContentClient({
                               className="w-full h-full"
                             />
                           ) : data.accessMode === "PURCHASABLE" ? (
-                            <div className="relative w-full h-full bg-slate-950 flex flex-col items-center justify-center text-center p-6 overflow-hidden">
+                            <div className="relative w-full h-full min-h-[440px] sm:min-h-0 bg-slate-950 flex flex-col items-center justify-center text-center p-5 sm:p-8 overflow-hidden">
                               {data.playlist.thumbnailUrl && (
                                 <div
                                   className="absolute inset-0 bg-cover bg-center filter blur-lg opacity-25 scale-105"
@@ -2074,34 +2130,55 @@ export default function SharedContentClient({
                               )}
                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
 
-                              <div className="relative z-10 max-w-md space-y-4 flex flex-col items-center">
+                              <div className="relative z-10 max-w-md w-full mx-auto space-y-3.5 sm:space-y-4 flex flex-col items-center">
                                 <div
-                                  className="p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
+                                  className="p-3 sm:p-3.5 rounded-2xl flex items-center justify-center shadow-lg border"
                                   style={{
                                     backgroundColor: `${accentHex}20`,
                                     borderColor: `${accentHex}40`,
                                     color: accentHex,
                                   }}
                                 >
-                                  <Lock className="w-7 h-7" />
+                                  <Lock className="w-6 h-6 sm:w-7 sm:h-7" />
                                 </div>
 
                                 <div className="space-y-1">
                                   <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
                                     Purchasable Playlist &bull; {data.videos?.length || 0} Videos Included
                                   </span>
-                                  <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+                                  <h3 className="text-lg sm:text-2xl font-black text-white leading-snug">
                                     {data.playlist.title}
                                   </h3>
                                 </div>
 
                                 {/* Listed price based on current country */}
-                                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[200px] shadow-sm">
+                                <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[180px] sm:min-w-[200px] shadow-sm">
                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Playlist Price</p>
                                   <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
                                     {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                                   </p>
                                 </div>
+
+                                {/* Country Selector for Dynamic Pricing */}
+                                {data.countryPricing && data.countryPricing.length > 0 && (
+                                  <div className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+                                    <span className="text-slate-400 font-semibold flex items-center gap-1.5 shrink-0 text-[11px] sm:text-xs">
+                                      <Globe className="w-3.5 h-3.5 text-slate-400" /> Billing Country:
+                                    </span>
+                                    <select
+                                      value={selectedBuyerCountry}
+                                      onChange={(e) => setSelectedBuyerCountry(e.target.value)}
+                                      className="bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 rounded-lg px-2.5 py-1 focus:outline-hidden"
+                                    >
+                                      <option value="">Default ({data.currency || "USD"})</option>
+                                      {data.countryPricing.map((cp) => (
+                                        <option key={cp.countryCode} value={cp.countryCode}>
+                                          {cp.countryName || cp.countryCode} ({cp.currency} {cp.amount})
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                )}
 
                                 {!data.isLoggedIn ? (
                                   <button
@@ -2109,21 +2186,21 @@ export default function SharedContentClient({
                                       const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                                       router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                                     }}
-                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
                                     style={{ backgroundColor: accentHex }}
                                   >
                                     <LogIn className="w-4 h-4" />
                                     <span>
                                       {getCalculatedPrice(data, selectedBuyerCountry).isFree
                                         ? "Sign in to Unlock Playlist for Free"
-                                        : "Sign in to Unlock Playlist"}
+                                        : `Sign in to Unlock Playlist • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}
                                     </span>
                                   </button>
                                 ) : (
                                   <button
                                     onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                                     disabled={isCheckingOut}
-                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                                     style={{ backgroundColor: accentHex }}
                                   >
                                     {isCheckingOut ? (
@@ -2143,10 +2220,15 @@ export default function SharedContentClient({
                                     )}
                                   </button>
                                 )}
+
+                                <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <span>Instant Access &bull; Secure Checkout</span>
+                                </div>
                               </div>
                             </div>
                           ) : (
-                            <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6">
+                            <div className="w-full h-full min-h-[300px] bg-slate-950 flex flex-col items-center justify-center text-slate-400 p-6">
                               <Film className="w-12 h-12 mb-2 text-slate-600 animate-pulse" />
                               <p className="text-sm font-semibold">Video is processing or unplayable.</p>
                             </div>
@@ -2215,6 +2297,36 @@ export default function SharedContentClient({
                             </h2>
                           </div>
                         </div>
+
+                        {/* Purchasable Playlist Quick Action Banner */}
+                        {data.accessMode === "PURCHASABLE" && !data.isPurchased && (
+                          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                            <div className="flex items-center gap-3 text-left w-full sm:w-auto">
+                              <div
+                                className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
+                                style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
+                              >
+                                <Lock className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-bold text-white">Full Playlist Access Required</h4>
+                                <p className="text-xs text-slate-400">Unlocks all {data.videos?.length || 0} videos in this collection</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={!data.isLoggedIn ? () => {
+                                const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+                                router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+                              } : (getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true))}
+                              disabled={isCheckingOut}
+                              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                              style={{ backgroundColor: accentHex }}
+                            >
+                              <ShoppingBag className="w-3.5 h-3.5" />
+                              <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Claim for Free" : `Unlock Playlist • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
+                            </button>
+                          </div>
+                        )}
 
                         {currentVideo?.description && (
                           <div className="space-y-1">
