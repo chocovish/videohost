@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Mail, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowRight, Mail, CheckCircle2, AlertCircle, Loader2, KeyRound, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,9 +15,11 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/dashboard";
+  const isResetSuccess = searchParams.get("reset") === "true";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isUnverified, setIsUnverified] = useState(false);
@@ -25,7 +27,7 @@ export default function LoginForm() {
   const [resendSuccess, setResendSuccess] = useState("");
   const [resendError, setResendError] = useState("");
 
-  const handleResend = async () => {
+  const handleResendAndRedirect = async () => {
     if (!email) return;
     setResending(true);
     setResendSuccess("");
@@ -35,16 +37,16 @@ export default function LoginForm() {
       const res = await fetch("/api/auth/resend-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, callbackUrl }),
+        body: JSON.stringify({ email }),
       });
       const data = await res.json();
       if (res.ok) {
-        setResendSuccess("Verification email resent successfully! Please check your inbox.");
+        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        setResendError(data.error || "Failed to resend verification email.");
+        setResendError(data.error || "Failed to send verification code.");
       }
     } catch (err) {
-      setResendError("Failed to resend verification email.");
+      setResendError("Failed to send verification code.");
     } finally {
       setResending(false);
     }
@@ -72,7 +74,7 @@ export default function LoginForm() {
           res.error === "EMAIL_NOT_VERIFIED" ||
           res.url?.includes("EMAIL_NOT_VERIFIED")
         ) {
-          setError("Your email address is not verified yet. Please check your inbox for the confirmation link.");
+          setError("Your email address is not verified yet. Please enter the 6-digit code sent to your inbox.");
           setIsUnverified(true);
         } else {
           setError("Invalid email or password");
@@ -115,6 +117,13 @@ export default function LoginForm() {
             </p>
           </div>
 
+          {isResetSuccess && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm font-medium flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-500" />
+              <span>Your password has been reset successfully. Please sign in below.</span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-medium space-y-3">
               <div className="flex items-start gap-2.5 text-left">
@@ -124,31 +133,34 @@ export default function LoginForm() {
 
               {isUnverified && (
                 <div className="pt-2.5 border-t border-red-500/20 text-left space-y-2">
-                  {resendSuccess ? (
-                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-semibold border border-emerald-500/20">
-                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
-                      <span>{resendSuccess}</span>
-                    </div>
-                  ) : (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Link
+                      href={`/auth/verify-email?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(callbackUrl)}`}
+                      className="flex-1 py-2 px-3 bg-primary hover:opacity-90 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>Enter 6-Digit OTP</span>
+                    </Link>
+
                     <button
                       type="button"
-                      onClick={handleResend}
+                      onClick={handleResendAndRedirect}
                       disabled={resending}
-                      className="w-full py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-2 shadow-xs disabled:opacity-50 cursor-pointer"
+                      className="py-2 px-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 cursor-pointer"
                     >
                       {resending ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Sending Verification Email...</span>
+                          <span>Resending...</span>
                         </>
                       ) : (
                         <>
                           <Mail className="w-3.5 h-3.5" />
-                          <span>Resend Verification Email</span>
+                          <span>Resend OTP</span>
                         </>
                       )}
                     </button>
-                  )}
+                  </div>
 
                   {resendError && (
                     <div className="text-xs text-red-600 font-semibold text-center pt-1">
@@ -212,15 +224,35 @@ export default function LoginForm() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="login-password">Password</Label>
-              <Input
-                id="login-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="login-password">Password</Label>
+                <Link
+                  href={`/auth/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <Button
@@ -249,3 +281,4 @@ export default function LoginForm() {
     </div>
   );
 }
+

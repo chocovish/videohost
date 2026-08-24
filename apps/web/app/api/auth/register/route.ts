@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { db } from "@videohost/db";
-import { sendVerificationEmail } from "@/lib/mail";
+import { sendSignupOtpEmail } from "@/lib/mail";
+import { generateSignupOtp } from "@/lib/auth-otp";
 
 export async function POST(req: Request) {
   try {
@@ -12,10 +12,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
     const selectedViewMode = viewMode === "VIEWER" ? "VIEWER" : "CREATOR";
-    const effectiveOrgName = orgName || `${name || email.split("@")[0]}'s Workspace`;
+    const effectiveOrgName = orgName || `${name || normalizedEmail.split("@")[0]}'s Workspace`;
 
-    const existingUser = await db.user.findUnique({ where: { email } });
+    const existingUser = await db.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 });
     }
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
         where: { token: inviteToken },
       });
       if (inviteRecord && !inviteRecord.acceptedAt && new Date(inviteRecord.expiresAt) > new Date()) {
-        if (inviteRecord.email.toLowerCase() === email.trim().toLowerCase()) {
+        if (inviteRecord.email.toLowerCase() === normalizedEmail) {
           validInvite = inviteRecord;
         } else {
           return NextResponse.json(
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // Transaction to create User, Org, Member & VerificationToken
+    // Transaction to create User, Org, Member
     const result = await db.$transaction(async (tx) => {
       const organization = await tx.organization.create({
         data: {
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
       const user = await tx.user.create({
         data: {
           name,
-          email,
+          email: normalizedEmail,
           passwordHash,
           emailVerified: null,
           viewMode: selectedViewMode,
@@ -102,36 +103,23 @@ export async function POST(req: Request) {
         });
       }
 
-      // Generate verification token
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      await tx.verificationToken.deleteMany({
-        where: { identifier: email },
-      });
-
-      await tx.verificationToken.create({
-        data: {
-          identifier: email,
-          token,
-          expires,
-        },
-      });
-
-      return { user, organization, token };
+      return { user, organization };
     });
 
-    // Send verification email
+    // Generate 6-digit OTP with 10-minute validity
+    const otpCode = await generateSignupOtp(normalizedEmail);
+
+    // Send signup verification OTP email
     try {
-      await sendVerificationEmail(email, result.token, callbackUrl);
+      await sendSignupOtpEmail(normalizedEmail, otpCode);
     } catch (mailErr) {
-      console.error("Failed to send verification email:", mailErr);
+      console.error("Failed to send verification OTP email:", mailErr);
     }
 
     return NextResponse.json({
       success: true,
       requiresVerification: true,
-      email,
+      email: normalizedEmail,
       orgId: result.organization.id,
     });
   } catch (error: any) {

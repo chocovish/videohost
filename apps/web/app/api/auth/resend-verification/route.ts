@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { db } from "@videohost/db";
-import { sendVerificationEmail } from "@/lib/mail";
+import { sendSignupOtpEmail } from "@/lib/mail";
+import { generateSignupOtp } from "@/lib/auth-otp";
 
 export async function POST(req: Request) {
   try {
-    const { email, callbackUrl } = await req.json();
+    const { email } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await db.user.findUnique({ where: { email: normalizedEmail } });
 
     if (!user) {
       return NextResponse.json({ error: "No user found with this email address" }, { status: 404 });
@@ -21,27 +22,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "This email address is already verified" }, { status: 400 });
     }
 
-    // Generate new token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // Generate new 10-minute OTP
+    const otpCode = await generateSignupOtp(normalizedEmail);
 
-    await db.verificationToken.deleteMany({
-      where: { identifier: email },
+    // Send OTP email
+    await sendSignupOtpEmail(normalizedEmail, otpCode);
+
+    return NextResponse.json({
+      success: true,
+      message: "A new 6-digit verification code has been sent to your email (valid for 10 minutes).",
     });
-
-    await db.verificationToken.create({
-      data: {
-        identifier: email,
-        token,
-        expires,
-      },
-    });
-
-    await sendVerificationEmail(email, token, callbackUrl);
-
-    return NextResponse.json({ success: true, message: "Verification email resent successfully" });
   } catch (error: any) {
     console.error("Resend verification error:", error);
-    return NextResponse.json({ error: "Failed to resend verification email" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to resend verification code" }, { status: 500 });
   }
 }

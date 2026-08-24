@@ -10,6 +10,116 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+export async function sendSignupOtpEmail(email: string, otpCode: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 540px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .logo-box { display: inline-block; background-color: #84cc16; border-radius: 10px; padding: 6px 14px; font-weight: 800; color: #000; margin-bottom: 24px; font-size: 16px; letter-spacing: -0.02em; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: #ffffff; }
+          p { font-size: 14px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px; }
+          .otp-box { background: linear-gradient(135deg, #0b1324 0%, #172554 100%); border: 2px dashed #84cc16; border-radius: 14px; padding: 24px; text-align: center; margin: 28px 0; }
+          .otp-label { font-size: 12px; font-weight: 700; color: #84cc16; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+          .otp-code { font-family: monospace, monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #ffffff; margin: 0; text-shadow: 0 2px 10px rgba(132, 204, 22, 0.4); }
+          .expiry-note { font-size: 13px; color: #cbd5e1; margin-top: 12px; font-weight: 500; }
+          .highlight { color: #84cc16; font-weight: 600; }
+          .security-note { background-color: rgba(132, 204, 22, 0.08); border-left: 3px solid #84cc16; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #cbd5e1; line-height: 1.5; margin-top: 24px; }
+          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo-box">Taped</div>
+          <h1>Confirm your email address</h1>
+          <p>Welcome to Taped! Please use the 6-digit verification code below to complete your registration and activate your account.</p>
+          
+          <div class="otp-box">
+            <div class="otp-label">Verification Code</div>
+            <div class="otp-code">${otpCode}</div>
+            <div class="expiry-note">Valid for <span class="highlight">10 minutes</span></div>
+          </div>
+
+          <div class="security-note">
+            <strong>Security Notice:</strong> Never share this code with anyone. Taped employees will never ask for your verification code.
+          </div>
+
+          <p style="margin-top: 24px; font-size: 13px; color: #64748b;">
+            If you did not attempt to sign up for Taped, please disregard this email.
+          </p>
+
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} Taped. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Your Taped verification code: ${otpCode}`,
+    html,
+  });
+}
+
+export async function sendPasswordResetOtpEmail(email: string, otpCode: string) {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 540px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .logo-box { display: inline-block; background-color: #84cc16; border-radius: 10px; padding: 6px 14px; font-weight: 800; color: #000; margin-bottom: 24px; font-size: 16px; letter-spacing: -0.02em; }
+          h1 { font-size: 22px; font-weight: 700; margin: 0 0 10px; color: #ffffff; }
+          p { font-size: 14px; line-height: 1.6; color: #94a3b8; margin: 0 0 20px; }
+          .otp-box { background: linear-gradient(135deg, #0b1324 0%, #172554 100%); border: 2px dashed #84cc16; border-radius: 14px; padding: 24px; text-align: center; margin: 28px 0; }
+          .otp-label { font-size: 12px; font-weight: 700; color: #84cc16; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+          .otp-code { font-family: monospace, monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #ffffff; margin: 0; text-shadow: 0 2px 10px rgba(132, 204, 22, 0.4); }
+          .expiry-note { font-size: 13px; color: #cbd5e1; margin-top: 12px; font-weight: 500; }
+          .highlight { color: #84cc16; font-weight: 600; }
+          .security-note { background-color: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #fca5a5; line-height: 1.5; margin-top: 24px; }
+          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo-box">Taped</div>
+          <h1>Password Reset Request</h1>
+          <p>We received a request to reset the password for your Taped account associated with <strong>${email}</strong>. Use the 6-digit code below to proceed:</p>
+          
+          <div class="otp-box">
+            <div class="otp-label">Password Reset Code</div>
+            <div class="otp-code">${otpCode}</div>
+            <div class="expiry-note">Valid for <span class="highlight">10 minutes</span></div>
+          </div>
+
+          <div class="security-note">
+            <strong>Important:</strong> If you did not request a password reset, please ignore this email or update your password immediately if you suspect unauthorized access.
+          </div>
+
+          <div class="footer">
+            &copy; ${new Date().getFullYear()} Taped. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"Taped Security" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Your Taped password reset code: ${otpCode}`,
+    html,
+  });
+}
+
 export async function sendVerificationEmail(email: string, token: string, callbackUrl?: string) {
   const baseUrl = process.env.APP_URL || "http://localhost:3000";
   const callbackParam = callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : "";
