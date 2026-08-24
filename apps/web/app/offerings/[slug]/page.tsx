@@ -36,12 +36,12 @@ export async function generateMetadata({
 
     const title = config?.headline
       ? `${org.name} — ${config.headline}`
-      : `${org.name} | Playlists, Mentorship & Offerings`;
+      : `${org.name} | Playlists, Meetings & Offerings`;
 
     const description =
       config?.subheadline ||
       config?.bio ||
-      `Explore playlists, 1:1 mentorship sessions, video showcases, and digital resources from ${org.name} on Taped.`;
+      `Explore playlists, interactive meetings, video showcases, and digital resources from ${org.name} on Taped.`;
 
     let imageUrl = "/taped-in-logo.webp";
     if (config?.avatarKey) {
@@ -87,7 +87,7 @@ export async function generateMetadata({
     console.error("[generateMetadata Offerings Error]:", err);
     return {
       title: "Offerings & Portfolio | Taped",
-      description: "Explore creator offerings, playlists, and 1:1 sessions on Taped.",
+      description: "Explore creator offerings, playlists, and meetings on Taped.",
     };
   }
 }

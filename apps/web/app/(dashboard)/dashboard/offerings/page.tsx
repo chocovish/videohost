@@ -35,6 +35,7 @@ import {
   FileText,
   SlidersHorizontal,
   Crop,
+  ExternalLink,
 } from "lucide-react";
 import {
   OfferingsConfigData,
@@ -95,6 +96,8 @@ export default function OfferingsDashboardPage() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistItemSummary[]>([]);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
+  const [meetings, setMeetings] = useState<any[]>([]);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string>("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -214,6 +217,59 @@ export default function OfferingsDashboardPage() {
     }
   };
 
+  const handleSelectMeeting = (meeting: any) => {
+    setSelectedMeetingId(meeting.id);
+    setItemFormTitle(meeting.title);
+    const formattedDate = meeting.scheduledStart
+      ? new Date(meeting.scheduledStart).toLocaleDateString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "";
+    setItemFormSubtitle(formattedDate ? `Scheduled: ${formattedDate}` : "");
+    setItemFormDescription(meeting.description || "");
+    setItemFormCoverData(null);
+    setItemFormRemoveCover(false);
+    setItemFormCtaUrl(`/share/${meeting.id}`);
+    setItemFormCtaAction("EXTERNAL_LINK");
+
+    if (meeting.scheduledStart && meeting.scheduledEnd) {
+      const diffMins = Math.round(
+        (new Date(meeting.scheduledEnd).getTime() - new Date(meeting.scheduledStart).getTime()) / 60000
+      );
+      if (diffMins > 0) {
+        setItemFormDuration(`${diffMins} mins`);
+      } else {
+        setItemFormDuration("45 mins");
+      }
+    } else {
+      setItemFormDuration("45 mins");
+    }
+
+    setItemFormDelivery(
+      meeting.scheduledStart
+        ? `Live Meeting • ${new Date(meeting.scheduledStart).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+        : "Live Video Meeting"
+    );
+
+    if (meeting.shareAccessMode === "PURCHASABLE") {
+      setItemFormPrice(formatCurrencyPrice(meeting.price, meeting.currency || "USD"));
+      setItemFormPricePeriod("per session");
+      setItemFormCtaText("Book Seat");
+    } else if (meeting.shareAccessMode === "RESTRICTED") {
+      setItemFormPrice("Restricted");
+      setItemFormPricePeriod("");
+      setItemFormCtaText("Join / Request Access");
+    } else {
+      setItemFormPrice("Free");
+      setItemFormPricePeriod("");
+      setItemFormCtaText("Join Meeting");
+    }
+  };
+
   const handleVideoSelected = (video: SelectedVideoPayload) => {
     if (videoPickerTarget === "itemForm") {
       const isCustomUrl = video.id.startsWith("custom_");
@@ -251,7 +307,7 @@ export default function OfferingsDashboardPage() {
         ...prev,
         secondaryCtaUrl: video.embedUrl,
         secondaryCtaAction: "FEATURED_VIDEO",
-        secondaryCtaText: (!prev.secondaryCtaText || prev.secondaryCtaText === "Book 1:1 Session" || prev.secondaryCtaText === "Book 1:1 Call") ? "Watch Showcase" : prev.secondaryCtaText,
+        secondaryCtaText: (!prev.secondaryCtaText || prev.secondaryCtaText === "Book 1:1 Session" || prev.secondaryCtaText === "Book 1:1 Call") ? "Explore Meetings" : prev.secondaryCtaText,
       }));
     } else if (videoPickerTarget === "featuredVideo") {
       setConfig((prev) => ({
@@ -274,11 +330,12 @@ export default function OfferingsDashboardPage() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [cfgRes, itemsRes, inqRes, playlistsRes] = await Promise.all([
+      const [cfgRes, itemsRes, inqRes, playlistsRes, meetingsRes] = await Promise.all([
         fetch("/api/organization/offerings-config"),
         fetch("/api/organization/offerings/items"),
         fetch("/api/organization/offerings/inquiries"),
         fetch("/api/playlists"),
+        fetch("/api/meetings"),
       ]);
 
       if (cfgRes.ok) {
@@ -309,6 +366,13 @@ export default function OfferingsDashboardPage() {
         const plData = await playlistsRes.json();
         if (plData.playlists) {
           setPlaylists(plData.playlists);
+        }
+      }
+
+      if (meetingsRes.ok) {
+        const mData = await meetingsRes.json();
+        if (mData.meetings) {
+          setMeetings(mData.meetings);
         }
       }
     } catch (err) {
@@ -448,7 +512,8 @@ export default function OfferingsDashboardPage() {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
       } else {
-        alert("Failed to save customization. Please try again.");
+        const errData = await res.json();
+        alert(errData.error || "Failed to save customization. Please try again.");
       }
     } catch (e) {
       console.error("Save config error:", e);
@@ -462,16 +527,13 @@ export default function OfferingsDashboardPage() {
   const handleExecuteReset = async () => {
     try {
       setSaving(true);
-      const res = await fetch("/api/organization/offerings-config", {
-        method: "DELETE",
+      const res = await fetch("/api/organization/offerings-config/reset", {
+        method: "POST",
       });
       if (res.ok) {
         const data = await res.json();
         if (data.config) {
-          setConfig((prev) => ({
-            ...prev,
-            ...data.config,
-          }));
+          setConfig(data.config);
         }
         setNewAvatarData(null);
         setNewBannerData(null);
@@ -520,12 +582,12 @@ export default function OfferingsDashboardPage() {
       setItemFormPrice(item.price || "");
       setItemFormPricePeriod(item.pricePeriod || "");
       setItemFormBadge(item.badge || "");
-      setItemFormCtaText(item.ctaText || (type === "VIDEO" ? "Watch Video" : type === "PLAYLIST" ? "Explore Playlist" : "Learn More"));
+      setItemFormCtaText(item.ctaText || (type === "VIDEO" ? "Watch Video" : type === "PLAYLIST" ? "Explore Playlist" : type === "MEETING" ? "Join Meeting" : "Learn More"));
       setItemFormCtaAction(item.ctaAction || (type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"));
       setItemFormCtaUrl(item.ctaUrl || "");
       setItemFormHighlights((item.highlights || []).join("\n"));
       setItemFormDuration(item.meetingDuration || "");
-      setItemFormDelivery(item.deliveryFormat || (type === "VIDEO" ? "Self-paced HD Video" : type === "PLAYLIST" ? "Self-paced Series" : ""));
+      setItemFormDelivery(item.deliveryFormat || (type === "VIDEO" ? "Self-paced HD Video" : type === "PLAYLIST" ? "Self-paced Series" : type === "MEETING" ? "Live Video Meeting" : ""));
       setItemFormIsFeatured(item.isFeatured || false);
       setItemFormIsPublished(item.isPublished !== false);
       setItemFormCoverData(item.coverImageUrl || null);
@@ -539,8 +601,20 @@ export default function OfferingsDashboardPage() {
         } else {
           setSelectedPlaylistId("");
         }
+        setSelectedMeetingId("");
+      } else if (type === "MEETING") {
+        const matched = meetings.find(
+          (m) => (item.ctaUrl && item.ctaUrl.includes(m.id)) || m.title.toLowerCase() === item.title.toLowerCase()
+        );
+        if (matched) {
+          setSelectedMeetingId(matched.id);
+        } else {
+          setSelectedMeetingId("");
+        }
+        setSelectedPlaylistId("");
       } else {
         setSelectedPlaylistId("");
+        setSelectedMeetingId("");
       }
     } else {
       setEditingItem(null);
@@ -555,6 +629,7 @@ export default function OfferingsDashboardPage() {
       setItemFormDuration("");
       setItemFormIsFeatured(false);
       setItemFormIsPublished(true);
+      setSelectedMeetingId("");
 
       if (playlists.length > 0) {
         const firstPl = playlists[0];
@@ -580,6 +655,7 @@ export default function OfferingsDashboardPage() {
 
     const isPlaylist = itemFormType === "PLAYLIST" || itemFormType === "COURSE";
     const isVideo = itemFormType === "VIDEO";
+    const isMeeting = itemFormType === "MEETING";
 
     if (isPlaylist) {
       if (!itemFormTitle.trim()) {
@@ -593,6 +669,11 @@ export default function OfferingsDashboardPage() {
       }
       if (!itemFormTitle.trim()) {
         alert("Offering title is required.");
+        return;
+      }
+    } else if (isMeeting) {
+      if (!itemFormTitle.trim()) {
+        alert("Please select or specify a scheduled meeting for this offering.");
         return;
       }
     } else {
@@ -740,7 +821,7 @@ export default function OfferingsDashboardPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Offerings & Landing Hub</h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-            Showcase what your organization provides—playlists, 1:1 mentorship calls, video assets, and digital products—on your custom public link.
+            Showcase what your organization provides—playlists, scheduled meetings, video assets, and digital products—on your custom public link.
           </p>
 
           {/* Public Link Bar */}
@@ -755,103 +836,97 @@ export default function OfferingsDashboardPage() {
             >
               {copiedLink ? <Check className="w-4 h-4 text-lime-400" /> : <Copy className="w-4 h-4" />}
             </button>
-            <a
-              href={`/offerings/${config.orgSlug}`}
+            <Link
+              href={`/offerings/${config.orgSlug || ""}`}
               target="_blank"
-              rel="noopener noreferrer"
-              className="p-1.5 rounded-lg bg-lime-500 hover:bg-lime-400 text-black font-bold text-xs flex items-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
             >
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">Open Live Page</span>
-            </a>
+              <span>View Public Page</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
 
-        {/* Quick Stats Widget */}
-        <div className="grid grid-cols-3 gap-2 bg-black/40 p-3.5 rounded-xl border border-slate-700/80 shrink-0 text-center">
-          <div className="px-2">
-            <div className="text-lg font-black text-lime-400">{items.length}</div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Offerings</div>
-          </div>
-          <div className="px-2 border-x border-slate-700">
-            <div className="text-lg font-black text-sky-400">{inquiries.length}</div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Inquiries</div>
-          </div>
-          <div className="px-2">
-            <div className="text-lg font-black text-indigo-400">
-              {items.filter((i) => i.isPublished).length}
-            </div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Active</div>
-          </div>
+        {/* Global Save Button & Status */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+          <Button
+            onClick={() => handleOpenItemModal()}
+            className="text-xs font-bold gap-1.5 bg-lime-500 hover:bg-lime-400 text-slate-950 shadow-md cursor-pointer rounded-xl h-10 px-4"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Offering</span>
+          </Button>
+
+          <Button
+            onClick={handleSaveConfig}
+            disabled={saving}
+            className="text-xs font-bold gap-1.5 bg-primary text-white shadow-md cursor-pointer rounded-xl h-10 px-5"
+          >
+            {saving ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Saving...</span>
+              </span>
+            ) : saveSuccess ? (
+              <span className="flex items-center gap-1.5 text-lime-400">
+                <Check className="w-4 h-4" />
+                <span>Saved!</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <Save className="w-3.5 h-3.5" />
+                <span>Save Customizer</span>
+              </span>
+            )}
+          </Button>
         </div>
       </div>
 
-      {/* Main Workspace Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-          <TabsList className="bg-muted p-1 rounded-xl">
-            <TabsTrigger value="catalog" className="rounded-lg text-xs font-bold gap-1.5 cursor-pointer">
+      {/* Main Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
+          <TabsList className="bg-muted p-1 rounded-2xl">
+            <TabsTrigger value="catalog" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
               <Package className="w-3.5 h-3.5" />
-              <span>Offerings Catalog ({items.length})</span>
+              <span>Offerings Catalog</span>
+              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-primary/20 text-primary">
+                {items.length}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="customizer" className="rounded-lg text-xs font-bold gap-1.5 cursor-pointer">
+            <TabsTrigger value="customizer" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
               <Palette className="w-3.5 h-3.5" />
-              <span>Live Page Customizer</span>
+              <span>Theme & Layout Customizer</span>
             </TabsTrigger>
-            <TabsTrigger value="inquiries" className="rounded-lg text-xs font-bold gap-1.5 cursor-pointer">
+            <TabsTrigger value="inquiries" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Inquiries & Leads ({inquiries.length})</span>
+              <span>Inquiries & Leads</span>
+              {inquiries.filter((i) => i.status === "PENDING").length > 0 && (
+                <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-black animate-pulse">
+                  {inquiries.filter((i) => i.status === "PENDING").length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
-            {activeTab === "catalog" && (
-              <>
-                {items.length === 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={seeding}
-                    onClick={handleSeedDefaults}
-                    className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
-                  >
-                    {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-lime-500" />}
-                    <span>Seed Sample Offerings</span>
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => handleOpenItemModal()}
-                  className="text-xs font-bold gap-1.5 bg-primary text-white shadow-md cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add New Offering</span>
-                </Button>
-              </>
-            )}
-
-            {activeTab === "customizer" && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setResetConfirmOpen(true)}
-                  className="text-xs font-semibold gap-1 text-slate-500 hover:text-red-500 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Defaults</span>
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={saving}
-                  onClick={handleSaveConfig}
-                  className="text-xs font-bold gap-1.5 bg-lime-600 hover:bg-lime-500 text-white shadow-md cursor-pointer"
-                >
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                  <span>{saving ? "Saving..." : saveSuccess ? "Saved!" : "Save Customization"}</span>
-                </Button>
-              </div>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={seeding}
+              onClick={handleSeedDefaults}
+              className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
+            >
+              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-lime-500" />}
+              <span>Seed Sample Offerings</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleOpenItemModal()}
+              className="text-xs font-bold gap-1.5 bg-primary text-white shadow-md cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Offering</span>
+            </Button>
           </div>
         </div>
 
@@ -863,7 +938,7 @@ export default function OfferingsDashboardPage() {
               <div className="space-y-1">
                 <h3 className="text-lg font-bold">No offerings added yet</h3>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  Start listing what you provide—playlists, 1:1 sessions, video masterclasses, or resources—or seed sample offerings in 1 click.
+                  Start listing what you provide—playlists, live scheduled meetings, video masterclasses, or resources—or seed sample offerings in 1 click.
                 </p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
@@ -1454,7 +1529,7 @@ export default function OfferingsDashboardPage() {
                     <label className="text-[11px] font-semibold text-muted-foreground">Button Text</label>
                     <input
                       type="text"
-                      placeholder="e.g. Book 1:1 Session"
+                      placeholder="e.g. Explore Meetings"
                       value={config.secondaryCtaText || ""}
                       onChange={(e) => setConfig((prev) => ({ ...prev, secondaryCtaText: e.target.value }))}
                       className="w-full px-3 py-1.5 rounded-xl text-xs border bg-background"
@@ -2029,7 +2104,7 @@ export default function OfferingsDashboardPage() {
                         </div>
                         <input
                           type="text"
-                          placeholder="e.g. How do 1:1 sessions work?"
+                          placeholder="e.g. How do live scheduled meetings work?"
                           value={faq.question}
                           onChange={(e) => {
                             const newFaqs = [...(config.faqs || [])];
@@ -2061,7 +2136,7 @@ export default function OfferingsDashboardPage() {
                 <div className="space-y-2">
                   {[
                     { key: "showPlaylists", altKey: "showCourses", label: "Show Playlists & Series" },
-                    { key: "showMeetings", label: "Show 1:1 Mentorship Calls" },
+                    { key: "showMeetings", label: "Show Live Meetings" },
                     { key: "showVideos", label: "Show Video Showcases" },
                     { key: "showProducts", label: "Show Digital Products" },
                     { key: "showTestimonials", label: "Show Testimonials & Reviews" },
@@ -2170,7 +2245,7 @@ export default function OfferingsDashboardPage() {
               <div className="space-y-1">
                 <h3 className="text-lg font-bold">No inquiries received yet</h3>
                 <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                  When potential clients or students fill out your 1:1 booking form or message you, their inquiries will appear here.
+                  When potential clients or students message you or request consultations, their inquiries will appear here.
                 </p>
               </div>
             </div>
@@ -2262,7 +2337,7 @@ export default function OfferingsDashboardPage() {
             <DialogDescription className="text-xs text-muted-foreground">
               {editingItem
                 ? "Update your offering details, pricing, media, and action buttons."
-                : "List what you provide—playlist, 1:1 call, video asset, or digital resource."}
+                : "List what you provide—playlists, scheduled meetings, video assets, or digital resources."}
             </DialogDescription>
           </DialogHeader>
 
@@ -2291,7 +2366,7 @@ export default function OfferingsDashboardPage() {
                     setItemFormType(nextType);
                     if (nextType === "PLAYLIST") {
                       setItemFormCtaAction("INQUIRY_MODAL");
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
                         setItemFormCtaText("Explore Playlist");
                       }
                       const curPl = playlists.find((p) => p.id === selectedPlaylistId) || playlists[0];
@@ -2300,7 +2375,7 @@ export default function OfferingsDashboardPage() {
                       }
                     } else if (nextType === "VIDEO") {
                       setItemFormCtaAction("FEATURED_VIDEO");
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Enroll Now" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Book 1:1 Call") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Enroll Now" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Join Meeting") {
                         setItemFormCtaText("Watch Video");
                       }
                       setItemFormDelivery("Self-paced HD Video");
@@ -2309,24 +2384,26 @@ export default function OfferingsDashboardPage() {
                         setVideoPickerOpen(true);
                       }
                     } else if (nextType === "MEETING") {
+                      setItemFormCtaAction("EXTERNAL_LINK");
                       if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Watch Video") {
-                        setItemFormCtaText("Book 1:1 Call");
+                        setItemFormCtaText("Join Meeting");
                       }
-                      if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Series")) {
-                        setItemFormDelivery("Live 1:1 Video Session");
-                      }
-                      if (!itemFormDuration) {
+                      const curM = meetings.find((m) => m.id === selectedMeetingId) || meetings[0];
+                      if (curM) {
+                        handleSelectMeeting(curM);
+                      } else {
+                        setItemFormDelivery("Live Video Meeting");
                         setItemFormDuration("45 mins");
                       }
                     } else if (nextType === "PRODUCT") {
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
                         setItemFormCtaText("Get Resource");
                       }
                       if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
                         setItemFormDelivery("Instant Digital Download");
                       }
                     } else if (nextType === "SERVICE") {
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book 1:1 Call") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
                         setItemFormCtaText("Request Proposal");
                       }
                       if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
@@ -2348,7 +2425,7 @@ export default function OfferingsDashboardPage() {
                     <SelectItem value="MEETING">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-sky-500 shrink-0" />
-                        <span className="font-semibold">1:1 Mentorship</span>
+                        <span className="font-semibold">Meetings</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="VIDEO">
@@ -2611,9 +2688,133 @@ export default function OfferingsDashboardPage() {
             )}
 
             {/* ========================================================================= */}
-            {/* OFFERING DETAILS: Offering Settings (Shared for Playlist & Video) */}
+            {/* 3. MEETING OFFERING: Linked Scheduled Meeting Selection & Auto-Synced Info */}
             {/* ========================================================================= */}
-            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "VIDEO") && (
+            {itemFormType === "MEETING" && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                      <Calendar className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Selected Scheduled Meeting
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
+                    Auto-Synced
+                  </span>
+                </div>
+
+                {meetings.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed text-center space-y-2 bg-background">
+                    <Calendar className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
+                    <p className="text-xs font-bold">No scheduled meetings found in your account</p>
+                    <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                      Schedule a meeting first in the Meetings dashboard to list it as an offering.
+                    </p>
+                    <div className="pt-1">
+                      <Link
+                        href="/dashboard/meetings"
+                        target="_blank"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                      >
+                        <span>Go to Meetings Management &rarr;</span>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-1 min-w-0">
+                      <label className="text-xs font-bold text-foreground flex items-center justify-between">
+                        <span>Choose Scheduled Meeting *</span>
+                        <Link
+                          href="/dashboard/meetings"
+                          target="_blank"
+                          className="text-[10px] text-primary hover:underline font-semibold"
+                        >
+                          Manage Meetings
+                        </Link>
+                      </label>
+                      <Select
+                        value={selectedMeetingId || (meetings.find((m) => m.title === itemFormTitle)?.id || "")}
+                        onValueChange={(val) => {
+                          const matched = meetings.find((m) => m.id === val);
+                          if (matched) {
+                            handleSelectMeeting(matched);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
+                          <SelectValue placeholder="Select a Scheduled Meeting from your account..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {meetings.map((m) => (
+                            <SelectItem key={m.id} value={m.id} className="text-xs py-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Calendar className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                                <span className="font-bold truncate max-w-[280px] sm:max-w-md">{m.title}</span>
+                                {m.scheduledStart && (
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                    ({new Date(m.scheduledStart).toLocaleDateString(undefined, { month: "short", day: "numeric" })})
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Synced Meeting Information Box */}
+                    {itemFormTitle && (
+                      <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
+                        <div className="w-full sm:w-36 aspect-video bg-sky-500/10 border border-sky-500/20 rounded-lg overflow-hidden relative shrink-0 flex flex-col items-center justify-center text-sky-500 p-2">
+                          <Calendar className="w-7 h-7 mb-1" />
+                          <span className="text-[10px] font-bold text-center truncate w-full">
+                            {itemFormDuration || "Live Meeting"}
+                          </span>
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/80 text-white">
+                            Meeting
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-extrabold text-xs sm:text-sm text-foreground truncate max-w-full">
+                              {itemFormTitle}
+                            </span>
+                          </div>
+                          {itemFormSubtitle && (
+                            <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold truncate">
+                              {itemFormSubtitle}
+                            </p>
+                          )}
+                          {itemFormDescription && (
+                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                              {itemFormDescription}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                              Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              • Synced from meeting settings
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* OFFERING DETAILS: Offering Settings (Shared for Playlist, Video, & Meeting) */}
+            {/* ========================================================================= */}
+            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "VIDEO" || itemFormType === "MEETING") && (
               <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2">
                   <div className="flex items-center gap-2">
@@ -2629,19 +2830,19 @@ export default function OfferingsDashboardPage() {
                   </span>
                 </div>
 
-                {/* Optional Highlights (for Playlist) */}
-                {(itemFormType === "PLAYLIST" || itemFormType === "COURSE") && (
+                {/* Optional Highlights (for Playlist and Meeting) */}
+                {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "MEETING") && (
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span>Key Highlights & Syllabus (Optional)</span>
+                        <span>Key Highlights & Topics (Optional)</span>
                       </label>
                       <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
                     </div>
                     <textarea
                       rows={3}
-                      placeholder={"Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
+                      placeholder={itemFormType === "MEETING" ? "Live HD Video Conferencing\nQ&A and Architecture Review\nRecording Included" : "Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
                       value={itemFormHighlights}
                       onChange={(e) => setItemFormHighlights(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
@@ -2692,9 +2893,9 @@ export default function OfferingsDashboardPage() {
             )}
 
             {/* ========================================================================= */}
-            {/* 3. CUSTOM OFFERING DETAILS (For MEETING, PRODUCT, and SERVICE) */}
+            {/* 4. CUSTOM OFFERING DETAILS (For PRODUCT and SERVICE) */}
             {/* ========================================================================= */}
-            {itemFormType !== "PLAYLIST" && itemFormType !== "COURSE" && itemFormType !== "VIDEO" && (
+            {(itemFormType === "PRODUCT" || itemFormType === "SERVICE") && (
               <>
                 {/* Basic Info */}
                 <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
@@ -2721,7 +2922,7 @@ export default function OfferingsDashboardPage() {
                     <input
                       type="text"
                       required
-                      placeholder={itemFormType === "MEETING" ? "e.g. 1:1 Architecture & Career Mentorship Call" : "e.g. Production Streaming Starter Kit"}
+                      placeholder={itemFormType === "SERVICE" ? "e.g. Custom Streaming Architecture & SLA" : "e.g. Production Streaming Starter Kit"}
                       value={itemFormTitle}
                       onChange={(e) => setItemFormTitle(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl text-xs sm:text-sm border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
@@ -2733,7 +2934,7 @@ export default function OfferingsDashboardPage() {
                     <label className="text-xs font-bold text-foreground">Subtitle / Short Tagline</label>
                     <input
                       type="text"
-                      placeholder="e.g. Direct 45-minute live consultation & architecture review"
+                      placeholder="e.g. End-to-end consulting and custom cloud deployment"
                       value={itemFormSubtitle}
                       onChange={(e) => setItemFormSubtitle(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
@@ -2771,7 +2972,7 @@ export default function OfferingsDashboardPage() {
                       <label className="text-xs font-bold text-foreground">Price Period / Billing Unit</label>
                       <input
                         type="text"
-                        placeholder={itemFormType === "MEETING" ? "e.g. / 45 mins" : "e.g. one-time, / project"}
+                        placeholder="e.g. one-time, / project"
                         value={itemFormPricePeriod}
                         onChange={(e) => setItemFormPricePeriod(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
@@ -2779,31 +2980,18 @@ export default function OfferingsDashboardPage() {
                     </div>
                   </div>
 
-                  {/* Format & Duration */}
-                  <div className={`grid grid-cols-1 ${itemFormType === "MEETING" ? "sm:grid-cols-2" : "sm:grid-cols-1"} gap-3 min-w-0`}>
+                  {/* Format & Delivery */}
+                  <div className="grid grid-cols-1 gap-3 min-w-0">
                     <div className="space-y-1 min-w-0">
                       <label className="text-xs font-bold text-foreground">Delivery Format</label>
                       <input
                         type="text"
-                        placeholder="e.g. Live 1:1 Video Meeting, Instant Download"
+                        placeholder="e.g. Instant Digital Download, Custom Project Delivery"
                         value={itemFormDelivery}
                         onChange={(e) => setItemFormDelivery(e.target.value)}
                         className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
                       />
                     </div>
-
-                    {itemFormType === "MEETING" && (
-                      <div className="space-y-1 min-w-0">
-                        <label className="text-xs font-bold text-foreground">Meeting Duration</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. 45 mins, 60 mins"
-                          value={itemFormDuration}
-                          onChange={(e) => setItemFormDuration(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -2828,7 +3016,7 @@ export default function OfferingsDashboardPage() {
                     <div className="flex flex-wrap items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <label className="text-xs font-bold text-foreground">Card Cover Image {itemFormType === "MEETING" ? "(Optional)" : ""}</label>
+                        <label className="text-xs font-bold text-foreground">Card Cover Image</label>
                         <span className="text-[10px] text-lime-600 dark:text-lime-400 font-mono font-semibold">16:9 (1280×720px)</span>
                       </div>
                       {itemFormCoverData && (
@@ -2912,7 +3100,7 @@ export default function OfferingsDashboardPage() {
                     </div>
                     <textarea
                       rows={3}
-                      placeholder={itemFormType === "MEETING" ? "45-Minute Live Video Session\nRecording Included\nFollow-up QA Email Support" : "Instant GitHub & ZIP Download\nCommercial License Included"}
+                      placeholder="Instant GitHub & ZIP Download\nCommercial License Included"
                       value={itemFormHighlights}
                       onChange={(e) => setItemFormHighlights(e.target.value)}
                       className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
@@ -2931,7 +3119,7 @@ export default function OfferingsDashboardPage() {
                         <label className="text-[11px] font-semibold text-muted-foreground">Button Label</label>
                         <input
                           type="text"
-                          placeholder={itemFormType === "MEETING" ? "e.g. Book 1:1 Session" : "e.g. Get Resource"}
+                          placeholder="e.g. Get Resource"
                           value={itemFormCtaText}
                           onChange={(e) => setItemFormCtaText(e.target.value)}
                           className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:ring-1 focus:ring-primary focus:outline-none min-w-0"

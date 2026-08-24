@@ -38,15 +38,15 @@ export const DEFAULT_OFFERINGS_CONFIG: OfferingsConfigData = {
   backgroundStyle: "mesh-gradient",
   cardRoundness: "2xl",
   headline: "Master Your Craft & Scale Your Knowledge",
-  subheadline: "Playlists, direct 1:1 mentorship, video masterclasses & consulting sessions.",
-  bio: "Full-stack creator & engineer sharing production-grade workflows, system design playlists, and 1-on-1 strategy sessions.",
+  subheadline: "Playlists, live interactive meetings, video masterclasses & consulting sessions.",
+  bio: "Full-stack creator & engineer sharing production-grade workflows, system design playlists, and scheduled interactive meetings.",
   showAvatar: true,
   avatarUrl: null,
   bannerUrl: null,
   ctaText: "Explore Offerings",
   ctaAction: "SCROLL_OFFERINGS",
   ctaUrl: "#offerings",
-  secondaryCtaText: "Book 1:1 Session",
+  secondaryCtaText: "Explore Meetings",
   secondaryCtaAction: "INQUIRY_MODAL",
   secondaryCtaUrl: "#meetings",
   socialLinks: {
@@ -62,7 +62,7 @@ export const DEFAULT_OFFERINGS_CONFIG: OfferingsConfigData = {
   stats: [
     { label: "Active Students", value: "12,500+" },
     { label: "Average Rating", value: "4.9 ★" },
-    { label: "1:1 Sessions", value: "500+" },
+    { label: "Live Meetings", value: "500+" },
     { label: "Video Lessons", value: "140+" },
   ],
   sectionsConfig: {
@@ -90,7 +90,7 @@ export const DEFAULT_OFFERINGS_CONFIG: OfferingsConfigData = {
       role: "Founder & Tech Lead",
       company: "Vance Media",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-      quote: "The 1:1 mentorship session answered in 45 minutes what our team had been struggling with for three weeks. Invaluable real-world feedback.",
+      quote: "The live meeting session answered in 45 minutes what our team had been struggling with for three weeks. Invaluable real-world feedback.",
       rating: 5,
     },
     {
@@ -104,8 +104,8 @@ export const DEFAULT_OFFERINGS_CONFIG: OfferingsConfigData = {
   ],
   faqs: [
     {
-      question: "How do 1:1 mentorship sessions work?",
-      answer: "Sessions are conducted live via high-definition video. You'll receive a calendar invite with the meeting link immediately upon booking or inquiry confirmation.",
+      question: "How do live scheduled meetings work?",
+      answer: "Meetings are conducted live via high-definition video conferencing. You'll receive entry pass access and can join directly on Taped when the scheduled session starts.",
     },
     {
       question: "Are playlists self-paced or cohort-based?",

@@ -219,7 +219,111 @@ export async function resolveOfferingItem(
     }
   }
 
-  // 3. CUSTOM ITEMS (MEETING, PRODUCT, SERVICE, EXTERNAL URLS)
+  // 3. MEETING RESOLUTION (Dynamically pull from Meeting source)
+  else if (item.type === "MEETING") {
+    let meetingId = "";
+    if (item.ctaUrl) {
+      const m = item.ctaUrl.match(/\/(?:share|meet|meetings)\/([a-zA-Z0-9_-]+)/);
+      if (m && m[1]) meetingId = m[1];
+    }
+
+    let meeting = meetingId
+      ? await db.meeting.findUnique({
+          where: { id: meetingId },
+          include: {
+            invites: true,
+            recordedVideo: true,
+          },
+        })
+      : null;
+
+    if (!meeting && item.organizationId) {
+      meeting = await db.meeting.findFirst({
+        where: { organizationId: item.organizationId, title: item.title },
+        include: {
+          invites: true,
+          recordedVideo: true,
+        },
+      });
+    }
+
+    if (meeting) {
+      title = meeting.title;
+      description = meeting.description || "";
+      subtitle = meeting.scheduledStart
+        ? `Scheduled: ${new Date(meeting.scheduledStart).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}`
+        : null;
+      shareUrl = `/share/${meeting.id}`;
+      shareAccessMode = (meeting.shareAccessMode as any) || "PUBLIC";
+
+      if (meeting.scheduledStart) {
+        const start = new Date(meeting.scheduledStart);
+        deliveryFormat = `Live Meeting • ${start.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+      } else {
+        deliveryFormat = "Interactive Live Meeting";
+      }
+
+      if (meeting.recordedVideo?.thumbnailKey) {
+        try {
+          coverImageUrl = await getPresignedPlaybackUrl(meeting.recordedVideo.thumbnailKey);
+        } catch (e) {}
+      } else if (item.coverImageKey) {
+        try {
+          coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
+        } catch (e) {}
+      }
+
+      // Resolve Access & Price with accurate Currency formatting
+      if (meeting.shareAccessMode === "PURCHASABLE") {
+        price = formatCurrencyPrice(meeting.price, meeting.currency || "USD");
+        pricePeriod = "per session";
+
+        if (isOrgMember || (visitorUserId && meeting.createdById === visitorUserId)) {
+          userAccessState = "PURCHASED";
+        } else if (visitorEmail && meeting.invites?.some((inv) => inv.email.toLowerCase() === visitorEmail)) {
+          userAccessState = "GRANTED";
+        } else if (visitorUserId) {
+          const purchase = await db.contentPurchase.findFirst({
+            where: {
+              userId: visitorUserId,
+              meetingId: meeting.id,
+              status: "COMPLETED",
+            },
+          });
+          userAccessState = purchase ? "PURCHASED" : "UNPURCHASED";
+        } else {
+          userAccessState = "UNPURCHASED";
+        }
+      } else if (meeting.shareAccessMode === "RESTRICTED") {
+        price = "Restricted";
+        pricePeriod = "";
+
+        if (isOrgMember || (visitorUserId && meeting.createdById === visitorUserId)) {
+          userAccessState = "GRANTED";
+        } else if (visitorEmail && meeting.invites?.some((inv) => inv.email.toLowerCase() === visitorEmail)) {
+          userAccessState = "GRANTED";
+        } else {
+          userAccessState = "RESTRICTED";
+        }
+      } else {
+        price = "Free";
+        pricePeriod = "";
+        userAccessState = "PUBLIC";
+      }
+    } else if (item.coverImageKey) {
+      try {
+        coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
+      } catch (e) {}
+    }
+  }
+
+  // 4. CUSTOM ITEMS (PRODUCT, SERVICE, EXTERNAL URLS)
   else {
     if (item.coverImageKey) {
       try {

@@ -607,9 +607,13 @@ export default function OfferingsLandingClient({
       return;
     }
 
-    if (act === "EXTERNAL_LINK" || (url && url.startsWith("http"))) {
+    if (act === "EXTERNAL_LINK" || (url && (url.startsWith("http") || url.startsWith("/")))) {
       if (url) {
-        window.open(url, "_blank", "noopener,noreferrer");
+        if (url.startsWith("/")) {
+          window.location.href = url;
+        } else {
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
       } else {
         handleOpenInquiry(itemContext || null);
       }
@@ -623,7 +627,11 @@ export default function OfferingsLandingClient({
         target.scrollIntoView({ behavior: "smooth" });
       }
     } else if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+      if (url.startsWith("/")) {
+        window.location.href = url;
+      } else {
+        window.open(url, "_blank", "noopener,noreferrer");
+      }
     } else {
       handleOpenInquiry(itemContext || null);
     }
@@ -699,7 +707,7 @@ export default function OfferingsLandingClient({
       case "COURSE":
         return "Playlist / Series";
       case "MEETING":
-        return "1:1 Mentorship Call";
+        return "Meeting";
       case "VIDEO":
         return "Featured Video";
       case "PRODUCT":
@@ -1012,10 +1020,8 @@ export default function OfferingsLandingClient({
                     color: theme.text,
                   }}
                 >
-                  <span style={{ color: accentColor }}>
-                    {renderCtaIcon(config.secondaryCtaAction || "INQUIRY_MODAL", <Calendar className="w-4 h-4" />)}
-                  </span>
-                  <span>{config.secondaryCtaText || "Book 1:1 Session"}</span>
+                  <span>{config.secondaryCtaText || "Explore Meetings"}</span>
+                  {renderCtaIcon(config.secondaryCtaAction || "INQUIRY_MODAL", <Calendar className="w-4 h-4" />)}
                 </button>
               </div>
 
@@ -1101,7 +1107,7 @@ export default function OfferingsLandingClient({
                 </div>
                 <h3 className="text-xl sm:text-3xl font-extrabold tracking-tight">Available Offerings</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
-                  Filter by playlists, mentorship calls, video assets, and digital resources.
+                  Filter by playlists, meetings, video assets, and digital resources.
                 </p>
               </div>
 
@@ -1140,7 +1146,7 @@ export default function OfferingsLandingClient({
                   ? [{ id: "PLAYLIST", label: "Playlists", count: categoryCounts.PLAYLIST }]
                   : []),
                 ...(sections.showMeetings !== false
-                  ? [{ id: "MEETING", label: "1:1 Meetings", count: categoryCounts.MEETING }]
+                  ? [{ id: "MEETING", label: "Meetings", count: categoryCounts.MEETING }]
                   : []),
                 ...(sections.showVideos !== false
                   ? [{ id: "VIDEO", label: "Showcases", count: categoryCounts.VIDEO }]
@@ -1299,8 +1305,8 @@ export default function OfferingsLandingClient({
 
                       {/* Card Footer: Price & Action */}
                       <div className="pt-3.5 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3" style={{ borderColor: theme.cardBorder }}>
-                        {/* 1. PLAYLIST OR VIDEO ITEM (Dynamic Access State) */}
-                        {(item.type === "PLAYLIST" || item.type === "COURSE" || (item.type === "VIDEO" && !item.ctaUrl?.startsWith("http"))) ? (
+                        {/* 1. DYNAMIC CATALOG ITEM (PLAYLIST, MEETING, OR HOSTED VIDEO) */}
+                        {(item.type === "PLAYLIST" || item.type === "COURSE" || item.type === "MEETING" || (item.type === "VIDEO" && !item.ctaUrl?.startsWith("http"))) ? (
                           <>
                             {/* Price / Status Column */}
                             <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
@@ -1310,7 +1316,7 @@ export default function OfferingsLandingClient({
                                   <div className="flex items-center gap-1.5 pt-0.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                                       <CheckCircle2 className="w-3.5 h-3.5" />
-                                      <span>Purchased</span>
+                                      <span>{item.type === "MEETING" ? "Seat Booked" : "Purchased"}</span>
                                     </span>
                                   </div>
                                 </>
@@ -1320,7 +1326,7 @@ export default function OfferingsLandingClient({
                                   <div className="flex items-center gap-1.5 pt-0.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                                       <ShieldCheck className="w-3.5 h-3.5" />
-                                      <span>Access Granted</span>
+                                      <span>{item.type === "MEETING" ? "Invite Granted" : "Access Granted"}</span>
                                     </span>
                                   </div>
                                 </>
@@ -1336,19 +1342,23 @@ export default function OfferingsLandingClient({
                                 </>
                               ) : item.shareAccessMode === "PURCHASABLE" ? (
                                 <>
-                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Price</div>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
+                                    {item.type === "MEETING" ? "Session Fee" : "Price"}
+                                  </div>
                                   <div className="flex items-baseline gap-1">
                                     <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
                                       {item.price || "Free"}
                                     </span>
                                     <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                      {item.pricePeriod || "one-time"}
+                                      {item.pricePeriod || (item.type === "MEETING" ? "per seat" : "one-time")}
                                     </span>
                                   </div>
                                 </>
                               ) : (
                                 <>
-                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>Price</div>
+                                  <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
+                                    {item.type === "MEETING" ? "Session Fee" : "Price"}
+                                  </div>
                                   <div className="flex items-baseline gap-1">
                                     <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
                                       Free
@@ -1371,34 +1381,55 @@ export default function OfferingsLandingClient({
                               style={{ backgroundColor: accentColor }}
                             >
                               {item.userAccessState === "PURCHASED" || item.userAccessState === "GRANTED" ? (
-                                <>
-                                  <Play className="w-3.5 h-3.5 fill-current" />
-                                  <span>Watch</span>
-                                </>
+                                item.type === "MEETING" ? (
+                                  <>
+                                    <VideoIcon className="w-3.5 h-3.5" />
+                                    <span>Join Meeting</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    <span>Watch</span>
+                                  </>
+                                )
                               ) : item.shareAccessMode === "RESTRICTED" ? (
                                 <>
-                                  <span>View / Request Access</span>
+                                  <span>{item.type === "MEETING" ? "Join / Request Access" : "View / Request Access"}</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
                                 </>
                               ) : item.shareAccessMode === "PURCHASABLE" ? (
-                                <>
-                                  <span>{item.price === "Free" || item.price === "$0.00" ? "Buy for Free" : "Purchase"}</span>
-                                  <ArrowRight className="w-3.5 h-3.5" />
-                                </>
+                                item.type === "MEETING" ? (
+                                  <>
+                                    <span>{item.price === "Free" || item.price === "$0.00" ? "Book for Free" : "Book Seat"}</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>{item.price === "Free" || item.price === "$0.00" ? "Buy for Free" : "Purchase"}</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
+                                  </>
+                                )
                               ) : (
-                                <>
-                                  <Play className="w-3.5 h-3.5 fill-current" />
-                                  <span>Watch</span>
-                                </>
+                                item.type === "MEETING" ? (
+                                  <>
+                                    <VideoIcon className="w-3.5 h-3.5" />
+                                    <span>Join Meeting</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-3.5 h-3.5 fill-current" />
+                                    <span>Watch</span>
+                                  </>
+                                )
                               )}
                             </Button>
                           </>
                         ) : (
-                          /* 2. CUSTOM OFFERING ITEMS (MEETING, PRODUCT, SERVICE, EXTERNAL VIDEO) */
+                          /* 2. CUSTOM OFFERING ITEMS (PRODUCT, SERVICE, EXTERNAL VIDEO) */
                           <>
                             <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
                               <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                {item.type === "MEETING" ? "Session Fee" : item.pricePeriod ? "Investment" : "Price"}
+                                {item.pricePeriod ? "Investment" : "Price"}
                               </div>
                               <div className="flex items-baseline gap-1">
                                 <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
@@ -1515,7 +1546,7 @@ export default function OfferingsLandingClient({
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Frequently Asked Questions</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
-                  Everything you need to know about enrollments, 1:1 mentorship calls, and assets.
+                  Everything you need to know about enrollments, meetings, and assets.
                 </p>
               </div>
 
@@ -1735,12 +1766,12 @@ export default function OfferingsLandingClient({
             className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white text-center shadow-lg transition-transform active:scale-95"
             style={{ backgroundColor: accentColor }}
           >
-            {config.secondaryCtaText || "Book 1:1 Call"}
+            {config.secondaryCtaText || "Explore Meetings"}
           </button>
         </div>
       </div>
 
-      {/* Inquiry / 1:1 Booking Modal Dialog */}
+      {/* Inquiry / Booking Modal Dialog */}
       <Dialog open={inquiryModalOpen} onOpenChange={setInquiryModalOpen}>
         <DialogContent
           className={`max-w-lg p-6 ${roundnessClass} border shadow-2xl`}
