@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   Dialog,
   DialogContent,
@@ -243,8 +244,8 @@ function MeetingCountdown({
         {[
           { label: "Days", val: timeLeft.days },
           { label: "Hours", val: timeLeft.hours },
-          { label: "Minutes", val: timeLeft.minutes },
-          { label: "Seconds", val: timeLeft.seconds },
+          { label: "Mins", val: timeLeft.minutes },
+          { label: "Secs", val: timeLeft.seconds },
         ].map((item, idx) => (
           <div key={idx} className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 shadow-xs">
             <p className="text-xl sm:text-2xl font-black font-mono text-white tracking-tight">
@@ -362,12 +363,12 @@ export default function SharedContentClient({
           return;
         }
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [data?.detectedCountryCode]);
 
   const getCalculatedPrice = (dataObj: SharedData | null, targetCountryCode: string) => {
-    if (!dataObj) return { amount: 0, currency: "USD", formatted: "$0.00" };
-    let finalAmount = dataObj.price || 0;
+    if (!dataObj) return { amount: 0, currency: "USD", formatted: "Free", isFree: true };
+    let finalAmount = dataObj.price !== null && dataObj.price !== undefined ? Number(dataObj.price) : 0;
     let finalCurrency = dataObj.currency || "USD";
 
     if (dataObj.countryPricing && Array.isArray(dataObj.countryPricing)) {
@@ -393,11 +394,13 @@ export default function SharedContentClient({
       BRL: "R$",
     };
 
+    const isFree = finalAmount <= 0;
     const sym = symbolMap[finalCurrency] || `${finalCurrency} `;
     return {
       amount: finalAmount,
       currency: finalCurrency,
-      formatted: `${sym}${finalAmount.toFixed(2)}`,
+      isFree,
+      formatted: isFree ? "Free" : `${sym}${finalAmount.toFixed(2)}`,
     };
   };
 
@@ -445,6 +448,55 @@ export default function SharedContentClient({
 
   const handleExecuteCheckout = async () => {
     if (!token) return;
+    const priceInfo = getCalculatedPrice(data, selectedBuyerCountry);
+
+    // If cost is 0, claim for free directly without invoking payment gateway
+    if (priceInfo.isFree) {
+      if (!data?.isLoggedIn) {
+        const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+        router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+        return;
+      }
+
+      setIsCheckingOut(true);
+      setCheckoutError("");
+      setCheckoutSuccess("");
+
+      try {
+        const res = await fetch("/api/content-purchases/free-claim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contentType: data?.type || "video",
+            contentId: token,
+            countryCode: selectedBuyerCountry,
+          }),
+        });
+
+        const resData = await res.json();
+        if (!res.ok) {
+          if (resData.error === "LOGIN_REQUIRED") {
+            const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
+            router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
+            return;
+          }
+          throw new Error(resData.message || resData.error || "Failed to claim free access.");
+        }
+
+        setCheckoutSuccess(resData.message || "Unlocked successfully! Loading content...");
+        setTimeout(async () => {
+          setIsCheckoutOpen(false);
+          setCheckoutSuccess("");
+          await fetchSharedContent();
+        }, 1000);
+      } catch (err: any) {
+        setCheckoutError(err?.message || "Failed to claim free access.");
+      } finally {
+        setIsCheckingOut(false);
+      }
+      return;
+    }
+
     setIsCheckingOut(true);
     setCheckoutError("");
     setCheckoutSuccess("");
@@ -1420,8 +1472,8 @@ export default function SharedContentClient({
                     {data.meeting.status === "ACTIVE"
                       ? "Live Meeting In Progress"
                       : data.meeting.status === "COMPLETED"
-                      ? "Meeting Concluded"
-                      : "Live Scheduled Conference"}
+                        ? "Meeting Concluded"
+                        : "Live Scheduled Conference"}
                   </span>
                 </div>
 
@@ -1451,9 +1503,9 @@ export default function SharedContentClient({
                   </h1>
 
                   {data.meeting.description && (
-                    <p className="text-base text-slate-300 leading-relaxed max-w-3xl whitespace-pre-wrap">
-                      {data.meeting.description}
-                    </p>
+                    <div className="text-base text-slate-300 leading-relaxed max-w-3xl">
+                      <RichTextViewer content={data.meeting.description} className="text-slate-300 [&_a]:text-primary" />
+                    </div>
                   )}
                 </div>
 
@@ -1570,16 +1622,34 @@ export default function SharedContentClient({
                           style={{ backgroundColor: accentHex }}
                         >
                           <LogIn className="w-4 h-4" />
-                          <span>Sign in to Purchase Pass &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                          <span>
+                            {getCalculatedPrice(data, selectedBuyerCountry).isFree
+                              ? "Sign in to Claim Free Pass"
+                              : `Sign in to Purchase Pass • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}
+                          </span>
                         </button>
                       ) : (
                         <button
-                          onClick={() => setIsCheckoutOpen(true)}
-                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                          onClick={handleExecuteCheckout}
+                          disabled={isCheckingOut}
+                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer"
                           style={{ backgroundColor: accentHex }}
                         >
-                          <Ticket className="w-4 h-4 stroke-[2.5]" />
-                          <span>Purchase Entry Pass &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                          {isCheckingOut ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" /> Unlocking Free Pass...
+                            </>
+                          ) : getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
+                            <>
+                              <Sparkles className="w-4 h-4 stroke-[2.5]" />
+                              <span>Buy for Free</span>
+                            </>
+                          ) : (
+                            <>
+                              <Ticket className="w-4 h-4 stroke-[2.5]" />
+                              <span>Purchase Entry Pass &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
@@ -1735,16 +1805,30 @@ export default function SharedContentClient({
                         style={{ backgroundColor: accentHex }}
                       >
                         <LogIn className="w-4 h-4" />
-                        <span>Sign in to Purchase</span>
+                        <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Sign in to Claim for Free" : "Sign in to Purchase"}</span>
                       </button>
                     ) : (
                       <button
-                        onClick={() => setIsCheckoutOpen(true)}
-                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                        onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
+                        disabled={isCheckingOut}
+                        className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: accentHex }}
                       >
-                        <DollarSign className="w-4 h-4 stroke-[3]" />
-                        <span>Buy Now &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                        {isCheckingOut ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" /> Claiming Free Access...
+                          </>
+                        ) : getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
+                          <>
+                            <Sparkles className="w-4 h-4 stroke-[2.5]" />
+                            <span>Buy for Free</span>
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="w-4 h-4 stroke-[3]" />
+                            <span>Buy Now &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                          </>
+                        )}
                       </button>
                     )}
                   </div>
@@ -1807,7 +1891,7 @@ export default function SharedContentClient({
               {data.video.description && (
                 <div className="space-y-1.5">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Description</h3>
-                  <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{data.video.description}</p>
+                  <RichTextViewer content={data.video.description} className="text-sm text-slate-300 leading-relaxed [&_a]:text-primary" />
                 </div>
               )}
 
@@ -2029,16 +2113,34 @@ export default function SharedContentClient({
                                     style={{ backgroundColor: accentHex }}
                                   >
                                     <LogIn className="w-4 h-4" />
-                                    <span>Sign in to Unlock Playlist</span>
+                                    <span>
+                                      {getCalculatedPrice(data, selectedBuyerCountry).isFree
+                                        ? "Sign in to Unlock Playlist for Free"
+                                        : "Sign in to Unlock Playlist"}
+                                    </span>
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={() => setIsCheckoutOpen(true)}
-                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                                    onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
+                                    disabled={isCheckingOut}
+                                    className="w-full sm:w-auto px-8 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                                     style={{ backgroundColor: accentHex }}
                                   >
-                                    <DollarSign className="w-4 h-4 stroke-[3]" />
-                                    <span>Unlock Full Playlist &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                                    {isCheckingOut ? (
+                                      <>
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Unlocking Playlist...
+                                      </>
+                                    ) : getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
+                                      <>
+                                        <Sparkles className="w-4 h-4 stroke-[2.5]" />
+                                        <span>Buy for Free</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <DollarSign className="w-4 h-4 stroke-[3]" />
+                                        <span>Unlock Full Playlist &bull; {getCalculatedPrice(data, selectedBuyerCountry).formatted}</span>
+                                      </>
+                                    )}
                                   </button>
                                 )}
                               </div>
@@ -2119,9 +2221,7 @@ export default function SharedContentClient({
                             <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                               About this video
                             </h3>
-                            <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                              {currentVideo.description}
-                            </p>
+                            <RichTextViewer content={currentVideo.description} className="text-sm text-slate-300 leading-relaxed [&_a]:text-primary" />
                           </div>
                         )}
 
@@ -2373,7 +2473,11 @@ export default function SharedContentClient({
                           {vid.title}
                         </h3>
                         {vid.description ? (
-                          <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">{vid.description}</p>
+                          <RichTextViewer
+                            content={vid.description}
+                            clamp={2}
+                            className="text-xs text-slate-400 line-clamp-2 leading-relaxed"
+                          />
                         ) : (
                           <p className="text-xs text-slate-400 italic">No description</p>
                         )}
@@ -2407,8 +2511,8 @@ export default function SharedContentClient({
                   {data?.type === "meeting"
                     ? "Purchase Meeting Entry Pass"
                     : data?.type === "playlist"
-                    ? "Unlock Playlist"
-                    : "Unlock Video"}
+                      ? "Unlock Playlist"
+                      : "Unlock Video"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">
                   {data?.type === "meeting"
@@ -2442,15 +2546,15 @@ export default function SharedContentClient({
                     {data?.type === "meeting"
                       ? "Live Meeting Pass"
                       : data?.type === "playlist"
-                      ? "Playlist Collection"
-                      : "Single Video"}
+                        ? "Playlist Collection"
+                        : "Single Video"}
                   </span>
                   <p className="font-bold text-sm text-slate-100 mt-1">
                     {data?.type === "meeting"
                       ? data?.meeting?.title
                       : data?.type === "playlist"
-                      ? data?.playlist?.title
-                      : data?.video?.title}
+                        ? data?.playlist?.title
+                        : data?.video?.title}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     Provided by {data?.organization?.name}
@@ -2483,11 +2587,25 @@ export default function SharedContentClient({
             {/* Payment Method Notice */}
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4" style={{ color: accentHex }} />
-                <span className="font-semibold text-slate-200">Encrypted Payment Gateway</span>
+                {getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
+                  <>
+                    <Sparkles className="w-4 h-4" style={{ color: accentHex }} />
+                    <span className="font-semibold text-slate-200">Instant Free Access &bull; No Card Required</span>
+                  </>
+                ) : (
+                  <>
+                    <Shield className="w-4 h-4" style={{ color: accentHex }} />
+                    <span className="font-semibold text-slate-200">Encrypted Payment Gateway</span>
+                  </>
+                )}
               </div>
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded">
-                Verified
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded border ${getCalculatedPrice(data, selectedBuyerCountry).isFree
+                    ? "text-lime-400 bg-lime-950/60 border-lime-800/40"
+                    : "text-emerald-400 bg-emerald-950/60 border-emerald-800/40"
+                  }`}
+              >
+                {getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Free Claim" : "Verified"}
               </span>
             </div>
           </div>
@@ -2510,7 +2628,12 @@ export default function SharedContentClient({
             >
               {isCheckingOut ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Processing Payment...
+                  <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                  {getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Claiming Access..." : "Processing Payment..."}
+                </>
+              ) : getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
+                <>
+                  <Sparkles className="w-4 h-4" /> Buy for Free
                 </>
               ) : (
                 <>

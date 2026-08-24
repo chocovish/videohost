@@ -17,6 +17,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
 
@@ -238,9 +239,11 @@ export default function SharedWithYouPage() {
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                        {item.description}
-                      </p>
+                      <RichTextViewer
+                        content={item.description}
+                        clamp={2}
+                        className="text-xs text-muted-foreground line-clamp-2 mt-1"
+                      />
                     )}
                   </div>
 

@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -125,9 +126,9 @@ export default function ScheduleMeetingModal({
         }
         setRecordOnStart(Boolean(meeting.recordOnStart));
         setShareAccessMode(
-          meeting.shareAccessMode || (meeting.price ? "PURCHASABLE" : "PUBLIC")
+          meeting.shareAccessMode || (meeting.price !== null && meeting.price !== undefined ? "PURCHASABLE" : "PUBLIC")
         );
-        setPrice(meeting.price ? String(meeting.price) : "19.99");
+        setPrice(meeting.price !== null && meeting.price !== undefined ? String(meeting.price) : "19.99");
         setCurrency(meeting.currency || "USD");
         setCountryPricing(
           Array.isArray(meeting.countryPricing) ? meeting.countryPricing : []
@@ -159,8 +160,8 @@ export default function ScheduleMeetingModal({
     const isPurchasable = shareAccessMode === "PURCHASABLE";
     if (isPurchasable) {
       const parsed = parseFloat(price);
-      if (isNaN(parsed) || parsed <= 0) {
-        setError("Please enter a valid entry pass price greater than 0");
+      if (isNaN(parsed) || parsed < 0) {
+        setError("Please enter a valid entry pass price greater than or equal to 0");
         return;
       }
     }
@@ -180,7 +181,7 @@ export default function ScheduleMeetingModal({
         recordOnStart,
         allowGuests: shareAccessMode === "PUBLIC",
         shareAccessMode,
-        price: isPurchasable ? parseFloat(price) : null,
+        price: isPurchasable && price !== "" && !isNaN(Number(price)) ? parseFloat(price) : null,
         currency: isPurchasable ? currency : "USD",
         countryPricing: isPurchasable ? countryPricing : [],
         inviteEmails: shareAccessMode === "RESTRICTED" ? inviteEmails : [],
@@ -318,14 +319,16 @@ export default function ScheduleMeetingModal({
                 </Label>
                 <span className="text-[11px] text-muted-foreground">Optional</span>
               </div>
-              <textarea
+              <RichTextEditor
                 id="schedule-agenda"
-                rows={2}
                 placeholder="Brief details or agenda items for attendees..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 disabled={isLoading}
-                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none min-h-[60px]"
+                minHeight="110px"
+                maxHeight="220px"
+                showWordCount={false}
+                showCharacterCount={false}
               />
             </div>
 

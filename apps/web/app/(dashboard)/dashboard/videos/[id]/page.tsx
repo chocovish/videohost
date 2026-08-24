@@ -28,6 +28,7 @@ import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 
 import { formatBytes } from "@/lib/video-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -430,8 +431,8 @@ export default function VideoDetailPage() {
                 </div>
 
                 {video.description ? (
-                  <div className="max-h-72 overflow-y-auto text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed pr-1">
-                    {video.description}
+                  <div className="max-h-72 overflow-y-auto text-sm text-foreground/90 pr-1">
+                    <RichTextViewer content={video.description} />
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">

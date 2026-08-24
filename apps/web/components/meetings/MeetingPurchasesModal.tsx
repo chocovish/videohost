@@ -197,7 +197,7 @@ export default function MeetingPurchasesModal({
               </div>
               <p className="text-[11px] text-muted-foreground">
                 {currentAccessMode === "PURCHASABLE"
-                  ? "Paid pass entry enabled"
+                  ? (Number(currentPrice) <= 0 ? "Free pass entry enabled" : "Paid pass entry enabled")
                   : "Free / restricted sharing"}
               </p>
             </div>

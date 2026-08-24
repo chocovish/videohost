@@ -343,7 +343,8 @@ export default function MeetPage() {
 
   // Render Entry Pass Required Barrier
   if (requiresPass && !isHost && !isOrgMember && !isInRoom) {
-    const formattedPrice = meeting?.price ? `${meeting.currency || "USD"} ${meeting.price}` : "Paid Pass";
+    const isFree = meeting?.price === null || meeting?.price === undefined || Number(meeting?.price) <= 0;
+    const formattedPrice = isFree ? "Free" : (meeting?.price ? `${meeting.currency || "USD"} ${meeting.price}` : "Paid Pass");
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-black">
         <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -359,7 +360,7 @@ export default function MeetPage() {
               {meeting?.title || "Live Conference Meeting"}
             </h2>
             <p className="text-sm text-slate-400 leading-relaxed">
-              This session requires a purchased entry pass. Please visit the share page to get your attendee pass.
+              This session requires a registered entry pass. Please visit the share page to claim your attendee pass.
             </p>
           </div>
 
@@ -381,7 +382,7 @@ export default function MeetPage() {
               className="w-full gap-2 font-black cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950"
             >
               <Ticket className="w-4 h-4" />
-              <span>Get Entry Pass &bull; {formattedPrice}</span>
+              <span>{isFree ? "Buy for Free" : `Get Entry Pass • ${formattedPrice}`}</span>
             </Button>
 
             <Button

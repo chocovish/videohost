@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { processThumbnail } from "@/lib/video-utils";
 import {
   ShareAccessMode,
@@ -80,7 +81,7 @@ export default function EditVideoModal({
       setSelectedFile(null);
       setPreviewUrl(video.thumbnailUrl || null);
       setIsThumbnailRemoved(false);
-      setShareAccessMode(video.shareAccessMode || (video.price ? "PURCHASABLE" : "PUBLIC"));
+      setShareAccessMode(video.shareAccessMode || (video.price !== null && video.price !== undefined ? "PURCHASABLE" : "PUBLIC"));
       setPrice(video.price !== undefined && video.price !== null ? String(video.price) : "");
       setCurrency(video.currency || "USD");
       setCountryPricing(Array.isArray(video.countryPricing) ? video.countryPricing : []);
@@ -196,7 +197,7 @@ export default function EditVideoModal({
         title: title.trim(),
         description: description.trim() || null,
         shareAccessMode,
-        price: isPurchasable && price ? parseFloat(price) : null,
+        price: isPurchasable && price !== "" && price !== null && !isNaN(Number(price)) ? parseFloat(price) : null,
         currency: isPurchasable ? currency : "USD",
         countryPricing: isPurchasable ? countryPricing : [],
       };
@@ -285,14 +286,16 @@ export default function EditVideoModal({
                 </Label>
                 <span className="text-[11px] text-muted-foreground">Optional</span>
               </div>
-              <textarea
+              <RichTextEditor
                 id="edit-video-desc"
-                rows={3}
                 disabled={loading}
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={setDescription}
                 placeholder="Add details about this video, timestamps, or summary..."
-                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y min-h-[70px]"
+                minHeight="120px"
+                maxHeight="260px"
+                showWordCount={false}
+                showCharacterCount={false}
               />
             </div>
 

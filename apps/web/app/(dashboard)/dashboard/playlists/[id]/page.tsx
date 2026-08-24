@@ -36,6 +36,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   Dialog,
   DialogContent,
@@ -557,9 +559,9 @@ export default function PlaylistDetailPage() {
             </div>
 
             {playlist.description && (
-              <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
-                {playlist.description}
-              </p>
+              <div className="text-sm text-foreground/90 leading-relaxed max-w-3xl">
+                <RichTextViewer content={playlist.description} />
+              </div>
             )}
 
             <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground pt-0.5 flex-wrap">
@@ -1148,12 +1150,15 @@ export default function PlaylistDetailPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Description (optional)</label>
-                <textarea
+                <RichTextEditor
                   value={renameDescription}
-                  onChange={(e) => setRenameDescription(e.target.value)}
+                  onChange={setRenameDescription}
                   disabled={renaming}
-                  rows={2}
-                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                  placeholder="Brief summary of what this playlist contains..."
+                  minHeight="110px"
+                  maxHeight="220px"
+                  showWordCount={false}
+                  showCharacterCount={false}
                 />
               </div>
 

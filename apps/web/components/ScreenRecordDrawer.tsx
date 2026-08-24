@@ -71,6 +71,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
@@ -1152,13 +1153,15 @@ export default function ScreenRecordDrawer({
                           <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                             Description (Optional)
                           </Label>
-                          <textarea
+                          <RichTextEditor
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={setDescription}
                             placeholder="Add brief details about this recording..."
                             disabled={uploading}
-                            rows={3}
-                            className="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-hidden focus:ring-2 focus:ring-lime-500 font-medium"
+                            minHeight="110px"
+                            maxHeight="220px"
+                            showWordCount={false}
+                            showCharacterCount={false}
                           />
                         </div>
 

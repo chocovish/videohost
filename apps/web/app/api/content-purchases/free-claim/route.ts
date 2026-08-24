@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json(
-      { error: "LOGIN_REQUIRED", message: "You must be signed in to purchase content." },
+      { error: "LOGIN_REQUIRED", message: "You must be signed in to claim this content." },
       { status: 401 }
     );
   }
@@ -25,14 +25,15 @@ export async function POST(req: Request) {
 
     const userId = session.user.id;
     let organizationId = "";
-    let targetPrice = 0;
+    let effectivePrice = 0;
     let targetCurrency = "USD";
     let contentTitle = "";
+    let internalId = contentId;
 
     if (contentType === "video") {
       const video = await db.video.findUnique({
         where: { id: contentId },
-        include: { organization: { include: { plan: true } } },
+        include: { organization: true },
       });
 
       if (!video) {
@@ -41,32 +42,44 @@ export async function POST(req: Request) {
 
       if (video.shareAccessMode !== "PURCHASABLE") {
         return NextResponse.json(
-          { error: "This content is not available for purchase." },
+          { error: "This video is not configured as purchasable content." },
           { status: 400 }
         );
       }
 
       organizationId = video.organizationId;
       contentTitle = video.title;
-      targetPrice = video.price ?? 0;
+      effectivePrice = video.price ?? 0;
       targetCurrency = video.currency || "USD";
+      internalId = video.id;
 
-      // Check country pricing override
+      // Check country pricing override from DB
       if (countryCode && Array.isArray(video.countryPricing)) {
         const countryRule = (video.countryPricing as any[]).find(
           (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
         );
         if (countryRule && countryRule.amount !== undefined) {
-          targetPrice = Number(countryRule.amount);
+          effectivePrice = Number(countryRule.amount);
           if (countryRule.currency) targetCurrency = countryRule.currency;
         }
+      }
+
+      // CRITICAL SECURITY VALIDATION: Price must be 0
+      if (effectivePrice > 0) {
+        return NextResponse.json(
+          {
+            error: "PAYMENT_REQUIRED",
+            message: `This item requires payment (${targetCurrency} ${effectivePrice.toFixed(2)}) and cannot be claimed for free.`,
+          },
+          { status: 403 }
+        );
       }
 
       // Check if already purchased
       const existingPurchase = await db.contentPurchase.findFirst({
         where: {
           userId,
-          videoId: contentId,
+          videoId: video.id,
           status: "COMPLETED",
         },
       });
@@ -74,29 +87,43 @@ export async function POST(req: Request) {
       if (existingPurchase) {
         return NextResponse.json({
           success: true,
-          message: "You have already purchased this video.",
+          alreadyPurchased: true,
+          message: "You already own access to this video.",
           purchase: existingPurchase,
         });
       }
 
-      // SECURITY: Require payment gateway flow for paid items
-      if (targetPrice > 0) {
-        return NextResponse.json(
-          {
-            error: "PAYMENT_REQUIRED",
-            message: "This paid content requires payment gateway order completion. Please use /api/content-purchases/create-order.",
+      // Check if user purchased a playlist containing this video
+      const playlistItems = await db.playlistItem.findMany({
+        where: { videoId: video.id },
+        select: { playlistId: true },
+      });
+      const playlistIds = playlistItems.map((pi) => pi.playlistId);
+      if (playlistIds.length > 0) {
+        const existingPlaylistPurchase = await db.contentPurchase.findFirst({
+          where: {
+            userId,
+            playlistId: { in: playlistIds },
+            status: "COMPLETED",
           },
-          { status: 400 }
-        );
+        });
+        if (existingPlaylistPurchase) {
+          return NextResponse.json({
+            success: true,
+            alreadyPurchased: true,
+            message: "You have unlocked this video via a purchased playlist.",
+            purchase: existingPlaylistPurchase,
+          });
+        }
       }
 
-      // Create free purchase record
+      // Create Free Purchase Record
       const purchase = await db.contentPurchase.create({
         data: {
           organizationId,
           userId,
           contentType: "VIDEO",
-          videoId: contentId,
+          videoId: internalId,
           amount: 0,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
@@ -114,14 +141,13 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully unlocked "${contentTitle}" for free!`,
+        message: `Successfully claimed "${contentTitle}" for free!`,
         purchase,
       });
     } else if (contentType === "meeting") {
-      // MEETING ENTRY PASS PURCHASE
       const meeting = await db.meeting.findUnique({
         where: { id: contentId },
-        include: { organization: { include: { plan: true } } },
+        include: { organization: true },
       });
 
       if (!meeting) {
@@ -130,31 +156,44 @@ export async function POST(req: Request) {
 
       if (meeting.shareAccessMode !== "PURCHASABLE") {
         return NextResponse.json(
-          { error: "This meeting is not configured for paid entry pass." },
+          { error: "This meeting is not configured as purchasable." },
           { status: 400 }
         );
       }
 
       organizationId = meeting.organizationId;
       contentTitle = meeting.title;
-      targetPrice = meeting.price ?? 0;
+      effectivePrice = meeting.price ?? 0;
       targetCurrency = meeting.currency || "USD";
+      internalId = meeting.id;
 
-      // Check country pricing override
+      // Check country pricing override from DB
       if (countryCode && Array.isArray(meeting.countryPricing)) {
         const countryRule = (meeting.countryPricing as any[]).find(
           (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
         );
         if (countryRule && countryRule.amount !== undefined) {
-          targetPrice = Number(countryRule.amount);
+          effectivePrice = Number(countryRule.amount);
           if (countryRule.currency) targetCurrency = countryRule.currency;
         }
       }
 
-      // Check if user is host
+      // CRITICAL SECURITY VALIDATION: Price must be 0
+      if (effectivePrice > 0) {
+        return NextResponse.json(
+          {
+            error: "PAYMENT_REQUIRED",
+            message: `This meeting pass requires payment (${targetCurrency} ${effectivePrice.toFixed(2)}) and cannot be claimed for free.`,
+          },
+          { status: 403 }
+        );
+      }
+
+      // Check if user is the meeting host
       if (meeting.createdById === userId) {
         return NextResponse.json({
           success: true,
+          alreadyPurchased: true,
           message: "You are the host of this meeting.",
         });
       }
@@ -163,7 +202,7 @@ export async function POST(req: Request) {
       const existingPurchase = await db.contentPurchase.findFirst({
         where: {
           userId,
-          meetingId: contentId,
+          meetingId: meeting.id,
           status: "COMPLETED",
         },
       });
@@ -171,29 +210,19 @@ export async function POST(req: Request) {
       if (existingPurchase) {
         return NextResponse.json({
           success: true,
+          alreadyPurchased: true,
           message: "You already own an entry pass for this meeting.",
           purchase: existingPurchase,
         });
       }
 
-      // SECURITY: Require payment gateway flow for paid items
-      if (targetPrice > 0) {
-        return NextResponse.json(
-          {
-            error: "PAYMENT_REQUIRED",
-            message: "This paid meeting pass requires payment gateway order completion. Please use /api/content-purchases/create-order.",
-          },
-          { status: 400 }
-        );
-      }
-
-      // Create free purchase record
+      // Create Free Purchase Record
       const purchase = await db.contentPurchase.create({
         data: {
           organizationId,
           userId,
           contentType: "MEETING",
-          meetingId: contentId,
+          meetingId: internalId,
           amount: 0,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
@@ -215,10 +244,10 @@ export async function POST(req: Request) {
         purchase,
       });
     } else {
-      // PLAYLIST PURCHASE
+      // PLAYLIST
       const playlist = await db.playlist.findUnique({
         where: { id: contentId },
-        include: { organization: { include: { plan: true } } },
+        include: { organization: true },
       });
 
       if (!playlist) {
@@ -227,32 +256,44 @@ export async function POST(req: Request) {
 
       if (playlist.shareAccessMode !== "PURCHASABLE") {
         return NextResponse.json(
-          { error: "This playlist is not available for purchase." },
+          { error: "This playlist is not configured as purchasable." },
           { status: 400 }
         );
       }
 
       organizationId = playlist.organizationId;
       contentTitle = playlist.title;
-      targetPrice = playlist.price ?? 0;
+      effectivePrice = playlist.price ?? 0;
       targetCurrency = playlist.currency || "USD";
+      internalId = playlist.id;
 
-      // Check country pricing override
+      // Check country pricing override from DB
       if (countryCode && Array.isArray(playlist.countryPricing)) {
         const countryRule = (playlist.countryPricing as any[]).find(
           (c) => c.countryCode?.toUpperCase() === countryCode.toUpperCase()
         );
         if (countryRule && countryRule.amount !== undefined) {
-          targetPrice = Number(countryRule.amount);
+          effectivePrice = Number(countryRule.amount);
           if (countryRule.currency) targetCurrency = countryRule.currency;
         }
+      }
+
+      // CRITICAL SECURITY VALIDATION: Price must be 0
+      if (effectivePrice > 0) {
+        return NextResponse.json(
+          {
+            error: "PAYMENT_REQUIRED",
+            message: `This playlist requires payment (${targetCurrency} ${effectivePrice.toFixed(2)}) and cannot be claimed for free.`,
+          },
+          { status: 403 }
+        );
       }
 
       // Check if already purchased
       const existingPurchase = await db.contentPurchase.findFirst({
         where: {
           userId,
-          playlistId: contentId,
+          playlistId: playlist.id,
           status: "COMPLETED",
         },
       });
@@ -260,29 +301,19 @@ export async function POST(req: Request) {
       if (existingPurchase) {
         return NextResponse.json({
           success: true,
-          message: "You have already purchased this playlist.",
+          alreadyPurchased: true,
+          message: "You already own access to this playlist.",
           purchase: existingPurchase,
         });
       }
 
-      // SECURITY: Require payment gateway flow for paid items
-      if (targetPrice > 0) {
-        return NextResponse.json(
-          {
-            error: "PAYMENT_REQUIRED",
-            message: "This paid playlist requires payment gateway order completion. Please use /api/content-purchases/create-order.",
-          },
-          { status: 400 }
-        );
-      }
-
-      // Create free purchase record
+      // Create Free Purchase Record
       const purchase = await db.contentPurchase.create({
         data: {
           organizationId,
           userId,
           contentType: "PLAYLIST",
-          playlistId: contentId,
+          playlistId: internalId,
           amount: 0,
           currency: targetCurrency,
           countryCode: countryCode ? countryCode.toUpperCase() : null,
@@ -300,14 +331,14 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully unlocked "${contentTitle}" for free! All videos in this playlist are now unlocked for you.`,
+        message: `Successfully claimed free playlist access for "${contentTitle}"!`,
         purchase,
       });
     }
   } catch (error: any) {
-    console.error("[POST /api/content-purchases/checkout Error]:", error);
+    console.error("[Content Purchase Free Claim Error]:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to process content purchase." },
+      { error: error.message || "Failed to process free claim." },
       { status: 500 }
     );
   }

@@ -52,6 +52,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import ImageCropperModal, { AspectRatioOption } from "@/components/ImageCropperModal";
 import VideoPickerModal, { SelectedVideoPayload } from "@/components/VideoPickerModal";
 import Link from "next/link";
@@ -1215,11 +1216,14 @@ export default function OfferingsDashboardPage() {
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-semibold text-muted-foreground">About / Bio</label>
-                  <textarea
-                    rows={3}
+                  <RichTextEditor
+                    placeholder="Tell your students and visitors about your background, experience, and expertise..."
                     value={config.bio || ""}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, bio: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none"
+                    onChange={(val) => setConfig((prev) => ({ ...prev, bio: val }))}
+                    minHeight="120px"
+                    maxHeight="240px"
+                    showWordCount={false}
+                    showCharacterCount={false}
                   />
                 </div>
               </div>
@@ -2739,12 +2743,14 @@ export default function OfferingsDashboardPage() {
                   {/* Description / Summary */}
                   <div className="space-y-1 min-w-0">
                     <label className="text-xs font-bold text-foreground">Description / Overview</label>
-                    <textarea
-                      rows={3}
+                    <RichTextEditor
                       placeholder="Describe what students or clients will learn or receive in this offering..."
                       value={itemFormDescription}
-                      onChange={(e) => setItemFormDescription(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                      onChange={setItemFormDescription}
+                      minHeight="120px"
+                      maxHeight="240px"
+                      showWordCount={false}
+                      showCharacterCount={false}
                     />
                   </div>
 

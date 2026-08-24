@@ -143,8 +143,8 @@ export function ShareAccessModeSelector({
   const handleAddCountryPrice = (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = countryAmount ? parseFloat(countryAmount) : 0;
-    if (isNaN(numAmount) || numAmount <= 0) {
-      setCountryError("Please enter a valid country price greater than 0.");
+    if (isNaN(numAmount) || numAmount < 0) {
+      setCountryError("Please enter a valid country price greater than or equal to 0.");
       return;
     }
 
@@ -407,7 +407,7 @@ export function ShareAccessModeSelector({
                   type="button"
                   size="sm"
                   onClick={() => onSavePricing()}
-                  disabled={isInteractiveDisabled || !price}
+                  disabled={isInteractiveDisabled || price === "" || price === undefined || price === null || isNaN(Number(price)) || Number(price) < 0}
                   className="h-9 px-4 font-bold text-xs shrink-0 rounded-xl"
                 >
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Save"}

@@ -25,6 +25,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   Dialog,
   DialogContent,
@@ -443,9 +445,13 @@ export default function PlaylistsPage() {
                   </div>
 
                   {pl.description ? (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{pl.description}</p>
+                    <RichTextViewer
+                      content={pl.description}
+                      clamp={2}
+                      className="text-xs text-muted-foreground line-clamp-2"
+                    />
                   ) : (
-                    <p className="text-xs text-slate-400 italic">No description provided</p>
+                    <p className="text-xs text-muted-foreground/60 italic">No description provided</p>
                   )}
                 </div>
               </div>
@@ -492,13 +498,15 @@ export default function PlaylistsPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Description (optional)</label>
-                <textarea
+                <RichTextEditor
                   placeholder="Brief summary of what this playlist contains..."
                   value={createDescription}
-                  onChange={(e) => setCreateDescription(e.target.value)}
+                  onChange={setCreateDescription}
                   disabled={creating}
-                  rows={2}
-                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                  minHeight="110px"
+                  maxHeight="220px"
+                  showWordCount={false}
+                  showCharacterCount={false}
                 />
               </div>
 
@@ -573,12 +581,15 @@ export default function PlaylistsPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Description (optional)</label>
-                <textarea
+                <RichTextEditor
                   value={renameDescription}
-                  onChange={(e) => setRenameDescription(e.target.value)}
+                  onChange={setRenameDescription}
                   disabled={renaming}
-                  rows={2}
-                  className="w-full p-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-input rounded-xl outline-hidden focus:ring-2 focus:ring-primary text-foreground resize-none"
+                  placeholder="Brief summary of what this playlist contains..."
+                  minHeight="110px"
+                  maxHeight="220px"
+                  showWordCount={false}
+                  showCharacterCount={false}
                 />
               </div>
 

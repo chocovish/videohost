@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { uploadVideoFile } from "@/lib/upload-video";
 import {
   VideoMetadata,
@@ -331,7 +332,7 @@ export default function UploadModal({
         requireHls,
         currentFolderId,
         shareAccessMode,
-        price: isPurchasable && price ? parseFloat(price) : null,
+        price: isPurchasable && price !== "" && price !== null && !isNaN(Number(price)) ? parseFloat(price) : null,
         currency: isPurchasable ? currency : "USD",
         countryPricing: isPurchasable ? countryPricing : [],
         inviteEmails: isRestricted ? inviteEmails : [],
@@ -560,14 +561,16 @@ export default function UploadModal({
 
           <div className="space-y-1.5">
             <Label htmlFor="video-description">Description (Optional)</Label>
-            <textarea
+            <RichTextEditor
               id="video-description"
-              rows={2}
               disabled={uploading}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={setDescription}
               placeholder="Add details about this video..."
-              className="flex w-full rounded-xl border border-input bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 transition-all resize-none"
+              minHeight="120px"
+              maxHeight="240px"
+              showWordCount={false}
+              showCharacterCount={false}
             />
           </div>
 

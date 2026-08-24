@@ -29,6 +29,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   Dialog,
   DialogContent,
@@ -525,9 +526,11 @@ export default function PurchasedItemsPage() {
                         {item.title}
                       </h3>
                       {item.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
-                          {item.description}
-                        </p>
+                        <RichTextViewer
+                          content={item.description}
+                          clamp={2}
+                          className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed"
+                        />
                       )}
                     </div>
 

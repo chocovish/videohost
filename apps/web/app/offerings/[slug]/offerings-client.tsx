@@ -52,6 +52,7 @@ import {
 } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 
 export interface OfferingsConfigData {
   themePreset?: string;
@@ -985,7 +986,7 @@ export default function OfferingsLandingClient({
                     color: theme.subtext,
                   }}
                 >
-                  <p className="whitespace-pre-line">{config.bio}</p>
+                  <RichTextViewer content={config.bio} style={{ color: theme.subtext }} />
                 </div>
               )}
 
@@ -1275,9 +1276,12 @@ export default function OfferingsLandingClient({
                         )}
 
                         {item.description && (
-                          <p className="text-xs sm:text-sm leading-relaxed line-clamp-3 break-words" style={{ color: theme.subtext }}>
-                            {item.description}
-                          </p>
+                          <RichTextViewer
+                            content={item.description}
+                            clamp={3}
+                            className="text-xs sm:text-sm leading-relaxed line-clamp-3 break-words"
+                            style={{ color: theme.subtext }}
+                          />
                         )}
 
                         {/* Highlights List */}
@@ -1378,7 +1382,7 @@ export default function OfferingsLandingClient({
                                 </>
                               ) : item.shareAccessMode === "PURCHASABLE" ? (
                                 <>
-                                  <span>Purchase</span>
+                                  <span>{item.price === "Free" || item.price === "$0.00" ? "Buy for Free" : "Purchase"}</span>
                                   <ArrowRight className="w-3.5 h-3.5" />
                                 </>
                               ) : (

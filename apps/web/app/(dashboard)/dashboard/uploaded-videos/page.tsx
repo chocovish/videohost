@@ -37,6 +37,7 @@ import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -921,7 +922,11 @@ function UploadedVideosContent() {
                       </div>
 
                       {video.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">{video.description}</p>
+                        <RichTextViewer
+                          content={video.description}
+                          clamp={2}
+                          className="text-xs text-muted-foreground line-clamp-2"
+                        />
                       )}
                     </div>
                   </div>

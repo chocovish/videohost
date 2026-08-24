@@ -136,8 +136,8 @@ export default function ShareModal({
 
     // Price comparison for Purchasable mode
     if (draftAccessMode === "PURCHASABLE") {
-      const draftPriceNum = draftPrice ? parseFloat(draftPrice) : null;
-      const serverPriceNum = serverState.price ? parseFloat(serverState.price) : null;
+      const draftPriceNum = draftPrice !== "" && draftPrice !== null && !isNaN(Number(draftPrice)) ? parseFloat(draftPrice) : null;
+      const serverPriceNum = serverState.price !== "" && serverState.price !== null && !isNaN(Number(serverState.price)) ? parseFloat(serverState.price) : null;
       if (draftPriceNum !== serverPriceNum) return true;
 
       // Country pricing comparison
@@ -216,7 +216,7 @@ export default function ShareModal({
         targetType,
         targetId,
         accessMode: draftAccessMode,
-        price: isPurchasable && draftPrice ? parseFloat(draftPrice) : null,
+        price: isPurchasable && draftPrice !== "" && draftPrice !== null && !isNaN(Number(draftPrice)) ? parseFloat(draftPrice) : null,
         currency: isPurchasable ? draftCurrency : "USD",
         countryPricing: isPurchasable ? draftCountryPricing : [],
         emails: draftAllowedEmails.map((e) => ({
