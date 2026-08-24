@@ -8,7 +8,6 @@ import {
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
 import LandingHero from "@/components/landing/LandingHero";
-import LandingFeatureTimeline from "@/components/landing/LandingFeatureTimeline";
 import LandingFeaturesBento from "@/components/landing/LandingFeaturesBento";
 import LandingWorkflow from "@/components/landing/LandingWorkflow";
 import LandingComparison from "@/components/landing/LandingComparison";
@@ -31,8 +30,7 @@ export const metadata: Metadata = {
     "video conference webinar",
     "developer video api webhooks",
     "secure private video sharing",
-    "line drawn feature timeline",
-    "webrtc cloud recording",
+    "cloud recording",
   ],
   alternates: {
     canonical: "https://taped.app",
@@ -91,51 +89,6 @@ export default function LandingPage() {
     ],
   };
 
-  const jsonLdTimeline = {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    "name": "Taped Platform Features & Capabilities",
-    "description": "Comprehensive feature timeline of Taped all-in-one video suite",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "In-Browser Screen & Facecam Studio Recorder",
-        "description": "Capture 1080p 60fps screen and webcam recordings directly in the browser with zero downloads.",
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Smart Curated Multi-Video Playlists",
-        "description": "Organize videos into continuous playlists and embed distraction-free players into docs or portals.",
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": "Granular Access Control & Email Whitelists",
-        "description": "Restrict video views strictly to verified email addresses with 6-digit one-time passcode (OTP) security.",
-      },
-      {
-        "@type": "ListItem",
-        "position": 4,
-        "name": "WebRTC Conference & Dual-Mode Recording (Full Room or Individual Person)",
-        "description": "Collaborate in real-time WebRTC conference rooms and cloud-record the whole meeting gallery or isolate single individual participants directly to your library.",
-      },
-      {
-        "@type": "ListItem",
-        "position": 5,
-        "name": "100% White-Label Branded Watch Pages",
-        "description": "Deliver custom-branded video experiences with your logo, colors, and direct action CTA buttons.",
-      },
-      {
-        "@type": "ListItem",
-        "position": 6,
-        "name": "Developer REST APIs, Webhooks & Global Edge CDN",
-        "description": "Programmatic video management, webhooks, and fast adaptive multi-bitrate HLS streaming with 2GB free storage.",
-      },
-    ],
-  };
-
   const jsonLdFaq = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -158,10 +111,6 @@ export default function LandingPage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdTimeline) }}
-      />
-      <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }}
       />
 
@@ -179,9 +128,6 @@ export default function LandingPage() {
 
         {/* 5-Step Visual Workflow: How It Works */}
         <LandingWorkflow />
-
-        {/* State-of-the-Art Line-Drawn Feature Timeline with Rich Visuals */}
-        <LandingFeatureTimeline />
 
         {/* Metric Proof / Key Stats Strip */}
         <section className="w-full border-y border-border bg-slate-100/50 dark:bg-slate-900/50 py-10">
