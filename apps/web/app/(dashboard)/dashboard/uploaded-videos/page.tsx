@@ -626,30 +626,36 @@ function UploadedVideosContent() {
                       : "border-border hover:border-primary/50 hover:shadow-xl"
                   }`}
                 >
+                  {/* Checkbox Overlay (Top Left) */}
+                  <div
+                    className="absolute top-2.5 left-2.5 z-20"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleSelectFolder(folder.id);
+                      }}
+                      className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                          : selectedCount > 0
+                          ? "border border-border bg-card/90 text-transparent hover:border-primary hover:text-muted-foreground"
+                          : "border border-border/80 bg-card/90 text-transparent opacity-0 group-hover:opacity-100 hover:border-primary hover:text-muted-foreground"
+                      }`}
+                      title={isSelected ? "Deselect folder" : "Select folder"}
+                      aria-label={`Select folder ${folder.name}`}
+                    >
+                      <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
+                    </button>
+                  </div>
+
                   {/* Folder Content */}
                   <div className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-3 min-w-0">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
-                        {/* Checkbox button */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelectFolder(folder.id);
-                          }}
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shrink-0 mt-2.5 ${
-                            isSelected
-                              ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/30"
-                              : selectedCount > 0
-                              ? "border border-border bg-card/90 text-transparent hover:border-primary hover:text-muted-foreground"
-                              : "border border-border/80 bg-card/80 text-transparent opacity-0 group-hover:opacity-100 hover:border-primary hover:text-muted-foreground"
-                          }`}
-                          title={isSelected ? "Deselect folder" : "Select folder"}
-                          aria-label={`Select folder ${folder.name}`}
-                        >
-                          <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
-                        </button>
-
                         <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
                           <Folder className="w-6 h-6 fill-amber-500/20" />
                         </div>
