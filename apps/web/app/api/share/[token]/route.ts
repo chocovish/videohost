@@ -129,6 +129,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
       }
     }
 
+    const itemDescription = isVideo
+      ? video!.description
+      : isPlaylist
+      ? playlist!.description
+      : isMeeting
+      ? meeting!.description
+      : undefined;
+
     // 4. Check PRIVATE Access Mode
     if (accessMode === "PRIVATE") {
       return NextResponse.json(
@@ -139,6 +147,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           organization,
           type: targetType,
           itemTitle,
+          itemDescription,
           sharePageConfig,
         },
         { status: 403 }
@@ -224,6 +233,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
               organization,
               type: targetType,
               itemTitle,
+              itemDescription,
               sharePageConfig,
             },
             { status: 401 }
@@ -237,6 +247,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
               organization,
               type: targetType,
               itemTitle,
+              itemDescription,
               sharePageConfig,
             },
             { status: 403 }
@@ -402,6 +413,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
             itemId: it.id,
             order: it.order,
             title: it.video.title,
+            description: it.video.description,
             durationSeconds: it.video.durationSeconds,
             status: it.video.status,
           })) : undefined,

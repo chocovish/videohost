@@ -285,6 +285,7 @@ export default function SharedContentClient({
     userEmail?: string;
     organizationName?: string;
     itemTitle?: string;
+    itemDescription?: string | null;
     type?: string;
   } | null>(null);
 
@@ -758,6 +759,7 @@ export default function SharedContentClient({
           userEmail: result.userEmail,
           organizationName: result.organization?.name,
           itemTitle: result.itemTitle,
+          itemDescription: result.itemDescription,
           type: result.type,
         });
         return;
@@ -878,6 +880,18 @@ export default function SharedContentClient({
             </p>
           </div>
 
+          {errorState.itemDescription && (
+            <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                About this content
+              </span>
+              <RichTextViewer
+                content={errorState.itemDescription}
+                className="text-xs text-slate-300 leading-relaxed [&_a]:text-amber-400"
+              />
+            </div>
+          )}
+
           <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-4 border-t border-slate-800/80">
             <ShieldCheck className="w-4 h-4 text-amber-400" />
             <span>Taped Protected Portal</span>
@@ -914,6 +928,18 @@ export default function SharedContentClient({
                 <p className="text-sm text-slate-400 leading-relaxed">
                   Access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this content"}"</span> is restricted. Choose how you would like to view this content:
                 </p>
+
+                {errorState.itemDescription && (
+                  <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                      About this content
+                    </span>
+                    <RichTextViewer
+                      content={errorState.itemDescription}
+                      className="text-xs text-slate-300 leading-relaxed [&_a]:text-lime-400"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3 pt-2">
@@ -1156,6 +1182,18 @@ export default function SharedContentClient({
               Signed in as <span className="font-bold text-slate-200">{errorState.userEmail}</span>, but this email address has not been granted access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this item"}"</span>.
             </p>
           </div>
+
+          {errorState.itemDescription && (
+            <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                About this content
+              </span>
+              <RichTextViewer
+                content={errorState.itemDescription}
+                className="text-xs text-slate-300 leading-relaxed [&_a]:text-lime-400"
+              />
+            </div>
+          )}
           {/* Request Access Action Box */}
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/60 space-y-3 text-left">
             <div className="flex items-center justify-between">
@@ -2063,6 +2101,14 @@ export default function SharedContentClient({
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100">
                     {data.playlist.title}
                   </h1>
+                  {data.playlist.description && (
+                    <div className="mt-1.5 max-w-2xl">
+                      <RichTextViewer
+                        content={data.playlist.description}
+                        className="text-xs sm:text-sm text-slate-300 leading-relaxed [&_a]:text-primary"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
