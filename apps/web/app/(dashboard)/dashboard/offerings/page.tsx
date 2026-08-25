@@ -1958,6 +1958,81 @@ export default function OfferingsDashboardPage() {
                   </Button>
                 </div>
 
+                {/* Section Header & Subtitle Settings */}
+                <div className="p-3 bg-muted/30 rounded-xl border border-border/70 space-y-2.5">
+                  <div className="text-[11px] font-bold text-foreground/80 tracking-wide">
+                    Section Header & Subtitle
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                        Badge / Eyebrow Text
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Student & Client Reviews"
+                        value={config.sectionsConfig?.testimonialsBadge ?? config.testimonialsBadge ?? "Student & Client Reviews"}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setConfig((prev) => ({
+                            ...prev,
+                            testimonialsBadge: val,
+                            sectionsConfig: {
+                              ...prev.sectionsConfig,
+                              testimonialsBadge: val,
+                            },
+                          }));
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg text-xs border bg-background"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                        Heading / Title
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Trusted by Creators & Engineers"
+                        value={config.sectionsConfig?.testimonialsTitle ?? config.testimonialsTitle ?? "Trusted by Creators & Engineers"}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setConfig((prev) => ({
+                            ...prev,
+                            testimonialsTitle: val,
+                            sectionsConfig: {
+                              ...prev.sectionsConfig,
+                              testimonialsTitle: val,
+                            },
+                          }));
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg text-xs border bg-background font-semibold"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                      Description / Subtitle
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Read what students, founders, and attendees say about our sessions and programs."
+                      value={config.sectionsConfig?.testimonialsSubtitle ?? config.testimonialsSubtitle ?? "Read what students, founders, and attendees say about our sessions and programs."}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setConfig((prev) => ({
+                          ...prev,
+                          testimonialsSubtitle: val,
+                          sectionsConfig: {
+                            ...prev.sectionsConfig,
+                            testimonialsSubtitle: val,
+                          },
+                        }));
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-xs border bg-background"
+                    />
+                  </div>
+                </div>
+
                 {(!config.testimonials || config.testimonials.length === 0) ? (
                   <div className="p-3 text-center border border-dashed rounded-xl text-xs text-muted-foreground">
                     No testimonials added yet. Click &quot;Add Review&quot; to showcase social proof.

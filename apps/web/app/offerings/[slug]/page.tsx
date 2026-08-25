@@ -149,7 +149,10 @@ export default async function OfferingsPage({
         ...configDb,
         socialLinks: (configDb.socialLinks as any) || DEFAULT_OFFERINGS_CONFIG.socialLinks,
         stats: (configDb.stats as any) || DEFAULT_OFFERINGS_CONFIG.stats,
-        sectionsConfig: (configDb.sectionsConfig as any) || DEFAULT_OFFERINGS_CONFIG.sectionsConfig,
+        sectionsConfig: {
+          ...DEFAULT_OFFERINGS_CONFIG.sectionsConfig,
+          ...((configDb.sectionsConfig as any) || {}),
+        },
         testimonials: (configDb.testimonials as any) || DEFAULT_OFFERINGS_CONFIG.testimonials,
         faqs: (configDb.faqs as any) || DEFAULT_OFFERINGS_CONFIG.faqs,
       }

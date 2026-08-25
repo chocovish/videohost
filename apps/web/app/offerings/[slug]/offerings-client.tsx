@@ -106,9 +106,16 @@ export interface OfferingsConfigData {
     showProducts?: boolean;
     showServices?: boolean;
     showTestimonials?: boolean;
+    testimonialsBadge?: string;
+    testimonialsTitle?: string;
+    testimonialsSubtitle?: string;
+    testimonialsDescription?: string;
     showFaq?: boolean;
     showContact?: boolean;
   };
+  testimonialsBadge?: string;
+  testimonialsTitle?: string;
+  testimonialsSubtitle?: string;
   testimonials?: Array<{
     name: string;
     role: string;
@@ -670,6 +677,9 @@ export default function OfferingsLandingClient({
     showProducts: true,
     showServices: true,
     showTestimonials: true,
+    testimonialsBadge: "Student & Client Reviews",
+    testimonialsTitle: "Trusted by Creators & Engineers",
+    testimonialsSubtitle: "Read what students, founders, and attendees say about our sessions and programs.",
     showFaq: true,
     showContact: true,
   };
@@ -1482,11 +1492,11 @@ export default function OfferingsLandingClient({
             <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
               <div className="text-center max-w-xl mx-auto space-y-1.5">
                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
-                  <Star className="w-4 h-4 fill-current" /> Student & Client Reviews
+                  <Star className="w-4 h-4 fill-current" /> {config.testimonialsBadge || sections.testimonialsBadge || "Student & Client Reviews"}
                 </div>
-                <h3 className="text-xl sm:text-3xl font-black tracking-tight">Trusted by Creators & Engineers</h3>
+                <h3 className="text-xl sm:text-3xl font-black tracking-tight">{config.testimonialsTitle || sections.testimonialsTitle || "Trusted by Creators & Engineers"}</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
-                  Read what students, founders, and attendees say about our sessions and programs.
+                  {config.testimonialsSubtitle || sections.testimonialsSubtitle || sections.testimonialsDescription || "Read what students, founders, and attendees say about our sessions and programs."}
                 </p>
               </div>
 
@@ -1512,16 +1522,22 @@ export default function OfferingsLandingClient({
                     </div>
 
                     <div className="flex items-center gap-3 pt-3 border-t min-w-0" style={{ borderColor: theme.cardBorder }}>
-                      {t.avatar ? (
-                        <img src={t.avatar} alt={t.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border shrink-0" style={{ borderColor: theme.cardBorder }} />
-                      ) : (
-                        <div
-                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0"
-                          style={{ backgroundColor: `${accentColor}25`, color: accentColor }}
-                        >
-                          {t.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
+                      <div
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shrink-0 select-none shadow-xs border"
+                        style={{
+                          backgroundColor: `${accentColor}20`,
+                          color: accentColor,
+                          borderColor: `${accentColor}35`,
+                        }}
+                      >
+                        {(() => {
+                          const parts = (t.name || "").trim().split(/\s+/).filter(Boolean);
+                          if (parts.length >= 2) {
+                            return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+                          }
+                          return (t.name || "U").slice(0, 2).toUpperCase();
+                        })()}
+                      </div>
                       <div className="min-w-0 flex-1 overflow-hidden">
                         <div className="font-bold text-xs sm:text-sm truncate">{t.name}</div>
                         <div className="text-[10px] sm:text-[11px] truncate" style={{ color: theme.subtext }}>

@@ -95,7 +95,16 @@ export async function GET() {
 
     return NextResponse.json({
       config: {
+        ...DEFAULT_OFFERINGS_CONFIG,
         ...config,
+        sectionsConfig: {
+          ...DEFAULT_OFFERINGS_CONFIG.sectionsConfig,
+          ...((config.sectionsConfig as any) || {}),
+        },
+        socialLinks: (config.socialLinks as any) || DEFAULT_OFFERINGS_CONFIG.socialLinks,
+        stats: (config.stats as any) || DEFAULT_OFFERINGS_CONFIG.stats,
+        testimonials: (config.testimonials as any) || DEFAULT_OFFERINGS_CONFIG.testimonials,
+        faqs: (config.faqs as any) || DEFAULT_OFFERINGS_CONFIG.faqs,
         avatarUrl,
         bannerUrl,
         orgName: org.name,
