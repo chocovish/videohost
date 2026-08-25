@@ -1,5 +1,6 @@
 import { db } from "@videohost/db";
 import { deleteVideoFromS3 } from "@/lib/s3";
+import { cancelTranscodeJob } from "@/lib/queue";
 
 export interface BatchDeleteOptions {
   organizationId: string;
@@ -56,7 +57,7 @@ export async function executeDeleteService({
   }
 
   // 2. Find all videos to delete (both directly selected and nested inside any of the folders)
-  const videoMap = new Map<string, { id: string; originalKey: string; title: string }>();
+  const videoMap = new Map<string, { id: string; originalKey: string; title: string; status: string }>();
 
   // Videos inside folders
   if (allFolderIdsToDelete.size > 0) {
@@ -69,6 +70,7 @@ export async function executeDeleteService({
         id: true,
         originalKey: true,
         title: true,
+        status: true,
       },
     });
 
@@ -88,6 +90,7 @@ export async function executeDeleteService({
         id: true,
         originalKey: true,
         title: true,
+        status: true,
       },
     });
 
@@ -98,7 +101,31 @@ export async function executeDeleteService({
 
   const allVideosToDelete = Array.from(videoMap.values());
 
-  // 3. Delete all files from S3 for all videos
+  // 3. Stop any queued/in-progress transcode jobs so we don't orphan running
+  // encodes or have the worker re-create assets after deletion
+  const inFlightVideos = allVideosToDelete.filter(
+    (v) => v.status === "QUEUED" || v.status === "PROCESSING"
+  );
+
+  if (inFlightVideos.length > 0) {
+    console.log(
+      `[Delete Service] Cancelling ${inFlightVideos.length} in-flight transcode job(s) before deletion...`
+    );
+
+    // Mark CANCELLED first so any in-flight worker callback is ignored
+    await db.video.updateMany({
+      where: {
+        id: { in: inFlightVideos.map((v) => v.id) },
+        status: { in: ["QUEUED", "PROCESSING"] },
+      },
+      data: { status: "CANCELLED" },
+    });
+
+    // Then stop the job on the worker / remove it from the queue
+    await Promise.allSettled(inFlightVideos.map((v) => cancelTranscodeJob(v.id)));
+  }
+
+  // 4. Delete all files from S3 for all videos
   if (allVideosToDelete.length > 0) {
     console.log(
       `[Delete Service] Deleting S3 assets for ${allVideosToDelete.length} video(s) in org ${organizationId}...`
@@ -114,7 +141,7 @@ export async function executeDeleteService({
     );
   }
 
-  // 4. Delete Video DB records
+  // 5. Delete Video DB records
   let deletedVideosCount = 0;
   if (allVideosToDelete.length > 0) {
     const videoIdsToDelete = allVideosToDelete.map((v) => v.id);
@@ -127,7 +154,7 @@ export async function executeDeleteService({
     deletedVideosCount = videoDeleteRes.count;
   }
 
-  // 5. Delete Folder DB records
+  // 6. Delete Folder DB records
   let deletedFoldersCount = 0;
   if (allFolderIdsToDelete.size > 0) {
     const folderDeleteRes = await db.folder.deleteMany({

@@ -203,17 +203,23 @@ export default function VideoDetailPage() {
     );
   }
 
-  const isHls = video.playbackUrl?.includes(".m3u8");
-  const mimeType = isHls ? "application/x-mpegURL" : "video/mp4";
+  const isDash = video.playbackUrl?.includes(".mpd");
+  const mediaTag = isDash ? "dash-video" : "video";
 
   const iframeEmbedCode = typeof window !== "undefined"
     ? `<iframe src="${window.location.origin}/embed/${video.id}" width="100%" height="450" frameborder="0" allowfullscreen></iframe>`
     : "";
-  const scriptEmbedCode = `<link href="https://vjs.zencdn.net/8/video-js.css" rel="stylesheet" />
-<video-js id="player-${video.id}" class="vjs-big-play-centered" controls preload="auto">
-  <source src="${video.playbackUrl}" type="${mimeType}">
-</video-js>
-<script src="https://vjs.zencdn.net/8/video.js"></script>`;
+  const scriptEmbedCode = `<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html/cdn/video.js"></script>${
+    isDash
+      ? `
+<script type="module" src="https://cdn.jsdelivr.net/npm/@videojs/html/cdn/media/dash-video.js"></script>`
+      : ""
+  }
+<video-player style="aspect-ratio:16/9;width:100%">
+  <video-skin>
+    <${mediaTag} src="${video.playbackUrl}" playsinline></${mediaTag}>
+  </video-skin>
+</video-player>`;
 
   return (
     <div className="space-y-6">

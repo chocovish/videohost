@@ -15,8 +15,8 @@ export async function GET(
 
     const objectKey = keyParts.join("/");
 
-    // 1. If requesting an HLS playlist (.m3u8): fetch from private bucket, rewrite URLs, return playlist
-    if (objectKey.endsWith(".m3u8")) {
+    // 1. Manifest requests (.m3u8 / .mpd): fetch from private bucket, rewrite if needed, return manifest
+    if (objectKey.endsWith(".m3u8") || objectKey.endsWith(".mpd")) {
       const command = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: objectKey,
@@ -27,73 +27,83 @@ export async function GET(
         response = await s3.send(command);
       } catch (err: any) {
         if (err.name === "NoSuchKey" || err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
-          return NextResponse.json({ error: "Playlist not found" }, { status: 404 });
+          return NextResponse.json({ error: "Manifest not found" }, { status: 404 });
         }
         throw err;
       }
 
-      const originalText = await response.Body?.transformToString();
-      if (!originalText) {
-        return NextResponse.json({ error: "Empty playlist" }, { status: 500 });
+      let content = await response.Body?.transformToString();
+      if (!content) {
+        return NextResponse.json({ error: "Empty manifest" }, { status: 500 });
       }
 
-      // Base directory of the playlist key, e.g. "org1/vid1/hls/"
+      // Base directory of the manifest key, e.g. "org1/vid1/hls/"
       const lastSlashIndex = objectKey.lastIndexOf("/");
       const dirPath = lastSlashIndex !== -1 ? objectKey.substring(0, lastSlashIndex + 1) : "";
 
-      const lines = originalText.split(/\r?\n/);
-      const rewrittenLines = lines.map((line) => {
-        const trimmed = line.trim();
-        if (!trimmed) return line;
+      if (objectKey.endsWith(".m3u8")) {
+        // HLS playlists need their URIs rewritten to route through this proxy
+        const lines = content.split(/\r?\n/);
+        content = lines
+          .map((line) => {
+            const trimmed = line.trim();
+            if (!trimmed) return line;
 
-        // Handle tags/comments starting with '#'
-        if (trimmed.startsWith("#")) {
-          return line.replace(/URI="([^"]+)"/g, (match, uri) => {
-            if (uri.startsWith("http://") || uri.startsWith("https://") || uri.startsWith("data:")) {
-              return match;
+            // Handle tags/comments starting with '#'
+            if (trimmed.startsWith("#")) {
+              return line.replace(/URI="([^"]+)"/g, (match, uri) => {
+                if (uri.startsWith("http://") || uri.startsWith("https://") || uri.startsWith("data:")) {
+                  return match;
+                }
+                const targetKey = path.posix.normalize(dirPath + uri);
+                return `URI="/api/hls/${targetKey}"`;
+              });
             }
-            const targetKey = path.posix.normalize(dirPath + uri);
-            return `URI="/api/hls/${targetKey}"`;
-          });
-        }
 
-        // Standard non-comment line (relative URI to sub-playlist or segment)
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-          return line;
-        }
+            // Standard non-comment line (relative URI to sub-playlist or segment)
+            if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+              return line;
+            }
 
-        // Normalize relative path against playlist base directory
-        const targetKey = path.posix.normalize(dirPath + trimmed);
-        return `/api/hls/${targetKey}`;
-      });
+            // Normalize relative path against playlist base directory
+            const targetKey = path.posix.normalize(dirPath + trimmed);
+            return `/api/hls/${targetKey}`;
+          })
+          .join("\n");
+      }
+      // .mpd manifests reference segments with relative URLs, which the
+      // browser resolves against this proxied URL — no rewriting needed.
 
-      const rewrittenContent = rewrittenLines.join("\n");
-
-      return new Response(rewrittenContent, {
+      return new Response(content, {
         status: 200,
         headers: {
-          "Content-Type": "application/x-mpegURL",
+          "Content-Type": objectKey.endsWith(".mpd") ? "application/dash+xml" : "application/vnd.apple.mpegurl",
           "Cache-Control": "no-cache, no-store, must-revalidate",
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, ETag",
         },
       });
     }
 
-    // 2. Segment / Media file request (.ts, .m4s, .mp4, .vtt, etc.): issue 302 redirect to presigned GET URL
+    // 2. Segment / Media file request (.ts, .m4s, .mp4, .vtt, etc.): issue 307 redirect to presigned GET URL
     const presignedUrl = await getPresignedPlaybackUrl(objectKey, 300); // 5 minutes validity
 
     return NextResponse.redirect(presignedUrl, {
-      status: 302,
+      status: 307,
       headers: {
         "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length, ETag",
         "Cache-Control": "no-cache, no-store, must-revalidate",
       },
     });
   } catch (error: any) {
-    console.error("[HLS Proxy Route Error]:", error);
+    console.error("[Streaming Proxy Route Error]:", error);
     return NextResponse.json(
-      { error: error?.message || "Failed to process HLS stream" },
+      { error: error?.message || "Failed to process stream" },
       { status: 500 }
     );
   }
@@ -106,6 +116,7 @@ export async function OPTIONS() {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
       "Access-Control-Allow-Headers": "*",
+      "Access-Control-Expose-Headers": "*",
     },
   });
 }

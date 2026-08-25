@@ -36,7 +36,7 @@ const outgoingResponsePayload = {
   status: "READY",
   thumbnailUrl: "http://host.docker.internal:9000/videohost/test-video-123/thumbnail.jpg",
   renditions: [
-    { storageKey: "http://host.docker.internal:9000/videohost/test-video-123/hls/720p/prog.m3u8" }
+    { storageKey: "http://host.docker.internal:9000/videohost/test-video-123/dash/master.mpd" }
   ]
 };
 

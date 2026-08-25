@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPlaybackUrl, getPresignedPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
+import { getPlaybackUrl, getPresignedPlaybackUrl, getRenditionPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -39,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     renditions: video.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
-      playlistUrl: `/api/hls/${r.storageKey}`,
+      playlistUrl: getRenditionPlaybackUrl(r.storageKey),
       sizeBytes: Number(r.sizeBytes || 0),
     })),
     createdAt: video.createdAt,
@@ -122,7 +122,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     renditions: updated.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
-      playlistUrl: `/api/hls/${r.storageKey}`,
+      playlistUrl: getRenditionPlaybackUrl(r.storageKey),
       sizeBytes: Number(r.sizeBytes || 0),
     })),
     createdAt: updated.createdAt,

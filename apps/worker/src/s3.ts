@@ -89,7 +89,7 @@ export async function ensureBucketExists(config?: S3ConfigContext): Promise<void
               AllowedHeaders: ["*"],
               AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
               AllowedOrigins: ["*"],
-              ExposeHeaders: ["ETag"],
+              ExposeHeaders: ["ETag", "Content-Range", "Accept-Ranges", "Content-Length"],
               MaxAgeSeconds: 3000,
             },
           ],
@@ -169,6 +169,7 @@ export async function uploadDirectoryToS3(
 
     let contentType = "application/octet-stream";
     if (relativePath.endsWith(".m3u8")) contentType = "application/x-mpegURL";
+    else if (relativePath.endsWith(".mpd")) contentType = "application/dash+xml";
     else if (relativePath.endsWith(".ts")) contentType = "video/MP2T";
     else if (relativePath.endsWith(".m4s") || relativePath.endsWith(".mp4")) contentType = "video/mp4";
     else if (relativePath.endsWith(".jpg") || relativePath.endsWith(".jpeg")) contentType = "image/jpeg";

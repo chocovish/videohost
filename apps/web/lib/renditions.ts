@@ -24,7 +24,7 @@ export const STANDARD_RENDITION_LADDER: Record<string, RenditionConfig> = {
 export const DEFAULT_HLS_RESOLUTIONS_ENV = "480,720,1080,1440,2160";
 
 export function parseRenditionResolutions(envResolutions?: string): RenditionConfig[] {
-  const rawEnv = envResolutions || process.env.HLS_RENDITION_RESOLUTIONS || DEFAULT_HLS_RESOLUTIONS_ENV;
+  const rawEnv = envResolutions || process.env.RENDITION_RESOLUTIONS || process.env.HLS_RENDITION_RESOLUTIONS || DEFAULT_HLS_RESOLUTIONS_ENV;
   const tokens = rawEnv
     .split(",")
     .map((t) => t.trim().toLowerCase())

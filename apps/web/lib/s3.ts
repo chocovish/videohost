@@ -72,7 +72,7 @@ export async function ensureBucketExists(): Promise<void> {
               AllowedHeaders: ["*"],
               AllowedMethods: ["GET", "PUT", "POST", "DELETE", "HEAD"],
               AllowedOrigins: ["*"],
-              ExposeHeaders: ["ETag"],
+              ExposeHeaders: ["ETag", "Content-Range", "Accept-Ranges", "Content-Length"],
               MaxAgeSeconds: 3000,
             },
           ],
@@ -110,6 +110,19 @@ export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeco
 }
 
 
+export function getRenditionPlaybackUrl(storageKey: string): string {
+  const mode = (
+    process.env.STREAMING_PROTOCOL ||
+    process.env.NEXT_PUBLIC_STREAMING_PROTOCOL ||
+    "dash"
+  ).toLowerCase().trim();
+
+  // Strip any specific manifest filename if present to get the generic base key
+  const cleanKey = storageKey.replace(/\/(?:master\.(?:mpd|m3u8)|manifest\.mpd)?$/, "");
+  const manifest = mode === "hls" ? "master.m3u8" : "master.mpd";
+  return `/api/hls/${cleanKey}/${manifest}`;
+}
+
 export async function getPlaybackUrl(video: {
   status: string;
   organizationId: string;
@@ -120,9 +133,30 @@ export async function getPlaybackUrl(video: {
 }): Promise<string | null> {
   if (video.status !== "READY") return null;
   if (video.requireHls || (video.renditions && video.renditions.length > 0)) {
-    return `/api/hls/${video.organizationId}/${video.id}/hls/master.m3u8`;
+    const rawStorageKey = video.renditions?.[0]?.storageKey;
+    if (rawStorageKey) {
+      return getRenditionPlaybackUrl(rawStorageKey);
+    }
+    const mode = (
+      process.env.STREAMING_PROTOCOL ||
+      process.env.NEXT_PUBLIC_STREAMING_PROTOCOL ||
+      "dash"
+    ).toLowerCase().trim();
+
+    if (mode === "hls") {
+      return getHlsPlaybackUrl(video.organizationId, video.id);
+    }
+    return getDashPlaybackUrl(video.organizationId, video.id);
   }
   return await getPresignedPlaybackUrl(video.originalKey);
+}
+
+export function getDashPlaybackUrl(organizationId: string, videoId: string): string {
+  return `/api/hls/${organizationId}/${videoId}/dash/master.mpd`;
+}
+
+export function getHlsPlaybackUrl(organizationId: string, videoId: string): string {
+  return `/api/hls/${organizationId}/${videoId}/dash/master.m3u8`;
 }
 
 export async function deleteVideoFromS3(

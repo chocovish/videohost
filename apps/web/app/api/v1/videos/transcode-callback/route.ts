@@ -44,6 +44,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
+    // Video was cancelled or is being deleted — ignore any further updates
+    if (video.status === "CANCELLED") {
+      console.log(`[Transcode Callback] Ignoring callback for cancelled video ${videoId} (status: ${status})`);
+      return NextResponse.json({ success: true, status: "CANCELLED", ignored: true, videoId });
+    }
+
     const orgId = organizationId || video.organizationId;
 
     if (status === "PROCESSING") {
@@ -66,12 +72,14 @@ export async function POST(req: Request) {
         for (const rend of renditions) {
           const rSize = Number(rend.sizeBytes || 0);
           totalRenditionsSizeBytes += rSize;
+          const rawKey = rend.storageKey || "";
+          const genericStorageKey = rawKey.replace(/\/(?:master\.(?:mpd|m3u8)|manifest\.mpd)?$/, "");
           await db.videoRendition.create({
             data: {
               videoId,
               resolution: rend.resolution,
               bitrateKbps: rend.bitrateKbps,
-              storageKey: rend.storageKey,
+              storageKey: genericStorageKey || `${orgId}/${videoId}/dash`,
               sizeBytes: BigInt(rSize),
             },
           });

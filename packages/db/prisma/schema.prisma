@@ -296,6 +296,7 @@ enum VideoStatus {
   PROCESSING
   READY
   FAILED
+  CANCELLED
 }
 
 model VideoRendition {

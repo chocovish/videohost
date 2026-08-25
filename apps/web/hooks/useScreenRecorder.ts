@@ -379,11 +379,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       }
 
       // 6. Prepare MediaRecorder
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-        ? "video/webm;codecs=vp9"
-        : MediaRecorder.isTypeSupported("video/webm")
-        ? "video/webm"
-        : "video/mp4";
+      const mimeType = "video/webm";
 
       recordedChunksRef.current = [];
       const recorderOptions: MediaRecorderOptions = {
@@ -418,10 +414,8 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
           now.getDate()
         ).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-        const isMp4 = (finalBlob.type || mimeType).includes("mp4");
-        const ext = isMp4 ? "mp4" : "webm";
-        const fileName = `Studio Recording ${formattedDate}.${ext}`;
-        const outputMime = finalBlob.type || (isMp4 ? "video/mp4" : "video/webm");
+        const fileName = `Studio Recording ${formattedDate}.webm`;
+        const outputMime = finalBlob.type || "video/webm";
         const file = new File([finalBlob], fileName, { type: outputMime });
 
         setRecordedFile(file);
@@ -538,9 +532,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     const a = document.createElement("a");
     a.href = previewUrl || URL.createObjectURL(recordedFile!);
     const nameToUse = customFilename?.trim() || title.trim() || "Studio Recording";
-    const isMp4 = recordedFile?.name?.endsWith(".mp4") || recordedFile?.type?.includes("mp4");
-    const defaultExt = isMp4 ? ".mp4" : ".webm";
-    a.download = nameToUse.endsWith(".webm") || nameToUse.endsWith(".mp4") ? nameToUse : `${nameToUse}${defaultExt}`;
+    a.download = nameToUse.endsWith(".webm") ? nameToUse : `${nameToUse}.webm`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

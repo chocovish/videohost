@@ -26,6 +26,7 @@ import {
   Check,
   CheckSquare,
   X,
+  Ban,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
@@ -60,7 +61,7 @@ interface VideoItem {
   id: string;
   title: string;
   description?: string;
-  status: "UPLOADING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+  status: "UPLOADING" | "QUEUED" | "PROCESSING" | "READY" | "FAILED" | "CANCELLED";
   progress?: number;
   durationSeconds?: number;
   sizeBytes?: number | null;
@@ -227,6 +228,33 @@ function UploadedVideosContent() {
     setDeleteConfirm({ type: "video", id: videoId, name: title });
   };
 
+  const [cancellingVideoIds, setCancellingVideoIds] = useState<Set<string>>(new Set());
+
+  const handleCancelTranscode = async (e: React.MouseEvent, videoId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setCancellingVideoIds((prev) => new Set(prev).add(videoId));
+    try {
+      const res = await fetch(`/api/v1/videos/${videoId}/cancel`, { method: "POST" });
+      if (res.ok) {
+        await refreshAll();
+      } else {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "Failed to cancel transcoding");
+      }
+    } catch (err) {
+      console.error("Error cancelling transcode:", err);
+      alert("An error occurred while cancelling transcoding");
+    } finally {
+      setCancellingVideoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(videoId);
+        return next;
+      });
+    }
+  };
+
   const handleExecuteDelete = async () => {
     if (!deleteConfirm) return;
     setIsDeletingConfirm(true);
@@ -344,6 +372,12 @@ function UploadedVideosContent() {
         return (
           <Badge variant="destructive" className="gap-1">
             <AlertTriangle className="w-3 h-3" /> Transcode Failed
+          </Badge>
+        );
+      case "CANCELLED":
+        return (
+          <Badge variant="outline" className="gap-1 text-slate-600 border-slate-500/30 bg-slate-500/10">
+            <Ban className="w-3 h-3" /> Cancelled
           </Badge>
         );
       default:
@@ -909,6 +943,16 @@ function UploadedVideosContent() {
                               <Share2 className="w-4 h-4 text-muted-foreground" />
                               Share Video
                             </DropdownMenuItem>
+                            {(video.status === "QUEUED" || video.status === "PROCESSING") && (
+                              <DropdownMenuItem
+                                onClick={(e) => handleCancelTranscode(e, video.id)}
+                                disabled={cancellingVideoIds.has(video.id)}
+                                className="gap-2 font-medium text-amber-600 focus:text-amber-600 cursor-pointer"
+                              >
+                                <Ban className="w-4 h-4" />
+                                {cancellingVideoIds.has(video.id) ? "Cancelling..." : "Cancel Transcoding"}
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={(e) => handleDeleteVideo(e, video.id, video.title)}

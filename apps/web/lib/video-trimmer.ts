@@ -197,7 +197,6 @@ export async function trimVideo(
     Input,
     Output,
     WebMOutputFormat,
-    Mp4OutputFormat,
     BufferTarget,
     BlobSource,
     ALL_FORMATS,
@@ -217,10 +216,6 @@ export async function trimVideo(
     throw new Error("Unable to parse recorded video container for trimming.");
   }
 
-  const mime = (fileOrBlob.type || "video/webm").toLowerCase();
-  const isMp4 = mime.includes("mp4") || mime.includes("avc") || mime.includes("h264") || mime.includes("isom");
-  const outMime = isMp4 ? "video/mp4" : "video/webm";
-
   let finalBuffer: ArrayBuffer | null = null;
 
   // --- ATTEMPT 1: FAST DIRECT STREAM COPY (Zero Re-encoding, Instantaneous) ---
@@ -228,7 +223,7 @@ export async function trimVideo(
     onProgress?.(15, "Performing direct stream copy (no re-encoding)...");
     const fastTarget = new BufferTarget();
     const fastOutput = new Output({
-      format: isMp4 ? new Mp4OutputFormat() : new WebMOutputFormat(),
+      format: new WebMOutputFormat(),
       target: fastTarget,
     });
 
@@ -326,7 +321,7 @@ export async function trimVideo(
     onProgress?.(25, "Encoding trimmed video frames...");
     const fallbackTarget = new BufferTarget();
     const fallbackOutput = new Output({
-      format: isMp4 ? new Mp4OutputFormat() : new WebMOutputFormat(),
+      format: new WebMOutputFormat(),
       target: fallbackTarget,
     });
 
@@ -359,13 +354,12 @@ export async function trimVideo(
 
   onProgress?.(94, "Finalizing container indexing & thumbnails...");
 
-  const trimmedBlob = new Blob([finalBuffer], { type: outMime });
+  const trimmedBlob = new Blob([finalBuffer], { type: "video/webm" });
 
   const originalName = fileOrBlob instanceof File ? fileOrBlob.name : "Studio Recording.webm";
-  const ext = isMp4 ? ".mp4" : ".webm";
   const nameBase = originalName.replace(/\.[^/.]+$/, "").replace(/\s*\(Trimmed(\s*\d+)?\)$/, "");
-  const trimmedName = `${nameBase} (Trimmed)${ext}`;
-  const trimmedFile = new File([trimmedBlob], trimmedName, { type: outMime });
+  const trimmedName = `${nameBase} (Trimmed).webm`;
+  const trimmedFile = new File([trimmedBlob], trimmedName, { type: "video/webm" });
 
   const previewUrl = URL.createObjectURL(trimmedBlob);
   const trimmedDuration = Math.max(0.1, endTime - startTime);
@@ -385,7 +379,7 @@ export async function trimVideo(
       thumbnailBlob: null,
       thumbnailUrl: null,
       sizeBytes: trimmedFile.size,
-      mimeType: outMime,
+      mimeType: "video/webm",
     };
   }
 

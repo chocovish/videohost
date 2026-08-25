@@ -56,7 +56,11 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   };
 
   const renditions = parseRenditionResolutions();
-  console.log(`[Queue Dispatch] Configured HLS renditions for job (${videoId}):`, renditions.map((r) => r.resolution).join(", "));
+  const rawSegments = parseInt(process.env.STREAMING_SEGMENTS || process.env.HLS_SEGMENTS || "0", 10);
+  const hlsSegments = isNaN(rawSegments) ? 0 : rawSegments;
+  console.log(
+    `[Queue Dispatch] Configured HLS renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${hlsSegments}`
+  );
 
   if (containerUrl) {
     console.log(`[Queue Dispatch] Triggering Container worker at ${containerUrl}/transcode for videoId: ${videoId}`);
@@ -79,6 +83,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
           callbackUrl,
           s3: s3Config,
           renditions,
+          hlsSegments,
         }),
       });
 
@@ -107,6 +112,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
         callbackUrl,
         s3: s3Config,
         renditions,
+        hlsSegments,
       },
       {
         attempts: 3,
@@ -119,5 +125,56 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   }
 
   return { videoId, triggeredViaContainer };
+}
+
+/**
+ * Requests cancellation of a queued or in-progress transcode job for a video.
+ * Best-effort: contacts the container worker's /cancel endpoint and removes any
+ * pending BullMQ jobs for the video.
+ */
+export async function cancelTranscodeJob(videoId: string): Promise<void> {
+  const containerUrl = process.env.CONTAINER_WORKER_URL;
+  const workerSecret = process.env.WORKER_SECRET_TOKEN;
+
+  if (containerUrl) {
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (workerSecret) {
+        headers["Authorization"] = `Bearer ${workerSecret}`;
+        headers["x-worker-secret"] = workerSecret;
+      }
+
+      const res = await fetch(`${containerUrl.replace(/\/$/, "")}/cancel`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ videoId }),
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        console.log(`[Queue Dispatch] Worker accepted cancel for videoId ${videoId}:`, JSON.stringify(data));
+      } else if (res.status === 404) {
+        console.log(`[Queue Dispatch] No active job on worker for videoId ${videoId}`);
+      } else {
+        console.error(`[Queue Dispatch] Worker cancel error (${res.status}) for videoId ${videoId}`);
+      }
+    } catch (err: any) {
+      console.error(`[Queue Dispatch] Failed to contact worker cancel endpoint:`, err?.message || err);
+    }
+  }
+
+  // Remove any queued/delayed BullMQ jobs for this video
+  if (transcodeQueue) {
+    try {
+      const jobs = await transcodeQueue.getJobs(["waiting", "active", "delayed"]);
+      const matching = jobs.filter((j) => j?.data?.videoId === videoId);
+      await Promise.allSettled(matching.map((j) => j.remove()));
+      if (matching.length > 0) {
+        console.log(`[Queue Dispatch] Removed ${matching.length} BullMQ job(s) for videoId ${videoId}`);
+      }
+    } catch (err: any) {
+      console.error(`[Queue Dispatch] Failed to remove BullMQ jobs for videoId ${videoId}:`, err?.message || err);
+    }
+  }
 }
 

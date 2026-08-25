@@ -228,111 +228,16 @@
 
 /*
  * ============================================================
- * VIDEO.JS
+ * VIDEO.JS 10 (@videojs/react)
  * ============================================================
+ * Theme the default skin via its CSS custom properties.
+ * Reference: @videojs/react/video/skin.css (.media-default-skin)
  */
 
-.video-js .vjs-big-play-button {
-  background-color: var(--primary) !important;
-  border-color: var(--primary) !important;
-  border-radius: 9999px !important;
-  color: var(--primary-foreground) !important;
-  width: 70px !important;
-  height: 70px !important;
-  line-height: 70px !important;
-  margin-top: -35px !important;
-  margin-left: -35px !important;
-}
-
-.video-js .vjs-play-progress {
-  background-color: var(--primary) !important;
-}
-
-.video-js .vjs-volume-level {
-  background-color: var(--primary) !important;
-}
-
-/*
- * Custom Video.js Quality Selector
- */
-
-.video-js .vjs-quality-button {
-  position: relative;
-  cursor: pointer;
-}
-
-.video-js .vjs-quality-button .vjs-icon-placeholder:before {
-  content: '\f114';
-  font-family: VideoJS;
-}
-
-.video-js .vjs-quality-dropdown-menu {
-  display: none;
-  position: absolute;
-  bottom: 3.2em;
-  left: 50%;
-  transform: translateX(-50%);
-
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  border-radius: 0.75rem !important;
-
-  padding: 6px 0 !important;
-
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.6),
-    0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
-
-  min-width: 140px !important;
-  z-index: 100 !important;
-}
-
-.video-js .vjs-quality-dropdown-list {
-  list-style: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.video-js .vjs-quality-dropdown-item {
-  font-size: 12px !important;
-  line-height: 1.5 !important;
-  padding: 8px 14px !important;
-  text-align: left !important;
-
-  color: #cbd5e1 !important;
-
-  cursor: pointer !important;
-  border-radius: 0.375rem !important;
-  margin: 2px 4px !important;
-
-  transition: all 0.15s ease !important;
-
-  font-weight: 500 !important;
-  white-space: nowrap !important;
-}
-
-.video-js .vjs-quality-dropdown-item small {
-  color: #94a3b8 !important;
-  font-size: 10px !important;
-  margin-left: 4px !important;
-}
-
-.video-js .vjs-quality-dropdown-item:hover {
-  background-color: rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
-}
-
-.video-js .vjs-quality-dropdown-item.vjs-selected {
-  background-color: var(--primary) !important;
-  color: var(--primary-foreground) !important;
-  font-weight: 700 !important;
-}
-
-.video-js .vjs-quality-dropdown-item.vjs-selected small {
-  color: var(--primary-foreground) !important;
+video-player,
+.media-default-skin {
+  /* Brand accent for buttons, progress bar, volume level, etc. */
+  --media-color-primary: var(--primary);
 }
 
 /*
