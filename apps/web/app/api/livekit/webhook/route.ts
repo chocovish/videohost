@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { WebhookReceiver } from "livekit-server-sdk";
+import { WebhookReceiver, EgressStatus } from "livekit-server-sdk";
 import { db } from "@videohost/db";
-import { getLiveKitCredentials } from "@/lib/livekit";
+import { getLiveKitCredentials, getRoomServiceClient, getEgressClient } from "@/lib/livekit";
+
+const BOT_IDENTITIES = ["egress-recorder-bot"];
 
 /**
  * Helper to retrieve an existing folder or create it if not found.
@@ -65,6 +67,65 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[LiveKit Webhook] Event received: ${event.event}`);
+
+    // Stop web egress when the last human participant leaves.
+    // Web egress records a URL and is NOT bound to the room lifecycle, so it
+    // never auto-stops. The recorder bot also keeps the room non-empty, which
+    // prevents empty_timeout / room_finished from ever firing. So we stop the
+    // active egress ourselves once only bots remain in the room.
+    if ((event.event === "participant_left" || event.event === "room_finished") && event.room?.name) {
+      const roomName: string = event.room.name;
+
+      if (event.event === "participant_left") {
+        const roomService = getRoomServiceClient();
+        const participants = await roomService
+          .listParticipants(roomName)
+          .catch(() => [] as { identity?: string }[]);
+
+        const humansRemaining = participants.filter(
+          (p) => !BOT_IDENTITIES.includes(p.identity || "") && !(p.identity || "").includes("egress")
+        );
+
+        if (humansRemaining.length > 0) {
+          return NextResponse.json({ received: true });
+        }
+      }
+
+      try {
+        const egressClient = getEgressClient();
+        let activeEgresses = await egressClient.listEgress({ active: true }).catch(() => []);
+        if (!activeEgresses || activeEgresses.length === 0) {
+          activeEgresses = await egressClient.listEgress({}).catch(() => []);
+        }
+
+        for (const egress of activeEgresses) {
+          const isMatch =
+            egress.roomName === roomName ||
+            JSON.stringify(egress).includes(`/meet/${roomName}/egress`) ||
+            JSON.stringify(egress).includes(`/meet/${roomName}?`);
+
+          const isActive =
+            egress.status === EgressStatus.EGRESS_STARTING ||
+            egress.status === EgressStatus.EGRESS_ACTIVE ||
+            (egress.status as unknown as number) === 0 || // EGRESS_STARTING
+            (egress.status as unknown as number) === 1; // EGRESS_ACTIVE
+
+          if (isMatch && isActive && egress.egressId) {
+            console.log(
+              `[LiveKit Webhook] Last human left room "${roomName}", stopping egress ${egress.egressId}`
+            );
+            await egressClient.stopEgress(egress.egressId).catch((err) => {
+              console.warn(
+                `[LiveKit Webhook] Failed to stop egress ${egress.egressId}:`,
+                err?.message || err
+              );
+            });
+          }
+        }
+      } catch (err: any) {
+        console.error("[LiveKit Webhook] Error stopping egress on last participant leave:", err);
+      }
+    }
 
     // Handle Egress Ended Event
     if (event.event === "egress_ended") {

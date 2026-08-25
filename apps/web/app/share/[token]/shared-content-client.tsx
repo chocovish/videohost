@@ -100,6 +100,7 @@ export interface SharedData {
   organization: {
     name: string;
     logoUrl?: string | null;
+    coverUrl?: string | null;
     slug: string;
   };
   sharePageConfig?: SharePageConfigData | null;
@@ -1440,12 +1441,12 @@ export default function SharedContentClient({
       {/* Main Content */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         {/* Welcome Banner Image & Subtitle Banner */}
-        {(config.welcomeBannerUrl || config.welcomeTagline) && (
+        {((config.welcomeBannerUrl || organization.coverUrl) || config.welcomeTagline) && (
           <div className="max-w-4xl mx-auto space-y-4 text-center">
-            {config.welcomeBannerUrl && (
+            {(config.welcomeBannerUrl || organization.coverUrl) && (
               <div className={`w-full overflow-hidden border border-white/10 shadow-2xl max-h-72 bg-slate-900 ${roundnessClass}`}>
                 <img
-                  src={config.welcomeBannerUrl}
+                  src={config.welcomeBannerUrl || organization.coverUrl || ""}
                   alt="Welcome Banner"
                   className="w-full h-full object-cover"
                 />

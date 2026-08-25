@@ -10,6 +10,8 @@ import {
   Info,
   Save,
   Loader2,
+  Sparkles,
+  Crop,
 } from "lucide-react";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 
@@ -18,6 +20,7 @@ interface OrganizationDetailsSectionProps {
   setOrgName: (name: string) => void;
   activeOrg: OrganizationItem | undefined;
   currentDisplayLogo: string | null;
+  currentDisplayCover: string | null;
   hasUnsavedChanges: boolean;
   loading: boolean;
   isSavingOrgDetails: boolean;
@@ -25,6 +28,9 @@ interface OrganizationDetailsSectionProps {
   onRemoveLogo: () => void;
   onLogoFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   logoFileInputRef: React.RefObject<HTMLInputElement | null>;
+  onRemoveCover: () => void;
+  onCoverFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  coverFileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 export function OrganizationDetailsSection({
@@ -32,6 +38,7 @@ export function OrganizationDetailsSection({
   setOrgName,
   activeOrg,
   currentDisplayLogo,
+  currentDisplayCover,
   hasUnsavedChanges,
   loading,
   isSavingOrgDetails,
@@ -39,6 +46,9 @@ export function OrganizationDetailsSection({
   onRemoveLogo,
   onLogoFileSelect,
   logoFileInputRef,
+  onRemoveCover,
+  onCoverFileSelect,
+  coverFileInputRef,
 }: OrganizationDetailsSectionProps) {
   return (
     <div className="glass-card rounded-2xl p-4 sm:p-6 border border-border space-y-6">
@@ -48,9 +58,9 @@ export function OrganizationDetailsSection({
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-base text-foreground">Active Organization Details</h3>
+            <h3 className="font-bold text-base text-foreground">Active Organization Details & Branding</h3>
             <p className="text-xs text-muted-foreground">
-              Manage organization display name and 1:1 resolution logo stored at the organization level
+              Manage organization display name, 1:1 logo, and header cover photo stored at the organization level
             </p>
           </div>
         </div>
@@ -63,8 +73,46 @@ export function OrganizationDetailsSection({
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left 4 cols: 1:1 Resolution Organization Logo Box */}
+        {/* Row 1: Org Display Name and Workspace Info */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+            <div className="md:col-span-8 space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Organization Display Name
+              </label>
+              <input
+                type="text"
+                required
+                disabled={loading}
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="e.g. Acme Corporation"
+                className="w-full px-4 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden focus:ring-2 focus:ring-primary transition-all disabled:opacity-60"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Visible across your shared video pages, playlists, live meetings, and public creator offerings hub.
+              </p>
+            </div>
+
+            {activeOrg && (
+              <div className="md:col-span-4 p-3 rounded-xl bg-muted/40 border border-border space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-muted-foreground">Workspace Slug</span>
+                  <span className="font-mono text-xs font-bold text-foreground">{activeOrg.slug}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-muted-foreground">Plan & Entitlement</span>
+                  <span className="capitalize font-bold text-primary">{activeOrg.planName} Plan</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Organization Media Assets (Logo & Cover Photo) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start pt-2 border-t border-border">
+          
+          {/* Left 4 cols: 1:1 Square Logo Box */}
           <div className="lg:col-span-4 p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
@@ -94,7 +142,7 @@ export function OrganizationDetailsSection({
                 <div
                   onClick={() => logoFileInputRef.current?.click()}
                   className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-xs"
-                  title="Click to upload or replace logo"
+                  title="Click to upload or crop logo"
                 >
                   <Camera className="w-5 h-5 text-primary" />
                   <span className="text-[10px] font-bold">Change 1:1</span>
@@ -109,7 +157,7 @@ export function OrganizationDetailsSection({
                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer border border-primary/20 shadow-2xs"
                 >
                   <Upload className="w-3.5 h-3.5" />
-                  {currentDisplayLogo ? "Replace" : "Upload Logo"}
+                  {currentDisplayLogo ? "Change Logo" : "Upload Logo"}
                 </button>
 
                 {currentDisplayLogo && (
@@ -136,64 +184,115 @@ export function OrganizationDetailsSection({
             <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed pt-1">
               <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
               <span>
-                Saved at 1:1 square ratio (e.g. 512×512). Supports PNG, JPG, SVG, WebP up to 5MB.
+                1:1 square ratio (e.g. 512×512). Displayed as organization avatar across share links and portals.
               </span>
             </div>
           </div>
 
-          {/* Right 8 cols: Organization Name and Slug */}
-          <div className="lg:col-span-8 space-y-4 flex flex-col justify-between h-full">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                  Organization Display Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  disabled={loading}
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="e.g. Acme Corporation"
-                  className="w-full px-4 py-2.5 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden focus:ring-2 focus:ring-primary transition-all disabled:opacity-60"
-                />
-                <p className="text-[11px] text-muted-foreground mt-1.5">
-                  Visible across your shared videos, playlists, meetings, and team invites.
-                </p>
+          {/* Right 8 cols: Organization Cover Photo / Banner Box */}
+          <div className="lg:col-span-8 p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-primary" /> Organization Cover Photo / Banner
+              </label>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-primary/15 text-primary border border-primary/30 font-mono">
+                3:1 Banner Ratio
+              </span>
+            </div>
+
+            {/* Cover Photo Preview & Action Triggers */}
+            <div className="flex flex-col items-center justify-center p-4 bg-card border border-border rounded-2xl space-y-3">
+              <div className="relative group w-full h-36 sm:h-44 rounded-2xl border-2 border-border bg-slate-900 shadow-xs overflow-hidden flex items-center justify-center">
+                {currentDisplayCover ? (
+                  <img
+                    src={currentDisplayCover}
+                    alt="Organization Cover Photo"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-muted-foreground space-y-2 p-4 text-center">
+                    <ImageIcon className="w-8 h-8 opacity-40 text-primary" />
+                    <span className="text-xs font-semibold text-slate-400">
+                      No cover photo uploaded yet (Optional)
+                    </span>
+                  </div>
+                )}
+
+                {/* Hover Overlay with Quick Crop / Change Trigger */}
+                <div
+                  onClick={() => coverFileInputRef.current?.click()}
+                  className="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-xs"
+                  title="Click to upload or crop cover photo"
+                >
+                  <Crop className="w-6 h-6 text-primary" />
+                  <span className="text-xs font-bold">Change & Crop Cover Photo</span>
+                </div>
               </div>
 
-              {activeOrg && (
-                <div className="p-3.5 rounded-xl bg-muted/40 border border-border space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">Workspace Slug</span>
-                    <span className="font-mono text-xs font-bold text-foreground">{activeOrg.slug}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">Plan & Entitlement</span>
-                    <span className="capitalize font-bold text-primary">{activeOrg.planName} Plan</span>
-                  </div>
+              {/* Cover Action Buttons */}
+              <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => coverFileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer border border-primary/20 shadow-2xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {currentDisplayCover ? "Change Cover Photo" : "Upload Cover Photo"}
+                  </button>
+
+                  {currentDisplayCover && (
+                    <button
+                      type="button"
+                      onClick={onRemoveCover}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Cover</span>
+                    </button>
+                  )}
                 </div>
-              )}
+
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  Recommended: 1200×400px (3:1)
+                </span>
+              </div>
+
+              <input
+                type="file"
+                ref={coverFileInputRef}
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                onChange={onCoverFileSelect}
+                className="hidden"
+              />
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-border">
-              <button
-                type="submit"
-                disabled={isSavingOrgDetails || loading || !hasUnsavedChanges}
-                className="w-full sm:w-auto px-6 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-xs hover:opacity-95 min-h-[44px] cursor-pointer"
-              >
-                {isSavingOrgDetails ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Saving Changes...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" /> Save Organization Details
-                  </>
-                )}
-              </button>
+            <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed pt-1">
+              <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+              <span>
+                Standard header banner displayed on your shared video portals, welcome headers, and creator offerings hub.
+              </span>
             </div>
           </div>
+        </div>
+
+        {/* Form Save Button Footer */}
+        <div className="flex justify-end pt-4 border-t border-border">
+          <button
+            type="submit"
+            disabled={isSavingOrgDetails || loading || !hasUnsavedChanges}
+            className="w-full sm:w-auto px-6 py-2.5 bg-primary text-white font-semibold text-sm rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-xs hover:opacity-95 min-h-[44px] cursor-pointer"
+          >
+            {isSavingOrgDetails ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving Changes...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Save Organization Details & Media
+              </>
+            )}
+          </button>
         </div>
       </form>
     </div>

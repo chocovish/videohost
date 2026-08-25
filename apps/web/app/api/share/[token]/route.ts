@@ -100,6 +100,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     const organization = {
       name: item.organization.name,
       logoUrl: await getPresignedPlaybackUrl(item.organization.logoUrl),
+      coverUrl: await getPresignedPlaybackUrl(item.organization.coverUrl),
       slug: item.organization.slug,
     };
 

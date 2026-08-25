@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { getEgressClient, createMeetingAccessToken } from "@/lib/livekit";
+import { getEgressClient } from "@/lib/livekit";
 import { EncodedFileOutput, EncodedFileType, S3Upload, EncodingOptionsPreset, EgressStatus } from "livekit-server-sdk";
 
 /**
@@ -53,13 +53,14 @@ export async function POST(
     const body = await req.json().catch(() => ({}));
     const {
       action = "toggle",
-      mode = "room",
-      participantIdentity,
-      showCamera = true,
-      showScreen = true,
-      screenShare = true,
-      pipPosition = "bottom-right",
+      layout = "grid",
     } = body;
+
+    // Room Composite default layouts available out of the box in the egress template
+    const ALLOWED_LAYOUTS = ["grid", "speaker", "single-speaker"] as const;
+    const compositeLayout = (ALLOWED_LAYOUTS as readonly string[]).includes(layout)
+      ? layout
+      : "grid";
 
     const meeting = await db.meeting.findUnique({
       where: { id },
@@ -212,40 +213,17 @@ export async function POST(
             });
           }
 
-          // Generate dedicated egress bot token
-          const botToken = await createMeetingAccessToken({
-            roomName: meeting.id,
-            identity: "egress-recorder-bot",
-            name: "Egress Recorder Bot",
-            canPublish: false,
-            canSubscribe: true,
-            canModerate: false,
-            isHidden: true,
-          });
-
-          // Egress base URL (accessible by headless Chromium inside LiveKit Egress container)
-          const egressBaseUrl = (process.env.LIVEKIT_EGRESS_ACCESSIBLE_URL || process.env.APP_URL)!.replace(/\/+$/, "");
-          const egressWebUrl = `${egressBaseUrl}/meet/${meeting.id}/egress?token=${botToken}&mode=${mode}&target=${encodeURIComponent(participantIdentity || "")}&cam=${showCamera ? "1" : "0"}&screen=${showScreen ? "1" : "0"}&pip=${pipPosition}&internal=1`;
-
-          let egressInfo;
-          try {
-            // Attempt high-fidelity Web Egress with Picture-in-Picture layout
-            egressInfo = await egressClient.startWebEgress(
-              egressWebUrl,
-              fileOutput,
-              {
-                encodingOptions: EncodingOptionsPreset.H264_1080P_30,
-              }
-            );
-          } catch (webErr: any) {
-            console.warn("startWebEgress fallback to startRoomCompositeEgress:", webErr?.message || webErr);
-            // Fallback to RoomCompositeEgress if web egress endpoint is unavailable
-            egressInfo = await egressClient.startRoomCompositeEgress(
-              meeting.id,
-              fileOutput,
-              { layout: "grid" }
-            );
-          }
+          // Room Composite Egress: bound to the room lifecycle. It ends automatically
+          // when the room closes (all participants left / ended for all), and LiveKit
+          // renders the composite internally — no bot participant required.
+          const egressInfo = await egressClient.startRoomCompositeEgress(
+            meeting.id,
+            fileOutput,
+            {
+              layout: compositeLayout,
+              encodingOptions: EncodingOptionsPreset.H264_1080P_30,
+            }
+          );
 
           if (egressInfo?.egressId) {
             egressId = egressInfo.egressId;

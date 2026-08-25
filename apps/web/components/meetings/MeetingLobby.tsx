@@ -480,8 +480,8 @@ export default function MeetingLobby({
                   type="button"
                   onClick={toggleAudio}
                   className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${audioEnabled
-                      ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
-                      : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
+                    ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
+                    : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
                     }`}
                   title={audioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                 >
@@ -491,8 +491,8 @@ export default function MeetingLobby({
                   type="button"
                   onClick={toggleVideo}
                   className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${videoEnabled
-                      ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
-                      : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
+                    ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
+                    : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
                     }`}
                   title={videoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                 >
@@ -607,7 +607,7 @@ export default function MeetingLobby({
               <Button
                 type="submit"
                 disabled={!displayName.trim() || isInitializing}
-                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-black font-extrabold text-sm rounded-xl shadow-lg shadow-primary/20 gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-primary/20 gap-2 cursor-pointer"
               >
                 {isInitializing ? (
                   <>

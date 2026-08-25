@@ -40,6 +40,7 @@ export async function GET(req: Request) {
         name: m.organization.name,
         slug: m.organization.slug,
         logoUrl: await getPresignedPlaybackUrl(m.organization.logoUrl),
+        coverUrl: await getPresignedPlaybackUrl(m.organization.coverUrl),
         themeId: m.organization.themeId,
         planName: m.organization.plan.name,
         role: m.role,

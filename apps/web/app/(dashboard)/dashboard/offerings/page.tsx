@@ -36,6 +36,7 @@ import {
   SlidersHorizontal,
   Crop,
   ExternalLink,
+  Info,
 } from "lucide-react";
 import {
   OfferingsConfigData,
@@ -1158,110 +1159,80 @@ export default function OfferingsDashboardPage() {
                 </Select>
               </div>
 
-              {/* Banner & Avatar Uploads */}
+              {/* Organization Level Unified Branding & Media */}
               <div className="space-y-3 pt-2 border-t border-border">
-                <div className="text-xs font-bold text-foreground">Media & Branding</div>
-
-                {/* Banner Upload */}
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                    <div>
-                      <span>Cover Banner</span>
-                      <span className="ml-1.5 text-[10px] text-lime-600 dark:text-lime-400 font-mono">3:1 / 16:9</span>
-                    </div>
-                    {config.bannerUrl && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRemoveBanner(true);
-                          setNewBannerData(null);
-                          setConfig((prev) => ({ ...prev, bannerUrl: null }));
-                        }}
-                        className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
-                      >
-                        Remove Banner
-                      </button>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary" />
+                    <span>Organization Media & Branding</span>
                   </div>
-                  {config.bannerUrl && (
-                    <div className="relative group rounded-xl overflow-hidden border border-border aspect-[3/1] bg-muted/40 shadow-xs">
-                      <img
-                        src={config.bannerUrl}
-                        alt="Current Banner"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                      <div
-                        onClick={() => bannerInputRef.current?.click()}
-                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-bold cursor-pointer backdrop-blur-xs"
-                      >
-                        <Crop className="w-4 h-4 text-primary" />
-                        <span>Change / Crop</span>
-                      </div>
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    ref={bannerInputRef}
-                    accept="image/*"
-                    onChange={handleBannerFileSelect}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => bannerInputRef.current?.click()}
-                    className="w-full text-xs font-bold gap-1.5 cursor-pointer rounded-xl"
+                  <Link
+                    href="/dashboard/settings"
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
                   >
-                    <ImageIcon className="w-3.5 h-3.5" />
-                    <span>{config.bannerUrl ? "Change Banner Image (Crop)" : "Upload Banner Image (3:1)"}</span>
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground">
-                    Recommended: <strong>1200×400px</strong> (3:1 panorama) or 1920×640px. Opens cropper.
-                  </p>
+                    <span>Org Settings</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </Link>
                 </div>
 
-                {/* Avatar Upload */}
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-semibold text-muted-foreground flex items-center justify-between">
-                    <div>
-                      <span>Creator Avatar / Logo</span>
-                      <span className="ml-1.5 text-[10px] text-lime-600 dark:text-lime-400 font-mono">1:1 Square</span>
+                <div className="p-3.5 rounded-2xl bg-muted/40 border border-border space-y-3.5">
+                  {/* Current Active Org Assets Preview Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                    {/* Logo (1:1) */}
+                    <div className="sm:col-span-4 flex items-center gap-2 p-2 rounded-xl bg-card border border-border">
+                      <div className="w-9 h-9 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                        {config.avatarUrl || config.orgLogoUrl ? (
+                          <img
+                            src={config.avatarUrl || config.orgLogoUrl || ""}
+                            alt="Org Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-extrabold text-xs text-primary">
+                            {(config.orgName || "O").charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-foreground block truncate">Logo</span>
+                        <span className="text-[9px] text-muted-foreground">1:1 Square</span>
+                      </div>
                     </div>
-                    {config.avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRemoveAvatar(true);
-                          setNewAvatarData(null);
-                          setConfig((prev) => ({ ...prev, avatarUrl: null }));
-                        }}
-                        className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
-                      >
-                        Remove Avatar
-                      </button>
-                    )}
+
+                    {/* Cover Banner (3:1) */}
+                    <div className="sm:col-span-8 flex items-center gap-2 p-2 rounded-xl bg-card border border-border">
+                      <div className="w-18 h-9 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                        {config.bannerUrl ? (
+                          <img
+                            src={config.bannerUrl}
+                            alt="Org Cover"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-muted-foreground opacity-50" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-foreground block truncate">Cover Banner</span>
+                        <span className="text-[9px] text-muted-foreground">3:1 Header Banner</span>
+                      </div>
+                    </div>
                   </div>
-                  <input
-                    type="file"
-                    ref={avatarInputRef}
-                    accept="image/*"
-                    onChange={handleAvatarFileSelect}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => avatarInputRef.current?.click()}
-                    className="w-full text-xs font-bold gap-1.5 cursor-pointer rounded-xl"
+
+                  <div className="text-[10px] text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                    <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      Logo and cover photo uploads have been unified under <strong>Organization Settings</strong> to ensure consistent branding across your share links, video embeds, and creator hub.
+                    </span>
+                  </div>
+
+                  <Link
+                    href="/dashboard/settings"
+                    className="w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-primary/20"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{config.avatarUrl ? "Change Avatar Image (Crop)" : "Upload Avatar Image (1:1)"}</span>
-                  </Button>
-                  <p className="text-[10px] text-muted-foreground">
-                    Recommended: <strong>400×400px</strong> or 512×512px (1:1 square). Opens cropper.
-                  </p>
+                    <span>Manage Logo & Cover in Org Settings</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
               </div>
 

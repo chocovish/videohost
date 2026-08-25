@@ -78,6 +78,7 @@ model Organization {
   name                 String
   slug                 String   @unique
   logoUrl              String?
+  coverUrl             String?
   themeId              String   @default("lime")
   planId               String
   plan                 Plan     @relation(fields: [planId], references: [id])

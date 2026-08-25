@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Paintbrush,
   Sparkles,
@@ -13,10 +14,10 @@ import {
   Share2,
   Eye,
   Palette,
-  Upload,
-  Trash2,
-  ImageIcon,
   Info,
+  Building2,
+  Image as ImageIcon,
+  ArrowRight,
 } from "lucide-react";
 import SharedContentClient, { SharePageConfigData, SharedData } from "@/app/share/[token]/shared-content-client";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,6 @@ const DEFAULT_CONFIG: SharePageConfigData = {
   customTitle: "",
   welcomeTagline: "",
   showLogo: true,
-  customLogoUrl: null,
-  welcomeBannerUrl: null,
   showCta: false,
   ctaText: "Book a Demo",
   ctaUrl: "https://example.com/demo",
@@ -58,27 +57,6 @@ const DEFAULT_CONFIG: SharePageConfigData = {
   footerText: "",
 };
 
-// Sample video item for the live preview editor
-const SAMPLE_PREVIEW_DATA: SharedData = {
-  type: "video",
-  accessMode: "PUBLIC",
-  organization: {
-    name: "Acme Media Studio",
-    logoUrl: null,
-    slug: "acme-media",
-  },
-  video: {
-    id: "sample-preview-video",
-    title: "Product Overview & Feature Showcase 2026",
-    description: "Welcome to our live video share page preview! Customize your page settings on the left to see your custom themes, uploaded welcome banner, logo, CTA button, and social options update instantly.",
-    status: "READY",
-    durationSeconds: 148,
-    thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
-    playbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    createdAt: new Date().toISOString(),
-  },
-};
-
 export default function CustomizeSharePage() {
   const [config, setConfig] = useState<SharePageConfigData>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
@@ -86,14 +64,17 @@ export default function CustomizeSharePage() {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState<"theme" | "branding" | "cta" | "display">("theme");
 
-  // Draft Image States (Base64 strings for deferred upload on Save)
-  const [newCustomLogoData, setNewCustomLogoData] = useState<string | null>(null);
-  const [removeCustomLogo, setRemoveCustomLogo] = useState(false);
-  const [newWelcomeBannerData, setNewWelcomeBannerData] = useState<string | null>(null);
-  const [removeWelcomeBanner, setRemoveWelcomeBanner] = useState(false);
-
-  const logoFileInputRef = useRef<HTMLInputElement>(null);
-  const welcomeBannerInputRef = useRef<HTMLInputElement>(null);
+  const [orgData, setOrgData] = useState<{
+    name: string;
+    logoUrl?: string | null;
+    coverUrl?: string | null;
+    slug: string;
+  }>({
+    name: "My Organization",
+    logoUrl: null,
+    coverUrl: null,
+    slug: "my-org",
+  });
 
   useEffect(() => {
     fetchConfig();
@@ -102,9 +83,13 @@ export default function CustomizeSharePage() {
   const fetchConfig = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/organization/share-config");
-      if (res.ok) {
-        const data = await res.json();
+      const [resConfig, resOrg] = await Promise.all([
+        fetch("/api/organization/share-config"),
+        fetch("/api/organization"),
+      ]);
+
+      if (resConfig.ok) {
+        const data = await resConfig.json();
         if (data.config) {
           setConfig((prev) => ({
             ...prev,
@@ -112,80 +97,22 @@ export default function CustomizeSharePage() {
           }));
         }
       }
+
+      if (resOrg.ok) {
+        const orgJson = await resOrg.json();
+        if (orgJson.organization) {
+          setOrgData({
+            name: orgJson.organization.name || "My Organization",
+            logoUrl: orgJson.organization.logoUrl || null,
+            coverUrl: orgJson.organization.coverUrl || null,
+            slug: orgJson.organization.slug || "my-org",
+          });
+        }
+      }
     } catch (e) {
-      console.error("Failed to load share config:", e);
+      console.error("Failed to load share config or organization data:", e);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleLogoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Logo image size must be less than 5MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setNewCustomLogoData(result);
-      setRemoveCustomLogo(false);
-      // Instant local preview in live preview window
-      setConfig((prev) => ({
-        ...prev,
-        customLogoUrl: result,
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveLogo = () => {
-    setNewCustomLogoData(null);
-    setRemoveCustomLogo(true);
-    setConfig((prev) => ({
-      ...prev,
-      customLogoUrl: null,
-    }));
-    if (logoFileInputRef.current) {
-      logoFileInputRef.current.value = "";
-    }
-  };
-
-  const handleWelcomeBannerFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 10 * 1024 * 1024) {
-      alert("Welcome banner image size must be less than 10MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      setNewWelcomeBannerData(result);
-      setRemoveWelcomeBanner(false);
-      // Instant local preview in live preview window
-      setConfig((prev) => ({
-        ...prev,
-        welcomeBannerUrl: result,
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleRemoveWelcomeBanner = () => {
-    setNewWelcomeBannerData(null);
-    setRemoveWelcomeBanner(true);
-    setConfig((prev) => ({
-      ...prev,
-      welcomeBannerUrl: null,
-    }));
-    if (welcomeBannerInputRef.current) {
-      welcomeBannerInputRef.current.value = "";
     }
   };
 
@@ -194,18 +121,10 @@ export default function CustomizeSharePage() {
       setSaving(true);
       setSavedSuccess(false);
 
-      const payload = {
-        ...config,
-        newCustomLogoData,
-        removeCustomLogo,
-        newWelcomeBannerData,
-        removeWelcomeBanner,
-      };
-
       const res = await fetch("/api/organization/share-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(config),
       });
 
       if (res.ok) {
@@ -216,10 +135,6 @@ export default function CustomizeSharePage() {
             ...data.config,
           }));
         }
-        setNewCustomLogoData(null);
-        setRemoveCustomLogo(false);
-        setNewWelcomeBannerData(null);
-        setRemoveWelcomeBanner(false);
 
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
@@ -249,13 +164,6 @@ export default function CustomizeSharePage() {
 
       if (res.ok) {
         setConfig(DEFAULT_CONFIG);
-        setNewCustomLogoData(null);
-        setRemoveCustomLogo(false);
-        setNewWelcomeBannerData(null);
-        setRemoveWelcomeBanner(false);
-        if (logoFileInputRef.current) logoFileInputRef.current.value = "";
-        if (welcomeBannerInputRef.current) welcomeBannerInputRef.current.value = "";
-
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
         setIsResetConfirmOpen(false);
@@ -268,6 +176,27 @@ export default function CustomizeSharePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const previewData: SharedData = {
+    type: "video",
+    accessMode: "PUBLIC",
+    organization: {
+      name: orgData.name,
+      logoUrl: orgData.logoUrl,
+      coverUrl: orgData.coverUrl,
+      slug: orgData.slug,
+    },
+    video: {
+      id: "sample-preview-video",
+      title: "Product Overview & Feature Showcase 2026",
+      description: "Welcome to our live video share page preview! Customize your page settings on the left to see your custom themes, welcome banner, logo, CTA button, and social options update instantly.",
+      status: "READY",
+      durationSeconds: 148,
+      thumbnailUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
+      playbackUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      createdAt: new Date().toISOString(),
+    },
   };
 
   if (loading) {
@@ -517,117 +446,88 @@ export default function CustomizeSharePage() {
                 />
               </div>
 
-              {/* Uploadable Custom Logo Image */}
+              {/* Organization Level Unified Branding Card */}
               <div className="space-y-3 pt-3 border-t border-border">
-                <div>
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-                    Custom Logo Image
-                  </label>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 mt-0.5">
-                    <Info className="w-3 h-3" />
-                    Recommended dimensions: 200 × 200px (Square 1:1 ratio)
-                  </p>
-                </div>
-
-                <div className="space-y-3 pt-1">
-                  {config.customLogoUrl ? (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-950 border border-border rounded-2xl">
-                      <img
-                        src={config.customLogoUrl}
-                        alt="Custom Logo Preview"
-                        className="w-12 h-12 rounded-xl object-cover border border-white/10 shadow-2xs"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-foreground truncate">Custom Logo Selected</p>
-                        <p className="text-[10px] text-muted-foreground">Will be saved to bucket on save</p>
-                      </div>
-                      <button
-                        onClick={handleRemoveLogo}
-                        className="p-2 rounded-xl text-red-500 hover:bg-red-500/10 border border-red-500/20 transition-all cursor-pointer"
-                        title="Remove custom logo"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => logoFileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border hover:border-primary p-4 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-primary/5 flex flex-col items-center gap-2"
-                    >
-                      <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-foreground">Click to upload custom logo</p>
-                        <p className="text-[10px] text-muted-foreground">PNG, JPG, SVG, WebP up to 5MB</p>
-                      </div>
-                    </div>
-                  )}
-                  <input
-                    type="file"
-                    ref={logoFileInputRef}
-                    accept="image/*"
-                    onChange={handleLogoFileSelect}
-                    className="hidden"
-                  />
-                </div>
-              </div>
-
-              {/* Uploadable Welcome Banner Image */}
-              <div className="space-y-3 pt-4 border-t border-border">
-                <div className="space-y-0.5">
-                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-                    Welcome Banner Image
-                  </label>
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                    <Info className="w-3 h-3" />
-                    Recommended dimensions: 1200 × 300px (4:1 Aspect Ratio)
-                  </p>
-                </div>
-
-                {config.welcomeBannerUrl ? (
-                  <div className="space-y-2 p-3 bg-slate-50 dark:bg-slate-950 border border-border rounded-2xl">
-                    <div className="w-full h-24 rounded-xl overflow-hidden bg-slate-900 border border-white/10">
-                      <img
-                        src={config.welcomeBannerUrl}
-                        alt="Welcome Banner Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <p className="text-[11px] font-bold text-muted-foreground">Welcome banner ready to upload</p>
-                      <button
-                        onClick={handleRemoveWelcomeBanner}
-                        className="px-3 py-1 text-xs font-bold text-red-500 hover:bg-red-500/10 border border-red-500/20 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Remove Banner</span>
-                      </button>
-                    </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-primary" /> Organization Branding & Assets
+                    </label>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Managed globally in Organization Settings
+                    </p>
                   </div>
-                ) : (
-                  <div
-                    onClick={() => welcomeBannerInputRef.current?.click()}
-                    className="border-2 border-dashed border-border hover:border-primary p-5 rounded-2xl text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-950/50 hover:bg-primary/5 flex flex-col items-center gap-2"
+                  <Link
+                    href="/dashboard/settings"
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-xs font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
                   >
-                    <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-                      <ImageIcon className="w-5 h-5" />
+                    <span>Org Settings</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-4">
+                  {/* Current Active Assets Preview Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                    {/* Logo (1:1) */}
+                    <div className="sm:col-span-4 flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-border">
+                      <div className="w-10 h-10 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                        {orgData.logoUrl ? (
+                          <img
+                            src={orgData.logoUrl}
+                            alt="Org Logo"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="font-extrabold text-xs text-primary">
+                            {orgData.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-foreground block truncate">Logo</span>
+                        <span className="text-[10px] text-muted-foreground">1:1 Square</span>
+                      </div>
                     </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-foreground">Click to upload welcome banner image</p>
-                      <p className="text-[10px] text-muted-foreground">PNG, JPG, WebP up to 10MB</p>
+
+                    {/* Cover Banner (3:1) */}
+                    <div className="sm:col-span-8 flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-border">
+                      <div className="w-20 h-10 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                        {orgData.coverUrl ? (
+                          <img
+                            src={orgData.coverUrl}
+                            alt="Org Cover"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="w-4 h-4 text-muted-foreground opacity-50" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-[11px] font-bold text-foreground block truncate">Cover Photo</span>
+                        <span className="text-[10px] text-muted-foreground">Header Banner</span>
+                      </div>
                     </div>
                   </div>
-                )}
-                <input
-                  type="file"
-                  ref={welcomeBannerInputRef}
-                  accept="image/*"
-                  onChange={handleWelcomeBannerFileSelect}
-                  className="hidden"
-                />
+
+                  <div className="text-[11px] text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                    <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      Logo and cover banner uploads have been centralized to <strong>Organization Settings</strong> to ensure consistent branding across your share links, video embeds, and offerings catalog.
+                    </span>
+                  </div>
+
+                  <Link
+                    href="/dashboard/settings"
+                    className="w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-2 border border-primary/20"
+                  >
+                    <span>Upload or Change Logo & Cover in Org Settings</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </div>
 
+              {/* Welcome Subtitle & Font Size Slider */}
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="space-y-2">
                   <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
@@ -808,7 +708,7 @@ export default function CustomizeSharePage() {
           </div>
 
           <div className="border border-border rounded-2xl overflow-hidden shadow-2xl max-h-[750px] overflow-y-auto">
-            <SharedContentClient overrideConfig={config} previewData={SAMPLE_PREVIEW_DATA} />
+            <SharedContentClient overrideConfig={config} previewData={previewData} />
           </div>
         </div>
       </div>
@@ -818,7 +718,7 @@ export default function CustomizeSharePage() {
         open={isResetConfirmOpen}
         onOpenChange={setIsResetConfirmOpen}
         title="Reset Customization to Defaults?"
-        description="Are you sure you want to reset all branding settings to defaults? This will remove your custom logo and welcome banner images."
+        description="Are you sure you want to reset all theme and layout settings to defaults?"
         variant="danger"
         confirmText="Reset to Defaults"
         cancelText="Cancel"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, AlertCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import ImageCropper1to1Modal from "@/components/ImageCropper1to1Modal";
+import ImageCropperModal, { AspectRatioOption } from "@/components/ImageCropperModal";
 import {
   OrganizationSwitcherSection,
   OrganizationItem,
@@ -40,14 +40,25 @@ export default function SettingsPage() {
   const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
   const [newLogoData, setNewLogoData] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
+
+  // Organization cover photo state
+  const [orgCoverUrl, setOrgCoverUrl] = useState<string | null>(null);
+  const [newCoverData, setNewCoverData] = useState<string | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
+
   const [isSavingOrgDetails, setIsSavingOrgDetails] = useState(false);
   const [orgSuccessMsg, setOrgSuccessMsg] = useState("");
   const [orgErrorMsg, setOrgErrorMsg] = useState("");
 
-  // 1:1 Image Cropper Modal state
+  // Image Cropper Modal state (supports both 1:1 logo and 3:1 cover photo)
   const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [cropTarget, setCropTarget] = useState<"logo" | "cover">("logo");
+  const [cropAspectRatio, setCropAspectRatio] = useState<AspectRatioOption>("1:1");
+  const [cropTitle, setCropTitle] = useState("Crop Image");
+  const [cropDescription, setCropDescription] = useState("");
   const [rawSelectedImage, setRawSelectedImage] = useState<string | null>(null);
   const logoFileInputRef = useRef<HTMLInputElement | null>(null);
+  const coverFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Team members & invites state
   const [members, setMembers] = useState<Member[]>([]);
@@ -105,6 +116,10 @@ export default function SettingsPage() {
           setOrgLogoUrl(data.organization.logoUrl || null);
           setNewLogoData(null);
           setRemoveLogo(false);
+
+          setOrgCoverUrl(data.organization.coverUrl || null);
+          setNewCoverData(null);
+          setRemoveCover(false);
 
           if (data.organization.members) {
             setMembers(data.organization.members);
@@ -221,6 +236,10 @@ export default function SettingsPage() {
     reader.onload = (event) => {
       if (event.target?.result) {
         setRawSelectedImage(event.target.result as string);
+        setCropTarget("logo");
+        setCropAspectRatio("1:1");
+        setCropTitle("Crop Organization Logo (1:1 Ratio)");
+        setCropDescription("Position and zoom your organization logo to a 1:1 square ratio (e.g. 512×512px).");
         setIsCropperOpen(true);
       }
     };
@@ -231,9 +250,48 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCoverFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setOrgErrorMsg("Please select a valid image file (PNG, JPG, WebP)");
+      setTimeout(() => setOrgErrorMsg(""), 4000);
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setOrgErrorMsg("Cover photo size must be under 10MB");
+      setTimeout(() => setOrgErrorMsg(""), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setRawSelectedImage(event.target.result as string);
+        setCropTarget("cover");
+        setCropAspectRatio("3:1");
+        setCropTitle("Crop Organization Cover Photo (3:1 Banner)");
+        setCropDescription("Position and zoom your header cover banner (Recommended: 1200×400px 3:1 ratio).");
+        setIsCropperOpen(true);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    if (coverFileInputRef.current) {
+      coverFileInputRef.current.value = "";
+    }
+  };
+
   const handleCropComplete = (croppedBase64: string) => {
-    setNewLogoData(croppedBase64);
-    setRemoveLogo(false);
+    if (cropTarget === "logo") {
+      setNewLogoData(croppedBase64);
+      setRemoveLogo(false);
+    } else if (cropTarget === "cover") {
+      setNewCoverData(croppedBase64);
+      setRemoveCover(false);
+    }
     setIsCropperOpen(false);
   };
 
@@ -242,13 +300,21 @@ export default function SettingsPage() {
     setRemoveLogo(true);
   };
 
+  const handleRemoveCover = () => {
+    setNewCoverData(null);
+    setRemoveCover(true);
+  };
+
   // Check if there are unsaved changes
   const hasNameChanged = orgName.trim() !== initialOrgName && orgName.trim().length > 0;
   const hasLogoChanged = newLogoData !== null || (removeLogo && orgLogoUrl !== null);
-  const hasUnsavedChanges = hasNameChanged || hasLogoChanged;
+  const hasCoverChanged = newCoverData !== null || (removeCover && orgCoverUrl !== null);
+  const hasUnsavedChanges = hasNameChanged || hasLogoChanged || hasCoverChanged;
 
   // Active display logo (new local crop > current server logo > null)
   const currentDisplayLogo = removeLogo ? null : newLogoData || orgLogoUrl;
+  // Active display cover (new local crop > current server cover > null)
+  const currentDisplayCover = removeCover ? null : newCoverData || orgCoverUrl;
 
   const handleOrgDetailsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -259,7 +325,13 @@ export default function SettingsPage() {
     setOrgErrorMsg("");
 
     try {
-      const payload: { name?: string; logoData?: string; removeLogo?: boolean } = {};
+      const payload: {
+        name?: string;
+        logoData?: string;
+        removeLogo?: boolean;
+        coverData?: string;
+        removeCover?: boolean;
+      } = {};
 
       if (hasNameChanged) {
         payload.name = orgName.trim();
@@ -269,6 +341,12 @@ export default function SettingsPage() {
         payload.removeLogo = true;
       } else if (newLogoData) {
         payload.logoData = newLogoData;
+      }
+
+      if (removeCover) {
+        payload.removeCover = true;
+      } else if (newCoverData) {
+        payload.coverData = newCoverData;
       }
 
       const res = await fetch("/api/organization", {
@@ -290,6 +368,10 @@ export default function SettingsPage() {
         setNewLogoData(null);
         setRemoveLogo(false);
 
+        setOrgCoverUrl(data.organization.coverUrl || null);
+        setNewCoverData(null);
+        setRemoveCover(false);
+
         // Update active org in list
         setUserOrgs((prev) =>
           prev.map((o) =>
@@ -304,7 +386,7 @@ export default function SettingsPage() {
         );
       }
 
-      setOrgSuccessMsg("Organization details updated successfully!");
+      setOrgSuccessMsg("Organization details and media updated successfully!");
       fetchUserOrganizations();
       router.refresh();
       setTimeout(() => setOrgSuccessMsg(""), 4000);
@@ -500,12 +582,13 @@ export default function SettingsPage() {
         onCreateOrgClick={() => setIsCreateModalOpen(true)}
       />
 
-      {/* SECTION 2: ACTIVE ORGANIZATION DETAILS & 1:1 LOGO */}
+      {/* SECTION 2: ACTIVE ORGANIZATION DETAILS & MEDIA */}
       <OrganizationDetailsSection
         orgName={orgName}
         setOrgName={setOrgName}
         activeOrg={activeOrg}
         currentDisplayLogo={currentDisplayLogo}
+        currentDisplayCover={currentDisplayCover}
         hasUnsavedChanges={hasUnsavedChanges}
         loading={loading}
         isSavingOrgDetails={isSavingOrgDetails}
@@ -513,6 +596,9 @@ export default function SettingsPage() {
         onRemoveLogo={handleRemoveLogo}
         onLogoFileSelect={handleLogoFileSelect}
         logoFileInputRef={logoFileInputRef}
+        onRemoveCover={handleRemoveCover}
+        onCoverFileSelect={handleCoverFileSelect}
+        coverFileInputRef={coverFileInputRef}
       />
 
       {/* SECTION 3: MEMBERS & STORAGE QUOTA */}
@@ -549,12 +635,15 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* 1:1 Square Image Cropper Modal */}
-      <ImageCropper1to1Modal
+      {/* Image Cropper Modal (1:1 Square Logo & 3:1 Banner Cover Photo) */}
+      <ImageCropperModal
         isOpen={isCropperOpen}
         onClose={() => setIsCropperOpen(false)}
         imageSrc={rawSelectedImage}
         onCropComplete={handleCropComplete}
+        aspectRatio={cropAspectRatio}
+        title={cropTitle}
+        description={cropDescription}
       />
 
       {/* Create Organization Modal */}

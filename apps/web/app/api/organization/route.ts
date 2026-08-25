@@ -58,6 +58,7 @@ export async function GET(req: Request) {
     }
 
     const logoUrl = await getPresignedPlaybackUrl(organization.logoUrl);
+    const coverUrl = await getPresignedPlaybackUrl(organization.coverUrl);
 
     return NextResponse.json({
       organization: {
@@ -65,6 +66,7 @@ export async function GET(req: Request) {
         name: organization.name,
         slug: organization.slug,
         logoUrl,
+        coverUrl,
         planId: organization.planId,
         planName: organization.plan?.name || "free",
         plan: organization.plan,
@@ -122,7 +124,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    const updateData: { name?: string; logoUrl?: string | null } = {};
+    const updateData: { name?: string; logoUrl?: string | null; coverUrl?: string | null } = {};
 
     // 1. Handle Display Name Update
     if (body.name !== undefined) {
@@ -148,7 +150,7 @@ export async function PATCH(req: Request) {
       updateData.name = name;
     }
 
-    // 2. Handle Logo Upload or Removal
+    // 2. Handle Logo Upload or Removal (1:1 Ratio)
     if (body.removeLogo) {
       if (existingOrg.logoUrl) {
         await deleteFileFromS3(existingOrg.logoUrl);
@@ -159,7 +161,7 @@ export async function PATCH(req: Request) {
       const parsed = parseBase64Data(rawLogoData);
       if (!parsed) {
         return NextResponse.json(
-          { error: "Invalid image format. Please upload a valid PNG, JPG, WebP, or SVG." },
+          { error: "Invalid logo image format. Please upload a valid PNG, JPG, WebP, or SVG." },
           { status: 400 }
         );
       }
@@ -175,6 +177,33 @@ export async function PATCH(req: Request) {
       updateData.logoUrl = s3Key;
     }
 
+    // 3. Handle Cover Photo / Banner Upload or Removal (3:1 / 16:9 Banner)
+    if (body.removeCover || body.removeCoverPhoto) {
+      if (existingOrg.coverUrl) {
+        await deleteFileFromS3(existingOrg.coverUrl);
+      }
+      updateData.coverUrl = null;
+    } else if (body.coverData || body.newCoverData || body.coverPhotoData) {
+      const rawCoverData = body.coverData || body.newCoverData || body.coverPhotoData;
+      const parsed = parseBase64Data(rawCoverData);
+      if (!parsed) {
+        return NextResponse.json(
+          { error: "Invalid cover photo format. Please upload a valid PNG, JPG, WebP, or SVG." },
+          { status: 400 }
+        );
+      }
+
+      // Delete previous cover photo from S3 if present
+      if (existingOrg.coverUrl) {
+        await deleteFileFromS3(existingOrg.coverUrl);
+      }
+
+      const timestamp = Date.now();
+      const s3Key = `organization-covers/${authCtx.orgId}/cover-${timestamp}.${parsed.extension}`;
+      await uploadBufferToS3(s3Key, parsed.buffer, parsed.contentType);
+      updateData.coverUrl = s3Key;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No update parameters provided" },
@@ -188,6 +217,7 @@ export async function PATCH(req: Request) {
     });
 
     const resolvedLogoUrl = await getPresignedPlaybackUrl(updatedOrg.logoUrl);
+    const resolvedCoverUrl = await getPresignedPlaybackUrl(updatedOrg.coverUrl);
 
     return NextResponse.json({
       message: "Organization updated successfully",
@@ -196,6 +226,7 @@ export async function PATCH(req: Request) {
         name: updatedOrg.name,
         slug: updatedOrg.slug,
         logoUrl: resolvedLogoUrl,
+        coverUrl: resolvedCoverUrl,
       },
     });
   } catch (error: any) {

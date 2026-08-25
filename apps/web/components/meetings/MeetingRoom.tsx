@@ -316,18 +316,9 @@ function RoomContent({
   };
 
   // Active Recording Configuration (persisted across live updates)
-  const [activeRecordingConfig, setActiveRecordingConfig] = useState<{
-    mode: "room" | "participant";
-    participantIdentity?: string;
-    showCamera?: boolean;
-    showScreen?: boolean;
-    pipPosition?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
-  }>({
-    mode: "room",
-    showCamera: true,
-    showScreen: true,
-    pipPosition: "bottom-right",
-  });
+  const [activeRecordingLayout, setActiveRecordingLayout] = useState<
+    "grid" | "speaker" | "single-speaker"
+  >("grid");
 
   // Trigger Record Button Click: If not recording, open options popup or upgrade popup on Free plan
   const handleRecordButtonClick = () => {
@@ -367,65 +358,15 @@ function RoomContent({
     }
   };
 
-  // Start or Live-Update Recording Handler (Whole meeting vs Participant Cam/Screen PiP)
-  const handleStartOrUpdateRecordingWithOptions = async (options: {
-    mode: "room" | "participant";
-    participantIdentity?: string;
-    showCamera?: boolean;
-    showScreen?: boolean;
-    screenShare?: boolean;
-    participantName?: string;
-    pipPosition?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  // Start Recording Handler with chosen Room Composite layout
+  const handleStartRecordingWithLayout = async (options: {
+    layout: "grid" | "speaker" | "single-speaker";
   }) => {
-    // If recording is already active: Live Mid-Recording Layout Update via DataChannel!
     if (isRecording) {
-      try {
-        if (room?.localParticipant) {
-          const payload = new TextEncoder().encode(
-            JSON.stringify({
-              type: "RECORDING_CONFIG_UPDATE",
-              mode: options.mode,
-              targetIdentity: options.participantIdentity,
-              showCamera: options.showCamera ?? true,
-              showScreen: options.showScreen ?? true,
-              pipPosition: options.pipPosition || "bottom-right",
-            })
-          );
-          await room.localParticipant.publishData(payload, { reliable: true });
-        }
-
-        setActiveRecordingConfig({
-          mode: options.mode,
-          participantIdentity: options.participantIdentity,
-          showCamera: options.showCamera,
-          showScreen: options.showScreen,
-          pipPosition: options.pipPosition,
-        });
-
-        setIsRecordOptionsOpen(false);
-
-        if (options.mode === "room") {
-          showToast("Live recording layout updated to Whole Meeting Grid.", "success");
-        } else {
-          const modeDescription =
-            options.showCamera && options.showScreen
-              ? "Screen + Camera PiP"
-              : options.showScreen
-              ? "Screen Share"
-              : "Camera";
-          showToast(
-            `Live recording layout updated: ${options.participantName || "Participant"} (${modeDescription}).`,
-            "success"
-          );
-        }
-      } catch (e: any) {
-        console.error("Failed to broadcast recording layout update:", e);
-        showToast("Failed to update recording layout in real time.", "error");
-      }
+      showToast("Stop the current recording before starting a new one.", "info");
       return;
     }
 
-    // Otherwise: Start New Egress Recording
     setIsUpdatingRecord(true);
     setRecordingError(null);
 
@@ -435,45 +376,23 @@ function RoomContent({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "start",
-          mode: options.mode,
-          participantIdentity: options.participantIdentity,
-          showCamera: options.showCamera ?? true,
-          showScreen: options.showScreen ?? true,
-          screenShare: options.showScreen ?? true,
-          pipPosition: options.pipPosition || "bottom-right",
+          layout: options.layout,
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
         setIsRecording(true);
-        setActiveRecordingConfig({
-          mode: options.mode,
-          participantIdentity: options.participantIdentity,
-          showCamera: options.showCamera,
-          showScreen: options.showScreen,
-          pipPosition: options.pipPosition,
-        });
+        setActiveRecordingLayout(options.layout);
         setIsRecordOptionsOpen(false);
 
-        if (options.mode === "room") {
-          showToast("Whole meeting recording started (Room Composite).", "success");
-        } else if (options.showCamera && options.showScreen) {
-          showToast(
-            `Recording started for ${options.participantName || "participant"} (Screen + Camera PiP).`,
-            "success"
-          );
-        } else if (options.showScreen) {
-          showToast(
-            `Recording started for ${options.participantName || "participant"}'s screen presentation.`,
-            "success"
-          );
-        } else {
-          showToast(
-            `Recording started for ${options.participantName || "participant"}'s camera and microphone.`,
-            "success"
-          );
-        }
+        const layoutLabel =
+          options.layout === "single-speaker"
+            ? "Single Speaker"
+            : options.layout === "speaker"
+            ? "Speaker"
+            : "Grid";
+        showToast(`Meeting recording started (${layoutLabel} layout).`, "success");
       } else {
         throw new Error(data.error || "Recording start failed.");
       }
@@ -935,21 +854,15 @@ function RoomContent({
         />
       )}
 
-      {/* Recording Options & Live Layout Modal */}
+      {/* Recording Options Modal */}
       {isRecordOptionsOpen && (
         <RecordOptionsModal
           isOpen={isRecordOptionsOpen}
           onClose={() => setIsRecordOptionsOpen(false)}
-          onStartRecording={handleStartOrUpdateRecordingWithOptions}
-          participants={participants}
+          onStartRecording={handleStartRecordingWithLayout}
           meetingTitle={meeting.title}
           isStarting={isUpdatingRecord}
-          isLiveAdjusting={isRecording}
-          initialMode={activeRecordingConfig.mode}
-          initialTargetIdentity={activeRecordingConfig.participantIdentity}
-          initialShowCamera={activeRecordingConfig.showCamera ?? true}
-          initialShowScreen={activeRecordingConfig.showScreen ?? true}
-          initialPipPosition={activeRecordingConfig.pipPosition || "bottom-right"}
+          initialLayout={activeRecordingLayout}
           error={recordingError}
           onClearError={() => setRecordingError(null)}
         />

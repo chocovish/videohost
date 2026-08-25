@@ -8,6 +8,7 @@ export interface OrganizationItem {
   name: string;
   slug: string;
   logoUrl?: string | null;
+  coverUrl?: string | null;
   themeId: string;
   planName: string;
   role: string;

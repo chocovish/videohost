@@ -1,0 +1,112 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: videohost-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - livekit-network
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: videohost-livekit
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    depends_on:
+      redis:
+        condition: service_healthy
+    configs:
+      - source: livekit_config
+        target: /etc/livekit.yaml
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livekit-network
+
+  egress:
+    image: livekit/egress:latest
+    container_name: videohost-livekit-egress
+    restart: unless-stopped
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+      DISABLE_CUDA: "true"
+    cap_add:
+      - SYS_ADMIN
+    shm_size: "2gb"
+    depends_on:
+      redis:
+        condition: service_healthy
+      livekit:
+        condition: service_started
+    configs:
+      - source: egress_config
+        target: /etc/egress.yaml
+    volumes:
+      - ./recordings:/out:rw
+      - ./recordings:/recordings:rw
+      - /tmp:/tmp:rw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - livekit-network
+
+networks:
+  livekit-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+
+configs:
+  livekit_config:
+    content: |
+      port: 7880
+
+      bind_addresses:
+        - ""
+
+      redis:
+        address: redis:6379
+
+      rtc:
+        tcp_port: 7881
+        port_range_start: 50000
+        port_range_end: 60000
+        use_external_ip: false
+
+      keys:
+        devkey: secret
+
+      webhook:
+        api_key: devkey
+        urls:
+          - "https://taped.in/api/livekit/webhook"
+
+      logging:
+        json: false
+        level: info
+
+  egress_config:
+    content: |
+      api_key: devkey
+      api_secret: secret
+
+      ws_url: ws://livekit:7880
+
+      redis:
+        address: redis:6379
+
+      log_level: info
+
+      enable_chrome_sandbox: true

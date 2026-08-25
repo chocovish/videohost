@@ -26,6 +26,7 @@ export async function GET(
         name: true,
         slug: true,
         logoUrl: true,
+        coverUrl: true,
         themeId: true,
       },
     });
@@ -56,6 +57,15 @@ export async function GET(
       }
     }
 
+    let signedOrgCoverUrl: string | null = null;
+    if (org.coverUrl) {
+      try {
+        signedOrgCoverUrl = await getPresignedPlaybackUrl(org.coverUrl);
+      } catch (e) {
+        console.error("Error signing org cover:", e);
+      }
+    }
+
     const configDb = await db.offeringsPageConfig.findUnique({
       where: { organizationId: org.id },
     });
@@ -65,7 +75,7 @@ export async function GET(
       organizationId: org.id,
     };
 
-    let avatarUrl: string | null = null;
+    let avatarUrl: string | null = signedOrgLogoUrl;
     if (config.avatarKey) {
       try {
         avatarUrl = await getPresignedPlaybackUrl(config.avatarKey);
@@ -74,7 +84,7 @@ export async function GET(
       }
     }
 
-    let bannerUrl: string | null = null;
+    let bannerUrl: string | null = signedOrgCoverUrl;
     if (config.bannerKey) {
       try {
         bannerUrl = await getPresignedPlaybackUrl(config.bannerKey);
@@ -108,6 +118,7 @@ export async function GET(
         name: org.name,
         slug: org.slug,
         logoUrl: signedOrgLogoUrl,
+        coverUrl: signedOrgCoverUrl,
       },
       config: {
         ...config,
