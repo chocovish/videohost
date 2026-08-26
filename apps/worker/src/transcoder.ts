@@ -190,7 +190,61 @@ export function selectTargetRenditions(
   return allowed;
 }
 
-export async function probeVideo(filePath: string): Promise<{ width: number; height: number; duration: number; hasAudio: boolean }> {
+export function gcd(a: number, b: number): number {
+  let x = Math.abs(Math.round(a));
+  let y = Math.abs(Math.round(b));
+  while (y) {
+    const t = y;
+    y = x % y;
+    x = t;
+  }
+  return x || 1;
+}
+
+export function computeTargetDAR(
+  sourceWidth: number,
+  sourceHeight: number,
+  sarString?: string
+): { darNum: number; darDen: number } {
+  let sNum = 1;
+  let sDen = 1;
+  if (sarString && typeof sarString === "string") {
+    const parts = sarString.split(":").map(Number);
+    if (parts.length === 2 && parts[0] > 0 && parts[1] > 0) {
+      sNum = parts[0];
+      sDen = parts[1];
+    }
+  }
+  const w = sourceWidth > 0 ? sourceWidth : 1280;
+  const h = sourceHeight > 0 ? sourceHeight : 720;
+  const totalNum = w * sNum;
+  const totalDen = h * sDen;
+  const g = gcd(totalNum, totalDen);
+  return {
+    darNum: totalNum / g,
+    darDen: totalDen / g,
+  };
+}
+
+export function computeRenditionSAR(
+  rendWidth: number,
+  rendHeight: number,
+  darNum: number,
+  darDen: number
+): string {
+  const sarNum = darNum * rendHeight;
+  const sarDen = darDen * rendWidth;
+  const g = gcd(sarNum, sarDen);
+  return `${sarNum / g}/${sarDen / g}`;
+}
+
+export async function probeVideo(filePath: string): Promise<{
+  width: number;
+  height: number;
+  duration: number;
+  hasAudio: boolean;
+  sar?: string;
+}> {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(filePath, (err, metadata) => {
       if (err) return reject(err);
@@ -200,7 +254,8 @@ export async function probeVideo(filePath: string): Promise<{ width: number; hei
       const height = videoStream?.height || 720;
       const duration = Math.round(metadata.format.duration || 0);
       const hasAudio = !!audioStream;
-      resolve({ width, height, duration, hasAudio });
+      const sar = videoStream?.sample_aspect_ratio;
+      resolve({ width, height, duration, hasAudio, sar });
     });
   });
 }
@@ -250,8 +305,10 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     assertNotCancelled();
 
     // 2. Probe metadata
-    const { width, height, duration, hasAudio } = await probeVideo(inputPath);
-    console.log(`[Worker] Video probed: ${width}x${height}, duration: ${duration}s, hasAudio: ${hasAudio}`);
+    const { width, height, duration, hasAudio, sar } = await probeVideo(inputPath);
+    console.log(
+      `[Worker] Video probed: ${width}x${height}, duration: ${duration}s, hasAudio: ${hasAudio}, sar: ${sar || "1:1"}`
+    );
 
     // Determine initial rendition candidates from payload or env or default ladder
     const candidateRenditions =
@@ -271,6 +328,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const totalRenditions = targetRenditions.length;
 
     // 4. Transcode all renditions into a single DASH manifest (master.mpd)
+    const { darNum, darDen } = computeTargetDAR(width, height, sar);
+    console.log(`[Worker] Canonical DAR: ${darNum}:${darDen}`);
+
     const filterParts: string[] = [];
     if (totalRenditions > 1) {
       filterParts.push(
@@ -279,8 +339,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
+      const renditionSar = computeRenditionSAR(rend.width, rend.height, darNum, darDen);
       filterParts.push(
-        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setsar=1[o${i}]`
+        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setsar=${renditionSar}[o${i}]`
       );
     });
     const filterComplex = filterParts.join(";");
