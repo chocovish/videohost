@@ -966,6 +966,7 @@ export default function ScreenRecordDrawer({
                         {recordState === "idle" && (
                           <Button
                             size="lg"
+                            variant="record"
                             onClick={startRecording}
                             className="w-full font-extrabold gap-2.5 group transition-all hover:scale-[1.01]"
                           >

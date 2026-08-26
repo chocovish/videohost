@@ -29,6 +29,8 @@ const buttonVariants = cva(
           "border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20 hover:border-destructive/50",
         warningOutline:
           "border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 hover:border-amber-500/50",
+        record:
+          "bg-red-600 text-white hover:bg-red-700 font-semibold shadow-xs focus-visible:border-red-600/40 focus-visible:ring-red-600/20 dark:focus-visible:ring-red-600/40",
       },
       size: {
         default:
