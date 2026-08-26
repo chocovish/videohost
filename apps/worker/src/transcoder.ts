@@ -211,8 +211,8 @@ export function computeTargetDAR(
   let sNum = 1;
   let sDen = 1;
   if (sarString && typeof sarString === "string") {
-    const parts = sarString.split(":").map(Number);
-    if (parts.length === 2 && parts[0] > 0 && parts[1] > 0) {
+    const parts = sarString.split(/[:/]/).map(Number);
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1]) && parts[0] > 0 && parts[1] > 0) {
       sNum = parts[0];
       sDen = parts[1];
     }
@@ -333,7 +333,8 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     // All video representations must share one exact display aspect ratio,
     // otherwise the DASH muxer rejects the adaptation set ("Conflicting
     // stream aspect ratios"). Rendition widths are even-rounded per rung, so
-    // we compensate each rendition's SAR to keep the DAR identical everywhere.
+    // we enforce exact display aspect ratio using `setdar=${darNum}/${darDen}:max=1000000`
+    // (with :max=1000000 to prevent FFmpeg from approximating large fractional ratios to 1/1).
     const { darNum, darDen } = computeTargetDAR(width, height, sar);
 
     const filterParts: string[] = [];
@@ -344,9 +345,8 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
-      const rendSar = computeRenditionSAR(rend.width, rend.height, darNum, darDen);
       filterParts.push(
-        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setsar=${rendSar}[o${i}]`
+        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setdar=${darNum}/${darDen}:max=1000000[o${i}]`
       );
     });
     const filterComplex = filterParts.join(";");
