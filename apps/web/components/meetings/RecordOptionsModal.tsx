@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -172,7 +173,7 @@ export default function RecordOptionsModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 sm:p-6 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between gap-3">
+        <DialogFooter className="p-4 sm:p-6 border-t border-slate-800/80 bg-slate-950/60 shrink-0 flex items-center justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isStarting}>
             Cancel
           </Button>
@@ -196,7 +197,7 @@ export default function RecordOptionsModal({
               </>
             )}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -51,7 +51,7 @@ import {
   RiBlueskyLine,
 } from "@remixicon/react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 
 export interface OfferingsConfigData {
@@ -1790,14 +1790,14 @@ export default function OfferingsLandingClient({
       {/* Inquiry / Booking Modal Dialog */}
       <Dialog open={inquiryModalOpen} onOpenChange={setInquiryModalOpen}>
         <DialogContent
-          className={`max-w-lg p-6 ${roundnessClass} border shadow-2xl`}
+          className={`max-w-lg p-6 max-h-[90vh] flex flex-col ${roundnessClass} border shadow-2xl overflow-hidden`}
           style={{
             backgroundColor: theme.card,
             borderColor: theme.cardBorder,
             color: theme.text,
           }}
         >
-          <DialogHeader>
+          <DialogHeader className="shrink-0 pb-3 border-b" style={{ borderColor: theme.cardBorder }}>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Calendar className="w-5 h-5" style={{ color: accentColor }} />
               {selectedOffering ? `Inquire: ${selectedOffering.title}` : "Contact & Book Session"}
@@ -1810,88 +1810,102 @@ export default function OfferingsLandingClient({
           </DialogHeader>
 
           {inquirySuccess ? (
-            <div className="py-6 text-center space-y-2 text-emerald-400">
-              <CheckCircle2 className="w-12 h-12 mx-auto" />
-              <h4 className="font-bold text-lg">Inquiry Sent!</h4>
-              <p className="text-xs opacity-90">
-                The creator has received your message and will get back to you shortly at {inquiryEmail}.
-              </p>
+            <div className="flex-1 flex flex-col justify-between py-6">
+              <div className="text-center space-y-2 text-emerald-400 my-auto">
+                <CheckCircle2 className="w-12 h-12 mx-auto" />
+                <h4 className="font-bold text-lg">Inquiry Sent!</h4>
+                <p className="text-xs opacity-90">
+                  The creator has received your message and will get back to you shortly at {inquiryEmail}.
+                </p>
+              </div>
+              <DialogFooter className="pt-3 border-t shrink-0 mt-auto" style={{ borderColor: theme.cardBorder }}>
+                <Button
+                  type="button"
+                  onClick={() => setInquiryModalOpen(false)}
+                  className="w-full sm:w-auto text-xs font-bold px-5 py-2 rounded-xl text-white shadow-lg cursor-pointer"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Close
+                </Button>
+              </DialogFooter>
             </div>
           ) : (
-            <form onSubmit={handleSubmitInquiry} className="space-y-3.5 pt-2">
-              {inquiryError && (
-                <div className="p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400">
-                  {inquiryError}
+            <form onSubmit={handleSubmitInquiry} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 py-3 pr-1">
+                {inquiryError && (
+                  <div className="p-3 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400">
+                    {inquiryError}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold">Your Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Full name"
+                    value={inquiryName}
+                    onChange={(e) => setInquiryName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
+                    style={{
+                      backgroundColor: `${theme.bg}90`,
+                      borderColor: theme.cardBorder,
+                      color: theme.text,
+                    }}
+                  />
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold">Your Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full name"
-                  value={inquiryName}
-                  onChange={(e) => setInquiryName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
-                  style={{
-                    backgroundColor: `${theme.bg}90`,
-                    borderColor: theme.cardBorder,
-                    color: theme.text,
-                  }}
-                />
+                <div className="space-y-1">
+                  <label className="text-xs font-bold">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="email@example.com"
+                    value={inquiryEmail}
+                    onChange={(e) => setInquiryEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
+                    style={{
+                      backgroundColor: `${theme.bg}90`,
+                      borderColor: theme.cardBorder,
+                      color: theme.text,
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold">Preferred Time / Notes (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Next Tuesday morning, EST"
+                    value={inquiryPreferredTime}
+                    onChange={(e) => setInquiryPreferredTime(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
+                    style={{
+                      backgroundColor: `${theme.bg}90`,
+                      borderColor: theme.cardBorder,
+                      color: theme.text,
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold">Message *</label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={inquiryMessage}
+                    onChange={(e) => setInquiryMessage(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none resize-none"
+                    style={{
+                      backgroundColor: `${theme.bg}90`,
+                      borderColor: theme.cardBorder,
+                      color: theme.text,
+                    }}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold">Email Address *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="email@example.com"
-                  value={inquiryEmail}
-                  onChange={(e) => setInquiryEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
-                  style={{
-                    backgroundColor: `${theme.bg}90`,
-                    borderColor: theme.cardBorder,
-                    color: theme.text,
-                  }}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold">Preferred Time / Notes (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Next Tuesday morning, EST"
-                  value={inquiryPreferredTime}
-                  onChange={(e) => setInquiryPreferredTime(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none"
-                  style={{
-                    backgroundColor: `${theme.bg}90`,
-                    borderColor: theme.cardBorder,
-                    color: theme.text,
-                  }}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold">Message *</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={inquiryMessage}
-                  onChange={(e) => setInquiryMessage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-sm border focus:outline-none resize-none"
-                  style={{
-                    backgroundColor: `${theme.bg}90`,
-                    borderColor: theme.cardBorder,
-                    color: theme.text,
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <DialogFooter className="flex items-center justify-end gap-2 pt-3 border-t shrink-0 mt-auto" style={{ borderColor: theme.cardBorder }}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1908,7 +1922,7 @@ export default function OfferingsLandingClient({
                 >
                   {submittingInquiry ? "Sending..." : "Submit Inquiry"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
           )}
         </DialogContent>

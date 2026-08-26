@@ -2652,8 +2652,8 @@ export default function SharedContentClient({
 
       {/* VISITOR CONTENT CHECKOUT MODAL */}
       <Dialog open={isCheckoutOpen} onOpenChange={(open) => !open && setIsCheckoutOpen(false)}>
-        <DialogContent className="max-w-md p-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-md p-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader className="shrink-0 pb-3 border-b border-slate-800">
             <div className="flex items-center gap-3">
               <div
                 className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
@@ -2682,7 +2682,7 @@ export default function SharedContentClient({
             </div>
           </DialogHeader>
 
-          <div className="space-y-4 py-2 text-xs">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1 text-xs">
             {checkoutError && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -2769,7 +2769,7 @@ export default function SharedContentClient({
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row gap-2">
+          <DialogFooter className="pt-3 border-t border-slate-800 shrink-0 mt-auto flex flex-col sm:flex-row gap-2">
             <button
               type="button"
               onClick={() => setIsCheckoutOpen(false)}

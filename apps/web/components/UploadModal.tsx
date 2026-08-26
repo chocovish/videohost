@@ -369,8 +369,8 @@ export default function UploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-6 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <UploadCloud className="w-5 h-5" />
@@ -383,7 +383,7 @@ export default function UploadModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center justify-between gap-2">
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
@@ -403,213 +403,215 @@ export default function UploadModal({
         )}
 
         {validatingTracks && (
-          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2 animate-pulse">
+          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2 animate-pulse shrink-0">
             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
             <span>Probing video streams for strict stream copy (-c copy → MKV)...</span>
           </div>
         )}
 
-        <form onSubmit={handleUpload} className="space-y-4">
-          {/* Dropzone */}
-          <div className="border-2 border-dashed border-border hover:border-primary rounded-xl p-5 text-center transition-colors bg-muted/30">
-            <input
-              type="file"
-              accept="video/*"
-              required
-              disabled={uploading}
-              onChange={handleFileChange}
-              className="hidden"
-              id="video-file-input"
-            />
-            <label htmlFor="video-file-input" className="cursor-pointer flex flex-col items-center justify-center">
-              {customThumbUrl ? (
-                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
-                  <img
-                    src={customThumbUrl}
-                    alt="Custom thumbnail preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <ImageIcon className="w-3 h-3 text-indigo-200" /> Custom Thumbnail
-                  </div>
-                </div>
-              ) : metadata?.thumbnailUrl ? (
-                <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
-                  <img
-                    src={metadata.thumbnailUrl}
-                    alt="Extracted video thumbnail preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
-                    <ImageIcon className="w-3 h-3 text-emerald-400" /> Auto Thumbnail
-                  </div>
-                </div>
-              ) : (
-                <Film className="w-10 h-10 text-primary mb-2" />
-              )}
-              {file ? (
-                <div className="space-y-1">
-                  <p className="font-semibold text-sm text-foreground">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(file.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                  {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-primary">
-                      {metadata.durationSeconds > 0 && (
-                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
-                          <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
-                        </span>
-                      )}
-                      {metadata.sourceWidth > 0 && (
-                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
-                          <Maximize2 className="w-3 h-3" /> {metadata.sourceWidth}x{metadata.sourceHeight}
-                        </span>
-                      )}
-                      {metadata.fps && (
-                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
-                          {metadata.fps} FPS
-                        </span>
-                      )}
-                      {metadata.codec && (
-                        <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md uppercase">
-                          {metadata.codec}
-                        </span>
-                      )}
+        <form onSubmit={handleUpload} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto space-y-4 py-1 pr-1 min-h-0">
+            {/* Dropzone */}
+            <div className="border-2 border-dashed border-border hover:border-primary rounded-xl p-5 text-center transition-colors bg-muted/30">
+              <input
+                type="file"
+                accept="video/*"
+                required
+                disabled={uploading}
+                onChange={handleFileChange}
+                className="hidden"
+                id="video-file-input"
+              />
+              <label htmlFor="video-file-input" className="cursor-pointer flex flex-col items-center justify-center">
+                {customThumbUrl ? (
+                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
+                    <img
+                      src={customThumbUrl}
+                      alt="Custom thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3 text-indigo-200" /> Custom Thumbnail
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <p className="font-semibold text-sm text-foreground">
-                    Click to select or drag and drop video
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">MP4, MOV, WebM, MKV (up to 4K)</p>
-                </div>
-              )}
-            </label>
-          </div>
-
-          {/* 4-Thumbnail Selection Section */}
-          {file && (
-            <ThumbnailSelector
-              thumbnails={metadata?.thumbnails}
-              selectedThumbnailIndex={selectedThumbnailIndex}
-              onSelectThumbnail={handleSelectThumbnail}
-              customThumbUrl={customThumbUrl}
-              onCustomThumbChange={handleCustomThumbChange}
-              onRemoveCustomThumb={handleRemoveCustomThumb}
-              compressingThumb={compressingThumb}
-              disabled={uploading}
-              inputId="custom-thumbnail-modal-input"
-            />
-          )}
-
-          {/* Require HLS Switch */}
-          {(() => {
-            const canUseHls = ["pro", "enterprise"].includes(userPlan.toLowerCase());
-            return (
-              <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card">
-                <div className="space-y-0.5 pr-4">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="require-hls-toggle" className="text-xs font-semibold cursor-pointer">
-                      Require HLS (Adaptive Bitrate)
-                    </Label>
-                    {!canUseHls && (
-                      <Badge variant="outline" className="uppercase text-amber-600 border-amber-500/30 bg-amber-500/10">
-                        PRO FEATURE
-                      </Badge>
+                  </div>
+                ) : metadata?.thumbnailUrl ? (
+                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
+                    <img
+                      src={metadata.thumbnailUrl}
+                      alt="Extracted video thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3 text-emerald-400" /> Auto Thumbnail
+                    </div>
+                  </div>
+                ) : (
+                  <Film className="w-10 h-10 text-primary mb-2" />
+                )}
+                {file ? (
+                  <div className="space-y-1">
+                    <p className="font-semibold text-sm text-foreground">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(file.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                    {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-primary">
+                        {metadata.durationSeconds > 0 && (
+                          <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
+                            <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
+                          </span>
+                        )}
+                        {metadata.sourceWidth > 0 && (
+                          <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
+                            <Maximize2 className="w-3 h-3" /> {metadata.sourceWidth}x{metadata.sourceHeight}
+                          </span>
+                        )}
+                        {metadata.fps && (
+                          <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
+                            {metadata.fps} FPS
+                          </span>
+                        )}
+                        {metadata.codec && (
+                          <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md uppercase">
+                            {metadata.codec}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
-                    {!canUseHls
-                      ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
-                      : requireHls
-                      ? "Transcode video into adaptive HLS stream (480p-4K)"
-                      : "Store original video & play directly without transcoding"}
-                  </p>
-                </div>
-                <Switch
-                  id="require-hls-toggle"
-                  checked={canUseHls && requireHls}
-                  onCheckedChange={(checked) => canUseHls && setRequireHls(checked)}
-                  disabled={uploading || !canUseHls}
-                />
-              </div>
-            );
-          })()}
-
-          {/* Destination Folder Info Banner */}
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium">
-            <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
-            <span>
-              Destination: <strong className="font-bold">{folderPathName || "Root"}</strong>
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="video-title">Title</Label>
-            <Input
-              id="video-title"
-              type="text"
-              required
-              disabled={uploading}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Q3 Product Keynote"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="video-description">Description (Optional)</Label>
-            <RichTextEditor
-              id="video-description"
-              disabled={uploading}
-              value={description}
-              onChange={setDescription}
-              placeholder="Add details about this video..."
-              minHeight="120px"
-              maxHeight="240px"
-              showWordCount={false}
-              showCharacterCount={false}
-            />
-          </div>
-
-          {/* Share & Access Mode Section */}
-          <div className="pt-2 border-t border-border">
-            <ShareAccessModeSelector
-              targetType="video"
-              modeContext="create"
-              accessMode={shareAccessMode}
-              onChangeAccessMode={setShareAccessMode}
-              price={price}
-              onChangePrice={setPrice}
-              currency={currency}
-              onChangeCurrency={setCurrency}
-              countryPricing={countryPricing}
-              onChangeCountryPricing={setCountryPricing}
-              inviteEmails={inviteEmails}
-              onChangeInviteEmails={setInviteEmails}
-              disabled={uploading}
-            />
-          </div>
-
-          {/* Progress Bar */}
-          {uploading && (
-            <div className="space-y-2 pt-2">
-              <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                <span>{statusText}</span>
-                <span>{progress}%</span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300 rounded-full"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
+                ) : (
+                  <div>
+                    <p className="font-semibold text-sm text-foreground">
+                      Click to select or drag and drop video
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">MP4, MOV, WebM, MKV (up to 4K)</p>
+                  </div>
+                )}
+              </label>
             </div>
-          )}
 
-          <DialogFooter>
+            {/* 4-Thumbnail Selection Section */}
+            {file && (
+              <ThumbnailSelector
+                thumbnails={metadata?.thumbnails}
+                selectedThumbnailIndex={selectedThumbnailIndex}
+                onSelectThumbnail={handleSelectThumbnail}
+                customThumbUrl={customThumbUrl}
+                onCustomThumbChange={handleCustomThumbChange}
+                onRemoveCustomThumb={handleRemoveCustomThumb}
+                compressingThumb={compressingThumb}
+                disabled={uploading}
+                inputId="custom-thumbnail-modal-input"
+              />
+            )}
+
+            {/* Require HLS Switch */}
+            {(() => {
+              const canUseHls = ["pro", "enterprise"].includes(userPlan.toLowerCase());
+              return (
+                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card">
+                  <div className="space-y-0.5 pr-4">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="require-hls-toggle" className="text-xs font-semibold cursor-pointer">
+                        Require HLS (Adaptive Bitrate)
+                      </Label>
+                      {!canUseHls && (
+                        <Badge variant="outline" className="uppercase text-amber-600 border-amber-500/30 bg-amber-500/10">
+                          PRO FEATURE
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                      {!canUseHls
+                        ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
+                        : requireHls
+                        ? "Transcode video into adaptive HLS stream (480p-4K)"
+                        : "Store original video & play directly without transcoding"}
+                    </p>
+                  </div>
+                  <Switch
+                    id="require-hls-toggle"
+                    checked={canUseHls && requireHls}
+                    onCheckedChange={(checked) => canUseHls && setRequireHls(checked)}
+                    disabled={uploading || !canUseHls}
+                  />
+                </div>
+              );
+            })()}
+
+            {/* Destination Folder Info Banner */}
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium">
+              <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
+              <span>
+                Destination: <strong className="font-bold">{folderPathName || "Root"}</strong>
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="video-title">Title</Label>
+              <Input
+                id="video-title"
+                type="text"
+                required
+                disabled={uploading}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Q3 Product Keynote"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="video-description">Description (Optional)</Label>
+              <RichTextEditor
+                id="video-description"
+                disabled={uploading}
+                value={description}
+                onChange={setDescription}
+                placeholder="Add details about this video..."
+                minHeight="120px"
+                maxHeight="240px"
+                showWordCount={false}
+                showCharacterCount={false}
+              />
+            </div>
+
+            {/* Share & Access Mode Section */}
+            <div className="pt-2 border-t border-border">
+              <ShareAccessModeSelector
+                targetType="video"
+                modeContext="create"
+                accessMode={shareAccessMode}
+                onChangeAccessMode={setShareAccessMode}
+                price={price}
+                onChangePrice={setPrice}
+                currency={currency}
+                onChangeCurrency={setCurrency}
+                countryPricing={countryPricing}
+                onChangeCountryPricing={setCountryPricing}
+                inviteEmails={inviteEmails}
+                onChangeInviteEmails={setInviteEmails}
+                disabled={uploading}
+              />
+            </div>
+
+            {/* Progress Bar */}
+            {uploading && (
+              <div className="space-y-2 pt-2">
+                <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                  <span>{statusText}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300 rounded-full"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="shrink-0 pt-3 border-t border-border mt-3">
             <Button
               type="button"
               variant="ghost"

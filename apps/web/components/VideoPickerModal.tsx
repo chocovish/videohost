@@ -339,7 +339,7 @@ export default function VideoPickerModal({
               )}
             </div>
 
-            <DialogFooter className="pt-2 border-t flex flex-row items-center justify-between sm:justify-between gap-2">
+            <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto flex flex-row items-center justify-between sm:justify-between gap-2">
               <div className="text-[11px] text-muted-foreground truncate">
                 {selectedVideo ? (
                   <span>
@@ -368,35 +368,37 @@ export default function VideoPickerModal({
           </TabsContent>
 
           {/* TAB 2: YOUTUBE / VIDEO LINK */}
-          <TabsContent value="custom" className="flex-1 space-y-4 pt-2">
-            <form onSubmit={handleConfirmCustomUrl} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold">YouTube Video URL or Direct Link *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
-                  value={customUrl}
-                  onChange={(e) => setCustomUrl(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Paste any YouTube link (will automatically play in the popup player) or direct video URL.
-                </p>
+          <TabsContent value="custom" className="flex-1 min-h-0 flex flex-col pt-2">
+            <form onSubmit={handleConfirmCustomUrl} className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold">YouTube Video URL or Direct Link *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Paste any YouTube link (will automatically play in the popup player) or direct video URL.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold">Optional Title</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Masterclass Showcase Video"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:outline-none"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold">Optional Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Masterclass Showcase Video"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:outline-none"
-                />
-              </div>
-
-              <DialogFooter className="pt-4 border-t">
+              <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto">
                 <Button type="button" variant="ghost" size="sm" onClick={onClose} className="text-xs">
                   Cancel
                 </Button>

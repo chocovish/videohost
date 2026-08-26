@@ -112,7 +112,7 @@ export default function RenameFolderModal({
             />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border">
             <Button
               type="button"
               variant="ghost"

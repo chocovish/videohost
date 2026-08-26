@@ -64,7 +64,7 @@ function DialogOverlay({
 }
 
 const dialogContentVariants = cva(
-  "fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-background p-6 text-foreground shadow-2xl duration-150 outline-none max-h-[90vh] overflow-y-auto sm:rounded-xl data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+  "fixed top-1/2 left-1/2 z-50 flex flex-col w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-background p-6 text-foreground shadow-2xl duration-150 outline-none max-h-[90vh] sm:rounded-xl data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
   {
     variants: {
       variant: {
@@ -128,7 +128,7 @@ function DialogContent({
   );
 }
 
-const dialogHeaderVariants = cva("flex flex-col gap-1.5 text-center sm:text-left", {
+const dialogHeaderVariants = cva("flex flex-col gap-1.5 text-center sm:text-left shrink-0", {
   variants: {
     variant: {
       default: "text-left",
@@ -155,7 +155,7 @@ function DialogHeader({ className, variant = "default", ...props }: DialogHeader
 }
 
 const dialogFooterVariants = cva(
-  "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2",
+  "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2 shrink-0",
   {
     variants: {
       variant: {

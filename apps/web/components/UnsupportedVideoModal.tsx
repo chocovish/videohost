@@ -57,8 +57,8 @@ export default function UnsupportedVideoModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg z-70">
-        <DialogHeader>
+      <DialogContent className="max-w-lg z-70 max-h-[90vh] flex flex-col p-6 overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-red-500/15 border border-red-500/25 text-red-600 dark:text-red-400 shrink-0">
               <AlertTriangle className="w-6 h-6" />
@@ -74,7 +74,7 @@ export default function UnsupportedVideoModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-3.5 py-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 py-1 pr-1">
           {/* File info banner */}
           {fileName && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border text-xs text-foreground font-medium">
@@ -95,7 +95,7 @@ export default function UnsupportedVideoModal({
           </div>
 
           {/* List of unsupported tracks and reasons */}
-          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+          <div className="space-y-2">
             {unsupportedTracks.length > 0 ? (
               unsupportedTracks.map((item, idx) => (
                 <div
@@ -141,7 +141,7 @@ export default function UnsupportedVideoModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex-col sm:flex-row gap-2 pt-3 border-t border-border shrink-0 mt-3">
           {onSelectAnotherFile && (
             <Button
               type="button"

@@ -475,8 +475,8 @@ export default function PlaylistsPage() {
             </div>
           </DialogHeader>
 
-          <form onSubmit={handleCreatePlaylist} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
-            <div className="space-y-4">
+          <form onSubmit={handleCreatePlaylist} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
               {createError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
                   {createError}
@@ -486,23 +486,23 @@ export default function PlaylistsPage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Playlist Title *</label>
                 <Input
-                  placeholder="e.g. Masterclass Series 2026, Onboarding Modules"
+                  placeholder="e.g. Next.js 15 Masterclass, Marketing Onboarding"
                   value={createTitle}
                   onChange={(e) => setCreateTitle(e.target.value)}
                   required
-                  autoFocus
                   disabled={creating}
                   className="rounded-xl"
+                  autoFocus
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Description (optional)</label>
                 <RichTextEditor
-                  placeholder="Brief summary of what this playlist contains..."
                   value={createDescription}
                   onChange={setCreateDescription}
                   disabled={creating}
+                  placeholder="Brief summary of what this playlist contains..."
                   minHeight="110px"
                   maxHeight="220px"
                   showWordCount={false}
@@ -530,7 +530,7 @@ export default function PlaylistsPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
               <Button
                 type="button"
                 variant="outline"
@@ -560,8 +560,8 @@ export default function PlaylistsPage() {
             <DialogDescription>Update the title, description, and share access mode</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleRenamePlaylist} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
-            <div className="space-y-4">
+          <form onSubmit={handleRenamePlaylist} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
               {renameError && (
                 <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
                   {renameError}
@@ -611,7 +611,7 @@ export default function PlaylistsPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
               <Button
                 type="button"
                 variant="outline"

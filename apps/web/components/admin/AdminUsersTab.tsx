@@ -404,27 +404,21 @@ export function AdminUsersTab({ onRefreshOverview }: AdminUsersTabProps) {
         )}
       </div>
 
-      {/* Login As User (Impersonation) Confirmation Dialog */}
+      {/* Impersonate Confirmation Dialog */}
       {impersonatingUser && (
         <Dialog open={!!impersonatingUser} onOpenChange={(open) => !open && closeImpersonateModal()}>
-          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-md">
-            <DialogHeader>
+          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
+            <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
               <DialogTitle className="flex items-center gap-2 text-white">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                  <LogIn className="h-4 w-4" />
-                </div>
-                <span>Login as User (Impersonation)</span>
+                <LogIn className="h-5 w-5 text-amber-400" />
+                <span>Log In As User (Impersonation)</span>
               </DialogTitle>
-              <DialogDescription className="text-zinc-400 text-xs pt-1">
-                You are about to start an administrative impersonation session as{" "}
-                <span className="font-semibold text-white">
-                  {impersonatingUser.name || impersonatingUser.email}
-                </span>
-                .
+              <DialogDescription className="text-zinc-400 text-xs">
+                Temporarily switch into this user&apos;s account session to browse, debug, or verify their workspace experience.
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-2">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
               {impersonateError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -458,7 +452,7 @@ export function AdminUsersTab({ onRefreshOverview }: AdminUsersTabProps) {
               </div>
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
               <Button
                 variant="ghost"
                 onClick={closeImpersonateModal}
@@ -487,8 +481,8 @@ export function AdminUsersTab({ onRefreshOverview }: AdminUsersTabProps) {
       {/* Block/Unblock Confirmation Dialog */}
       {selectedUser && (
         <Dialog open={!!selectedUser} onOpenChange={(open) => !open && closeBlockModal()}>
-          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-md">
-            <DialogHeader>
+          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
+            <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
               <DialogTitle className="flex items-center gap-2 text-white">
                 {selectedUser.isBlocked ? (
                   <>
@@ -523,7 +517,7 @@ export function AdminUsersTab({ onRefreshOverview }: AdminUsersTabProps) {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-3">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
               {modalError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -551,7 +545,7 @@ export function AdminUsersTab({ onRefreshOverview }: AdminUsersTabProps) {
               )}
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
               <Button variant="ghost" onClick={closeBlockModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                 Cancel
               </Button>

@@ -361,8 +361,8 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
       {/* Edit Plan & Storage Modal */}
       {selectedOrg && (
         <Dialog open={!!selectedOrg} onOpenChange={(open) => !open && closeEditModal()}>
-          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg">
-            <DialogHeader>
+          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg max-h-[90vh] flex flex-col p-6 overflow-hidden">
+            <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
               <DialogTitle className="flex items-center gap-2 text-white">
                 <Edit3 className="h-5 w-5 text-lime-400" />
                 <span>Modify Organization Plan & Storage Limits</span>
@@ -373,7 +373,7 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-3">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
               {modalError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -389,30 +389,28 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
 
               {/* Select Plan */}
               <div className="space-y-2">
-                <Label className="text-xs text-zinc-200 font-semibold">Assigned Subscription Plan</Label>
-                <Select value={selectedPlanId} onValueChange={(val) => val && setSelectedPlanId(val)}>
-                  <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-10">
-                    <SelectValue placeholder="Select plan..." />
+                <Label className="text-xs text-zinc-200 font-semibold">Assigned Plan *</Label>
+                <Select value={selectedPlanId} onValueChange={(val) => setSelectedPlanId(val || "")}>
+                  <SelectTrigger className="bg-zinc-900 border-zinc-800 text-xs h-9">
+                    <SelectValue placeholder="Choose a plan" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-200 text-xs">
-                    {availablePlans.map((plan) => (
-                      <SelectItem key={plan.id} value={plan.id}>
-                        {plan.name.toUpperCase()} {plan.isCustom ? "★ (Custom)" : ""} —{" "}
-                        {plan.storageLimitGb === 0 ? "Unlimited Storage" : `${plan.storageLimitGb} GB Storage`}
+                    {availablePlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name.toUpperCase()} {p.isCustom ? "(Custom)" : ""} —{" "}
+                        {p.storageLimitGb === 0 ? "Unlimited" : `${p.storageLimitGb} GB`} /{" "}
+                        {p.minutesLimit === 0 ? "Unlimited" : `${p.minutesLimit} mins`}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] text-zinc-500">
-                  Select any standard (free, basic, pro, enterprise) or custom plan.
-                </p>
               </div>
 
               {/* Custom Storage Override */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-zinc-200 font-semibold">
-                    Custom Storage Limit (GB Override)
+                    Custom Storage Limit (Override)
                   </Label>
                   <button
                     type="button"
@@ -428,15 +426,15 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
                     min="0"
                     value={customStorageLimit}
                     onChange={(e) => setCustomStorageLimit(e.target.value)}
-                    placeholder="Leave empty to use plan default (e.g. 50, 100, 500, or 0 for unlimited)"
-                    className="bg-zinc-900 border-zinc-800 text-xs pr-12"
+                    placeholder="Leave empty for plan default (0 = Unlimited)"
+                    className="bg-zinc-900 border-zinc-800 text-xs pr-10"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500 font-mono">
                     GB
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-500">
-                  Override plan storage quota for this workspace. Set 0 for unlimited, or leave blank for default plan storage.
+                <p className="text-[10px] text-zinc-500">
+                  Overrides default plan storage quota specifically for this workspace.
                 </p>
               </div>
 
@@ -470,7 +468,7 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
               </div>
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
               <Button variant="ghost" onClick={closeEditModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                 Cancel
               </Button>

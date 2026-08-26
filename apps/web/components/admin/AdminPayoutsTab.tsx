@@ -433,11 +433,11 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
       {/* Dialog Modals */}
       {selectedPayout && (
         <Dialog open={!!modalMode} onOpenChange={(open) => !open && closeModal()}>
-          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg">
+          <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg max-h-[90vh] flex flex-col p-6 overflow-hidden">
             {/* 1. BANK DETAILS MODAL */}
             {modalMode === "BANK_DETAILS" && (
               <>
-                <DialogHeader>
+                <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
                   <DialogTitle className="flex items-center gap-2 text-white">
                     <Landmark className="h-5 w-5 text-lime-400" />
                     <span>Beneficiary Bank Account Details</span>
@@ -451,7 +451,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-3.5 py-3">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 py-3 pr-1">
                   <div className="rounded-xl bg-zinc-900/80 border border-zinc-800 p-4 space-y-3 font-mono text-xs">
                     <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                       <span className="text-zinc-400">Payout Amount:</span>
@@ -551,7 +551,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   )}
                 </div>
 
-                <DialogFooter className="flex items-center justify-between sm:justify-between">
+                <DialogFooter className="pt-3 border-t border-zinc-800 shrink-0 mt-auto flex items-center justify-between sm:justify-between">
                   <Button variant="ghost" onClick={closeModal} className="text-zinc-400 text-xs">
                     Close
                   </Button>
@@ -571,7 +571,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
             {/* 2. MARK AS PROCESSING MODAL */}
             {modalMode === "MARK_PROCESSING" && (
               <>
-                <DialogHeader>
+                <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
                   <DialogTitle className="flex items-center gap-2 text-white">
                     <RefreshCw className="h-5 w-5 text-blue-400 animate-spin" />
                     <span>Mark Payout Request as Processing</span>
@@ -585,7 +585,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-3">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
                   {actionError && (
                     <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 shrink-0" />
@@ -610,7 +610,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </div>
                 </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
                   <Button variant="ghost" onClick={closeModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                     Cancel
                   </Button>
@@ -629,7 +629,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
             {/* 3. MARK AS COMPLETED (PROCESSED) MODAL */}
             {modalMode === "MARK_COMPLETED" && (
               <>
-                <DialogHeader>
+                <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
                   <DialogTitle className="flex items-center gap-2 text-white">
                     <CheckCircle2 className="h-5 w-5 text-emerald-400" />
                     <span>Mark Payout as Processed / Completed</span>
@@ -643,7 +643,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-3">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
                   {actionError && (
                     <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 shrink-0" />
@@ -692,7 +692,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </div>
                 </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
                   <Button variant="ghost" onClick={closeModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                     Cancel
                   </Button>
@@ -711,7 +711,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
             {/* 4. REJECT MODAL */}
             {modalMode === "REJECT" && (
               <>
-                <DialogHeader>
+                <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
                   <DialogTitle className="flex items-center gap-2 text-red-400">
                     <XCircle className="h-5 w-5" />
                     <span>Reject Payout Request</span>
@@ -725,7 +725,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-3">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
                   {actionError && (
                     <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                       <AlertCircle className="h-4 w-4 shrink-0" />
@@ -751,7 +751,7 @@ export function AdminPayoutsTab({ onRefreshOverview }: AdminPayoutsTabProps) {
                   </div>
                 </div>
 
-                <DialogFooter className="gap-2">
+                <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
                   <Button variant="ghost" onClick={closeModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                     Cancel
                   </Button>

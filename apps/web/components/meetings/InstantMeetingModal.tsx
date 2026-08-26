@@ -88,8 +88,8 @@ export default function InstantMeetingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isLoading && onClose()}>
-      <DialogContent className="max-w-md p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-6 max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Video className="w-5 h-5" />
@@ -102,116 +102,118 @@ export default function InstantMeetingModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 shrink-0">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleStart} className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="instant-meeting-title" className="text-xs font-medium">
-              Meeting Name
-            </Label>
-            <Input
-              id="instant-meeting-title"
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Record Meeting Option */}
-          <div
-            className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-4 ${
-              isFreePlan
-                ? "border-border/60 bg-muted/30 opacity-90"
-                : "border-border bg-card"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`p-2 rounded-lg mt-0.5 ${
-                  isFreePlan
-                    ? "bg-slate-800 text-slate-400"
-                    : recordOnStart
-                    ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {isFreePlan ? (
-                  <Lock className="w-4 h-4 text-amber-500/90" />
-                ) : (
-                  <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
-                )}
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Label
-                    htmlFor="instant-auto-record"
-                    className={`text-xs font-semibold ${isFreePlan ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
-                  >
-                    Record Meeting
-                  </Label>
-                  {isFreePlan ? (
-                    <Badge
-                      variant="outline"
-                      onClick={() => setIsUpgradeModalOpen(true)}
-                      className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] uppercase font-bold cursor-pointer hover:bg-amber-500/20 transition-colors"
-                    >
-                      <Lock className="w-2.5 h-2.5 mr-1 inline" /> Paid Plan Only
-                    </Badge>
-                  ) : recordOnStart ? (
-                    <Badge variant="destructive" className="uppercase text-[10px]">
-                      Auto-Record
-                    </Badge>
-                  ) : null}
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  {isFreePlan ? (
-                    <span>
-                      Meeting recording is not available on the Free plan.{" "}
-                      <button
-                        type="button"
-                        onClick={() => setIsUpgradeModalOpen(true)}
-                        className="text-primary hover:underline font-semibold cursor-pointer"
-                      >
-                        Upgrade to unlock
-                      </button>
-                    </span>
-                  ) : (
-                    "Save recorded video directly to your library when the meeting ends."
-                  )}
-                </p>
-              </div>
-            </div>
-            <div
-              onClick={() => {
-                if (isFreePlan) {
-                  setIsUpgradeModalOpen(true);
-                }
-              }}
-              className={isFreePlan ? "cursor-pointer" : ""}
-              title={isFreePlan ? "Click to view upgrade options" : undefined}
-            >
-              <Switch
-                id="instant-auto-record"
-                checked={isFreePlan ? false : recordOnStart}
-                onCheckedChange={(checked) => {
-                  if (isFreePlan) {
-                    setIsUpgradeModalOpen(true);
-                    return;
-                  }
-                  setRecordOnStart(checked);
-                }}
-                disabled={isLoading || isFreePlan}
+        <form onSubmit={handleStart} className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="instant-meeting-title" className="text-xs font-medium">
+                Meeting Name
+              </Label>
+              <Input
+                id="instant-meeting-title"
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={isLoading}
               />
             </div>
+
+            {/* Record Meeting Option */}
+            <div
+              className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-4 ${
+                isFreePlan
+                  ? "border-border/60 bg-muted/30 opacity-90"
+                  : "border-border bg-card"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2 rounded-lg mt-0.5 ${
+                    isFreePlan
+                      ? "bg-slate-800 text-slate-400"
+                      : recordOnStart
+                      ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {isFreePlan ? (
+                    <Lock className="w-4 h-4 text-amber-500/90" />
+                  ) : (
+                    <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
+                  )}
+                </div>
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label
+                      htmlFor="instant-auto-record"
+                      className={`text-xs font-semibold ${isFreePlan ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
+                    >
+                      Record Meeting
+                    </Label>
+                    {isFreePlan ? (
+                      <Badge
+                        variant="outline"
+                        onClick={() => setIsUpgradeModalOpen(true)}
+                        className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] uppercase font-bold cursor-pointer hover:bg-amber-500/20 transition-colors"
+                      >
+                        <Lock className="w-2.5 h-2.5 mr-1 inline" /> Paid Plan Only
+                      </Badge>
+                    ) : recordOnStart ? (
+                      <Badge variant="destructive" className="uppercase text-[10px]">
+                        Auto-Record
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {isFreePlan ? (
+                      <span>
+                        Meeting recording is not available on the Free plan.{" "}
+                        <button
+                          type="button"
+                          onClick={() => setIsUpgradeModalOpen(true)}
+                          className="text-primary hover:underline font-semibold cursor-pointer"
+                        >
+                          Upgrade to unlock
+                        </button>
+                      </span>
+                    ) : (
+                      "Save recorded video directly to your library when the meeting ends."
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div
+                onClick={() => {
+                  if (isFreePlan) {
+                    setIsUpgradeModalOpen(true);
+                  }
+                }}
+                className={isFreePlan ? "cursor-pointer" : ""}
+                title={isFreePlan ? "Click to view upgrade options" : undefined}
+              >
+                <Switch
+                  id="instant-auto-record"
+                  checked={isFreePlan ? false : recordOnStart}
+                  onCheckedChange={(checked) => {
+                    if (isFreePlan) {
+                      setIsUpgradeModalOpen(true);
+                      return;
+                    }
+                    setRecordOnStart(checked);
+                  }}
+                  disabled={isLoading || isFreePlan}
+                />
+              </div>
+            </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-border mt-4">
+          <DialogFooter className="pt-3 border-t border-border shrink-0 mt-3">
             <Button
               type="button"
               variant="outline"

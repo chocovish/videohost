@@ -1116,7 +1116,7 @@ export default function PlaylistDetailPage() {
             </TabsContent>
           </Tabs>
 
-          <DialogFooter className="pt-2 border-t border-border">
+          <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto">
             <Button
               variant="outline"
               onClick={() => setIsAddModalOpen(false)}
@@ -1135,8 +1135,8 @@ export default function PlaylistDetailPage() {
             <DialogDescription>Update the title, description, and share access mode</DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleRenameSubmit} className="flex-1 overflow-y-auto space-y-4 py-1 pr-0.5 min-h-0 flex flex-col justify-between">
-            <div className="space-y-4">
+          <form onSubmit={handleRenameSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-foreground">Playlist Title *</label>
                 <Input
@@ -1180,7 +1180,7 @@ export default function PlaylistDetailPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-4">
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
               <Button
                 type="button"
                 variant="outline"

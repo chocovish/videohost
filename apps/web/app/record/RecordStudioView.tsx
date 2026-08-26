@@ -1027,7 +1027,7 @@ export default function RecordStudioView() {
             💡 <strong>Pro Tip:</strong> For standard recordings, 30 FPS, Balanced bitrate, or 1080p produces smooth quality while keeping the file size compact.
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 mt-2">
+          <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
             <Button
               variant="outline"
               onClick={() => setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }))}

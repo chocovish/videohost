@@ -380,7 +380,7 @@ export default function MoveItemModal({
           </span>
         </div>
 
-        <DialogFooter className="mt-4 shrink-0 flex items-center justify-end gap-2">
+        <DialogFooter className="mt-3 pt-3 border-t border-border shrink-0 flex items-center justify-end gap-2">
           <Button
             type="button"
             variant="ghost"

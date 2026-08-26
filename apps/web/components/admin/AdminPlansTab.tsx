@@ -374,12 +374,11 @@ export function AdminPlansTab({ onRefreshOverview }: AdminPlansTabProps) {
           })}
         </div>
       )}
-
       {/* Add / Edit Plan Dialog Modal */}
       <Dialog open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg">
-          <form onSubmit={handleSavePlan}>
-            <DialogHeader>
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg max-h-[90vh] flex flex-col p-6 overflow-hidden">
+          <form onSubmit={handleSavePlan} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <DialogHeader className="shrink-0 pb-3 border-b border-zinc-800">
               <DialogTitle className="flex items-center gap-2 text-white">
                 {editingPlan ? (
                   <>
@@ -398,7 +397,7 @@ export function AdminPlansTab({ onRefreshOverview }: AdminPlansTabProps) {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-3 pr-1">
               {modalError && (
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -517,9 +516,9 @@ export function AdminPlansTab({ onRefreshOverview }: AdminPlansTabProps) {
                   <div className="relative">
                     <Input
                       type="number"
-                      step="0.1"
                       min="0"
                       max="100"
+                      step="0.1"
                       value={commissionPercent}
                       onChange={(e) => setCommissionPercent(e.target.value)}
                       placeholder="e.g. 3.5"
@@ -534,7 +533,7 @@ export function AdminPlansTab({ onRefreshOverview }: AdminPlansTabProps) {
               </div>
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 pt-3 border-t border-zinc-800 shrink-0 mt-auto">
               <Button type="button" variant="ghost" onClick={closeModal} disabled={isSubmitting} className="text-zinc-400 text-xs">
                 Cancel
               </Button>

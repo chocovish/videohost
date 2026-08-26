@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -122,9 +123,9 @@ export default function MeetingPurchasesModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="2xl" className="max-w-4xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto">
+      <DialogContent size="2xl" className="max-w-4xl p-6 sm:p-7 max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <DialogHeader className="space-y-2 pb-3 border-b border-border">
+        <DialogHeader className="space-y-2 pb-3 border-b border-border shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -163,7 +164,7 @@ export default function MeetingPurchasesModal({
         </DialogHeader>
 
         {/* Content Body */}
-        <div className="space-y-6 pt-2">
+        <div className="flex-1 overflow-y-auto space-y-6 pt-2 pr-1 min-h-0">
           {/* Stats Header Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Card 1: Total Revenue */}
@@ -329,6 +330,21 @@ export default function MeetingPurchasesModal({
             )}
           </div>
         </div>
+
+        {/* Pinned Footer */}
+        <DialogFooter className="pt-3 border-t border-border shrink-0 mt-3 flex items-center justify-between sm:justify-between gap-2">
+          <div className="text-xs text-muted-foreground">
+            Total {purchases.length} pass holder{purchases.length !== 1 ? "s" : ""}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="w-full sm:w-auto"
+          >
+            Close
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

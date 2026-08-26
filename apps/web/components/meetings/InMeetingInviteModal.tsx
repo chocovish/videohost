@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,8 +130,8 @@ export default function InMeetingInviteModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSending && onClose()}>
-      <DialogContent className="max-w-lg p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-lg p-6 max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <Users className="w-5 h-5" />
@@ -142,7 +143,7 @@ export default function InMeetingInviteModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 pt-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pt-1 pr-1">
           {/* Quick Copy Link Box */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Direct Meeting Link</Label>
@@ -198,7 +199,7 @@ export default function InMeetingInviteModal({
           </div>
 
           {/* Send Instant Email Invite Form */}
-          <form onSubmit={handleSendInvites} className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 space-y-3">
+          <form id="in-meeting-invite-form" onSubmit={handleSendInvites} className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-blue-500" />
@@ -275,28 +276,40 @@ export default function InMeetingInviteModal({
                 ))}
               </div>
             )}
-
-            <div className="flex justify-end pt-1">
-              <Button
-                type="submit"
-                disabled={isSending || (inviteEmails.length === 0 && !emailInput.trim())}
-                className="gap-1.5 text-xs font-bold rounded-xl h-9"
-              >
-                {isSending ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send Invites</span>
-                  </>
-                )}
-              </Button>
-            </div>
           </form>
         </div>
+
+        {/* Pinned Footer with Action Buttons */}
+        <DialogFooter className="pt-3 border-t border-border shrink-0 mt-3 flex items-center justify-between sm:justify-between gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={isSending}
+            className="w-full sm:w-auto"
+          >
+            Done
+          </Button>
+
+          <Button
+            type="submit"
+            form="in-meeting-invite-form"
+            disabled={isSending || (inviteEmails.length === 0 && !emailInput.trim())}
+            className="w-full sm:w-auto gap-1.5 text-xs font-bold rounded-xl h-9"
+          >
+            {isSending ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Sending...</span>
+              </>
+            ) : (
+              <>
+                <Send className="w-3.5 h-3.5" />
+                <span>Send Invites</span>
+              </>
+            )}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

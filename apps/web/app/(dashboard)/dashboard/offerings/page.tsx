@@ -2372,8 +2372,8 @@ export default function OfferingsDashboardPage() {
 
       {/* CREATE / EDIT OFFERING MODAL */}
       <Dialog open={itemModalOpen} onOpenChange={setItemModalOpen}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6 rounded-2xl sm:rounded-3xl">
-          <DialogHeader className="space-y-1">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-2xl max-h-[90vh] flex flex-col p-4 sm:p-6 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <DialogHeader className="shrink-0 pb-3 border-b border-border space-y-1">
             <DialogTitle className="text-lg sm:text-xl font-bold flex items-center gap-2">
               <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
                 <Package className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -2387,9 +2387,10 @@ export default function OfferingsDashboardPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveItem} className="space-y-4 pt-1 min-w-0">
-            {/* Offering Type Selector Header */}
-            <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3 min-w-0">
+          <form onSubmit={handleSaveItem} className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-4 py-3 pr-1 min-w-0">
+              {/* Offering Type Selector Header */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3 min-w-0">
               <div className="flex items-center justify-between border-b border-border/60 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -3233,8 +3234,10 @@ export default function OfferingsDashboardPage() {
               </>
             )}
 
+            </div>
+
             {/* Modal Footer Actions */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border min-w-0">
+            <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border shrink-0 mt-auto min-w-0">
               <div className="flex items-center justify-between sm:justify-start gap-2">
                 <span className="text-xs text-muted-foreground">
                   Status: <strong className={itemFormIsPublished ? "text-emerald-500" : "text-amber-500"}>{itemFormIsPublished ? "Published" : "Draft"}</strong>
@@ -3271,7 +3274,7 @@ export default function OfferingsDashboardPage() {
                   )}
                 </Button>
               </div>
-            </div>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

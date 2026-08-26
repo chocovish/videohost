@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
@@ -640,8 +641,8 @@ export default function PurchasedItemsPage() {
           if (!open) setSelectedReceipt(null);
         }}
       >
-        <DialogContent size="lg" className="sm:max-w-md">
-          <DialogHeader variant="bordered">
+        <DialogContent size="lg" className="sm:max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
+          <DialogHeader variant="bordered" className="shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
@@ -656,108 +657,118 @@ export default function PurchasedItemsPage() {
           </DialogHeader>
 
           {selectedReceipt && (
-            <div className="space-y-4 py-2 text-sm">
-              <div className="p-3.5 rounded-xl bg-muted/50 border border-border space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Item Purchased
-                    </span>
-                    <h4 className="font-bold text-foreground text-base">
-                      {selectedReceipt.title}
-                    </h4>
-                    <span className="text-xs text-muted-foreground">
-                      Type: {selectedReceipt.contentType}
-                    </span>
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-2 pr-1 text-sm">
+                <div className="p-3.5 rounded-xl bg-muted/50 border border-border space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Item Purchased
+                      </span>
+                      <h4 className="font-bold text-foreground text-base">
+                        {selectedReceipt.title}
+                      </h4>
+                      <span className="text-xs text-muted-foreground">
+                        Type: {selectedReceipt.contentType}
+                      </span>
+                    </div>
+                    <Badge variant="lime" className="font-bold">
+                      PAID & UNLOCKED
+                    </Badge>
                   </div>
-                  <Badge variant="lime" className="font-bold">
-                    PAID & UNLOCKED
-                  </Badge>
+
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Creator / Organization</span>
+                      <span className="font-semibold text-foreground">
+                        {selectedReceipt.organization.name}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Purchase Date</span>
+                      <span className="font-semibold text-foreground">
+                        {new Date(selectedReceipt.purchasedAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Amount Paid</span>
+                      <span className="font-bold text-primary text-sm">
+                        {formatPrice(selectedReceipt.amount, selectedReceipt.currency)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Payment Method</span>
+                      <span className="font-semibold text-foreground uppercase">
+                        {selectedReceipt.paymentMethod}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border text-xs">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Creator / Organization</span>
-                    <span className="font-semibold text-foreground">
-                      {selectedReceipt.organization.name}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Purchase Date</span>
-                    <span className="font-semibold text-foreground">
-                      {new Date(selectedReceipt.purchasedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Amount Paid</span>
-                    <span className="font-bold text-primary text-sm">
-                      {formatPrice(selectedReceipt.amount, selectedReceipt.currency)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">Payment Method</span>
-                    <span className="font-semibold text-foreground uppercase">
-                      {selectedReceipt.paymentMethod}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transaction IDs with Copy Helper */}
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
-                  <div className="min-w-0">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                      Order Reference ID
-                    </span>
-                    <span className="font-mono text-xs text-foreground truncate block">
-                      {selectedReceipt.id}
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCopy(selectedReceipt.id, "orderId")}
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                    title="Copy Order ID"
-                  >
-                    {copiedId === "orderId" ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </Button>
-                </div>
-
-                {selectedReceipt.paymentId && (
+                {/* Transaction IDs with Copy Helper */}
+                <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
                     <div className="min-w-0">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                        Gateway Payment ID
+                        Order Reference ID
                       </span>
                       <span className="font-mono text-xs text-foreground truncate block">
-                        {selectedReceipt.paymentId}
+                        {selectedReceipt.id}
                       </span>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleCopy(selectedReceipt.paymentId!, "payId")}
+                      onClick={() => handleCopy(selectedReceipt.id, "orderId")}
                       className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-                      title="Copy Payment ID"
+                      title="Copy Order ID"
                     >
-                      {copiedId === "payId" ? (
+                      {copiedId === "orderId" ? (
                         <Check className="w-3.5 h-3.5 text-emerald-500" />
                       ) : (
                         <Copy className="w-3.5 h-3.5" />
                       )}
                     </Button>
                   </div>
-                )}
+
+                  {selectedReceipt.paymentId && (
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                          Gateway Payment ID
+                        </span>
+                        <span className="font-mono text-xs text-foreground truncate block">
+                          {selectedReceipt.paymentId}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleCopy(selectedReceipt.paymentId!, "payId")}
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                        title="Copy Payment ID"
+                      >
+                        {copiedId === "payId" ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Action Buttons inside Receipt */}
-              <div className="flex items-center gap-2 pt-2">
+              {/* Pinned Action Buttons inside DialogFooter */}
+              <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto flex flex-col sm:flex-row items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setSelectedReceipt(null)}
+                  className="w-full sm:w-auto"
+                >
+                  Close
+                </Button>
                 <Link
                   href={
                     selectedReceipt.contentType === "MEETING"
@@ -767,7 +778,7 @@ export default function PurchasedItemsPage() {
                   target={selectedReceipt.contentType === "MEETING" ? "_self" : "_blank"}
                   className={cn(
                     buttonVariants({ variant: "default" }),
-                    "w-full gap-2 font-bold",
+                    "w-full sm:w-auto flex-1 gap-2 font-bold",
                     selectedReceipt.contentType === "MEETING" ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : ""
                   )}
                 >
@@ -784,7 +795,7 @@ export default function PurchasedItemsPage() {
                   )}
                   <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                 </Link>
-              </div>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>

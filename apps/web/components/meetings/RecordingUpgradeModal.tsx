@@ -49,10 +49,10 @@ export default function RecordingUpgradeModal({
       <DialogContent
         variant="glass"
         size="default"
-        className="border-slate-800 bg-slate-950 text-slate-100 p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-w-lg z-70"
+        className="border-slate-800 bg-slate-950 text-slate-100 p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-w-lg z-70 max-h-[90vh] flex flex-col"
       >
         {/* Header with decorative glowing background */}
-        <div className="relative p-6 pb-5 border-b border-slate-800/80 bg-gradient-to-b from-rose-500/10 via-slate-900/40 to-slate-950/80 overflow-hidden">
+        <div className="relative p-6 pb-5 border-b border-slate-800/80 bg-gradient-to-b from-rose-500/10 via-slate-900/40 to-slate-950/80 overflow-hidden shrink-0">
           <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10 flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/10">
@@ -84,7 +84,7 @@ export default function RecordingUpgradeModal({
         </div>
 
         {/* Modal Body: Feature highlights */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 flex-1 min-h-0 overflow-y-auto">
           <p className="text-xs text-slate-300 font-medium leading-relaxed">
             Upgrade your organization plan to unlock meeting recording capabilities:
           </p>
@@ -138,7 +138,7 @@ export default function RecordingUpgradeModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-6 pt-3 border-t border-slate-800/80 bg-slate-950/90 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <DialogFooter className="p-4 sm:p-6 pt-3 border-t border-slate-800/80 bg-slate-950/90 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Button
             type="button"
             variant="ghost"
@@ -160,7 +160,7 @@ export default function RecordingUpgradeModal({
             <span>Upgrade to Paid Plan</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

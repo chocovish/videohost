@@ -59,32 +59,56 @@ export function CreateOrganizationModal({
         </DialogHeader>
 
         {activeOrg?.planName?.toLowerCase() !== "enterprise" ? (
-          <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-3 my-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
-              <Sparkles className="w-4 h-4 text-purple-600" /> Enterprise Plan Required
+          <div className="flex flex-col flex-1 justify-between space-y-4">
+            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2.5 my-1">
+              <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
+                <Sparkles className="w-4 h-4 text-purple-600" /> Enterprise Plan Required
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                New organization creation can only be done on the Enterprise plan (up to 5 organizations maximum).
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              New organization creation can only be done on the Enterprise plan (up to 5 organizations maximum).
-            </p>
-            <Button
-              type="button"
-              onClick={() => {
-                onClose();
-                router.push("/dashboard/pricing");
-              }}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs"
-            >
-              Upgrade to Enterprise Plan
-            </Button>
+            <DialogFooter className="pt-2 border-t border-border mt-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push("/dashboard/pricing");
+                }}
+                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs"
+              >
+                Upgrade to Enterprise Plan
+              </Button>
+            </DialogFooter>
           </div>
         ) : userOrgsCount >= 5 ? (
-          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 my-2 text-center">
-            <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
-              <AlertCircle className="w-4 h-4" /> Organization Limit Reached
+          <div className="flex flex-col flex-1 justify-between space-y-4">
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 my-1 text-center">
+              <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
+                <AlertCircle className="w-4 h-4" /> Organization Limit Reached
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You have reached the maximum limit of 5 organizations allowed on the Enterprise plan.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground">
-              You have reached the maximum limit of 5 organizations allowed on the Enterprise plan.
-            </p>
+            <DialogFooter className="pt-2 border-t border-border mt-auto">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                className="w-full sm:w-auto"
+              >
+                Close
+              </Button>
+            </DialogFooter>
           </div>
         ) : (
           <form onSubmit={onCreateOrg} className="space-y-4">
@@ -118,7 +142,7 @@ export function CreateOrganizationModal({
               </p>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="pt-2 border-t border-border mt-auto">
               <Button
                 type="button"
                 variant="ghost"
