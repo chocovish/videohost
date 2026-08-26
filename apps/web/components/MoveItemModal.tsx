@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface RawFolder {
   id: string;
@@ -238,10 +240,10 @@ export default function MoveItemModal({
         </DialogHeader>
 
         {error && (
-          <div className="my-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs flex items-center gap-2 shrink-0">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <Alert variant="destructive" className="my-2 shrink-0 text-xs">
+            <AlertCircle />
+            <span className="text-xs">{error}</span>
+          </Alert>
         )}
 
         {/* Search destination folders */}
@@ -266,20 +268,21 @@ export default function MoveItemModal({
           ) : (
             <>
               {/* Root folder option */}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setSelectedFolderId(null)}
-                className={`w-full text-left p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                className={`w-full text-left p-2.5 rounded-xl h-auto text-xs font-semibold flex items-center justify-between cursor-pointer ${
                   selectedFolderId === null
-                    ? "bg-primary/10 border border-primary/40 text-primary"
-                    : "hover:bg-muted text-foreground"
+                    ? "bg-primary/10 border border-primary/40 text-primary hover:bg-primary/10"
+                    : "text-foreground"
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div
                     className={`p-1.5 rounded-lg ${
                       selectedFolderId === null
-                        ? "bg-primary text-white"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -287,23 +290,19 @@ export default function MoveItemModal({
                   </div>
                   <div className="truncate">
                     <span className="font-bold">Root Directory</span>
-                    <p className="text-[10px] text-muted-foreground font-normal">
+                    <p className="text-xs text-muted-foreground font-normal">
                       Top-level storage
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  {isRootCurrent && (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted text-muted-foreground">
-                      Current
-                    </span>
-                  )}
+                  {isRootCurrent && <Badge variant="secondary">Current</Badge>}
                   {selectedFolderId === null && (
                     <Check className="w-4 h-4 text-primary" />
                   )}
                 </div>
-              </button>
+              </Button>
 
               {/* Subfolders list */}
               {filteredFolders.map((f) => {
@@ -311,34 +310,35 @@ export default function MoveItemModal({
                 const isDisabled = f.isDescendantOrSelf;
 
                 return (
-                  <button
+                  <Button
                     key={f.id}
                     type="button"
+                    variant="ghost"
                     disabled={isDisabled}
                     onClick={() => !isDisabled && setSelectedFolderId(f.id)}
-                    className={`w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between ${
+                    className={`w-full text-left p-2.5 rounded-xl h-auto text-xs transition-all flex items-center justify-between ${
                       isDisabled
-                        ? "opacity-40 cursor-not-allowed bg-muted/40"
+                        ? "opacity-40 bg-muted/40"
                         : isSelected
-                        ? "bg-primary/10 border border-primary/40 text-primary cursor-pointer"
-                        : "hover:bg-muted text-foreground cursor-pointer"
+                        ? "bg-primary/10 border border-primary/40 text-primary cursor-pointer hover:bg-primary/10"
+                        : "text-foreground cursor-pointer"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`p-1.5 rounded-lg shrink-0 ${
                           isSelected
-                            ? "bg-primary text-white"
-                            : "bg-amber-500/10 text-amber-600"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary/60 text-secondary-foreground"
                         }`}
                       >
-                        <Folder className="w-3.5 h-3.5 fill-amber-500/20" />
+                        <Folder className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-bold truncate text-foreground">
                           {f.name}
                         </p>
-                        <p className="text-[10px] text-muted-foreground truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {f.path}
                         </p>
                       </div>
@@ -346,20 +346,16 @@ export default function MoveItemModal({
 
                     <div className="flex items-center gap-2 shrink-0">
                       {f.isDescendantOrSelf && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-red-500/10 text-red-500">
+                        <Badge variant="destructive">
                           {f.id === itemId ? "Self" : "Subfolder"}
-                        </span>
+                        </Badge>
                       )}
-                      {f.isCurrent && (
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-muted text-muted-foreground">
-                          Current
-                        </span>
-                      )}
+                      {f.isCurrent && <Badge variant="secondary">Current</Badge>}
                       {isSelected && (
                         <Check className="w-4 h-4 text-primary" />
                       )}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
 

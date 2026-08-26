@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { uploadVideoFile } from "@/lib/upload-video";
 import {
@@ -383,28 +385,28 @@ export default function UploadModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+          <Alert variant="destructive" className="shrink-0 text-xs">
+            <AlertCircle />
+            <div className="flex items-center justify-between gap-2 text-xs">
               <span>{error}</span>
+              {unsupportedTracks.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => setUnsupportedModalOpen(true)}
+                  className="shrink-0"
+                >
+                  View Details
+                </Button>
+              )}
             </div>
-            {unsupportedTracks.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setUnsupportedModalOpen(true)}
-                className="h-7 text-[11px] px-2.5 bg-white dark:bg-slate-800 border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-50 shrink-0"
-              >
-                View Details
-              </Button>
-            )}
-          </div>
+          </Alert>
         )}
 
         {validatingTracks && (
-          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2 animate-pulse shrink-0">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+          <div className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground text-xs flex items-center gap-2 shrink-0">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span>Probing video streams for strict stream copy (-c copy → MKV)...</span>
           </div>
         )}
@@ -424,25 +426,25 @@ export default function UploadModal({
               />
               <label htmlFor="video-file-input" className="cursor-pointer flex flex-col items-center justify-center">
                 {customThumbUrl ? (
-                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
+                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-border bg-black group mb-2 shadow-xs">
                     <img
                       src={customThumbUrl}
                       alt="Custom thumbnail preview"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2 bg-indigo-600/90 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3 text-indigo-200" /> Custom Thumbnail
+                    <div className="absolute top-2 left-2 bg-primary/90 backdrop-blur-xs text-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3 text-primary-foreground/80" /> Custom Thumbnail
                     </div>
                   </div>
                 ) : metadata?.thumbnailUrl ? (
-                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-slate-200 bg-black group mb-2 shadow-xs">
+                  <div className="relative w-full max-w-xs h-32 mx-auto rounded-xl overflow-hidden border border-border bg-black group mb-2 shadow-xs">
                     <img
                       src={metadata.thumbnailUrl}
                       alt="Extracted video thumbnail preview"
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3 text-emerald-400" /> Auto Thumbnail
+                    <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-xs font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3 text-primary" /> Auto Thumbnail
                     </div>
                   </div>
                 ) : (
@@ -455,7 +457,7 @@ export default function UploadModal({
                       {(file.size / (1024 * 1024)).toFixed(2)} MB
                     </p>
                     {metadata && (metadata.durationSeconds > 0 || metadata.sourceWidth > 0) && (
-                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] font-medium text-primary">
+                      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs font-medium text-primary">
                         {metadata.durationSeconds > 0 && (
                           <span className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md">
                             <Clock className="w-3 h-3" /> {formatDuration(metadata.durationSeconds)}
@@ -516,12 +518,12 @@ export default function UploadModal({
                         Require HLS (Adaptive Bitrate)
                       </Label>
                       {!canUseHls && (
-                        <Badge variant="outline" className="uppercase text-amber-600 border-amber-500/30 bg-amber-500/10">
+                        <Badge variant="secondary" className="uppercase">
                           PRO FEATURE
                         </Badge>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {!canUseHls
                         ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
                         : requireHls
@@ -540,10 +542,10 @@ export default function UploadModal({
             })()}
 
             {/* Destination Folder Info Banner */}
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium">
-              <Folder className="w-4 h-4 text-amber-600 shrink-0 fill-amber-500/20" />
+            <div className="p-3 rounded-xl bg-muted/60 border border-border flex items-center gap-2.5 text-xs text-muted-foreground font-medium">
+              <Folder className="w-4 h-4 text-primary shrink-0 fill-primary/20" />
               <span>
-                Destination: <strong className="font-bold">{folderPathName || "Root"}</strong>
+                Destination: <strong className="font-bold text-foreground">{folderPathName || "Root"}</strong>
               </span>
             </div>
 
@@ -601,12 +603,7 @@ export default function UploadModal({
                   <span>{statusText}</span>
                   <span>{progress}%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-300 rounded-full"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+                <Progress value={progress} />
               </div>
             )}
           </div>
@@ -614,10 +611,9 @@ export default function UploadModal({
           <DialogFooter className="shrink-0 pt-3 border-t border-border mt-3">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={handleClose}
               disabled={uploading}
-              className="w-full sm:w-auto"
             >
               Cancel
             </Button>

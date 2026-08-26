@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ImageCropperModal, { AspectRatioOption } from "@/components/ImageCropperModal";
 import {
@@ -554,24 +555,24 @@ export default function SettingsPage() {
 
       {/* Global Org Notification Messages */}
       {orgSuccessMsg && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
+        <Alert className="border-primary/30 bg-primary/10 text-primary">
           <Check className="w-4 h-4 shrink-0" />
-          <span>{orgSuccessMsg}</span>
-        </div>
+          <AlertDescription>{orgSuccessMsg}</AlertDescription>
+        </Alert>
       )}
 
       {orgErrorMsg && (
-        <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
+        <Alert variant="destructive">
           <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{orgErrorMsg}</span>
-        </div>
+          <AlertDescription>{orgErrorMsg}</AlertDescription>
+        </Alert>
       )}
 
       {actionMessage && (
-        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm flex items-center gap-2">
+        <Alert>
           <Check className="w-4 h-4 shrink-0" />
-          <span>{actionMessage}</span>
-        </div>
+          <AlertDescription>{actionMessage}</AlertDescription>
+        </Alert>
       )}
 
       {/* SECTION 1: WORKSPACE SWITCHER & ORGANIZATIONS LIST */}

@@ -533,7 +533,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       tagline: "Essential tools for personal screen recording, branded meetings & monetization",
       popular: false,
       badge: "Get Started",
-      accentColor: "border-slate-200 dark:border-slate-800",
+      accentColor: "border-border",
       buttonVariant: "outline-solid",
       features: [
         { title: "Unlimited screen record with face cam overlay", icon: Video, highlight: true },
@@ -579,7 +579,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           : `Expanded ${basicPlanRecord?.storageLimitGb ?? 50}GB cloud storage & meeting recording on top of Free plan`,
       popular: false,
       badge: "Budget Friendly",
-      accentColor: "border-sky-500/40 dark:border-sky-500/30 hover:border-sky-500 shadow-md",
+      accentColor: "border-primary/40 hover:border-primary shadow-md",
       buttonVariant: "basic",
       features: [
         { title: "All in Free plan +", icon: Sparkles, highlight: true },
@@ -654,7 +654,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       tagline: "For teams & multi-org teams requiring unlimited storage & full controls",
       popular: false,
       badge: "Full Access",
-      accentColor: "border-purple-500/50 dark:border-purple-500/30 shadow-lg",
+      accentColor: "border-ring/60 shadow-lg",
       buttonVariant: "enterprise",
       features: [
         { title: "All in Pro plan +", icon: Sparkles, highlight: true },
@@ -704,7 +704,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
 
       {/* Active Plan Subscription Status Banner */}
       {orgDetails && orgDetails.planExpiresAt && currentPlan !== "free" && (
-        <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-linear-to-r from-lime-500/10 via-emerald-500/10 to-teal-500/10 border border-lime-500/30 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+        <div className="max-w-3xl mx-auto p-4 rounded-2xl bg-primary/5 border border-primary/20 text-sm flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/20 text-primary shrink-0">
               <Zap className="w-5 h-5" />
@@ -713,9 +713,9 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               <div className="font-bold text-foreground flex items-center gap-2">
                 Active Plan: <span className="uppercase text-primary font-extrabold">{currentPlan}</span>
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide border ${orgDetails.subscriptionStatus === "CANCELLED"
-                    ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-                    : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-black uppercase tracking-wide border ${orgDetails.subscriptionStatus === "CANCELLED"
+                    ? "bg-muted text-muted-foreground border-border"
+                    : "bg-primary/15 text-primary border-primary/30"
                     }`}
                 >
                   {orgDetails.subscriptionStatus || "ACTIVE"}
@@ -727,18 +727,20 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             </div>
           </div>
           {orgDetails.billingMode === "RECURRING" && orgDetails.subscriptionStatus !== "CANCELLED" ? (
-            <button
+            <Button
               type="button"
+              variant="dangerOutline"
+              size="sm"
               onClick={() => {
                 setPendingPlanSwitch("free");
                 setConfirmCancelModalOpen(true);
               }}
-              className="px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-extrabold transition-all shadow-2xs shrink-0 cursor-pointer"
+              className="shrink-0"
             >
               Cancel Subscription
-            </button>
+            </Button>
           ) : orgDetails.subscriptionStatus === "CANCELLED" ? (
-            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shrink-0">
+            <span className="text-xs font-semibold px-3 py-1 rounded-lg bg-muted text-muted-foreground border border-border shrink-0">
               Subscription cancelled — Active until {new Date(orgDetails.planExpiresAt).toLocaleDateString()}
             </span>
           ) : null}
@@ -748,85 +750,85 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
       {/* Billing Cycle & Mode Toggles */}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 py-2">
         {/* Monthly / Yearly Cycle */}
-        <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-          <button
+        <div className="inline-flex items-center p-1 rounded-2xl bg-muted border border-border">
+          <Button variant="ghost"
             type="button"
             onClick={() => setBillingCycle("MONTHLY")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${billingCycle === "MONTHLY"
-              ? "bg-card text-foreground shadow-md"
+              ? "bg-card text-foreground shadow-md hover:bg-card hover:text-foreground"
               : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Monthly Billing
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => setBillingCycle("YEARLY")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${billingCycle === "YEARLY"
-              ? "bg-primary text-primary-foreground shadow-md"
+              ? "bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Yearly Billing
-            <span className="px-1.5 py-0.5 rounded-md bg-white/20 text-[10px] uppercase font-black">
+            <span className="px-1.5 py-0.5 rounded-md bg-primary-foreground/20 text-xs uppercase font-black">
               2 Months Free
             </span>
-          </button>
+          </Button>
         </div>
 
         {/* One-Time vs Recurring Mode */}
-        <div className="inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
-          <button
+        <div className="inline-flex items-center p-1 rounded-2xl bg-muted border border-border">
+          <Button variant="ghost"
             type="button"
             onClick={() => setBillingMode("ONE_TIME")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "ONE_TIME"
-              ? "bg-card text-foreground shadow-md"
+              ? "bg-card text-foreground shadow-md hover:bg-card hover:text-foreground"
               : "text-muted-foreground hover:text-foreground"
               }`}
           >
             One-Time Payment
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => setBillingMode("RECURRING")}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${billingMode === "RECURRING"
-              ? "bg-card text-foreground shadow-md"
+              ? "bg-card text-foreground shadow-md hover:bg-card hover:text-foreground"
               : "text-muted-foreground hover:text-foreground"
               }`}
           >
             Auto-Renewing Subscription
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Toast Notifications */}
       {successMsg && (
-        <div className="max-w-xl mx-auto p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-sm font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+        <div className="max-w-xl mx-auto p-4 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
             <span>{successMsg}</span>
           </div>
-          <button
+          <Button variant="ghost"
             onClick={() => setSuccessMsg("")}
-            className="text-xs text-emerald-700 dark:text-emerald-300 underline font-bold"
+            className="text-xs underline font-bold"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
       {errorMsg && (
-        <div className="max-w-xl mx-auto p-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-700 dark:text-red-300 text-sm font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+        <div className="max-w-xl mx-auto p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive text-sm font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <AlertCircle className="w-5 h-5 shrink-0" />
             <span>{errorMsg}</span>
           </div>
-          <button
+          <Button variant="ghost"
             onClick={() => setErrorMsg("")}
-            className="text-xs text-red-700 dark:text-red-300 underline font-bold"
+            className="text-xs underline font-bold"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
@@ -840,11 +842,11 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
             <div
               key={plan.id}
               className={`relative flex flex-col justify-between p-6 sm:p-7 rounded-3xl bg-card border transition-all duration-300 hover:shadow-2xl ${plan.accentColor
-                } ${plan.popular ? "scale-[1.02] bg-linear-to-b from-white via-white to-lime-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/40" : ""}`}
+                } ${plan.popular ? "scale-[1.02]" : ""}`}
             >
               {/* Popular / Badge Ribbon */}
               {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-white font-extrabold text-xs uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground font-extrabold text-xs uppercase tracking-wider shadow-md flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> {plan.badge}
                 </div>
               )}
@@ -854,7 +856,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <h3 className="text-xl sm:text-2xl font-black text-foreground">{plan.name}</h3>
                   {isCurrent && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary font-extrabold text-[11px] uppercase tracking-wider border border-primary/40">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary font-extrabold text-xs uppercase tracking-wider border border-primary/40">
                       <CheckCircle2 className="w-3.5 h-3.5" /> Current Plan
                     </span>
                   )}
@@ -875,7 +877,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                       {plan.totalBilled}
                     </span>
                     {billingCycle === "YEARLY" && plan.id !== "free" && (
-                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wide">
+                      <span className="px-1.5 py-0.5 rounded-md bg-primary/15 text-primary font-extrabold text-xs uppercase tracking-wide">
                         2 Months Free
                       </span>
                     )}
@@ -906,8 +908,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                     <div className="pt-2 space-y-2 border-t border-border/60">
                       {plan.notIncluded.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-3 text-xs text-muted-foreground/70 line-through">
-                          <div className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-bold">✕</span>
+                          <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <span className="text-xs font-bold">✕</span>
                           </div>
                           <span>{item}</span>
                         </div>
@@ -921,47 +923,51 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
               <div>
                 {isCurrent ? (
                   <div className="space-y-2">
-                    <button
+                    <Button
                       disabled
-                      className="w-full py-3 px-4 rounded-2xl bg-muted text-foreground font-bold text-sm border border-border opacity-75 cursor-default flex items-center justify-center gap-2"
+                      variant="secondary"
+                      className="w-full opacity-75 cursor-default"
                     >
                       <CheckCircle2 className="w-4 h-4 text-primary" /> Active Workspace Plan
-                    </button>
+                    </Button>
                     {plan.id !== "free" && currentPlan !== "free" && orgDetails?.billingMode === "RECURRING" && orgDetails?.subscriptionStatus !== "CANCELLED" && (
-                      <button
+                      <Button
                         type="button"
+                        variant="dangerOutline"
                         onClick={() => {
                           setPendingPlanSwitch("free");
                           setConfirmCancelModalOpen(true);
                         }}
-                        className="w-full py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/30 font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full"
                       >
                         Cancel Subscription
-                      </button>
+                      </Button>
                     )}
                     {plan.id !== "free" && currentPlan !== "free" && orgDetails?.subscriptionStatus === "CANCELLED" && (
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => handleSelectPlan(plan.id as any, true)}
                         disabled={updatingPlan !== null || loadingPlan}
-                        className="w-full py-2.5 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full"
                       >
                         <Sparkles className="w-3.5 h-3.5" /> Renew / Reactivate {plan.name}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : (
-                  <button
+                  <Button
                     onClick={() => handleSelectPlan(plan.id as any)}
                     disabled={updatingPlan !== null || loadingPlan}
-                    className={`w-full py-3.5 px-4 rounded-2xl font-extrabold text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer ${plan.id === "pro"
-                      ? "bg-primary text-white hover:opacity-90 shadow-primary/20"
-                      : plan.id === "enterprise"
-                        ? "bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/20"
+                    variant={
+                      plan.id === "pro"
+                        ? "default"
+                        : plan.id === "enterprise"
+                        ? "dark"
                         : plan.id === "basic"
-                          ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/20"
-                          : "bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
-                      }`}
+                        ? "secondary"
+                        : "outline"
+                    }
+                    className="w-full font-extrabold active:scale-95 transition-all"
                   >
                     {isUpdating ? (
                       <>
@@ -978,7 +984,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -1038,7 +1044,7 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
+              <div className="p-2.5 rounded-xl bg-primary/15 text-primary shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
@@ -1051,11 +1057,11 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs text-muted-foreground">
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-medium">
+            <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground font-medium">
               ✅ <strong>Keep Paid Features Until Expiry:</strong> You will remain on your paid <strong>{currentPlan.toUpperCase()}</strong> plan in one-time mode with full feature access until <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'expiration'}</strong>.
             </div>
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 font-medium">
-              ⚠️ <strong>No Future Charges:</strong> Auto-renewal will be cancelled immediately. Once your paid validity ends on <strong>{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString() : 'expiration'}</strong>, your workspace will automatically move to the Free plan.
+            <div className="p-3.5 rounded-xl bg-muted/60 border border-border text-muted-foreground font-medium">
+              ⚠️ <strong className="text-foreground">No Future Charges:</strong> Auto-renewal will be cancelled immediately. Once your paid validity ends on <strong className="text-foreground">{orgDetails?.planExpiresAt ? new Date(orgDetails.planExpiresAt).toLocaleDateString() : 'expiration'}</strong>, your workspace will automatically move to the Free plan.
             </div>
           </div>
 

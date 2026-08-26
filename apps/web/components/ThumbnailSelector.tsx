@@ -44,7 +44,7 @@ export function ThumbnailSelector({
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           Select Video Thumbnail
           {hasThumbnails && (
-            <span className="text-[10px] font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               ({thumbnails.length} frames generated)
             </span>
           )}
@@ -56,7 +56,7 @@ export function ThumbnailSelector({
             size="sm"
             onClick={onRemoveCustomThumb}
             disabled={disabled}
-            className="h-6 text-[11px] text-destructive hover:bg-destructive/10 font-semibold p-1"
+            className="h-6 text-xs text-destructive hover:bg-destructive/10 font-semibold p-1"
           >
             Reset to auto
           </Button>
@@ -85,7 +85,7 @@ export function ThumbnailSelector({
                   alt={`Thumbnail frame ${idx + 1}`}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-[9px] font-mono font-medium text-white px-1 py-0.2 rounded-md">
+                <div className="absolute bottom-1 right-1 bg-black/75 backdrop-blur-xs text-xs font-mono font-medium text-white px-1 py-0.5 rounded-md">
                   {formatDuration(thumb.timestampSeconds)}
                 </div>
                 {isSelected && (
@@ -121,7 +121,7 @@ export function ThumbnailSelector({
             <p className="text-xs font-bold text-primary truncate">
               Custom Image Selected
             </p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Compressed to optimized 720p WebP
             </p>
           </div>
@@ -130,7 +130,7 @@ export function ThumbnailSelector({
 
       {/* Custom Thumbnail Upload Row */}
       <div className="pt-2 flex items-center justify-between border-t border-border">
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {customThumbUrl ? "Using custom uploaded image" : "Or upload a custom image"}
         </span>
         <div>

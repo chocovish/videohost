@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 import {
   ShareAccessMode,
   ShareTargetType,
@@ -300,16 +301,16 @@ export default function ShareModal({
         <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-0.5 min-h-0">
           {/* Notifications */}
           {errorMsg && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{errorMsg}</span>
-            </div>
+            <Alert variant="destructive" className="text-xs">
+              <AlertCircle />
+              <span className="text-xs">{errorMsg}</span>
+            </Alert>
           )}
           {successMsg && (
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 font-medium">
-              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span className="flex-1">{successMsg}</span>
-            </div>
+            <Alert className="border-primary/20 bg-primary/10 text-primary text-xs font-medium">
+              <Check />
+              <span className="text-xs">{successMsg}</span>
+            </Alert>
           )}
 
           {loading ? (
@@ -343,8 +344,8 @@ export default function ShareModal({
         <DialogFooter className="pt-3 border-t border-border shrink-0 flex items-center justify-between sm:justify-between gap-2">
           <div className="flex items-center gap-2">
             {hasChanges && (
-              <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Unsaved changes
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> Unsaved changes
               </span>
             )}
           </div>

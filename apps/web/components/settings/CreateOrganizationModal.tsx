@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 
 interface CreateOrganizationModalProps {
@@ -60,14 +61,13 @@ export function CreateOrganizationModal({
 
         {activeOrg?.planName?.toLowerCase() !== "enterprise" ? (
           <div className="flex flex-col flex-1 justify-between space-y-4">
-            <div className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2.5 my-1">
-              <div className="flex items-center gap-2 text-xs font-bold text-purple-700 dark:text-purple-300">
-                <Sparkles className="w-4 h-4 text-purple-600" /> Enterprise Plan Required
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
+            <Alert className="my-1">
+              <Sparkles className="w-4 h-4" />
+              <AlertTitle className="text-xs font-bold">Enterprise Plan Required</AlertTitle>
+              <AlertDescription className="text-xs leading-relaxed">
                 New organization creation can only be done on the Enterprise plan (up to 5 organizations maximum).
-              </p>
-            </div>
+              </AlertDescription>
+            </Alert>
             <DialogFooter className="pt-2 border-t border-border mt-auto">
               <Button
                 type="button"
@@ -83,7 +83,7 @@ export function CreateOrganizationModal({
                   onClose();
                   router.push("/dashboard/pricing");
                 }}
-                className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs"
+                className="w-full sm:w-auto font-extrabold text-xs"
               >
                 Upgrade to Enterprise Plan
               </Button>
@@ -91,14 +91,13 @@ export function CreateOrganizationModal({
           </div>
         ) : userOrgsCount >= 5 ? (
           <div className="flex flex-col flex-1 justify-between space-y-4">
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2 my-1 text-center">
-              <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-1.5">
-                <AlertCircle className="w-4 h-4" /> Organization Limit Reached
-              </div>
-              <p className="text-xs text-muted-foreground">
+            <Alert className="my-1">
+              <AlertCircle className="w-4 h-4" />
+              <AlertTitle className="text-xs font-bold">Organization Limit Reached</AlertTitle>
+              <AlertDescription className="text-xs">
                 You have reached the maximum limit of 5 organizations allowed on the Enterprise plan.
-              </p>
-            </div>
+              </AlertDescription>
+            </Alert>
             <DialogFooter className="pt-2 border-t border-border mt-auto">
               <Button
                 type="button"
@@ -114,7 +113,7 @@ export function CreateOrganizationModal({
           <form onSubmit={onCreateOrg} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="org-name-input">
-                Organization Name <span className="text-red-500">*</span>
+                Organization Name <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="org-name-input"
@@ -137,7 +136,7 @@ export function CreateOrganizationModal({
                 value={newOrgSlug}
                 onChange={(e) => setNewOrgSlug(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Unique identifier used in URLs and API keys (up to 5 orgs per Enterprise account).
               </p>
             </div>

@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 interface RenameFolderModalProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export default function RenameFolderModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 shrink-0">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
               <FolderEdit className="w-5 h-5" />
             </div>
             <div>
@@ -91,10 +92,10 @@ export default function RenameFolderModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <Alert variant="destructive" className="text-xs">
+            <AlertCircle />
+            <span className="text-xs">{error}</span>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">

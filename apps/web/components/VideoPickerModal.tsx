@@ -22,6 +22,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDuration } from "@/lib/video-utils";
 
@@ -219,20 +221,20 @@ export default function VideoPickerModal({
             {/* Search Input */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search videos by title or folder..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 rounded-xl text-xs border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="pl-9 text-xs"
               />
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl text-xs bg-red-500/10 border border-red-500/20 text-red-500 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
+              <Alert variant="destructive" className="text-xs">
+                <AlertCircle />
+                <span className="text-xs">{error}</span>
+              </Alert>
             )}
 
             {/* Video List / Grid */}
@@ -248,7 +250,7 @@ export default function VideoPickerModal({
                   <p className="text-xs font-semibold">
                     {search ? "No videos match your search query." : "No uploaded videos found in your account."}
                   </p>
-                  <p className="text-[11px] max-w-sm">
+                  <p className="text-xs max-w-sm">
                     {search ? "Try searching with a different keyword." : "Upload videos from the Uploaded Videos page to choose them here."}
                   </p>
                 </div>
@@ -297,7 +299,7 @@ export default function VideoPickerModal({
 
                           {/* Duration Badge */}
                           {video.durationSeconds !== undefined && video.durationSeconds !== null && (
-                            <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-black/80 text-white backdrop-blur-xs flex items-center gap-1">
+                            <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-md text-xs font-mono font-bold bg-black/80 text-white backdrop-blur-xs flex items-center gap-1">
                               <Clock className="w-2.5 h-2.5" />
                               {formatDuration(video.durationSeconds)}
                             </div>
@@ -305,7 +307,7 @@ export default function VideoPickerModal({
 
                           {/* Selection Checkmark Badge */}
                           {isSelected && (
-                            <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center shadow-md animate-in zoom-in-50">
+                            <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md animate-in zoom-in-50">
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
                             </div>
                           )}
@@ -317,14 +319,14 @@ export default function VideoPickerModal({
                             {video.title}
                           </h4>
 
-                          <div className="flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
+                          <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground">
                             <span
                               className={`font-semibold uppercase tracking-wider ${
                                 video.status === "READY"
-                                  ? "text-emerald-500"
+                                  ? "text-primary"
                                   : video.status === "FAILED"
-                                  ? "text-red-500"
-                                  : "text-amber-500"
+                                  ? "text-destructive"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               {video.status}
@@ -340,7 +342,7 @@ export default function VideoPickerModal({
             </div>
 
             <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto flex flex-row items-center justify-between sm:justify-between gap-2">
-              <div className="text-[11px] text-muted-foreground truncate">
+              <div className="text-xs text-muted-foreground truncate">
                 {selectedVideo ? (
                   <span>
                     Selected: <strong className="text-foreground">{selectedVideo.title}</strong>
@@ -359,7 +361,7 @@ export default function VideoPickerModal({
                   size="sm"
                   disabled={!selectedVideo}
                   onClick={handleConfirmLibrarySelect}
-                  className="text-xs font-bold px-4 py-2 rounded-xl bg-primary text-white cursor-pointer"
+                  className="text-xs font-bold cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5 mr-1" /> Select Video
                 </Button>
@@ -373,27 +375,27 @@ export default function VideoPickerModal({
               <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold">YouTube Video URL or Direct Link *</label>
-                  <input
+                  <Input
                     type="text"
                     required
                     placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
                     value={customUrl}
                     onChange={(e) => setCustomUrl(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background font-mono focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="font-mono text-xs"
                   />
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Paste any YouTube link (will automatically play in the popup player) or direct video URL.
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold">Optional Title</label>
-                  <input
+                  <Input
                     type="text"
                     placeholder="e.g. Masterclass Showcase Video"
                     value={customTitle}
                     onChange={(e) => setCustomTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl text-xs border bg-background focus:outline-none"
+                    className="text-xs"
                   />
                 </div>
               </div>
@@ -406,7 +408,7 @@ export default function VideoPickerModal({
                   type="submit"
                   size="sm"
                   disabled={!customUrl.trim()}
-                  className="text-xs font-bold px-4 py-2 rounded-xl bg-primary text-white cursor-pointer"
+                  className="text-xs font-bold cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5 mr-1" /> Use YouTube / Video Link
                 </Button>

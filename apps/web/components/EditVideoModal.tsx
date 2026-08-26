@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
+import { Alert } from "@/components/ui/alert";
 import { processThumbnail } from "@/lib/video-utils";
 import {
   ShareAccessMode,
@@ -254,10 +255,10 @@ export default function EditVideoModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 shrink-0">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span className="flex-1">{error}</span>
-          </div>
+          <Alert variant="destructive" className="shrink-0 text-xs">
+            <AlertCircle />
+            <span className="text-xs">{error}</span>
+          </Alert>
         )}
 
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -284,7 +285,7 @@ export default function EditVideoModal({
                 <Label htmlFor="edit-video-desc" className="text-xs font-medium text-foreground">
                   Description
                 </Label>
-                <span className="text-[11px] text-muted-foreground">Optional</span>
+                <span className="text-xs text-muted-foreground">Optional</span>
               </div>
               <RichTextEditor
                 id="edit-video-desc"
@@ -307,14 +308,16 @@ export default function EditVideoModal({
                   <span>Thumbnail</span>
                 </Label>
                 {hasThumbnailChanged && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
                     onClick={handleResetThumbnail}
                     disabled={loading}
-                    className="text-[11px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                    className="text-muted-foreground hover:text-foreground"
                   >
-                    <RotateCcw className="w-3 h-3" /> Revert
-                  </button>
+                    <RotateCcw /> Revert
+                  </Button>
                 )}
               </div>
 
@@ -330,12 +333,12 @@ export default function EditVideoModal({
                   ) : (
                     <div className="flex flex-col items-center justify-center text-muted-foreground gap-1.5 p-3 text-center">
                       <ImageIcon className="w-6 h-6 opacity-60" />
-                      <span className="text-[11px]">No thumbnail</span>
+                      <span className="text-xs">No thumbnail</span>
                     </div>
                   )}
 
                   {selectedFile && (
-                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-semibold shadow-xs flex items-center gap-1">
+                    <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-primary text-primary-foreground text-xs font-semibold shadow-xs flex items-center gap-1">
                       <Check className="w-3 h-3" /> New Selected
                     </div>
                   )}
@@ -379,7 +382,7 @@ export default function EditVideoModal({
                     </Button>
                   )}
 
-                  <p className="text-[10px] text-muted-foreground leading-tight">
+                  <p className="text-xs text-muted-foreground leading-tight">
                     Supports PNG, JPG, WebP. Recommended 16:9 ratio.
                   </p>
                 </div>

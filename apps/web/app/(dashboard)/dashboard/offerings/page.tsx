@@ -48,10 +48,12 @@ import {
   DEFAULT_OFFERINGS_CONFIG,
   SUPPORTED_SOCIAL_PLATFORMS,
 } from "@/lib/offerings-defaults";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
@@ -815,32 +817,34 @@ export default function OfferingsDashboardPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Header Banner with Public Share Link & Actions */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border border-slate-700/60 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="p-6 rounded-2xl bg-card text-card-foreground border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-lime-400">
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-primary">
             <Sparkles className="w-4 h-4" /> Creator Portfolio & Offerings Page
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight">Offerings & Landing Hub</h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-xl">
             Showcase what your organization provides—playlists, scheduled meetings, video assets, and digital products—on your custom public link.
           </p>
 
           {/* Public Link Bar */}
           <div className="flex items-center gap-2 pt-2">
-            <div className="px-3 py-1.5 rounded-lg bg-black/60 border border-slate-700 text-xs font-mono text-lime-300 truncate max-w-xs sm:max-w-md">
+            <div className="px-3 py-1.5 rounded-lg bg-background border border-border text-xs font-mono text-primary truncate max-w-xs sm:max-w-md">
               {publicUrl}
             </div>
-            <button
+            <Button
               onClick={handleCopyPublicLink}
               title="Copy public link"
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 transition-all cursor-pointer"
+              variant="outline"
+              size="icon-sm"
+              className="cursor-pointer"
             >
-              {copiedLink ? <Check className="w-4 h-4 text-lime-400" /> : <Copy className="w-4 h-4" />}
-            </button>
+              {copiedLink ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+            </Button>
             <Link
               href={`/offerings/${config.orgSlug || ""}`}
               target="_blank"
-              className="px-3 py-1.5 rounded-lg bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+              className={buttonVariants({ variant: "lime", size: "sm" }) + " cursor-pointer"}
             >
               <span>View Public Page</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -851,17 +855,20 @@ export default function OfferingsDashboardPage() {
         {/* Global Save Button & Status */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
           <Button
+            variant="lime"
+            size="lg"
             onClick={() => handleOpenItemModal()}
-            className="text-xs font-bold gap-1.5 bg-lime-500 hover:bg-lime-400 text-slate-950 shadow-md cursor-pointer rounded-xl h-10 px-4"
+            className="text-xs font-bold gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Offering</span>
           </Button>
 
           <Button
+            size="lg"
             onClick={handleSaveConfig}
             disabled={saving}
-            className="text-xs font-bold gap-1.5 bg-primary text-white shadow-md cursor-pointer rounded-xl h-10 px-5"
+            className="text-xs font-bold gap-1.5 cursor-pointer"
           >
             {saving ? (
               <span className="flex items-center gap-1.5">
@@ -869,7 +876,7 @@ export default function OfferingsDashboardPage() {
                 <span>Saving...</span>
               </span>
             ) : saveSuccess ? (
-              <span className="flex items-center gap-1.5 text-lime-400">
+              <span className="flex items-center gap-1.5">
                 <Check className="w-4 h-4" />
                 <span>Saved!</span>
               </span>
@@ -890,7 +897,7 @@ export default function OfferingsDashboardPage() {
             <TabsTrigger value="catalog" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
               <Package className="w-3.5 h-3.5" />
               <span>Offerings Catalog</span>
-              <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-primary/20 text-primary">
+              <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
                 {items.length}
               </span>
             </TabsTrigger>
@@ -902,9 +909,9 @@ export default function OfferingsDashboardPage() {
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Inquiries & Leads</span>
               {inquiries.filter((i) => i.status === "PENDING").length > 0 && (
-                <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-black animate-pulse">
+                <Badge variant="destructive" className="ml-1 animate-pulse">
                   {inquiries.filter((i) => i.status === "PENDING").length}
-                </span>
+                </Badge>
               )}
             </TabsTrigger>
           </TabsList>
@@ -917,13 +924,13 @@ export default function OfferingsDashboardPage() {
               onClick={handleSeedDefaults}
               className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
             >
-              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-lime-500" />}
+              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
               <span>Seed Sample Offerings</span>
             </Button>
             <Button
               size="sm"
               onClick={() => handleOpenItemModal()}
-              className="text-xs font-bold gap-1.5 bg-primary text-white shadow-md cursor-pointer"
+              className="text-xs font-bold gap-1.5 cursor-pointer shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>Add New Offering</span>
@@ -950,13 +957,13 @@ export default function OfferingsDashboardPage() {
                   onClick={handleSeedDefaults}
                   className="text-xs font-bold gap-1.5 cursor-pointer"
                 >
-                  {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-lime-500" />}
+                  {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
                   <span>Seed Starter Catalog</span>
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => handleOpenItemModal()}
-                  className="text-xs font-bold gap-1.5 bg-primary text-white cursor-pointer"
+                  className="text-xs font-bold gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Create First Offering</span>
@@ -972,29 +979,29 @@ export default function OfferingsDashboardPage() {
                 >
                   <div>
                     {item.coverImageUrl && (
-                      <div className="w-full h-40 relative bg-black/20 overflow-hidden">
+                      <div className="w-full h-40 relative bg-muted overflow-hidden">
                         <img src={item.coverImageUrl} alt={item.title} className="w-full h-full object-cover" />
                         {item.badge && (
-                          <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-primary text-white shadow-md">
+                          <Badge variant="default" className="absolute top-3 left-3 uppercase shadow-sm">
                             {item.badge}
-                          </div>
+                          </Badge>
                         )}
                       </div>
                     )}
 
                     <div className="p-5 space-y-3">
                       <div className="flex items-center justify-between gap-2">
-                        <div className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-muted text-foreground">
-                          {(item.type === "PLAYLIST" || item.type === "COURSE") && <ListVideo className="w-3.5 h-3.5 text-emerald-500" />}
-                          {item.type === "MEETING" && <Calendar className="w-3.5 h-3.5 text-sky-500" />}
-                          {item.type === "VIDEO" && <VideoIcon className="w-3.5 h-3.5 text-indigo-500" />}
-                          {item.type === "PRODUCT" && <Package className="w-3.5 h-3.5 text-amber-500" />}
-                          {item.type === "SERVICE" && <Briefcase className="w-3.5 h-3.5 text-purple-500" />}
+                        <Badge variant="secondary" className="gap-1">
+                          {(item.type === "PLAYLIST" || item.type === "COURSE") && <ListVideo className="w-3.5 h-3.5 text-primary" />}
+                          {item.type === "MEETING" && <Calendar className="w-3.5 h-3.5 text-primary" />}
+                          {item.type === "VIDEO" && <VideoIcon className="w-3.5 h-3.5 text-primary" />}
+                          {item.type === "PRODUCT" && <Package className="w-3.5 h-3.5 text-primary" />}
+                          {item.type === "SERVICE" && <Briefcase className="w-3.5 h-3.5 text-primary" />}
                           <span>{item.type === "COURSE" ? "PLAYLIST" : item.type}</span>
-                        </div>
+                        </Badge>
 
                         <div className="flex items-center gap-2">
-                          <span className={`text-[10px] font-extrabold uppercase ${item.isPublished ? "text-emerald-500" : "text-muted-foreground"}`}>
+                          <span className={`text-xs font-extrabold uppercase ${item.isPublished ? "text-primary" : "text-muted-foreground"}`}>
                             {item.isPublished ? "Published" : "Draft"}
                           </span>
                           <Switch
@@ -1018,7 +1025,7 @@ export default function OfferingsDashboardPage() {
                       <div className="flex items-baseline gap-1 pt-1">
                         <span className="text-lg font-black text-foreground">{item.price || "Free"}</span>
                         {item.pricePeriod && (
-                          <span className="text-[11px] text-muted-foreground">{item.pricePeriod}</span>
+                          <span className="text-xs text-muted-foreground">{item.pricePeriod}</span>
                         )}
                       </div>
                     </div>
@@ -1039,7 +1046,7 @@ export default function OfferingsDashboardPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setDeleteItemTarget(item)}
-                      className="text-xs font-bold gap-1 text-red-500 hover:text-red-600 hover:bg-red-500/10 cursor-pointer"
+                      className="text-xs font-bold gap-1 text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete</span>
@@ -1086,7 +1093,7 @@ export default function OfferingsDashboardPage() {
                           }))
                         }
                         className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                          isSelected ? "ring-2 ring-primary border-primary font-bold shadow-xs" : "hover:border-slate-400"
+                          isSelected ? "ring-2 ring-primary border-primary font-bold shadow-xs" : "hover:border-ring"
                         }`}
                         style={{ backgroundColor: theme.bg, color: "#ffffff" }}
                       >
@@ -1168,7 +1175,7 @@ export default function OfferingsDashboardPage() {
                   </div>
                   <Link
                     href="/dashboard/settings"
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+                    className={buttonVariants({ variant: "outline", size: "xs" }) + " font-bold cursor-pointer"}
                   >
                     <span>Org Settings</span>
                     <ExternalLink className="w-2.5 h-2.5" />
@@ -1180,7 +1187,7 @@ export default function OfferingsDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
                     {/* Logo (1:1) */}
                     <div className="sm:col-span-4 flex items-center gap-2 p-2 rounded-xl bg-card border border-border">
-                      <div className="w-9 h-9 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center shrink-0">
                         {config.avatarUrl || config.orgLogoUrl ? (
                           <img
                             src={config.avatarUrl || config.orgLogoUrl || ""}
@@ -1194,14 +1201,14 @@ export default function OfferingsDashboardPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[11px] font-bold text-foreground block truncate">Logo</span>
-                        <span className="text-[9px] text-muted-foreground">1:1 Square</span>
+                        <span className="text-xs font-bold text-foreground block truncate">Logo</span>
+                        <span className="text-xs text-muted-foreground">1:1 Square</span>
                       </div>
                     </div>
 
                     {/* Cover Banner (3:1) */}
                     <div className="sm:col-span-8 flex items-center gap-2 p-2 rounded-xl bg-card border border-border">
-                      <div className="w-18 h-9 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center shrink-0">
+                      <div className="w-18 h-9 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center shrink-0">
                         {config.bannerUrl ? (
                           <img
                             src={config.bannerUrl}
@@ -1213,13 +1220,13 @@ export default function OfferingsDashboardPage() {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <span className="text-[11px] font-bold text-foreground block truncate">Cover Banner</span>
-                        <span className="text-[9px] text-muted-foreground">3:1 Header Banner</span>
+                        <span className="text-xs font-bold text-foreground block truncate">Cover Banner</span>
+                        <span className="text-xs text-muted-foreground">3:1 Header Banner</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                  <div className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
                     <Info className="w-3 h-3 text-primary shrink-0 mt-0.5" />
                     <span>
                       Logo and cover photo uploads have been unified under <strong>Organization Settings</strong> to ensure consistent branding across your share links, video embeds, and creator hub.
@@ -1228,7 +1235,7 @@ export default function OfferingsDashboardPage() {
 
                   <Link
                     href="/dashboard/settings"
-                    className="w-full py-2 px-3 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-primary/20"
+                    className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full font-bold cursor-pointer"}
                   >
                     <span>Manage Logo & Cover in Org Settings</span>
                     <ExternalLink className="w-3 h-3" />
@@ -1241,7 +1248,7 @@ export default function OfferingsDashboardPage() {
                 <div className="text-xs font-bold text-foreground">Hero Copy & Bio</div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground">Main Headline</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Main Headline</label>
                   <input
                     type="text"
                     value={config.headline || ""}
@@ -1251,7 +1258,7 @@ export default function OfferingsDashboardPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground">Subheadline / Tagline</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Subheadline / Tagline</label>
                   <input
                     type="text"
                     value={config.subheadline || ""}
@@ -1261,7 +1268,7 @@ export default function OfferingsDashboardPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-muted-foreground">About / Bio</label>
+                  <label className="text-xs font-semibold text-muted-foreground">About / Bio</label>
                   <RichTextEditor
                     placeholder="Tell your students and visitors about your background, experience, and expertise..."
                     value={config.bio || ""}
@@ -1282,16 +1289,18 @@ export default function OfferingsDashboardPage() {
                     <span>Featured Showcase Video</span>
                   </div>
                   {config.featuredVideoUrl && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="xs"
                       onClick={() => setConfig((prev) => ({ ...prev, featuredVideoUrl: null }))}
-                      className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
+                      className="h-auto px-1 text-xs font-bold text-destructive hover:text-destructive cursor-pointer"
                     >
                       Remove Video
-                    </button>
+                    </Button>
                   )}
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Display a prominent video showcase / showreel section directly above your offerings catalog.
                 </p>
 
@@ -1309,7 +1318,7 @@ export default function OfferingsDashboardPage() {
                             ? "YouTube Video Link"
                             : "External Video"}
                         </div>
-                        <div className="text-[10px] font-mono text-muted-foreground truncate max-w-[160px] sm:max-w-xs">
+                        <div className="text-xs font-mono text-muted-foreground truncate max-w-[160px] sm:max-w-xs">
                           {config.featuredVideoUrl}
                         </div>
                       </div>
@@ -1370,7 +1379,7 @@ export default function OfferingsDashboardPage() {
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Button Text</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Button Text</label>
                     <input
                       type="text"
                       placeholder="e.g. Explore Offerings"
@@ -1380,7 +1389,7 @@ export default function OfferingsDashboardPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Click Action</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Click Action</label>
                     <Select
                       value={config.ctaAction || "SCROLL_OFFERINGS"}
                       onValueChange={(val) => setConfig((prev) => ({ ...prev, ctaAction: val }))}
@@ -1399,7 +1408,7 @@ export default function OfferingsDashboardPage() {
                   </div>
                   {config.ctaAction === "EXTERNAL_LINK" && (
                     <div className="space-y-1 animate-in fade-in">
-                      <label className="text-[11px] font-semibold text-muted-foreground">Destination URL</label>
+                      <label className="text-xs font-semibold text-muted-foreground">Destination URL</label>
                       <input
                         type="text"
                         placeholder="https://..."
@@ -1412,15 +1421,17 @@ export default function OfferingsDashboardPage() {
                   {config.ctaAction === "FEATURED_VIDEO" && (
                     <div className="space-y-2 pt-1 animate-in fade-in">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-semibold text-muted-foreground">Selected Video</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Selected Video</label>
                         {config.ctaUrl && (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => setConfig((prev) => ({ ...prev, ctaUrl: "" }))}
-                            className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
+                            className="h-auto px-1 text-xs font-bold text-destructive hover:text-destructive cursor-pointer"
                           >
                             Remove Video
-                          </button>
+                          </Button>
                         )}
                       </div>
 
@@ -1431,14 +1442,14 @@ export default function OfferingsDashboardPage() {
                               <Film className="w-3 h-3" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-[11px] font-bold truncate">
+                              <div className="text-xs font-bold truncate">
                                 {config.ctaUrl.includes("/embed/")
                                   ? "Platform Uploaded Video"
                                   : config.ctaUrl.includes("youtube.com") || config.ctaUrl.includes("youtu.be")
                                   ? "YouTube Video Link"
                                   : "External Video"}
                               </div>
-                              <div className="text-[9px] font-mono text-muted-foreground truncate max-w-[140px] sm:max-w-xs">
+                              <div className="text-xs font-mono text-muted-foreground truncate max-w-[140px] sm:max-w-xs">
                                 {config.ctaUrl}
                               </div>
                             </div>
@@ -1450,7 +1461,7 @@ export default function OfferingsDashboardPage() {
                               variant="secondary"
                               size="sm"
                               onClick={() => setPreviewVideoModalUrl(config.ctaUrl || null)}
-                              className="h-6 px-2 text-[10px] font-bold gap-1 cursor-pointer"
+                              className="h-6 px-2 text-xs font-bold gap-1 cursor-pointer"
                               title="Preview Video Popup"
                             >
                               <Play className="w-2.5 h-2.5 fill-current" />
@@ -1464,7 +1475,7 @@ export default function OfferingsDashboardPage() {
                                 setVideoPickerTarget("primaryCta");
                                 setVideoPickerOpen(true);
                               }}
-                              className="h-6 px-2 text-[10px] font-semibold cursor-pointer"
+                              className="h-6 px-2 text-xs font-semibold cursor-pointer"
                             >
                               Change
                             </Button>
@@ -1497,7 +1508,7 @@ export default function OfferingsDashboardPage() {
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Button Text</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Button Text</label>
                     <input
                       type="text"
                       placeholder="e.g. Explore Meetings"
@@ -1507,7 +1518,7 @@ export default function OfferingsDashboardPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Click Action</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Click Action</label>
                     <Select
                       value={config.secondaryCtaAction || "INQUIRY_MODAL"}
                       onValueChange={(val) => setConfig((prev) => ({ ...prev, secondaryCtaAction: val }))}
@@ -1526,7 +1537,7 @@ export default function OfferingsDashboardPage() {
                   </div>
                   {config.secondaryCtaAction === "EXTERNAL_LINK" && (
                     <div className="space-y-1 animate-in fade-in">
-                      <label className="text-[11px] font-semibold text-muted-foreground">Destination URL</label>
+                      <label className="text-xs font-semibold text-muted-foreground">Destination URL</label>
                       <input
                         type="text"
                         placeholder="https://..."
@@ -1539,15 +1550,17 @@ export default function OfferingsDashboardPage() {
                   {config.secondaryCtaAction === "FEATURED_VIDEO" && (
                     <div className="space-y-2 pt-1 animate-in fade-in">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-semibold text-muted-foreground">Selected Video</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Selected Video</label>
                         {config.secondaryCtaUrl && (
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => setConfig((prev) => ({ ...prev, secondaryCtaUrl: "" }))}
-                            className="text-red-500 text-[10px] font-bold hover:underline cursor-pointer"
+                            className="h-auto px-1 text-xs font-bold text-destructive hover:text-destructive cursor-pointer"
                           >
                             Remove Video
-                          </button>
+                          </Button>
                         )}
                       </div>
 
@@ -1558,14 +1571,14 @@ export default function OfferingsDashboardPage() {
                               <Film className="w-3 h-3" />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-[11px] font-bold truncate">
+                              <div className="text-xs font-bold truncate">
                                 {config.secondaryCtaUrl.includes("/embed/")
                                   ? "Platform Uploaded Video"
                                   : config.secondaryCtaUrl.includes("youtube.com") || config.secondaryCtaUrl.includes("youtu.be")
                                   ? "YouTube Video Link"
                                   : "External Video"}
                               </div>
-                              <div className="text-[9px] font-mono text-muted-foreground truncate max-w-[140px] sm:max-w-xs">
+                              <div className="text-xs font-mono text-muted-foreground truncate max-w-[140px] sm:max-w-xs">
                                 {config.secondaryCtaUrl}
                               </div>
                             </div>
@@ -1577,7 +1590,7 @@ export default function OfferingsDashboardPage() {
                               variant="secondary"
                               size="sm"
                               onClick={() => setPreviewVideoModalUrl(config.secondaryCtaUrl || null)}
-                              className="h-6 px-2 text-[10px] font-bold gap-1 cursor-pointer"
+                              className="h-6 px-2 text-xs font-bold gap-1 cursor-pointer"
                               title="Preview Video Popup"
                             >
                               <Play className="w-2.5 h-2.5 fill-current" />
@@ -1591,7 +1604,7 @@ export default function OfferingsDashboardPage() {
                                 setVideoPickerTarget("secondaryCta");
                                 setVideoPickerOpen(true);
                               }}
-                              className="h-6 px-2 text-[10px] font-semibold cursor-pointer"
+                              className="h-6 px-2 text-xs font-semibold cursor-pointer"
                             >
                               Change
                             </Button>
@@ -1624,7 +1637,7 @@ export default function OfferingsDashboardPage() {
                     <Share2 className="w-3.5 h-3.5 text-primary" />
                     <span>Social Buttons</span>
                     {Object.keys(config.socialLinks || {}).length > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                         {Object.keys(config.socialLinks || {}).length}
                       </span>
                     )}
@@ -1647,7 +1660,7 @@ export default function OfferingsDashboardPage() {
                         },
                       }));
                     }}
-                    className="h-7 px-2 text-[11px] font-bold gap-1 rounded-xl cursor-pointer"
+                    className="h-7 px-2 text-xs font-bold gap-1 rounded-xl cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add Button
                   </Button>
@@ -1672,7 +1685,7 @@ export default function OfferingsDashboardPage() {
                           },
                         }));
                       }}
-                      className="h-7 px-2.5 text-[11px] font-semibold rounded-lg cursor-pointer"
+                      className="h-7 px-2.5 text-xs font-semibold rounded-lg cursor-pointer"
                     >
                       <Plus className="w-3 h-3 mr-1" /> Add Standard Social Buttons
                     </Button>
@@ -1765,8 +1778,10 @@ export default function OfferingsDashboardPage() {
                           </div>
 
                           {/* Remove Button */}
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon-xs"
                             onClick={() => {
                               setConfig((prev) => {
                                 const currentSocials = { ...(prev.socialLinks || {}) };
@@ -1774,11 +1789,11 @@ export default function OfferingsDashboardPage() {
                                 return { ...prev, socialLinks: currentSocials };
                               });
                             }}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10 p-1.5 rounded-lg text-xs cursor-pointer shrink-0 self-end sm:self-center transition-colors"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 self-end sm:self-center cursor-pointer"
                             title={`Remove ${platformMeta.label}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </div>
                       );
                     })}
@@ -1795,7 +1810,7 @@ export default function OfferingsDashboardPage() {
 
                   return (
                     <div className="pt-1.5 space-y-1">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Quick Add Platforms
                       </div>
                       <div className="flex items-center flex-wrap gap-1">
@@ -1815,7 +1830,7 @@ export default function OfferingsDashboardPage() {
                                   },
                                 }));
                               }}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted/60 hover:bg-primary/10 hover:text-primary border border-border/80 hover:border-primary/30 transition-all cursor-pointer"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted/60 hover:bg-primary/10 hover:text-primary border border-border/80 hover:border-primary/30 transition-all cursor-pointer"
                             >
                               <ChipIcon
                                 className="w-3 h-3"
@@ -1853,7 +1868,7 @@ export default function OfferingsDashboardPage() {
                       ];
                       setConfig((prev) => ({ ...prev, stats: newStats }));
                     }}
-                    className="h-7 px-2 text-[11px] font-bold gap-1 rounded-xl cursor-pointer"
+                    className="h-7 px-2 text-xs font-bold gap-1 rounded-xl cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add Metric
                   </Button>
@@ -1884,17 +1899,19 @@ export default function OfferingsDashboardPage() {
                         }}
                         className="flex-1 px-2.5 py-1.5 rounded-lg text-xs border bg-background"
                       />
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => {
                           const list = (config.stats || []).filter((_, i) => i !== idx);
                           setConfig((prev) => ({ ...prev, stats: list }));
                         }}
-                        className="text-red-500 hover:text-red-600 p-1.5 rounded-md text-xs cursor-pointer"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                         title="Delete Metric"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -1923,7 +1940,7 @@ export default function OfferingsDashboardPage() {
                       ];
                       setConfig((prev) => ({ ...prev, testimonials: newTestimonials }));
                     }}
-                    className="h-7 px-2 text-[11px] font-bold gap-1 rounded-xl cursor-pointer"
+                    className="h-7 px-2 text-xs font-bold gap-1 rounded-xl cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add Review
                   </Button>
@@ -1931,12 +1948,12 @@ export default function OfferingsDashboardPage() {
 
                 {/* Section Header & Subtitle Settings */}
                 <div className="p-3 bg-muted/30 rounded-xl border border-border/70 space-y-2.5">
-                  <div className="text-[11px] font-bold text-foreground/80 tracking-wide">
+                  <div className="text-xs font-bold text-foreground/80 tracking-wide">
                     Section Header & Subtitle
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                      <label className="text-xs uppercase font-bold text-muted-foreground mb-1 block">
                         Badge / Eyebrow Text
                       </label>
                       <input
@@ -1958,7 +1975,7 @@ export default function OfferingsDashboardPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                      <label className="text-xs uppercase font-bold text-muted-foreground mb-1 block">
                         Heading / Title
                       </label>
                       <input
@@ -1981,7 +1998,7 @@ export default function OfferingsDashboardPage() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-muted-foreground mb-1 block">
+                    <label className="text-xs uppercase font-bold text-muted-foreground mb-1 block">
                       Description / Subtitle
                     </label>
                     <input
@@ -2013,20 +2030,22 @@ export default function OfferingsDashboardPage() {
                     {config.testimonials.map((t, idx) => (
                       <div key={idx} className="p-3 bg-muted/40 rounded-xl border border-border/70 space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Review #{idx + 1}
                           </span>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon-xs"
                             onClick={() => {
                               const newTestimonials = (config.testimonials || []).filter((_, i) => i !== idx);
                               setConfig((prev) => ({ ...prev, testimonials: newTestimonials }));
                             }}
-                            className="text-red-500 hover:text-red-600 p-1 rounded-md text-xs cursor-pointer"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                             title="Delete Review"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <input
@@ -2065,7 +2084,7 @@ export default function OfferingsDashboardPage() {
                             className="w-full px-2.5 py-1 rounded-lg text-xs border bg-background"
                           />
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-muted-foreground">Rating:</span>
+                            <span className="text-xs text-muted-foreground">Rating:</span>
                             <div className="flex items-center gap-0.5">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <button
@@ -2076,7 +2095,7 @@ export default function OfferingsDashboardPage() {
                                     list[idx] = { ...list[idx], rating: star };
                                     setConfig((prev) => ({ ...prev, testimonials: list }));
                                   }}
-                                  className={`p-0.5 cursor-pointer ${(t.rating || 5) >= star ? "text-amber-400" : "text-muted-foreground/30"}`}
+                                  className={`p-0.5 cursor-pointer ${(t.rating || 5) >= star ? "text-primary" : "text-muted-foreground/30"}`}
                                 >
                                   ★
                                 </button>
@@ -2084,7 +2103,7 @@ export default function OfferingsDashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <textarea
+                        <Textarea
                           rows={2}
                           placeholder="Testimonial quote text..."
                           value={t.quote}
@@ -2093,7 +2112,6 @@ export default function OfferingsDashboardPage() {
                             list[idx] = { ...list[idx], quote: e.target.value };
                             setConfig((prev) => ({ ...prev, testimonials: list }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs border bg-background resize-none"
                         />
                       </div>
                     ))}
@@ -2118,7 +2136,7 @@ export default function OfferingsDashboardPage() {
                       ];
                       setConfig((prev) => ({ ...prev, faqs: newFaqs }));
                     }}
-                    className="h-7 px-2 text-[11px] font-bold gap-1 rounded-xl cursor-pointer"
+                    className="h-7 px-2 text-xs font-bold gap-1 rounded-xl cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add FAQ
                   </Button>
@@ -2133,20 +2151,22 @@ export default function OfferingsDashboardPage() {
                     {config.faqs.map((faq, idx) => (
                       <div key={idx} className="p-3 bg-muted/40 rounded-xl border border-border/70 space-y-2 relative group">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Question #{idx + 1}
                           </span>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon-xs"
                             onClick={() => {
                               const newFaqs = (config.faqs || []).filter((_, i) => i !== idx);
                               setConfig((prev) => ({ ...prev, faqs: newFaqs }));
                             }}
-                            className="text-red-500 hover:text-red-600 p-1 rounded-md text-xs cursor-pointer"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                             title="Delete FAQ"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          </Button>
                         </div>
                         <input
                           type="text"
@@ -2159,7 +2179,7 @@ export default function OfferingsDashboardPage() {
                           }}
                           className="w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold border bg-background"
                         />
-                        <textarea
+                        <Textarea
                           rows={2}
                           placeholder="e.g. Sessions are conducted live via video..."
                           value={faq.answer}
@@ -2168,7 +2188,7 @@ export default function OfferingsDashboardPage() {
                             newFaqs[idx] = { ...newFaqs[idx], answer: e.target.value };
                             setConfig((prev) => ({ ...prev, faqs: newFaqs }));
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg text-xs border bg-background resize-none leading-relaxed"
+                          className="leading-relaxed"
                         />
                       </div>
                     ))}
@@ -2221,53 +2241,53 @@ export default function OfferingsDashboardPage() {
               {/* Device Toolbar */}
               <div className="p-3 bg-card border border-border rounded-2xl flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-1.5 bg-muted p-1 rounded-xl">
-                  <button
+                  <Button
                     type="button"
+                    variant={previewDevice === "desktop" ? "secondary" : "ghost"}
+                    size="xs"
                     onClick={() => setPreviewDevice("desktop")}
-                    className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      previewDevice === "desktop" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground"
-                    }`}
+                    className="font-bold cursor-pointer"
                   >
                     <Monitor className="w-3.5 h-3.5" />
                     <span>Desktop</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant={previewDevice === "tablet" ? "secondary" : "ghost"}
+                    size="xs"
                     onClick={() => setPreviewDevice("tablet")}
-                    className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      previewDevice === "tablet" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground"
-                    }`}
+                    className="font-bold cursor-pointer"
                   >
                     <Tablet className="w-3.5 h-3.5" />
                     <span>Tablet</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant={previewDevice === "mobile" ? "secondary" : "ghost"}
+                    size="xs"
                     onClick={() => setPreviewDevice("mobile")}
-                    className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      previewDevice === "mobile" ? "bg-background text-foreground shadow-xs" : "text-muted-foreground"
-                    }`}
+                    className="font-bold cursor-pointer"
                   >
                     <Smartphone className="w-3.5 h-3.5" />
                     <span>Mobile</span>
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold text-muted-foreground hidden sm:inline">
+                  <span className="text-xs font-bold text-muted-foreground hidden sm:inline">
                     Live Preview
                   </span>
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 </div>
               </div>
 
               {/* Device Mockup Frame */}
               <div
-                className={`mx-auto border border-border rounded-3xl overflow-hidden shadow-2xl bg-black transition-all duration-300 ${
+                className={`mx-auto border border-border rounded-3xl overflow-hidden shadow-2xl bg-foreground transition-all duration-300 ${
                   previewDevice === "mobile"
-                    ? "max-w-[390px] h-[780px] border-4 border-slate-700 ring-8 ring-black/40"
+                    ? "max-w-[390px] h-[780px] border-4 border-border ring-8 ring-foreground/20"
                     : previewDevice === "tablet"
-                    ? "max-w-[700px] h-[780px] border-4 border-slate-700 ring-8 ring-black/40"
+                    ? "max-w-[700px] h-[780px] border-4 border-border ring-8 ring-foreground/20"
                     : "w-full h-[780px]"
                 }`}
               >
@@ -2316,7 +2336,7 @@ export default function OfferingsDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(inq.createdAt).toLocaleDateString()}
                       </span>
                       <Select
@@ -2326,10 +2346,10 @@ export default function OfferingsDashboardPage() {
                         <SelectTrigger
                           className={`h-8 rounded-lg text-xs font-bold ${
                             inq.status === "RESOLVED"
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+                              ? "bg-primary/10 text-primary border-primary/30"
                               : inq.status === "CONTACTED"
-                              ? "bg-sky-500/10 text-sky-500 border-sky-500/30"
-                              : "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                              ? "bg-secondary text-secondary-foreground border-border"
+                              : "bg-destructive/10 text-destructive border-destructive/30"
                           }`}
                         >
                           <SelectValue />
@@ -2357,7 +2377,7 @@ export default function OfferingsDashboardPage() {
                   <div className="flex items-center justify-end gap-2 pt-1">
                     <a
                       href={`mailto:${inq.email}?subject=Regarding your inquiry on ${config.headline || "our offerings"}`}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white flex items-center gap-1.5 hover:opacity-90 cursor-pointer"
+                      className={buttonVariants({ size: "sm" }) + " text-xs font-bold cursor-pointer"}
                     >
                       <Mail className="w-3.5 h-3.5" />
                       <span>Reply via Email</span>
@@ -2400,7 +2420,7 @@ export default function OfferingsDashboardPage() {
                     Offering Type
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Category
                 </span>
               </div>
@@ -2465,31 +2485,31 @@ export default function OfferingsDashboardPage() {
                   <SelectContent>
                     <SelectItem value="PLAYLIST">
                       <div className="flex items-center gap-2">
-                        <ListVideo className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <ListVideo className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Playlist / Series</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="MEETING">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-sky-500 shrink-0" />
+                        <Calendar className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Meetings</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="VIDEO">
                       <div className="flex items-center gap-2">
-                        <VideoIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                        <VideoIcon className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Video Showcase</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="PRODUCT">
                       <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-amber-500 shrink-0" />
+                        <Package className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Digital Resource</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="SERVICE">
                       <div className="flex items-center gap-2">
-                        <Briefcase className="w-4 h-4 text-purple-500 shrink-0" />
+                        <Briefcase className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Custom Service</span>
                       </div>
                     </SelectItem>
@@ -2505,14 +2525,14 @@ export default function OfferingsDashboardPage() {
               <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <ListVideo className="w-3 h-3" />
                     </div>
                     <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                       Selected Playlist
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
                     Auto-Synced
                   </span>
                 </div>
@@ -2521,7 +2541,7 @@ export default function OfferingsDashboardPage() {
                   <div className="p-4 rounded-xl border border-dashed text-center space-y-2 bg-background">
                     <ListVideo className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
                     <p className="text-xs font-bold">No playlists found in your account</p>
-                    <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                       Create your playlist first in the Playlists dashboard to list it as an offering.
                     </p>
                     <div className="pt-1">
@@ -2542,7 +2562,7 @@ export default function OfferingsDashboardPage() {
                         <Link
                           href="/dashboard/playlists"
                           target="_blank"
-                          className="text-[10px] text-primary hover:underline font-semibold"
+                          className="text-xs text-primary hover:underline font-semibold"
                         >
                           Manage Playlists
                         </Link>
@@ -2563,9 +2583,9 @@ export default function OfferingsDashboardPage() {
                           {playlists.map((pl) => (
                             <SelectItem key={pl.id} value={pl.id} className="text-xs py-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <ListVideo className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
                                 <span className="font-bold truncate max-w-[280px] sm:max-w-md">{pl.title}</span>
-                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                <span className="text-xs text-muted-foreground shrink-0">
                                   ({pl.itemCount} {pl.itemCount === 1 ? "video" : "videos"})
                                 </span>
                               </div>
@@ -2578,7 +2598,7 @@ export default function OfferingsDashboardPage() {
                     {/* Synced Playlist Information Box */}
                     {itemFormTitle && (
                       <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
-                        <div className="w-full sm:w-36 aspect-video bg-black/40 rounded-lg overflow-hidden relative shrink-0 border border-border/80">
+                        <div className="w-full sm:w-36 aspect-video bg-muted rounded-lg overflow-hidden relative shrink-0 border border-border/80">
                           {itemFormCoverData ? (
                             <img
                               src={itemFormCoverData}
@@ -2590,7 +2610,7 @@ export default function OfferingsDashboardPage() {
                               <ListVideo className="w-8 h-8" />
                             </div>
                           )}
-                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/80 text-white">
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-foreground text-background">
                             {itemFormDelivery || "Playlist"}
                           </div>
                         </div>
@@ -2602,15 +2622,15 @@ export default function OfferingsDashboardPage() {
                             </span>
                           </div>
                           {itemFormDescription && (
-                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                               {itemFormDescription}
                             </p>
                           )}
                           <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                            <Badge variant="lime" className="uppercase tracking-wider">
                               Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
                               • Synced from playlist access settings
                             </span>
                           </div>
@@ -2629,14 +2649,14 @@ export default function OfferingsDashboardPage() {
               <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Film className="w-3 h-3" />
                     </div>
                     <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                       Selected Video
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
                     Auto-Synced
                   </span>
                 </div>
@@ -2644,7 +2664,7 @@ export default function OfferingsDashboardPage() {
                 {itemFormCtaUrl || itemFormTitle ? (
                   <div className="space-y-3">
                     <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
-                      <div className="w-full sm:w-36 aspect-video bg-black/40 rounded-lg overflow-hidden relative shrink-0 border border-border/80">
+                      <div className="w-full sm:w-36 aspect-video bg-muted rounded-lg overflow-hidden relative shrink-0 border border-border/80">
                         {itemFormCoverData ? (
                           <img
                             src={itemFormCoverData}
@@ -2656,8 +2676,8 @@ export default function OfferingsDashboardPage() {
                             <Film className="w-8 h-8" />
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                          <div className="w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center">
+                        <div className="absolute inset-0 bg-muted flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-foreground/60 text-background flex items-center justify-center">
                             <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
                           </div>
                         </div>
@@ -2670,15 +2690,15 @@ export default function OfferingsDashboardPage() {
                           </h4>
                         </div>
                         {itemFormDescription && (
-                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                             {itemFormDescription}
                           </p>
                         )}
                         <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                          <Badge variant="lime" className="uppercase tracking-wider">
                             Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
                             • Synced from video access settings
                           </span>
                         </div>
@@ -2717,16 +2737,17 @@ export default function OfferingsDashboardPage() {
                   <div className="space-y-2">
                     <Button
                       type="button"
+                      size="lg"
                       onClick={() => {
                         setVideoPickerTarget("itemForm");
                         setVideoPickerOpen(true);
                       }}
-                      className="w-full text-xs font-bold gap-1.5 bg-primary text-white cursor-pointer rounded-xl py-3 shadow-sm"
+                      className="w-full text-xs font-bold gap-1.5 cursor-pointer rounded-xl"
                     >
                       <Film className="w-4 h-4" />
                       <span>Choose Video from Uploaded Library or YouTube Link</span>
                     </Button>
-                    <p className="text-[10px] text-muted-foreground text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       The title, description, thumbnail, and access price will be automatically loaded from your selected video.
                     </p>
                   </div>
@@ -2741,14 +2762,14 @@ export default function OfferingsDashboardPage() {
               <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                    <div className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                       <Calendar className="w-3 h-3" />
                     </div>
                     <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                       Selected Scheduled Meeting
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
                     Auto-Synced
                   </span>
                 </div>
@@ -2757,7 +2778,7 @@ export default function OfferingsDashboardPage() {
                   <div className="p-4 rounded-xl border border-dashed text-center space-y-2 bg-background">
                     <Calendar className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
                     <p className="text-xs font-bold">No scheduled meetings found in your account</p>
-                    <p className="text-[11px] text-muted-foreground max-w-sm mx-auto">
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                       Schedule a meeting first in the Meetings dashboard to list it as an offering.
                     </p>
                     <div className="pt-1">
@@ -2778,7 +2799,7 @@ export default function OfferingsDashboardPage() {
                         <Link
                           href="/dashboard/meetings"
                           target="_blank"
-                          className="text-[10px] text-primary hover:underline font-semibold"
+                          className="text-xs text-primary hover:underline font-semibold"
                         >
                           Manage Meetings
                         </Link>
@@ -2799,10 +2820,10 @@ export default function OfferingsDashboardPage() {
                           {meetings.map((m) => (
                             <SelectItem key={m.id} value={m.id} className="text-xs py-2">
                               <div className="flex items-center gap-2 min-w-0">
-                                <Calendar className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                                <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
                                 <span className="font-bold truncate max-w-[280px] sm:max-w-md">{m.title}</span>
                                 {m.scheduledStart && (
-                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                  <span className="text-xs text-muted-foreground shrink-0">
                                     ({new Date(m.scheduledStart).toLocaleDateString(undefined, { month: "short", day: "numeric" })})
                                   </span>
                                 )}
@@ -2816,12 +2837,12 @@ export default function OfferingsDashboardPage() {
                     {/* Synced Meeting Information Box */}
                     {itemFormTitle && (
                       <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
-                        <div className="w-full sm:w-36 aspect-video bg-sky-500/10 border border-sky-500/20 rounded-lg overflow-hidden relative shrink-0 flex flex-col items-center justify-center text-sky-500 p-2">
+                        <div className="w-full sm:w-36 aspect-video bg-primary/10 border border-primary/20 rounded-lg overflow-hidden relative shrink-0 flex flex-col items-center justify-center text-primary p-2">
                           <Calendar className="w-7 h-7 mb-1" />
-                          <span className="text-[10px] font-bold text-center truncate w-full">
+                          <span className="text-xs font-bold text-center truncate w-full">
                             {itemFormDuration || "Live Meeting"}
                           </span>
-                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-black/80 text-white">
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-foreground text-background">
                             Meeting
                           </div>
                         </div>
@@ -2833,20 +2854,20 @@ export default function OfferingsDashboardPage() {
                             </span>
                           </div>
                           {itemFormSubtitle && (
-                            <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold truncate">
+                            <p className="text-xs text-primary font-semibold truncate">
                               {itemFormSubtitle}
                             </p>
                           )}
                           {itemFormDescription && (
-                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                               {itemFormDescription}
                             </p>
                           )}
                           <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-sky-500/15 text-sky-600 dark:text-sky-400 border border-sky-500/30">
+                            <Badge variant="lime" className="uppercase tracking-wider">
                               Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
                               • Synced from meeting settings
                             </span>
                           </div>
@@ -2872,7 +2893,7 @@ export default function OfferingsDashboardPage() {
                       Offering Settings & Highlights
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Customization
                   </span>
                 </div>
@@ -2885,14 +2906,14 @@ export default function OfferingsDashboardPage() {
                         <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span>Key Highlights & Topics (Optional)</span>
                       </label>
-                      <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
+                      <span className="text-xs text-muted-foreground">1 bullet per line</span>
                     </div>
-                    <textarea
+                    <Textarea
                       rows={3}
                       placeholder={itemFormType === "MEETING" ? "Live HD Video Conferencing\nQ&A and Architecture Review\nRecording Included" : "Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
                       value={itemFormHighlights}
                       onChange={(e) => setItemFormHighlights(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                      className="min-w-0 leading-relaxed"
                     />
                   </div>
                 )}
@@ -2900,7 +2921,7 @@ export default function OfferingsDashboardPage() {
                 {/* Badge Label & Auto CTA Notice */}
                 <div className="space-y-3 min-w-0">
                   <div className="space-y-1 min-w-0">
-                    <label className="text-[11px] font-semibold text-muted-foreground">Badge Label (Optional)</label>
+                    <label className="text-xs font-semibold text-muted-foreground">Badge Label (Optional)</label>
                     <input
                       type="text"
                       placeholder="e.g. Popular, Bestseller, New"
@@ -2912,14 +2933,14 @@ export default function OfferingsDashboardPage() {
 
                   <div className="p-2.5 rounded-xl bg-background border border-border/70 flex items-center justify-between gap-2">
                     <div className="space-y-0.5 min-w-0">
-                      <div className="text-[11px] font-bold text-foreground">Call-to-Action Action & Button</div>
-                      <div className="text-[10px] text-muted-foreground">
+                      <div className="text-xs font-bold text-foreground">Call-to-Action Action & Button</div>
+                      <div className="text-xs text-muted-foreground">
                         Automatically determined for visitors based on content pricing & access mode (Purchase, View / Request Access, or View).
                       </div>
                     </div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20 shrink-0">
+                    <Badge variant="lime" className="uppercase tracking-wider shrink-0">
                       Auto-Calculated
-                    </span>
+                    </Badge>
                   </div>
                 </div>
 
@@ -2928,7 +2949,7 @@ export default function OfferingsDashboardPage() {
                   <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-background border border-border/70">
                     <div className="min-w-0">
                       <div className="text-xs font-bold truncate">Featured Offering</div>
-                      <p className="text-[10px] text-muted-foreground">Highlight prominently with an accent glow on your public page.</p>
+                      <p className="text-xs text-muted-foreground">Highlight prominently with an accent glow on your public page.</p>
                     </div>
                     <Switch
                       checked={itemFormIsFeatured}
@@ -2955,7 +2976,7 @@ export default function OfferingsDashboardPage() {
                         Basic Information
                       </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Core Info
                     </span>
                   </div>
@@ -2964,7 +2985,7 @@ export default function OfferingsDashboardPage() {
                   <div className="space-y-1 min-w-0">
                     <label className="text-xs font-bold text-foreground flex items-center gap-1">
                       <span>Offering Title</span>
-                      <span className="text-red-500">*</span>
+                      <span className="text-destructive">*</span>
                     </label>
                     <input
                       type="text"
@@ -3053,7 +3074,7 @@ export default function OfferingsDashboardPage() {
                         Advanced & Media Settings
                       </span>
                     </div>
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                       Media & Actions
                     </span>
                   </div>
@@ -3064,19 +3085,21 @@ export default function OfferingsDashboardPage() {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <ImageIcon className="w-3.5 h-3.5 text-primary shrink-0" />
                         <label className="text-xs font-bold text-foreground">Card Cover Image</label>
-                        <span className="text-[10px] text-lime-600 dark:text-lime-400 font-mono font-semibold">16:9 (1280×720px)</span>
+                        <span className="text-xs text-primary dark:text-primary font-mono font-semibold">16:9 (1280×720px)</span>
                       </div>
                       {itemFormCoverData && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="xs"
                           onClick={() => {
                             setItemFormCoverData(null);
                             setItemFormRemoveCover(true);
                           }}
-                          className="text-red-500 hover:text-red-600 text-[11px] font-bold hover:underline cursor-pointer"
+                          className="text-xs font-bold text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                         >
                           Remove Image
-                        </button>
+                        </Button>
                       )}
                     </div>
 
@@ -3090,13 +3113,13 @@ export default function OfferingsDashboardPage() {
 
                     {itemFormCoverData ? (
                       <div className="space-y-2">
-                        <div className="w-full aspect-video rounded-xl overflow-hidden border border-border bg-black/20 relative group max-h-48">
+                        <div className="w-full aspect-video rounded-xl overflow-hidden border border-border bg-muted relative group max-h-48">
                           <img
                             src={itemFormCoverData}
                             alt="Offering Cover"
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <div className="absolute inset-0 bg-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <Button
                               type="button"
                               variant="secondary"
@@ -3131,7 +3154,7 @@ export default function OfferingsDashboardPage() {
                         <span>Upload Offering Cover (16:9 Ratio)</span>
                       </Button>
                     )}
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Recommended: <strong>1280×720px (16:9)</strong>. Opens image cropper automatically.
                     </p>
                   </div>
@@ -3143,14 +3166,14 @@ export default function OfferingsDashboardPage() {
                         <ListVideo className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span>Key Highlights & Deliverables</span>
                       </label>
-                      <span className="text-[10px] text-muted-foreground">1 bullet per line</span>
+                      <span className="text-xs text-muted-foreground">1 bullet per line</span>
                     </div>
-                    <textarea
+                    <Textarea
                       rows={3}
                       placeholder="Instant GitHub & ZIP Download\nCommercial License Included"
                       value={itemFormHighlights}
                       onChange={(e) => setItemFormHighlights(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl text-xs border bg-background resize-none font-mono focus:ring-1 focus:ring-primary focus:outline-none min-w-0 leading-relaxed"
+                      className="min-w-0 leading-relaxed"
                     />
                   </div>
 
@@ -3163,7 +3186,7 @@ export default function OfferingsDashboardPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
                       <div className="space-y-1 min-w-0">
-                        <label className="text-[11px] font-semibold text-muted-foreground">Button Label</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Button Label</label>
                         <input
                           type="text"
                           placeholder="e.g. Get Resource"
@@ -3174,7 +3197,7 @@ export default function OfferingsDashboardPage() {
                       </div>
 
                       <div className="space-y-1 min-w-0">
-                        <label className="text-[11px] font-semibold text-muted-foreground">Button Action</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Button Action</label>
                         <Select
                           value={itemFormCtaAction}
                           onValueChange={(val) => setItemFormCtaAction(val || "INQUIRY_MODAL")}
@@ -3193,7 +3216,7 @@ export default function OfferingsDashboardPage() {
                     {/* Destination URL if External Link */}
                     {itemFormCtaAction === "EXTERNAL_LINK" && (
                       <div className="space-y-1 animate-in fade-in min-w-0">
-                        <label className="text-[11px] font-semibold text-muted-foreground">Destination Link / Checkout URL</label>
+                        <label className="text-xs font-semibold text-muted-foreground">Destination Link / Checkout URL</label>
                         <input
                           type="text"
                           placeholder="https://checkout.stripe.com/... or https://..."
@@ -3240,7 +3263,7 @@ export default function OfferingsDashboardPage() {
             <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border shrink-0 mt-auto min-w-0">
               <div className="flex items-center justify-between sm:justify-start gap-2">
                 <span className="text-xs text-muted-foreground">
-                  Status: <strong className={itemFormIsPublished ? "text-emerald-500" : "text-amber-500"}>{itemFormIsPublished ? "Published" : "Draft"}</strong>
+                  Status: <strong className={itemFormIsPublished ? "text-primary" : "text-primary"}>{itemFormIsPublished ? "Published" : "Draft"}</strong>
                 </span>
                 <Switch
                   checked={itemFormIsPublished}
@@ -3260,7 +3283,7 @@ export default function OfferingsDashboardPage() {
                 <Button
                   type="submit"
                   disabled={savingItem}
-                  className="text-xs font-bold px-5 h-9 rounded-xl bg-primary text-white flex-1 sm:flex-none shadow-md cursor-pointer"
+                  className="text-xs font-bold px-5 h-9 rounded-xl flex-1 sm:flex-none cursor-pointer"
                 >
                   {savingItem ? (
                     <span className="flex items-center gap-1.5">
@@ -3331,8 +3354,8 @@ export default function OfferingsDashboardPage() {
 
       {/* IN-DASHBOARD VIDEO PREVIEW MODAL */}
       <Dialog open={!!previewVideoModalUrl} onOpenChange={() => setPreviewVideoModalUrl(null)}>
-        <DialogContent className="max-w-4xl p-2 sm:p-4 rounded-3xl border shadow-2xl bg-black border-white/10">
-          <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black">
+        <DialogContent className="max-w-4xl p-2 sm:p-4 rounded-3xl border border-border shadow-2xl bg-foreground">
+          <div className="aspect-video w-full rounded-2xl overflow-hidden bg-foreground">
             {(() => {
               const videoMeta = resolveVideoEmbedDetails(previewVideoModalUrl);
               if (!videoMeta) return null;

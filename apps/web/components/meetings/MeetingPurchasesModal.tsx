@@ -22,6 +22,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatMoney } from "@/lib/utils";
 
@@ -130,14 +138,14 @@ export default function MeetingPurchasesModal({
             <div className="space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <DialogTitle className="text-xl font-black text-foreground flex items-center gap-2">
-                  <Ticket className="w-5 h-5 text-amber-500" />
+                  <Ticket className="w-5 h-5 text-primary" />
                   Meeting Purchases
                 </DialogTitle>
-                <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground">
+                <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
                   ID: {meeting.id}
                 </Badge>
                 {currentAccessMode === "PURCHASABLE" && (
-                  <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-500 font-bold text-[10px]">
+                  <Badge variant="lime" className="font-bold">
                     Paid Pass
                   </Badge>
                 )}
@@ -169,24 +177,24 @@ export default function MeetingPurchasesModal({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Card 1: Total Revenue */}
             <div className="p-4 rounded-xl bg-card border border-border space-y-1.5 shadow-2xs">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
                 <Receipt className="w-3.5 h-3.5 text-primary" /> Total Meeting Revenue
               </span>
               <p className="text-2xl font-black text-foreground">
                 {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, currentCurrency)}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
               </p>
             </div>
 
             {/* Card 2: Share Mode & Price */}
             <div className="p-4 rounded-xl bg-card border border-border space-y-1.5 shadow-2xs">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-lime-500" /> Share Mode & Price
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-primary" /> Share Mode & Price
               </span>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="uppercase text-[10px] font-bold">
+                <Badge variant="outline" className="uppercase text-xs font-bold">
                   {currentAccessMode}
                 </Badge>
                 {currentAccessMode === "PURCHASABLE" && (
@@ -196,7 +204,7 @@ export default function MeetingPurchasesModal({
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {currentAccessMode === "PURCHASABLE"
                   ? (Number(currentPrice) <= 0 ? "Free pass entry enabled" : "Paid pass entry enabled")
                   : "Free / restricted sharing"}
@@ -205,13 +213,13 @@ export default function MeetingPurchasesModal({
 
             {/* Card 3: Total Buyers */}
             <div className="p-4 rounded-xl bg-card border border-border space-y-1.5 shadow-2xs">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
                 <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Total Buyers
               </span>
               <p className="text-2xl font-black text-foreground">
                 {purchases.length}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Active meeting passes
               </p>
             </div>
@@ -252,28 +260,28 @@ export default function MeetingPurchasesModal({
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto border border-border rounded-xl">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
-                    <tr>
-                      <th className="py-3 px-4">Buyer</th>
-                      <th className="py-3 px-4">Amount Paid</th>
-                      <th className="py-3 px-4">Country</th>
-                      <th className="py-3 px-4">Purchased On</th>
-                      <th className="py-3 px-4">Payment ID</th>
-                      <th className="py-3 px-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
+              <div className="border border-border rounded-xl overflow-hidden">
+                <Table className="text-xs">
+                  <TableHeader className="bg-muted/60 text-muted-foreground font-semibold">
+                    <TableRow>
+                      <TableHead className="h-10 px-4">Buyer</TableHead>
+                      <TableHead className="h-10 px-4">Amount Paid</TableHead>
+                      <TableHead className="h-10 px-4">Country</TableHead>
+                      <TableHead className="h-10 px-4">Purchased On</TableHead>
+                      <TableHead className="h-10 px-4">Payment ID</TableHead>
+                      <TableHead className="h-10 px-4">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {purchases.map((p) => {
                       const userInitial = (p.user?.name || p.user?.email || "U")[0]?.toUpperCase();
                       return (
-                        <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                          <td className="py-3 px-4">
+                        <TableRow key={p.id}>
+                          <TableCell className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
                               <Avatar className="w-7 h-7">
                                 {p.user?.image && <AvatarImage src={p.user.image} alt={p.user.name || "Buyer"} />}
-                                <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
+                                <AvatarFallback className="text-xs bg-primary/10 text-primary font-bold">
                                   {userInitial}
                                 </AvatarFallback>
                               </Avatar>
@@ -281,51 +289,52 @@ export default function MeetingPurchasesModal({
                                 <div className="font-semibold text-foreground">
                                   {p.user?.name || "Buyer"}
                                 </div>
-                                <div className="text-[11px] text-muted-foreground font-mono">
+                                <div className="text-xs text-muted-foreground font-mono">
                                   {p.user?.email || "—"}
                                 </div>
                               </div>
                             </div>
-                          </td>
-                          <td className="py-3 px-4 font-bold text-foreground">
+                          </TableCell>
+                          <TableCell className="py-3 px-4 font-bold text-foreground">
                             {formatMoney(p.amount, p.currency)}{" "}
-                            <span className="text-[10px] text-muted-foreground font-normal font-mono">
+                            <span className="text-xs text-muted-foreground font-normal font-mono">
                               ({p.currency})
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground font-mono">
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-muted-foreground font-mono">
                             {p.countryCode || "GLOBAL"}
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground">
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-muted-foreground">
                             {new Date(p.createdAt).toLocaleDateString()}{" "}
-                            <span className="text-[11px] text-muted-foreground/80">
+                            <span className="text-xs text-muted-foreground/80">
                               {new Date(p.createdAt).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
                               })}
                             </span>
-                          </td>
-                          <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                          </TableCell>
+                          <TableCell className="py-3 px-4 text-muted-foreground font-mono text-xs">
                             {p.paymentId || "—"}
-                          </td>
-                          <td className="py-3 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          </TableCell>
+                          <TableCell className="py-3 px-4">
+                            <Badge
+                              variant={
                                 p.status === "COMPLETED"
-                                  ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
+                                  ? "lime"
                                   : p.status === "PENDING"
-                                  ? "bg-amber-500/15 text-amber-600 border border-amber-500/30"
-                                  : "bg-muted text-muted-foreground border border-border"
-                              }`}
+                                  ? "secondary"
+                                  : "outline"
+                              }
+                              className="font-bold"
                             >
                               {p.status}
-                            </span>
-                          </td>
-                        </tr>
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>

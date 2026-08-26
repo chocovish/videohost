@@ -54,6 +54,15 @@ import {
   ShareAccessModeSelector,
 } from "@/components/share";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import VideoPlayer from "@/components/VideoPlayer";
 import { formatDuration } from "@/lib/video-utils";
 import { formatMoney } from "@/lib/utils";
@@ -486,13 +495,13 @@ export default function PlaylistDetailPage() {
     switch (mode) {
       case "PUBLIC":
         return (
-          <Badge variant="outline" className="gap-1.5 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+          <Badge variant="lime" className="gap-1.5">
             <Globe className="w-3.5 h-3.5" /> Public
           </Badge>
         );
       case "RESTRICTED":
         return (
-          <Badge variant="outline" className="gap-1.5 text-indigo-600 border-indigo-500/30 bg-indigo-500/10">
+          <Badge variant="outline" className="gap-1.5">
             <Lock className="w-3.5 h-3.5" /> Restricted
           </Badge>
         );
@@ -519,7 +528,7 @@ export default function PlaylistDetailPage() {
   if (error || !playlist) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16 space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center mx-auto">
+        <div className="w-14 h-14 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
           <AlertCircle className="w-7 h-7" />
         </div>
         <h2 className="text-xl font-bold text-foreground">Playlist Not Found</h2>
@@ -540,10 +549,12 @@ export default function PlaylistDetailPage() {
         <div className="flex items-start gap-3">
           <Link
             href="/dashboard/playlists"
-            className="p-2 mt-1 rounded-xl bg-white dark:bg-slate-900 border border-border text-muted-foreground hover:text-foreground shadow-2xs transition-colors shrink-0"
+            className="mt-1 shrink-0"
             title="Back to Playlists"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <Button variant="outline" size="icon">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
           </Link>
           <div className="space-y-1.5">
             <div>
@@ -570,7 +581,7 @@ export default function PlaylistDetailPage() {
               </span>
               {playlist.totalDurationSeconds > 0 && (
                 <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-500" /> {formatDuration(playlist.totalDurationSeconds)} Total Duration
+                  <Clock className="w-3.5 h-3.5 text-primary" /> {formatDuration(playlist.totalDurationSeconds)} Total Duration
                 </span>
               )}
               <span>Created {new Date(playlist.createdAt).toLocaleDateString()}</span>
@@ -623,26 +634,22 @@ export default function PlaylistDetailPage() {
 
       {/* Main Tab Navigation Bar */}
       <div className="flex items-center gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border w-fit">
-        <button
+        <Button
+          variant={playlistTab === "videos" ? "default" : "ghost"}
+          size="sm"
           onClick={() => setPlaylistTab("videos")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            playlistTab === "videos"
-              ? "bg-card text-foreground shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`gap-2 font-bold text-xs ${playlistTab === "videos" ? "" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Film className="w-4 h-4 text-primary" /> Playlist Sequence ({items.length})
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={playlistTab === "purchases" ? "default" : "ghost"}
+          size="sm"
           onClick={() => setPlaylistTab("purchases")}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            playlistTab === "purchases"
-              ? "bg-card text-foreground shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`gap-2 font-bold text-xs ${playlistTab === "purchases" ? "" : "text-muted-foreground hover:text-foreground"}`}
         >
-          <DollarSign className="w-4 h-4 text-lime-500" /> Purchases ({purchases.length})
-        </button>
+          <DollarSign className="w-4 h-4 text-primary" /> Purchases ({purchases.length})
+        </Button>
       </div>
 
       {/* TAB 1: VIDEOS SEQUENCE & REORDERING */}
@@ -663,7 +670,7 @@ export default function PlaylistDetailPage() {
                 </span>
               )}
               {orderSavedSuccess && (
-                <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                <span className="text-xs font-bold text-primary flex items-center gap-1">
                   <Check className="w-3.5 h-3.5" /> Order saved
                 </span>
               )}
@@ -701,7 +708,7 @@ export default function PlaylistDetailPage() {
                   onDragStart={(e) => handleDragStart(e, index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDrop={(e) => handleDrop(e, index)}
-                  className={`group relative bg-white dark:bg-slate-900/90 border rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-200 ${
+                  className={`group relative bg-card border rounded-2xl p-3 flex items-center justify-between gap-4 transition-all duration-200 ${
                     isDragging
                       ? "opacity-40 scale-[0.98] border-dashed border-primary"
                       : isDragOver
@@ -712,13 +719,13 @@ export default function PlaylistDetailPage() {
                   {/* Left: Drag Handle & Number */}
                   <div className="flex items-center gap-3 shrink-0">
                     <div
-                      className="cursor-grab active:cursor-grabbing p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                      className="cursor-grab active:cursor-grabbing p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
                       title="Drag to reorder"
                     >
                       <GripVertical className="w-5 h-5" />
                     </div>
 
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-mono font-bold text-xs text-slate-600 dark:text-slate-300">
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center font-mono font-bold text-xs text-muted-foreground">
                       {index + 1}
                     </div>
                   </div>
@@ -726,12 +733,12 @@ export default function PlaylistDetailPage() {
                   {/* Video Thumbnail */}
                   <div
                     onClick={() => setPreviewVideo(item)}
-                    className="relative w-28 sm:w-32 aspect-video bg-slate-950 rounded-xl overflow-hidden shrink-0 cursor-pointer group/thumb shadow-2xs"
+                    className="relative w-28 sm:w-32 aspect-video bg-black rounded-xl overflow-hidden shrink-0 cursor-pointer group/thumb shadow-2xs"
                   >
                     {item.thumbnailUrl ? (
                       <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-600">
+                      <div className="w-full h-full flex items-center justify-center bg-black text-muted-foreground">
                         <Film className="w-6 h-6" />
                       </div>
                     )}
@@ -739,7 +746,7 @@ export default function PlaylistDetailPage() {
                       <Play className="w-6 h-6 text-white fill-white" />
                     </div>
                     {item.durationSeconds && (
-                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 backdrop-blur-md text-[10px] font-bold text-slate-200 rounded">
+                      <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 backdrop-blur-md text-xs font-bold text-white rounded">
                         {formatDuration(item.durationSeconds)}
                       </span>
                     )}
@@ -756,12 +763,12 @@ export default function PlaylistDetailPage() {
 
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 flex-wrap">
                       {item.folderName && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-[11px]">
-                          <Folder className="w-3 h-3 text-amber-500" />
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold text-xs">
+                          <Folder className="w-3 h-3 text-primary" />
                           {item.folderName}
                         </span>
                       )}
-                      <span className="font-mono text-[11px] text-slate-400">ID: {item.videoId}</span>
+                      <span className="font-mono text-xs text-muted-foreground">ID: {item.videoId}</span>
                     </div>
                   </div>
 
@@ -769,31 +776,37 @@ export default function PlaylistDetailPage() {
                   <div className="flex items-center gap-1 shrink-0">
                     {/* Up / Down Controls for Touch and Accessibility */}
                     <div className="flex flex-col">
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => moveItem(index, "up")}
                         disabled={index === 0}
-                        className="p-1 rounded text-slate-400 hover:text-foreground disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-20"
                         title="Move Up"
                       >
                         <ChevronUp className="w-4 h-4" />
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => moveItem(index, "down")}
                         disabled={index === items.length - 1}
-                        className="p-1 rounded text-slate-400 hover:text-foreground disabled:opacity-20 disabled:hover:text-slate-400 transition-colors"
+                        className="text-muted-foreground hover:text-foreground disabled:opacity-20"
                         title="Move Down"
                       >
                         <ChevronDown className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
 
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => handleRemoveItem(item.itemId, item.title)}
-                      className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition-colors ml-1"
+                      className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 ml-1"
                       title="Remove from playlist"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -809,23 +822,23 @@ export default function PlaylistDetailPage() {
           {/* Stats Header */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
                 <Receipt className="w-3.5 h-3.5 text-primary" /> Total Playlist Revenue
               </span>
               <p className="text-xl font-black text-foreground">
                 {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, playlist?.currency || "USD")}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                <DollarSign className="w-3.5 h-3.5 text-lime-500" /> Share Mode & Price
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                <DollarSign className="w-3.5 h-3.5 text-primary" /> Share Mode & Price
               </span>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="uppercase text-[10px]">
+                <Badge variant="outline" className="uppercase">
                   {playlist.shareAccessMode}
                 </Badge>
                 {playlist.shareAccessMode === "PURCHASABLE" && (
@@ -834,19 +847,19 @@ export default function PlaylistDetailPage() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {playlist.shareAccessMode === "PURCHASABLE" ? "All videos in playlist unlocked on buy" : "Free / restricted sharing"}
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+              <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
                 <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Total Buyers
               </span>
               <p className="text-xl font-black text-foreground">
                 {purchases.length}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Active playlist licenses
               </p>
             </div>
@@ -866,50 +879,48 @@ export default function PlaylistDetailPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-border rounded-xl">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
-                  <tr>
-                    <th className="py-3 px-4">Buyer</th>
-                    <th className="py-3 px-4">Amount Paid</th>
-                    <th className="py-3 px-4">Country</th>
-                    <th className="py-3 px-4">Purchased On</th>
-                    <th className="py-3 px-4">Payment ID</th>
-                    <th className="py-3 px-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+            <div className="border border-border rounded-xl">
+              <Table className="text-left text-xs">
+                <TableHeader className="bg-muted/60 text-muted-foreground font-semibold">
+                  <TableRow>
+                    <TableHead className="py-3 px-4">Buyer</TableHead>
+                    <TableHead className="py-3 px-4">Amount Paid</TableHead>
+                    <TableHead className="py-3 px-4">Country</TableHead>
+                    <TableHead className="py-3 px-4">Purchased On</TableHead>
+                    <TableHead className="py-3 px-4">Payment ID</TableHead>
+                    <TableHead className="py-3 px-4">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {purchases.map((p) => (
-                    <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4">
+                    <TableRow key={p.id} className="hover:bg-muted/30">
+                      <TableCell className="py-3 px-4">
                         <div className="font-semibold text-foreground">
                           {p.user?.name || "Buyer"}
                         </div>
-                        <div className="text-[11px] text-muted-foreground font-mono">
+                        <div className="text-xs text-muted-foreground font-mono">
                           {p.user?.email || "—"}
                         </div>
-                      </td>
-                      <td className="py-3 px-4 font-bold text-foreground">
-                        {formatMoney(p.amount, p.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({p.currency})</span>
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground font-mono">
+                      </TableCell>
+                      <TableCell className="py-3 px-4 font-bold text-foreground">
+                        {formatMoney(p.amount, p.currency)} <span className="text-xs text-muted-foreground font-normal font-mono">({p.currency})</span>
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground font-mono">
                         {p.countryCode || "GLOBAL"}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground">
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground">
                         {new Date(p.createdAt).toLocaleDateString()} {new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                      </TableCell>
+                      <TableCell className="py-3 px-4 text-muted-foreground font-mono text-xs">
                         {p.paymentId}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                          {p.status}
-                        </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="py-3 px-4">
+                        <Badge variant="lime">{p.status}</Badge>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -936,11 +947,11 @@ export default function PlaylistDetailPage() {
             onValueChange={(val) => setActiveTab(val as "search" | "folder")}
             className="flex-1 flex flex-col min-h-0 pt-2"
           >
-            <TabsList className="grid grid-cols-2 rounded-xl p-1 bg-slate-100 dark:bg-slate-800">
-              <TabsTrigger value="search" className="rounded-lg font-bold text-xs gap-2">
+            <TabsList className="grid grid-cols-2">
+              <TabsTrigger value="search" className="font-bold text-xs gap-2">
                 <Search className="w-3.5 h-3.5" /> Search Title or Video ID
               </TabsTrigger>
-              <TabsTrigger value="folder" className="rounded-lg font-bold text-xs gap-2">
+              <TabsTrigger value="folder" className="font-bold text-xs gap-2">
                 <FolderPlus className="w-3.5 h-3.5" /> Add from Folder
               </TabsTrigger>
             </TabsList>
@@ -957,24 +968,26 @@ export default function PlaylistDetailPage() {
                   autoFocus
                 />
                 {searchQuery && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => handleSearchChange("")}
-                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                    className="absolute right-1.5 top-1.5 text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
               {/* Search Results List */}
               <div className="flex-1 overflow-y-auto max-h-[380px] space-y-2 pr-1">
                 {searching ? (
-                  <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400">
+                  <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     <span className="text-xs">Searching organization videos...</span>
                   </div>
                 ) : searchResults.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 space-y-1">
+                  <div className="text-center py-10 text-muted-foreground space-y-1">
                     <Film className="w-8 h-8 mx-auto opacity-40" />
                     <p className="text-sm font-medium">No videos found</p>
                     <p className="text-xs">Try searching with a different title or video ID.</p>
@@ -986,19 +999,19 @@ export default function PlaylistDetailPage() {
                     return (
                       <div
                         key={video.id}
-                        className="bg-slate-50 dark:bg-slate-900/70 border border-border rounded-xl p-2.5 flex items-center justify-between gap-3 hover:border-primary/40 transition-colors"
+                        className="bg-muted/50 border border-border rounded-xl p-2.5 flex items-center justify-between gap-3 hover:border-primary/40 transition-colors"
                       >
                         {/* Thumbnail */}
-                        <div className="relative w-20 aspect-video bg-slate-900 rounded-lg overflow-hidden shrink-0">
+                        <div className="relative w-20 aspect-video bg-black rounded-lg overflow-hidden shrink-0">
                           {video.thumbnailUrl ? (
                             <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-600">
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                               <Film className="w-4 h-4" />
                             </div>
                           )}
                           {video.durationSeconds && (
-                            <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 bg-black/80 text-[9px] font-bold text-slate-200 rounded">
+                            <span className="absolute bottom-0.5 right-0.5 px-1 bg-black/80 text-xs font-bold text-white rounded">
                               {formatDuration(video.durationSeconds)}
                             </span>
                           )}
@@ -1009,28 +1022,28 @@ export default function PlaylistDetailPage() {
                           <h4 className="font-bold text-xs text-foreground line-clamp-1">
                             {video.title}
                           </h4>
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                             {video.folderName && (
-                              <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+                              <span className="inline-flex items-center gap-1 font-semibold text-primary">
                                 <Folder className="w-2.5 h-2.5" /> {video.folderName}
                               </span>
                             )}
-                            <span className="font-mono text-slate-400">ID: {video.id}</span>
+                            <span className="font-mono text-muted-foreground">ID: {video.id}</span>
                           </div>
                         </div>
 
                         {/* Add Button */}
                         <div>
                           {video.alreadyInPlaylist ? (
-                            <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-xl text-xs font-bold flex items-center gap-1 border border-emerald-500/20">
+                            <Badge variant="lime" className="gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Added
-                            </span>
+                            </Badge>
                           ) : (
                             <Button
                               size="sm"
                               onClick={() => handleAddVideo(video.id)}
                               disabled={isAdding}
-                              className="rounded-xl font-bold text-xs gap-1.5 bg-primary text-white hover:opacity-90"
+                              className="rounded-xl font-bold text-xs gap-1.5"
                             >
                               {isAdding ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1050,7 +1063,7 @@ export default function PlaylistDetailPage() {
 
             {/* TAB 2: ADD FROM FOLDER */}
             <TabsContent value="folder" className="flex-1 flex flex-col space-y-4 pt-3">
-              <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-border rounded-2xl space-y-3">
+              <div className="p-4 bg-muted/50 border border-border rounded-2xl space-y-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-foreground">Select Folder</label>
                   <p className="text-xs text-muted-foreground">
@@ -1059,12 +1072,12 @@ export default function PlaylistDetailPage() {
                 </div>
 
                 {loadingFolders ? (
-                  <div className="flex items-center gap-2 py-4 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin text-primary" />
                     Loading organization folders...
                   </div>
                 ) : folders.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-2">No folders found in your organization.</p>
+                  <p className="text-xs text-muted-foreground py-2">No folders found in your organization.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
                     {folders.map((f) => {
@@ -1077,16 +1090,16 @@ export default function PlaylistDetailPage() {
                           className={`p-3 rounded-xl border text-left flex items-center justify-between gap-2 transition-all ${
                             isSelected
                               ? "border-primary bg-primary/10 shadow-2xs"
-                              : "border-border hover:border-slate-300 bg-white dark:bg-slate-800"
+                              : "border-border hover:border-ring bg-card"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-primary" : "text-amber-500"}`} />
+                            <Folder className={`w-4 h-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                             <span className="font-bold text-xs truncate text-foreground">{f.name}</span>
                           </div>
-                          <span className="text-[10px] font-bold px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-md text-slate-600 dark:text-slate-300 shrink-0">
+                          <Badge variant="secondary" className="shrink-0">
                             {f.itemCount} items
-                          </span>
+                          </Badge>
                         </button>
                       );
                     })}
@@ -1095,10 +1108,10 @@ export default function PlaylistDetailPage() {
               </div>
 
               {folderAddSuccessMsg && (
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-600 text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
-                  <span>{folderAddSuccessMsg}</span>
-                </div>
+                <Alert>
+                  <CheckCircle2 />
+                  <AlertDescription className="font-semibold">{folderAddSuccessMsg}</AlertDescription>
+                </Alert>
               )}
 
               <Button
@@ -1180,7 +1193,7 @@ export default function PlaylistDetailPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
+            <DialogFooter className="pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -1233,15 +1246,17 @@ export default function PlaylistDetailPage() {
 
       {/* Video Preview Modal */}
       <Dialog open={Boolean(previewVideo)} onOpenChange={(open) => !open && setPreviewVideo(null)}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-slate-800">
-          <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
-            <h3 className="font-bold text-white text-sm line-clamp-1">{previewVideo?.title}</h3>
-            <button
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-black border-border">
+          <div className="p-4 bg-card border-b border-border flex items-center justify-between">
+            <h3 className="font-bold text-foreground text-sm line-clamp-1">{previewVideo?.title}</h3>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setPreviewVideo(null)}
-              className="p-1 rounded-lg text-slate-400 hover:text-white"
+              className="text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
           <div className="aspect-video bg-black flex items-center justify-center">
             {previewVideo && (

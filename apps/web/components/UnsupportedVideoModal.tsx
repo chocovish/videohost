@@ -30,10 +30,10 @@ export default function UnsupportedVideoModal({
 }: UnsupportedVideoModalProps) {
   const getTrackBadgeVariant = (type: string) => {
     const t = type.toLowerCase();
-    if (t === "video") return "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30";
-    if (t === "audio") return "bg-purple-500/15 text-purple-700 dark:text-purple-400 border-purple-500/30";
-    if (t === "subtitle") return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30";
-    return "bg-slate-500/15 text-slate-700 dark:text-slate-400 border-slate-500/30";
+    if (t === "video") return "bg-primary/15 text-primary border-primary/30";
+    if (t === "audio") return "bg-secondary/60 text-secondary-foreground border-border";
+    if (t === "subtitle") return "bg-muted text-foreground border-border";
+    return "bg-muted text-muted-foreground border-border";
   };
 
   const getReasonBadgeLabel = (reason: string) => {
@@ -60,7 +60,7 @@ export default function UnsupportedVideoModal({
       <DialogContent className="max-w-lg z-70 max-h-[90vh] flex flex-col p-6 overflow-hidden">
         <DialogHeader className="shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-red-500/15 border border-red-500/25 text-red-600 dark:text-red-400 shrink-0">
+            <div className="p-2.5 rounded-2xl bg-destructive/15 border border-destructive/25 text-destructive shrink-0">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -89,7 +89,7 @@ export default function UnsupportedVideoModal({
               <XCircle className="w-4 h-4 text-destructive shrink-0" />
               Unplayable Tracks Detected in Video File
             </p>
-            <p className="text-[11.5px] leading-relaxed">
+            <p className="text-xs leading-relaxed">
               Videos are containerized to MKV before upload using strict stream copy. The following streams in this file cannot be decoded or played by your web browser:
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function UnsupportedVideoModal({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${getTrackBadgeVariant(
+                        className={`text-xs font-extrabold uppercase px-2 py-0.5 rounded-md border ${getTrackBadgeVariant(
                           item.type
                         )}`}
                       >
@@ -115,7 +115,7 @@ export default function UnsupportedVideoModal({
                         {item.codec}
                       </Badge>
                     </div>
-                    <span className="text-[10px] font-semibold text-destructive capitalize px-2 py-0.5 rounded-md bg-destructive/10 border border-destructive/20">
+                    <span className="text-xs font-semibold text-destructive capitalize px-2 py-0.5 rounded-md bg-destructive/10 border border-destructive/20">
                       {getReasonBadgeLabel(item.reason)}
                     </span>
                   </div>
@@ -133,8 +133,8 @@ export default function UnsupportedVideoModal({
           </div>
 
           {/* Help tip */}
-          <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-800 dark:text-blue-300 text-[11px] leading-relaxed">
-            <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground text-xs leading-relaxed">
+            <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <span>
               <strong>How to fix:</strong> Re-encode the video using standard web codecs (e.g. <strong>H.264 / AAC</strong> in MP4 or <strong>VP9 / Opus</strong> in WebM), or choose a standard web-compatible video file before uploading.
             </span>

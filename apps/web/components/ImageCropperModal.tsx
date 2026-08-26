@@ -487,18 +487,20 @@ export default function ImageCropperModal({
           {allowRatioChange && (
             <div className="flex items-center gap-1.5 pt-1 overflow-x-auto py-0.5 scrollbar-none">
               {(["3:1", "16:9", "1:1", "4:3"] as AspectRatioOption[]).map((r) => (
-                <button
+                <Button
                   key={r}
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setSelectedRatio(r)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap shrink-0 ${
+                  className={`rounded-xl text-xs font-bold whitespace-nowrap shrink-0 ${
                     selectedRatio === r
-                      ? "bg-primary text-white border-primary shadow-xs"
-                      : "bg-muted/70 hover:bg-muted text-foreground border-border"
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                      : "bg-muted/70 hover:bg-muted text-foreground border border-border"
                   }`}
                 >
                   {RATIO_CONFIGS[r].label}
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -520,11 +522,9 @@ export default function ImageCropperModal({
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
                 onWheel={handleWheel}
-                className="relative w-full h-[220px] xs:h-[250px] sm:h-[300px] md:h-[340px] bg-slate-950 rounded-2xl overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none border border-border shadow-inner touch-none"
+                className="relative w-full h-[220px] xs:h-[250px] sm:h-[300px] md:h-[340px] bg-black rounded-2xl overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none border border-border shadow-inner touch-none"
                 style={{ touchAction: "none" }}
               >
-                {/* Background subtle checkered grid pattern */}
-                <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
                 {/* Rendered Image with Zoom & Offset */}
                 <img
@@ -543,8 +543,9 @@ export default function ImageCropperModal({
 
                 {/* Responsive Crop Mask Overlay */}
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/75" />
                   <div
-                    className="relative rounded-xl ring-2 ring-primary shadow-[0_0_0_9999px_rgba(3,7,18,0.78)] transition-[width,height] duration-150"
+                    className="relative z-10 rounded-xl ring-2 ring-primary transition-[width,height] duration-150"
                     style={{
                       width: `${displayCropW}px`,
                       height: `${displayCropH}px`,
@@ -570,14 +571,14 @@ export default function ImageCropperModal({
                     <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-b-2 border-r-2 border-primary rounded-br-sm shadow-xs" />
 
                     {/* Ratio Badge inside crop box */}
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-primary/90 backdrop-blur-xs text-[10px] font-black text-white uppercase tracking-wider shadow-sm">
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-primary/90 backdrop-blur-xs text-xs font-black text-primary-foreground uppercase tracking-wider shadow-sm">
                       {selectedRatio}
                     </div>
                   </div>
                 </div>
 
                 {/* Gesture hint pill */}
-                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/10 text-white/90 text-[10px] sm:text-[11px] font-semibold flex items-center gap-1.5 pointer-events-none shadow-md whitespace-nowrap">
+                <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/10 text-white/90 text-xs font-semibold flex items-center gap-1.5 pointer-events-none shadow-md whitespace-nowrap">
                   <Move className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
                   <span>Drag to pan · Pinch or scroll to zoom</span>
                 </div>
@@ -593,21 +594,23 @@ export default function ImageCropperModal({
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       {[1, 1.5, 2].map((preset) => (
-                        <button
+                        <Button
                           key={preset}
                           type="button"
+                          variant="ghost"
+                          size="xs"
                           onClick={() => {
                             setZoom(preset);
                             updatePreview(preset, offset);
                           }}
-                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold border transition-colors cursor-pointer ${
+                          className={`px-1.5 rounded-md font-mono font-bold cursor-pointer ${
                             Math.abs(zoom - preset) < 0.05
-                              ? "bg-primary text-white border-primary"
-                              : "bg-background text-muted-foreground hover:text-foreground border-border"
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90 border border-primary"
+                              : "bg-background text-muted-foreground hover:text-foreground border border-border"
                           }`}
                         >
                           {preset}x
-                        </button>
+                        </Button>
                       ))}
                     </div>
                     <span className="font-mono text-primary font-bold text-xs">{zoom.toFixed(1)}x</span>
@@ -618,13 +621,13 @@ export default function ImageCropperModal({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon-sm"
                     onClick={() => {
                       const newZ = Math.max(1, zoom - 0.2);
                       setZoom(newZ);
                       updatePreview(newZ, offset);
                     }}
-                    className="h-8 w-8 p-0 rounded-xl text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                     title="Zoom Out"
                   >
                     <ZoomOut className="w-4 h-4" />
@@ -642,13 +645,13 @@ export default function ImageCropperModal({
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon-sm"
                     onClick={() => {
                       const newZ = Math.min(3.5, zoom + 0.2);
                       setZoom(newZ);
                       updatePreview(newZ, offset);
                     }}
-                    className="h-8 w-8 p-0 rounded-xl text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
                     title="Zoom In"
                   >
                     <ZoomIn className="w-4 h-4" />
@@ -659,7 +662,7 @@ export default function ImageCropperModal({
                     variant="outline"
                     size="sm"
                     onClick={handleReset}
-                    className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1 rounded-xl cursor-pointer"
+                    className="text-xs text-muted-foreground hover:text-foreground shrink-0 gap-1 cursor-pointer"
                     title="Reset Position and Zoom"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -679,7 +682,7 @@ export default function ImageCropperModal({
                       Live Preview
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-muted-foreground font-semibold">
+                  <span className="text-xs font-mono text-muted-foreground font-semibold">
                     {currentConfig.targetW} × {currentConfig.targetH}px
                   </span>
                 </div>
@@ -707,18 +710,18 @@ export default function ImageCropperModal({
                       Generating preview...
                     </div>
                   )}
-                  <span className="text-[10px] sm:text-[11px] text-muted-foreground mt-2 font-medium text-center">
+                  <span className="text-xs text-muted-foreground mt-2 font-medium text-center">
                     {currentConfig.hint}
                   </span>
                 </div>
 
                 {/* Resolution & CDN Antialiasing Info */}
                 <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs space-y-1">
-                  <div className="font-bold text-foreground flex items-center gap-1.5 text-[11px]">
+                  <div className="font-bold text-foreground flex items-center gap-1.5 text-xs">
                     <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>High-Resolution Output</span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     Exported at <strong className="text-foreground">{currentConfig.targetW}×{currentConfig.targetH}px</strong> ({currentConfig.label}), optimized for crisp rendering across all mobile, tablet, and retina displays.
                   </p>
                 </div>
@@ -732,15 +735,17 @@ export default function ImageCropperModal({
           <Button
             type="button"
             variant="ghost"
+            size="lg"
             onClick={onClose}
-            className="flex-1 sm:flex-initial h-10 px-4 text-xs font-semibold rounded-xl cursor-pointer hover:bg-muted"
+            className="flex-1 sm:flex-initial text-xs font-semibold rounded-xl cursor-pointer"
           >
             Cancel
           </Button>
           <Button
             type="button"
+            size="lg"
             onClick={handleSaveCrop}
-            className="flex-1 sm:flex-initial h-10 px-5 text-xs font-bold gap-1.5 bg-primary text-white rounded-xl shadow-md cursor-pointer hover:opacity-90 active:scale-95 transition-all"
+            className="flex-1 sm:flex-initial text-xs font-bold rounded-xl cursor-pointer active:scale-95 transition-all"
           >
             <Check className="w-4 h-4 shrink-0" />
             <span>Apply {currentConfig.shortLabel || selectedRatio} Crop</span>

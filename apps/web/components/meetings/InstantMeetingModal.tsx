@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 import RecordingUpgradeModal from "@/components/meetings/RecordingUpgradeModal";
 
 interface InstantMeetingModalProps {
@@ -102,10 +103,10 @@ export default function InstantMeetingModal({
         </DialogHeader>
 
         {error && (
-          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2 shrink-0">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
+          <Alert variant="destructive" className="shrink-0 text-xs">
+            <AlertCircle />
+            <span className="text-xs">{error}</span>
+          </Alert>
         )}
 
         <form onSubmit={handleStart} className="flex-1 min-h-0 flex flex-col justify-between overflow-hidden">
@@ -136,14 +137,14 @@ export default function InstantMeetingModal({
                 <div
                   className={`p-2 rounded-lg mt-0.5 ${
                     isFreePlan
-                      ? "bg-slate-800 text-slate-400"
+                      ? "bg-muted text-muted-foreground"
                       : recordOnStart
-                      ? "bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-destructive/15 text-destructive"
+                      : "bg-secondary/60 text-secondary-foreground"
                   }`}
                 >
                   {isFreePlan ? (
-                    <Lock className="w-4 h-4 text-amber-500/90" />
+                    <Lock className="w-4 h-4" />
                   ) : (
                     <Disc className={`w-4 h-4 ${recordOnStart ? "animate-pulse" : ""}`} />
                   )}
@@ -158,29 +159,30 @@ export default function InstantMeetingModal({
                     </Label>
                     {isFreePlan ? (
                       <Badge
-                        variant="outline"
+                        variant="secondary"
                         onClick={() => setIsUpgradeModalOpen(true)}
-                        className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[10px] uppercase font-bold cursor-pointer hover:bg-amber-500/20 transition-colors"
+                        className="uppercase cursor-pointer hover:bg-secondary/80 transition-colors"
                       >
                         <Lock className="w-2.5 h-2.5 mr-1 inline" /> Paid Plan Only
                       </Badge>
                     ) : recordOnStart ? (
-                      <Badge variant="destructive" className="uppercase text-[10px]">
+                      <Badge variant="destructive" className="uppercase">
                         Auto-Record
                       </Badge>
                     ) : null}
                   </div>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {isFreePlan ? (
                       <span>
                         Meeting recording is not available on the Free plan.{" "}
-                        <button
+                        <Button
                           type="button"
+                          variant="link"
                           onClick={() => setIsUpgradeModalOpen(true)}
-                          className="text-primary hover:underline font-semibold cursor-pointer"
+                          className="inline h-auto p-0 px-0 text-xs font-semibold cursor-pointer"
                         >
                           Upgrade to unlock
-                        </button>
+                        </Button>
                       </span>
                     ) : (
                       "Save recorded video directly to your library when the meeting ends."

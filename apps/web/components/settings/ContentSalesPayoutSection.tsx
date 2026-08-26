@@ -34,6 +34,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -195,7 +205,7 @@ export function ContentSalesPayoutSection({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-border/60">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2.5">
-            <div className="p-2.5 rounded-2xl bg-lime-500/15 text-lime-500 border border-lime-500/20 shadow-xs shrink-0">
+            <div className="p-2.5 rounded-2xl bg-primary/15 text-primary border border-primary/20 shadow-xs shrink-0">
               <DollarSign className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
@@ -218,44 +228,53 @@ export function ContentSalesPayoutSection({
             </div>
 
             {currentActivePlan === "free" && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 font-medium">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground font-medium">
                 <span>Upgrade to Basic (5.5%), Pro (4.0%), or Enterprise (3.5%) to reduce platform fees!</span>
-                <button
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
                   onClick={() => router.push("/dashboard/pricing")}
-                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                  className="h-auto p-0 font-bold underline gap-0.5 ml-1"
                 >
                   Upgrade <ArrowUpRight className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             )}
 
             {currentActivePlan === "basic" && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-400 font-medium">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground font-medium">
                 <span>Upgrade to Pro (4.0%) or Enterprise (3.5%) to lower your platform fee even further.</span>
-                <button
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
                   onClick={() => router.push("/dashboard/pricing")}
-                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                  className="h-auto p-0 font-bold underline gap-0.5 ml-1"
                 >
                   Upgrade <ArrowUpRight className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             )}
 
             {currentActivePlan === "pro" && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-medium">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground font-medium">
                 <span>Enterprise tier unlocks our lowest 3.5% creator platform fee rate.</span>
-                <button
+                <Button
+                  type="button"
+                  variant="link"
+                  size="xs"
                   onClick={() => router.push("/dashboard/pricing")}
-                  className="font-bold underline hover:opacity-80 inline-flex items-center gap-0.5 cursor-pointer ml-1"
+                  className="h-auto p-0 font-bold underline gap-0.5 ml-1"
                 >
                   Explore Enterprise <ArrowUpRight className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             )}
 
             {currentActivePlan === "enterprise" && (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 font-bold">
-                <Sparkles className="w-3 h-3 text-purple-500" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary font-bold">
+                <Sparkles className="w-3 h-3 text-primary" />
                 <span>Lowest Platform Fee Tier (3.5%) Unlocked across all content & meeting passes!</span>
               </div>
             )}
@@ -264,7 +283,9 @@ export function ContentSalesPayoutSection({
 
         {/* Navigation Tabs Pill Switcher */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-muted/60 rounded-2xl border border-border self-start lg:self-center shrink-0">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setMonetizationTab("purchases")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "purchases"
                 ? "bg-card text-foreground shadow-sm border border-border"
@@ -273,26 +294,30 @@ export function ContentSalesPayoutSection({
           >
             <Receipt className="w-3.5 h-3.5" />
             <span>Sales Ledger</span>
-            <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-primary/15 text-primary font-mono">
+            <Badge variant="lime" className="ml-0.5 font-mono">
               {purchases.length}
-            </span>
-          </button>
+            </Badge>
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setMonetizationTab("withdrawals")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "withdrawals"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
               }`}
           >
-            <Wallet className="w-3.5 h-3.5 text-lime-500" />
+            <Wallet className="w-3.5 h-3.5 text-primary" />
             <span>Payouts</span>
             {hasPendingWithdrawal && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title="1 withdrawal in review" />
+              <span className="w-2 h-2 rounded-full bg-primary" title="1 withdrawal in review" />
             )}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setMonetizationTab("bank")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "bank"
                 ? "bg-card text-foreground shadow-sm border border-border"
@@ -302,69 +327,74 @@ export function ContentSalesPayoutSection({
             <Landmark className="w-3.5 h-3.5 text-primary" />
             <span>Bank Account</span>
             {bankAccount ? (
-              <span className="text-[11px] text-emerald-500 font-bold">✓</span>
+              <span className="text-xs text-primary font-bold">✓</span>
             ) : (
-              <span className="text-[9px] px-1 rounded bg-amber-500/20 text-amber-600 font-bold">Set up</span>
+              <Badge variant="secondary">Set up</Badge>
             )}
-          </button>
+          </Button>
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             onClick={() => setMonetizationTab("tiers")}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${monetizationTab === "tiers"
                 ? "bg-card text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground"
               }`}
           >
-            <BadgePercent className="w-3.5 h-3.5 text-purple-500" />
+            <BadgePercent className="w-3.5 h-3.5 text-primary" />
             <span>Fee Tiers</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Available Balance & Payout Financial KPI Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Card 1: Available for Payout (Featured Hero Card) */}
-        <div className="p-5 rounded-3xl bg-lime-500/10 border-2 border-lime-500/30 shadow-md space-y-2 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-28 h-28 bg-lime-500/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
-          <span className="text-[11px] font-extrabold text-lime-700 dark:text-lime-400 uppercase tracking-wider flex items-center justify-between">
+        <div className="p-5 rounded-3xl bg-primary/10 border-2 border-primary/30 shadow-md space-y-2 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
+          <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Wallet className="w-4 h-4" /> Available Payout Balance
             </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-lime-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           </span>
-          <p className="text-2xl sm:text-3xl font-black text-lime-700 dark:text-lime-300 tracking-tight">
+          <p className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
             {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
           </p>
           <div className="flex items-center justify-between pt-1">
             <span className="text-xs text-muted-foreground font-mono">
               Ready to withdraw in {activeCurrency}
             </span>
-            <button
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
               onClick={() => setMonetizationTab("withdrawals")}
               disabled={(purchasesStats?.availableBalance || 0) <= 0 || hasPendingWithdrawal}
-              className="text-xs font-bold text-lime-600 dark:text-lime-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              className="h-auto p-0 text-xs font-bold"
             >
               Withdraw <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Card 2: Pending & Paid Out */}
         <div className="p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-2 hover:border-border transition-colors">
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ArrowDownToLine className="w-4 h-4 text-purple-500" /> Total Withdrawn / Pending
+              <ArrowDownToLine className="w-4 h-4 text-primary" /> Total Withdrawn / Pending
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
+            <Badge variant="outline" className="font-mono">
               {withdrawals.length} requests
-            </span>
+            </Badge>
           </span>
           <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
             {formatMoney(purchasesStats ? purchasesStats.totalWithdrawnOrPending : 0, activeCurrency)}
           </p>
           <p className="text-xs text-muted-foreground truncate pt-1">
             {hasPendingWithdrawal ? (
-              <span className="text-amber-600 dark:text-amber-400 font-semibold flex items-center gap-1">
+              <span className="text-muted-foreground font-semibold flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 animate-spin" /> 1 request under review
               </span>
             ) : (
@@ -384,16 +414,17 @@ export function ContentSalesPayoutSection({
                 <Filter className="w-3.5 h-3.5" /> Type:
               </span>
               {(["ALL", "VIDEO", "PLAYLIST", "MEETING"] as const).map((type) => (
-                <button
+                <Button
                   key={type}
+                  type="button"
+                  variant={purchaseFilterType === type ? "default" : "secondary"}
+                  size="sm"
                   onClick={() => setPurchaseFilterType(type)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${purchaseFilterType === type
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-muted/50 text-muted-foreground hover:text-foreground"
+                  className={`rounded-xl text-xs font-bold ${purchaseFilterType !== type ? "bg-muted/50 text-muted-foreground hover:text-foreground" : ""
                     }`}
                 >
                   {type === "ALL" ? "All Orders" : type === "VIDEO" ? "Videos" : type === "PLAYLIST" ? "Playlists" : "Meetings"}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -408,23 +439,30 @@ export function ContentSalesPayoutSection({
                   className="pl-8 h-8 text-xs rounded-xl bg-background border-border"
                 />
                 {purchaseSearchQuery && (
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => setPurchaseSearchQuery("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Clear search"
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={fetchMonetizationData}
                 disabled={loadingMonetization}
                 title="Refresh Ledger"
-                className="p-2 rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
+                className="rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingMonetization ? "animate-spin" : ""}`} />
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -448,33 +486,33 @@ export function ContentSalesPayoutSection({
             </div>
           ) : (
             <div className="overflow-x-auto border border-border/80 rounded-2xl shadow-xs">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
-                  <tr>
-                    <th className="py-3 px-4">Item & Content</th>
-                    <th className="py-3 px-4">Buyer Details</th>
-                    <th className="py-3 px-4">Gross Sale</th>
-                    <th className="py-3 px-4">Platform Fee</th>
-                    <th className="py-3 px-4">Gateway Fee & Taxes</th>
-                    <th className="py-3 px-4">Net Creator Take-Home</th>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Payment Reference</th>
-                    <th className="py-3 px-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
+              <Table className="text-left text-xs">
+                <TableHeader className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-xs tracking-wider">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="py-3 px-4">Item & Content</TableHead>
+                    <TableHead className="py-3 px-4">Buyer Details</TableHead>
+                    <TableHead className="py-3 px-4">Gross Sale</TableHead>
+                    <TableHead className="py-3 px-4">Platform Fee</TableHead>
+                    <TableHead className="py-3 px-4">Gateway Fee & Taxes</TableHead>
+                    <TableHead className="py-3 px-4">Net Creator Take-Home</TableHead>
+                    <TableHead className="py-3 px-4">Date</TableHead>
+                    <TableHead className="py-3 px-4">Payment Reference</TableHead>
+                    <TableHead className="py-3 px-4">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60 [&>tr]:border-border/60">
                   {filteredPurchases.map((purchase) => (
-                    <tr key={purchase.id} className="hover:bg-muted/30 transition-colors">
+                    <TableRow key={purchase.id} className="hover:bg-muted/30 border-border/60">
                       {/* Item & Type */}
-                      <td className="py-3.5 px-4">
+                      <TableCell className="py-3.5 px-4">
                         <div className="flex items-start gap-2.5">
-                          <div className="p-2 rounded-xl bg-muted/60 text-foreground shrink-0 mt-0.5">
+                          <div className="p-2 rounded-xl bg-muted/60 text-primary shrink-0 mt-0.5">
                             {purchase.contentType === "PLAYLIST" ? (
-                              <ListVideo className="w-4 h-4 text-purple-500" />
+                              <ListVideo className="w-4 h-4" />
                             ) : purchase.contentType === "MEETING" ? (
-                              <Users className="w-4 h-4 text-amber-500" />
+                              <Users className="w-4 h-4" />
                             ) : (
-                              <Film className="w-4 h-4 text-blue-500" />
+                              <Film className="w-4 h-4" />
                             )}
                           </div>
                           <div>
@@ -484,115 +522,111 @@ export function ContentSalesPayoutSection({
                                 purchase.meeting?.title ||
                                 "Purchasable Content"}
                             </p>
-                            <span
-                              className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase mt-0.5 ${purchase.contentType === "PLAYLIST"
-                                  ? "bg-purple-500/15 text-purple-600 border border-purple-500/20"
-                                  : purchase.contentType === "MEETING"
-                                    ? "bg-amber-500/15 text-amber-600 border border-amber-500/20"
-                                    : "bg-blue-500/15 text-blue-600 border border-blue-500/20"
-                                }`}
-                            >
+                            <Badge variant="secondary" className="uppercase mt-0.5">
                               {purchase.contentType}
-                            </span>
+                            </Badge>
                           </div>
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Buyer */}
-                      <td className="py-3.5 px-4">
+                      <TableCell className="py-3.5 px-4">
                         <div className="font-bold text-foreground">
                           {purchase.user?.name || "Guest Purchaser"}
                         </div>
-                        <div className="text-[11px] text-muted-foreground font-mono truncate max-w-[180px]">
+                        <div className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
                           {purchase.user?.email || "—"}
                         </div>
                         {purchase.countryCode && (
-                          <span className="inline-block text-[9px] px-1 py-0.2 rounded bg-muted text-muted-foreground font-mono mt-0.5">
+                          <Badge variant="outline" className="font-mono mt-0.5">
                             🌍 {purchase.countryCode}
-                          </span>
+                          </Badge>
                         )}
-                      </td>
+                      </TableCell>
 
                       {/* Gross Sale */}
-                      <td className="py-3.5 px-4">
+                      <TableCell className="py-3.5 px-4">
                         <div className="font-extrabold text-foreground text-sm">
                           {formatMoney(purchase.amount, purchase.currency)}
                         </div>
-                        <span className="text-[10px] text-muted-foreground font-mono">
+                        <span className="text-xs text-muted-foreground font-mono">
                           ({purchase.currency})
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Platform Fee */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-amber-600 dark:text-amber-400">
+                      <TableCell className="py-3.5 px-4">
+                        <div className="font-bold text-muted-foreground">
                           -{formatMoney(purchase.commissionAmount || 0, purchase.currency)}
                         </div>
-                        <span className="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono">
+                        <span className="text-xs text-muted-foreground/80 font-mono">
                           {purchase.commissionPercent}% ({purchase.planSnapshot || "FREE"})
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Gateway Fee & Taxes (Actual) */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-sky-600 dark:text-sky-400">
+                      <TableCell className="py-3.5 px-4">
+                        <div className="font-bold text-muted-foreground">
                           -{formatMoney(purchase.gatewayFeeAmount || 0, purchase.currency)}
                         </div>
-                        <span className="text-[10px] text-sky-700/80 dark:text-sky-400/80 font-mono">
+                        <span className="text-xs text-muted-foreground/80 font-mono">
                           {purchase.gatewayFeePercent !== undefined && purchase.gatewayFeePercent !== null && purchase.gatewayFeePercent > 0
                             ? `${purchase.gatewayFeePercent.toFixed(2)}%`
                             : purchase.amount > 0 && purchase.gatewayFeeAmount
                               ? `${((purchase.gatewayFeeAmount / purchase.amount) * 100).toFixed(2)}%`
                               : "0.00%"} ({purchase.paymentMethod || "Gateway"})
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Net Take-Home */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                      <TableCell className="py-3.5 px-4">
+                        <div className="font-black text-primary text-sm">
                           +{formatMoney(purchase.creatorEarnings || purchase.amount, purchase.currency)}
                         </div>
-                        <span className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-mono">
+                        <span className="text-xs text-primary/80 font-mono">
                           Net to balance
                         </span>
-                      </td>
+                      </TableCell>
 
                       {/* Date */}
-                      <td className="py-3.5 px-4 text-muted-foreground whitespace-nowrap">
+                      <TableCell className="py-3.5 px-4 text-muted-foreground whitespace-nowrap">
                         <div className="font-medium text-foreground">
                           {new Date(purchase.createdAt).toLocaleDateString()}
                         </div>
-                        <div className="text-[10px] text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {new Date(purchase.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </div>
-                      </td>
+                      </TableCell>
 
                       {/* Payment Ref */}
-                      <td className="py-3.5 px-4">
-                        <button
+                      <TableCell className="py-3.5 px-4">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
                           onClick={() => handleCopyRef(purchase.paymentId || purchase.id)}
                           title="Click to copy payment reference ID"
-                          className="group inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 hover:bg-muted text-[11px] font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                          className="font-mono text-muted-foreground hover:text-foreground group/ref"
                         >
                           <span>{(purchase.paymentId || purchase.id).slice(0, 12)}...</span>
                           {copiedPaymentId === (purchase.paymentId || purchase.id) ? (
-                            <Check className="w-3 h-3 text-emerald-500" />
+                            <Check className="w-3 h-3 text-primary" />
                           ) : (
-                            <Copy className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+                            <Copy className="w-3 h-3 opacity-50 group-hover/ref:opacity-100" />
                           )}
-                        </button>
-                      </td>
+                        </Button>
+                      </TableCell>
 
                       {/* Status */}
-                      <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      <TableCell className="py-3.5 px-4">
+                        <Badge variant="lime" className="uppercase">
                           {purchase.status}
-                        </span>
-                      </td>
-                    </tr>
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -606,7 +640,7 @@ export function ContentSalesPayoutSection({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/60">
               <div className="space-y-1">
                 <h4 className="text-base font-extrabold text-foreground flex items-center gap-2">
-                  <ArrowDownToLine className="w-4 h-4 text-lime-500" /> Request Payout to Bank
+                  <ArrowDownToLine className="w-4 h-4 text-primary" /> Request Payout to Bank
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Withdraw available net sales revenue directly to your official connected bank account.
@@ -620,71 +654,71 @@ export function ContentSalesPayoutSection({
                   <div>
                     <div className="font-bold flex items-center gap-1">
                       {bankAccount.bankName}{" "}
-                      <span className="text-[10px] text-muted-foreground font-mono">
+                      <span className="text-xs text-muted-foreground font-mono">
                         (••••{bankAccount.accountNumber?.slice(-4)})
                       </span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {bankAccount.currency || activeCurrency} &bull; {bankAccount.accountType || "Checking"}
                     </div>
                   </div>
                 </div>
               ) : (
-                <button
+                <Button
+                  type="button"
+                  variant="warningOutline"
+                  size="sm"
                   onClick={() => setMonetizationTab("bank")}
-                  className="px-3.5 py-2 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-500/25 transition-colors cursor-pointer flex items-center gap-1.5 shrink-0"
+                  className="rounded-2xl shrink-0"
                 >
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500" /> Connect Bank Account First
-                </button>
+                  <AlertCircle className="w-3.5 h-3.5" /> Connect Bank Account First
+                </Button>
               )}
             </div>
 
             {/* Strict Requirement Notice: Single pending withdrawal constraint */}
             {hasPendingWithdrawal && (
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-start gap-3">
-                <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-500 animate-spin" />
-                <div className="space-y-0.5">
-                  <span className="font-bold block">Active Withdrawal In Progress</span>
-                  <p className="text-[11px] text-amber-700/90 dark:text-amber-300/90">
-                    You currently have a withdrawal request under review. Per financial safety policies, new withdrawals can be submitted once your current pending request is completed.
-                  </p>
-                </div>
-              </div>
+              <Alert>
+                <Clock className="w-4 h-4 animate-spin shrink-0" />
+                <AlertTitle>Active Withdrawal In Progress</AlertTitle>
+                <AlertDescription className="text-xs">
+                  You currently have a withdrawal request under review. Per financial safety policies, new withdrawals can be submitted once your current pending request is completed.
+                </AlertDescription>
+              </Alert>
             )}
 
             {!bankAccount && (
-              <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-700 dark:text-purple-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <Landmark className="w-5 h-5 shrink-0 text-purple-600" />
-                  <div>
-                    <p className="font-bold">No payout bank account connected yet</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Configure your direct deposit routing or IFSC details to initiate wire payouts.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => setMonetizationTab("bank")}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shrink-0"
-                >
-                  Add Bank Account
-                </Button>
-              </div>
+              <Alert>
+                <Landmark className="w-5 h-5 shrink-0" />
+                <AlertTitle>No payout bank account connected yet</AlertTitle>
+                <AlertDescription className="text-xs">
+                  Configure your direct deposit routing or IFSC details to initiate wire payouts.
+                </AlertDescription>
+                <AlertAction>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setMonetizationTab("bank")}
+                    className="shrink-0 font-bold text-xs"
+                  >
+                    Add Bank Account
+                  </Button>
+                </AlertAction>
+              </Alert>
             )}
 
             {withdrawalSuccessMsg && (
-              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+              <Alert className="border-primary/25 text-primary [&>svg]:text-primary">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{withdrawalSuccessMsg}</span>
-              </div>
+                <AlertTitle className="text-xs font-bold">{withdrawalSuccessMsg}</AlertTitle>
+              </Alert>
             )}
 
             {withdrawalErrorMsg && (
-              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+              <Alert variant="destructive" className="border-destructive/25 bg-destructive/10">
                 <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{withdrawalErrorMsg}</span>
-              </div>
+                <AlertTitle className="text-xs font-bold">{withdrawalErrorMsg}</AlertTitle>
+              </Alert>
             )}
 
             <form onSubmit={handleRequestWithdrawal} className="space-y-5">
@@ -696,7 +730,7 @@ export function ContentSalesPayoutSection({
                   </Label>
                   <div className="text-xs text-muted-foreground">
                     Max Available:{" "}
-                    <strong className="text-lime-600 dark:text-lime-400 font-bold">
+                    <strong className="text-primary font-bold">
                       {formatMoney(purchasesStats ? purchasesStats.availableBalance : 0, activeCurrency)}
                     </strong>
                   </div>
@@ -733,9 +767,11 @@ export function ContentSalesPayoutSection({
                   {/* Preset Quick Buttons */}
                   <div className="flex items-center gap-1.5">
                     {[25, 50, 75, 100].map((pct) => (
-                      <button
+                      <Button
                         key={pct}
                         type="button"
+                        variant={withdrawalPresetPct === pct ? "default" : "secondary"}
+                        size="sm"
                         onClick={() => handleSetPresetAmount(pct)}
                         disabled={
                           hasPendingWithdrawal ||
@@ -743,13 +779,11 @@ export function ContentSalesPayoutSection({
                           (purchasesStats?.availableBalance || 0) <= 0 ||
                           isRequestingWithdrawal
                         }
-                        className={`px-3 py-2 rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${withdrawalPresetPct === pct
-                            ? "bg-lime-500 text-black shadow-xs font-black"
-                            : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                        className={`rounded-xl text-xs font-black ${withdrawalPresetPct !== pct ? "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted" : ""
                           }`}
                       >
                         {pct === 100 ? "MAX" : `${pct}%`}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -777,7 +811,7 @@ export function ContentSalesPayoutSection({
                   </div>
                   <div className="pt-2 border-t border-border/50 flex items-center justify-between font-bold">
                     <span className="text-foreground">Remaining Available Balance:</span>
-                    <span className="text-lime-600 dark:text-lime-400">
+                    <span className="text-primary">
                       {formatMoney(remainingBalanceAfterWithdraw, activeCurrency)}
                     </span>
                   </div>
@@ -787,6 +821,7 @@ export function ContentSalesPayoutSection({
               <div className="pt-1">
                 <Button
                   type="submit"
+                  variant="lime"
                   disabled={
                     hasPendingWithdrawal ||
                     !bankAccount ||
@@ -795,7 +830,7 @@ export function ContentSalesPayoutSection({
                     (purchasesStats && parseFloat(withdrawalAmount) > purchasesStats.availableBalance) ||
                     isRequestingWithdrawal
                   }
-                  className="w-full sm:w-auto min-w-[200px] h-11 rounded-2xl bg-lime-500 hover:bg-lime-600 text-black font-extrabold text-xs shadow-md transition-transform active:scale-95"
+                  className="w-full sm:w-auto min-w-[200px] h-11 rounded-2xl text-xs shadow-md active:scale-95"
                 >
                   {isRequestingWithdrawal ? (
                     <>
@@ -817,94 +852,99 @@ export function ContentSalesPayoutSection({
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" /> Payout Withdrawal History ({withdrawals.length})
               </h4>
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={fetchMonetizationData}
                 disabled={loadingMonetization}
-                className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                className="text-xs text-muted-foreground hover:text-foreground"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingMonetization ? "animate-spin" : ""}`} /> Refresh
-              </button>
+              </Button>
             </div>
 
             {withdrawals.length === 0 ? (
               <div className="py-12 text-center border border-dashed border-border/80 rounded-2xl text-xs text-muted-foreground bg-muted/10">
                 <Clock className="w-8 h-8 text-muted-foreground mx-auto opacity-40 mb-2" />
                 <p className="font-semibold text-foreground">No withdrawal requests yet</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   When you submit a payout request, processing status and bank transaction receipts will appear here.
                 </p>
               </div>
             ) : (
               <div className="overflow-x-auto border border-border/80 rounded-2xl shadow-xs">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
-                    <tr>
-                      <th className="py-3 px-4">Requested Date</th>
-                      <th className="py-3 px-4">Withdrawal Amount</th>
-                      <th className="py-3 px-4">Bank Destination</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Processed Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
+                <Table className="text-left text-xs">
+                  <TableHeader className="bg-muted/60 border-b border-border text-muted-foreground font-semibold uppercase text-xs tracking-wider">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="py-3 px-4">Requested Date</TableHead>
+                      <TableHead className="py-3 px-4">Withdrawal Amount</TableHead>
+                      <TableHead className="py-3 px-4">Bank Destination</TableHead>
+                      <TableHead className="py-3 px-4">Status</TableHead>
+                      <TableHead className="py-3 px-4">Processed Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-border/60 [&>tr]:border-border/60">
                     {withdrawals.map((w) => (
-                      <tr key={w.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3.5 px-4 font-medium text-foreground whitespace-nowrap">
+                      <TableRow key={w.id} className="hover:bg-muted/30 border-border/60">
+                        <TableCell className="py-3.5 px-4 font-medium text-foreground whitespace-nowrap">
                           <div>{new Date(w.createdAt).toLocaleDateString()}</div>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {new Date(w.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </div>
-                        </td>
+                        </TableCell>
 
-                        <td className="py-3.5 px-4 font-black text-foreground text-sm">
+                        <TableCell className="py-3.5 px-4 font-black text-foreground text-sm">
                           {formatMoney(w.amount, w.currency)}{" "}
-                          <span className="text-[10px] text-muted-foreground font-normal font-mono">
+                          <span className="text-xs text-muted-foreground font-normal font-mono">
                             ({w.currency})
                           </span>
-                        </td>
+                        </TableCell>
 
-                        <td className="py-3.5 px-4 text-muted-foreground">
+                        <TableCell className="py-3.5 px-4 text-muted-foreground">
                           {w.bankDetails?.bankName ? (
                             <div className="font-medium text-foreground">
                               {w.bankDetails.bankName}{" "}
-                              <span className="text-[11px] text-muted-foreground font-mono">
+                              <span className="text-xs text-muted-foreground font-mono">
                                 &bull; ••••{w.bankDetails.accountNumber?.slice(-4)}
                               </span>
                             </div>
                           ) : (
                             "Saved Bank Account"
                           )}
-                        </td>
+                        </TableCell>
 
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1 ${w.status === "PENDING"
-                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30"
+                        <TableCell className="py-3.5 px-4">
+                          <Badge
+                            variant={
+                              w.status === "PENDING"
+                                ? "secondary"
                                 : w.status === "PROCESSING"
-                                  ? "bg-blue-500/15 text-blue-600 border border-blue-500/30"
+                                  ? "outline"
                                   : w.status === "COMPLETED" || w.status === "APPROVED"
-                                    ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-                                    : "bg-red-500/15 text-red-600 border border-red-500/30"
-                              }`}
+                                    ? "lime"
+                                    : "destructive"
+                            }
+                            className="uppercase"
                           >
                             {w.status === "PENDING" && <Clock className="w-2.5 h-2.5 animate-spin" />}
                             {w.status}
-                          </span>
-                        </td>
+                          </Badge>
+                        </TableCell>
 
-                        <td className="py-3.5 px-4 text-muted-foreground">
+                        <TableCell className="py-3.5 px-4 text-muted-foreground">
                           {w.processedAt ? (
                             <span className="font-medium text-foreground">
                               {new Date(w.processedAt).toLocaleDateString()}
                             </span>
                           ) : (
-                            <span className="text-[11px] text-muted-foreground italic">Under Review</span>
+                            <span className="text-xs text-muted-foreground italic">Under Review</span>
                           )}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
@@ -924,24 +964,24 @@ export function ContentSalesPayoutSection({
           </div>
 
           {bankSuccessMsg && (
-            <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs font-bold flex items-center gap-2">
+            <Alert className="border-primary/25 text-primary [&>svg]:text-primary">
               <Check className="w-4 h-4 shrink-0" />
-              <span>{bankSuccessMsg}</span>
-            </div>
+              <AlertTitle className="text-xs font-bold">{bankSuccessMsg}</AlertTitle>
+            </Alert>
           )}
 
           {bankErrorMsg && (
-            <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 text-xs font-bold flex items-center gap-2">
+            <Alert variant="destructive" className="border-destructive/25 bg-destructive/10">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{bankErrorMsg}</span>
-            </div>
+              <AlertTitle className="text-xs font-bold">{bankErrorMsg}</AlertTitle>
+            </Alert>
           )}
 
           <form onSubmit={handleSaveBankAccount} className="space-y-5 text-xs">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="bank-holder-input" className="text-xs font-semibold">
-                  Account Holder Full Name <span className="text-red-500">*</span>
+                  Account Holder Full Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="bank-holder-input"
@@ -955,7 +995,7 @@ export function ContentSalesPayoutSection({
 
               <div className="space-y-1.5">
                 <Label htmlFor="bank-name-input" className="text-xs font-semibold">
-                  Bank Name <span className="text-red-500">*</span>
+                  Bank Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="bank-name-input"
@@ -970,16 +1010,18 @@ export function ContentSalesPayoutSection({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="bank-acc-input" className="text-xs font-semibold">
-                    Account / IBAN Number <span className="text-red-500">*</span>
+                    Account / IBAN Number <span className="text-destructive">*</span>
                   </Label>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
                     onClick={() => setShowAccountNumber(!showAccountNumber)}
-                    className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer"
+                    className="h-auto p-0 text-muted-foreground hover:text-foreground gap-1"
                   >
                     {showAccountNumber ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     {showAccountNumber ? "Hide" : "Show"}
-                  </button>
+                  </Button>
                 </div>
                 <Input
                   id="bank-acc-input"
@@ -1147,7 +1189,7 @@ export function ContentSalesPayoutSection({
         <div className="space-y-6 pt-1">
           <div className="space-y-1">
             <h4 className="text-base font-extrabold text-foreground flex items-center gap-2">
-              <BadgePercent className="w-4 h-4 text-purple-500" /> Platform Fee & Gateway Processing Tiers
+              <BadgePercent className="w-4 h-4 text-primary" /> Platform Fee & Gateway Processing Tiers
             </h4>
             <p className="text-xs text-muted-foreground">
               Every content sale includes a plan-tiered platform fee plus real-time payment gateway processing charges & taxes taken by the payment provider (Razorpay / Cashfree). Creator net take-home earnings are credited automatically to your available balance.
@@ -1165,15 +1207,13 @@ export function ContentSalesPayoutSection({
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Free Plan</span>
                 {currentActivePlan === "free" && (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">
-                    Active Tier
-                  </span>
+                  <Badge>Active Tier</Badge>
                 )}
               </div>
               <div className="space-y-0.5">
                 <div className="text-2xl font-black text-foreground">6.5%</div>
-                <p className="text-[11px] font-semibold text-muted-foreground">
-                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Platform Fee &bull; <span className="text-primary font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1186,22 +1226,20 @@ export function ContentSalesPayoutSection({
             {/* Tier 2: Basic */}
             <div
               className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "basic"
-                  ? "bg-sky-500/10 border-sky-500 shadow-md ring-2 ring-sky-500/20"
+                  ? "bg-primary/10 border-primary shadow-md ring-2 ring-primary/20"
                   : "bg-card border-border/70"
                 }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Basic Plan</span>
                 {currentActivePlan === "basic" && (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-sky-500 text-white">
-                    Active Tier
-                  </span>
+                  <Badge>Active Tier</Badge>
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-sky-600 dark:text-sky-400">5.5%</div>
-                <p className="text-[11px] font-semibold text-muted-foreground">
-                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
+                <div className="text-2xl font-black text-primary">5.5%</div>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Platform Fee &bull; <span className="text-primary font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1221,15 +1259,13 @@ export function ContentSalesPayoutSection({
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Pro Plan</span>
                 {currentActivePlan === "pro" && (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary text-primary-foreground">
-                    Active Tier
-                  </span>
+                  <Badge>Active Tier</Badge>
                 )}
               </div>
               <div className="space-y-0.5">
                 <div className="text-2xl font-black text-primary">4.0%</div>
-                <p className="text-[11px] font-semibold text-muted-foreground">
-                  Platform Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Platform Fee &bull; <span className="text-primary font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">
@@ -1242,26 +1278,22 @@ export function ContentSalesPayoutSection({
             {/* Tier 4: Enterprise */}
             <div
               className={`p-5 rounded-2xl border space-y-3 transition-all ${currentActivePlan === "enterprise"
-                  ? "bg-purple-500/15 border-purple-500 shadow-md ring-2 ring-purple-500/20"
+                  ? "bg-primary/15 border-primary shadow-md ring-2 ring-primary/20"
                   : "bg-card border-border/70"
                 }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-extrabold text-sm text-foreground">Enterprise</span>
                 {currentActivePlan === "enterprise" ? (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-600 text-white">
-                    Active Tier
-                  </span>
+                  <Badge>Active Tier</Badge>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-600">
-                    Lowest Rate
-                  </span>
+                  <Badge variant="lime">Lowest Rate</Badge>
                 )}
               </div>
               <div className="space-y-0.5">
-                <div className="text-2xl font-black text-purple-600 dark:text-purple-400">3.5%</div>
-                <p className="text-[11px] font-semibold text-muted-foreground">
-                  Lowest Fee &bull; <span className="text-emerald-600 dark:text-emerald-400 font-bold">+ Gateway Charges</span>
+                <div className="text-2xl font-black text-primary">3.5%</div>
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Lowest Fee &bull; <span className="text-primary font-bold">+ Gateway Charges</span>
                 </p>
               </div>
               <ul className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border/50">

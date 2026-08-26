@@ -38,6 +38,7 @@ import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
   DropdownMenu,
@@ -351,20 +352,20 @@ function UploadedVideosContent() {
     switch (status) {
       case "READY":
         return (
-          <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+          <Badge variant="lime" className="gap-1">
             <CheckCircle2 className="w-3 h-3" /> Ready
           </Badge>
         );
       case "PROCESSING":
       case "QUEUED":
         return (
-          <Badge variant="outline" className="gap-1 text-amber-600 border-amber-500/30 bg-amber-500/10 animate-pulse">
+          <Badge variant="outline" className="gap-1 text-muted-foreground animate-pulse">
             <RefreshCw className="w-3 h-3 animate-spin" /> {status === "QUEUED" ? "Queued" : `Encoding ${progress || 0}%`}
           </Badge>
         );
       case "UPLOADING":
         return (
-          <Badge variant="outline" className="gap-1 text-blue-600 border-blue-500/30 bg-blue-500/10">
+          <Badge variant="default" className="gap-1">
             Uploading
           </Badge>
         );
@@ -376,7 +377,7 @@ function UploadedVideosContent() {
         );
       case "CANCELLED":
         return (
-          <Badge variant="outline" className="gap-1 text-slate-600 border-slate-500/30 bg-slate-500/10">
+          <Badge variant="outline" className="gap-1 text-muted-foreground">
             <Ban className="w-3 h-3" /> Cancelled
           </Badge>
         );
@@ -414,7 +415,7 @@ function UploadedVideosContent() {
             onClick={() => setIsCreateFolderOpen(true)}
             className="flex-1 sm:flex-none"
           >
-            <FolderPlus className="w-4 h-4 text-amber-600" />
+            <FolderPlus className="w-4 h-4 text-primary" />
             <span>New Folder</span>
           </Button>
           <Button
@@ -439,10 +440,12 @@ function UploadedVideosContent() {
       {selectedCount > 0 && (
         <div className="sticky top-4 z-30 flex flex-wrap items-center justify-between gap-3 p-3 sm:px-5 rounded-2xl bg-card/95 backdrop-blur-xl border border-primary/40 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="icon-xs"
               onClick={handleToggleSelectAll}
-              className="w-6 h-6 rounded-lg flex items-center justify-center bg-primary text-primary-foreground shadow-xs cursor-pointer transition-transform hover:scale-105"
+              className="w-6 h-6 rounded-lg shadow-xs transition-transform hover:scale-105 cursor-pointer"
               title="Toggle select all"
             >
               {isAllSelected ? (
@@ -450,7 +453,7 @@ function UploadedVideosContent() {
               ) : (
                 <div className="w-2 h-0.5 bg-primary-foreground rounded-full" />
               )}
-            </button>
+            </Button>
             <div className="text-sm font-semibold text-foreground flex items-center gap-2">
               <span>
                 <span className="font-bold text-primary">{selectedCount}</span> {selectedCount === 1 ? "item" : "items"} selected
@@ -494,45 +497,49 @@ function UploadedVideosContent() {
 
       {/* Breadcrumb Navigation Bar */}
       <div className="flex items-center gap-2 px-4 py-3 bg-card/70 backdrop-blur-md rounded-2xl border border-border text-sm overflow-x-auto shadow-2xs">
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => navigateToFolder(null)}
-          className={`flex items-center gap-1.5 font-semibold transition-colors cursor-pointer ${currentFolderId === null
+          className={`flex items-center gap-1.5 font-semibold cursor-pointer ${currentFolderId === null
               ? "text-primary"
               : "text-muted-foreground hover:text-foreground"
             }`}
         >
           <Home className="w-4 h-4" /> Root
-        </button>
+        </Button>
         {breadcrumbs.map((b) => (
           <div key={b.id} className="flex items-center gap-2 shrink-0">
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigateToFolder(b.id)}
-              className={`font-semibold transition-colors cursor-pointer ${currentFolderId === b.id
+              className={`font-semibold cursor-pointer ${currentFolderId === b.id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
                 }`}
             >
               {b.name}
-            </button>
+            </Button>
           </div>
         ))}
       </div>
 
       {/* Current Folder Details Header Banner */}
       {currentFolder && (
-        <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-amber-500/10 via-amber-500/5 to-transparent p-5 sm:p-6 border border-amber-500/20 backdrop-blur-md shadow-2xs">
+        <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary/10 via-primary/5 to-transparent p-5 sm:p-6 border border-primary/20 backdrop-blur-md shadow-2xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-amber-500/15 text-amber-600 border border-amber-500/20 shrink-0 shadow-2xs">
-                <Folder className="w-7 h-7 sm:w-8 sm:h-8 fill-amber-500/20" />
+              <div className="p-3.5 rounded-2xl bg-primary/15 text-primary border border-primary/20 shrink-0 shadow-2xs">
+                <Folder className="w-7 h-7 sm:w-8 sm:h-8 fill-primary/20" />
               </div>
               <div className="space-y-1 min-w-0">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
                     {currentFolder.name}
                   </h2>
-                  <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10">
+                  <Badge variant="outline" className="text-muted-foreground">
                     Folder
                   </Badge>
                 </div>
@@ -559,9 +566,9 @@ function UploadedVideosContent() {
                 variant="outline"
                 size="sm"
                 onClick={() => setRenameFolderTarget(currentFolder)}
-                className="font-semibold text-xs h-9 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="font-semibold text-xs h-9"
               >
-                <Pencil className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                <Pencil className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
                 <span>Rename</span>
               </Button>
               <Button
@@ -666,16 +673,18 @@ function UploadedVideosContent() {
                     className="absolute top-2.5 left-2.5 z-20"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         toggleSelectFolder(folder.id);
                       }}
-                      className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer shadow-xs ${
+                      className={`h-5 w-5 rounded-md shadow-xs transition-all cursor-pointer ${
                         isSelected
-                          ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                          ? "bg-primary text-primary-foreground ring-2 ring-primary/30 hover:bg-primary"
                           : selectedCount > 0
                           ? "border border-border bg-card/90 text-transparent hover:border-primary hover:text-muted-foreground"
                           : "border border-border/80 bg-card/90 text-transparent opacity-0 group-hover:opacity-100 hover:border-primary hover:text-muted-foreground"
@@ -684,15 +693,15 @@ function UploadedVideosContent() {
                       aria-label={`Select folder ${folder.name}`}
                     >
                       <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Folder Content */}
                   <div className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-3 min-w-0">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
-                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 group-hover:scale-105 transition-transform shrink-0">
-                          <Folder className="w-6 h-6 fill-amber-500/20" />
+                        <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform shrink-0">
+                          <Folder className="w-6 h-6 fill-primary/20" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <h3
@@ -724,7 +733,7 @@ function UploadedVideosContent() {
                               onClick={() => setRenameFolderTarget({ id: folder.id, name: folder.name })}
                               className="gap-2 font-medium cursor-pointer"
                             >
-                              <Pencil className="w-4 h-4 text-slate-500" />
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
                               Rename Folder
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -738,7 +747,7 @@ function UploadedVideosContent() {
                               }
                               className="gap-2 font-medium cursor-pointer"
                             >
-                              <FolderInput className="w-4 h-4 text-slate-500" />
+                              <FolderInput className="w-4 h-4 text-muted-foreground" />
                               Move Folder
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -758,7 +767,7 @@ function UploadedVideosContent() {
                   {/* Card Footer */}
                   <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
                     <span>{new Date(folder.createdAt).toLocaleDateString()}</span>
-                    <span className="text-[11px] font-medium text-slate-400">Folder</span>
+                    <span className="text-xs font-medium text-muted-foreground">Folder</span>
                   </div>
                 </div>
               );
@@ -780,7 +789,7 @@ function UploadedVideosContent() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="h-64 rounded-2xl bg-slate-200/60 dark:bg-slate-800/60 animate-pulse" />
+              <Skeleton key={n} className="h-64" />
             ))}
           </div>
         ) : filteredVideos.length === 0 && folders.length === 0 ? (
@@ -825,19 +834,21 @@ function UploadedVideosContent() {
                 >
                   <div>
                     {/* Thumbnail Container */}
-                    <div className="relative aspect-video bg-slate-900 overflow-hidden flex items-center justify-center">
+                    <div className="relative aspect-video bg-muted overflow-hidden flex items-center justify-center">
                       {/* Checkbox Overlay (Top Left) */}
                       <div className="absolute top-2.5 left-2.5 z-20" onClick={(e) => e.stopPropagation()}>
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-xs"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             toggleSelectVideo(video.id);
                           }}
-                          className={`w-5 h-5 rounded-md flex items-center justify-center transition-all cursor-pointer backdrop-blur-md ${
+                          className={`h-5 w-5 rounded-md flex items-center justify-center transition-all cursor-pointer backdrop-blur-md ${
                             isSelected
-                              ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40"
+                              ? "bg-primary text-primary-foreground shadow-xs ring-2 ring-primary/40 hover:bg-primary"
                               : selectedCount > 0
                               ? "border border-white/60 bg-black/60 text-transparent hover:border-white hover:text-white/80"
                               : "border border-white/60 bg-black/60 text-transparent opacity-0 group-hover:opacity-100 hover:border-white hover:text-white/80"
@@ -846,7 +857,7 @@ function UploadedVideosContent() {
                           aria-label={`Select video ${video.title}`}
                         >
                           <Check className={`w-3.5 h-3.5 stroke-[3] ${isSelected ? "opacity-100" : "opacity-0"}`} />
-                        </button>
+                        </Button>
                       </div>
 
                       <Link
@@ -860,30 +871,30 @@ function UploadedVideosContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
                             <Film className="w-10 h-10 mb-1" />
                             <span className="text-xs">No Preview</span>
                           </div>
                         )}
 
                         {/* Play Overlay */}
-                        {video.status === "READY" && (
+                          {video.status === "READY" && (
                           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                              <Play className="w-6 h-6 fill-white ml-0.5" />
+                            <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                              <Play className="w-6 h-6 fill-primary-foreground ml-0.5" />
                             </div>
                           </div>
                         )}
 
                         {/* Duration Badge */}
                         {video.durationSeconds && (
-                          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold flex items-center gap-1 backdrop-blur-xs">
+                          <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-xs font-bold flex items-center gap-1 backdrop-blur-xs">
                             <Clock className="w-3 h-3" /> {formatDuration(video.durationSeconds)}
                           </span>
                         )}
 
                         {/* Share Access Tag (Top Right) */}
-                        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] font-semibold uppercase backdrop-blur-xs">
+                        <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/60 text-white text-xs font-semibold uppercase backdrop-blur-xs">
                           {video.shareAccessMode}
                         </span>
                       </Link>
@@ -947,7 +958,7 @@ function UploadedVideosContent() {
                               <DropdownMenuItem
                                 onClick={(e) => handleCancelTranscode(e, video.id)}
                                 disabled={cancellingVideoIds.has(video.id)}
-                                className="gap-2 font-medium text-amber-600 focus:text-amber-600 cursor-pointer"
+                                className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
                               >
                                 <Ban className="w-4 h-4" />
                                 {cancellingVideoIds.has(video.id) ? "Cancelling..." : "Cancel Transcoding"}
@@ -980,7 +991,7 @@ function UploadedVideosContent() {
                     <div className="flex items-center gap-2">
                       <span>{new Date(video.createdAt).toLocaleDateString()}</span>
                       <span
-                        className="inline-flex items-center gap-1 font-medium bg-muted px-2 py-0.5 rounded-md text-[11px]"
+                        className="inline-flex items-center gap-1 font-medium bg-muted px-2 py-0.5 rounded-md text-xs"
                         title="Video file size"
                       >
                         <HardDrive className="w-3 h-3 text-muted-foreground" />
@@ -1117,7 +1128,7 @@ function UploadedVideosContent() {
 
 export default function UploadedVideosPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-slate-500 font-medium animate-pulse">Loading uploaded videos...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground font-medium">Loading uploaded videos...</div>}>
       <UploadedVideosContent />
     </Suspense>
   );

@@ -3,6 +3,10 @@
 import React from "react";
 import { HardDrive } from "lucide-react";
 import { formatBytes } from "@/lib/video-utils";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface StorageQuotaSectionProps {
   usageInfo: {
@@ -23,6 +27,10 @@ export function StorageQuotaSection({
   requestSubmitted,
   onCustomLimitRequest,
 }: StorageQuotaSectionProps) {
+  const usagePercentage = usageInfo
+    ? Math.min(100, Math.round((usageInfo.usedBytes / usageInfo.storageLimitBytes) * 100))
+    : 0;
+
   return (
     <div className="glass-card rounded-2xl p-6 border border-border space-y-4">
       <div className="flex items-center gap-2">
@@ -40,23 +48,13 @@ export function StorageQuotaSection({
 
         {usageInfo && (
           <div className="space-y-1 pt-1">
-            <div className="flex justify-between text-[11px] font-medium text-muted-foreground">
+            <div className="flex justify-between text-xs font-medium text-muted-foreground">
               <span>Current Usage</span>
               <span className="font-semibold text-foreground">
                 {formatBytes(usageInfo.usedBytes)} / {formatBytes(usageInfo.storageLimitBytes)}
               </span>
             </div>
-            <div className="w-full h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-300"
-                style={{
-                  width: `${Math.min(
-                    100,
-                    Math.round((usageInfo.usedBytes / usageInfo.storageLimitBytes) * 100)
-                  )}%`,
-                }}
-              />
-            </div>
+            <Progress value={usagePercentage} className="w-full" />
           </div>
         )}
 
@@ -71,25 +69,28 @@ export function StorageQuotaSection({
           Need a Custom Storage Limit?
         </h4>
         <form onSubmit={onCustomLimitRequest} className="space-y-3">
-          <input
+          <Input
             type="text"
             placeholder="e.g. 50 GB storage"
             value={customLimitInput}
             onChange={(e) => setCustomLimitInput(e.target.value)}
-            className="w-full px-3.5 py-2 rounded-xl border border-input bg-white dark:bg-slate-900 text-sm outline-hidden"
+            className="rounded-xl"
           />
-          <button
+          <Button
             type="submit"
-            className="w-full py-2 bg-slate-900 text-white font-semibold text-xs rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+            variant="dark"
+            className="w-full"
           >
             Request Custom Storage Override
-          </button>
+          </Button>
         </form>
 
         {requestSubmitted && (
-          <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs text-center font-medium">
-            Request submitted to sales & support!
-          </div>
+          <Alert className="mt-3 border-primary/25 text-primary [&>svg]:text-primary">
+            <AlertDescription className="text-xs text-center text-primary font-medium">
+              Request submitted to sales & support!
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </div>

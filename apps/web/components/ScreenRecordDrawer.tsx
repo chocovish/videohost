@@ -71,6 +71,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
@@ -430,44 +433,44 @@ export default function ScreenRecordDrawer({
               size="icon"
               onClick={handleAttemptClose}
               disabled={uploading}
-              className="absolute top-2.5 right-3 sm:top-3 sm:right-4 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 z-20 p-2"
+              className="absolute top-2.5 right-3 sm:top-3 sm:right-4 rounded-xl z-20"
               title="Close drawer"
             >
-              <X className="w-4 h-4 text-slate-500" />
+              <X className="w-4 h-4" />
             </Button>
 
-            <DrawerHeader className="shrink-0 px-4 sm:px-6 pt-3 pb-2.5 pr-14 border-b border-slate-100 dark:border-slate-800/80">
+            <DrawerHeader className="shrink-0 px-4 sm:px-6 pt-3 pb-2.5 pr-14 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-linear-to-br from-red-500 to-rose-600 text-white shadow-md shadow-red-500/20 shrink-0">
-                  <Video className="w-4.5 h-4.5" />
+                <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-xs shrink-0">
+                  <Video className="w-5 h-5" />
                 </div>
                 <div className="min-w-0">
                   <DrawerTitle className="flex flex-wrap items-center gap-2 text-base sm:text-lg font-extrabold tracking-tight">
                     Studio Screen Recorder
                     {recordState === "countdown" && (
-                      <span className="text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                      <span className="text-xs bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded-full font-semibold animate-pulse">
                         Starting in {countdownTime}s...
                       </span>
                     )}
                     {recordState === "recording" && (
-                      <span className="text-[11px] bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 animate-pulse">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> REC
+                      <span className="text-xs bg-destructive/10 text-destructive border border-destructive/20 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" /> REC
                       </span>
                     )}
                     {recordState === "paused" && (
-                      <span className="text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-semibold">
+                      <span className="text-xs bg-muted text-muted-foreground border border-border px-2 py-0.5 rounded-full font-semibold">
                         PAUSED
                       </span>
                     )}
                   </DrawerTitle>
-                  <DrawerDescription className="text-xs text-slate-500 truncate">
+                  <DrawerDescription className="text-xs text-muted-foreground truncate">
                     Capture screen, webcam PIP overlay, and microphone audio.
                     {folderPathName ? (
-                      <span className="ml-1 font-medium text-slate-700 dark:text-slate-300">
-                        Saving to: <Folder className="w-3 h-3 inline-block mx-0.5 -mt-0.5 text-lime-600" /> {folderPathName}
+                      <span className="ml-1 font-medium text-foreground">
+                        Saving to: <Folder className="w-3 h-3 inline-block mx-0.5 -mt-0.5 text-primary" /> {folderPathName}
                       </span>
                     ) : (
-                      <span className="ml-1 text-slate-400">(Saving to Root Drive)</span>
+                      <span className="ml-1 text-muted-foreground">(Saving to Root Drive)</span>
                     )}
                   </DrawerDescription>
                 </div>
@@ -476,10 +479,10 @@ export default function ScreenRecordDrawer({
 
             {/* Error Banner */}
             {error && (
-              <div className="shrink-0 mx-4 sm:mx-6 my-2 p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
+              <Alert variant="destructive" className="shrink-0 mx-4 sm:mx-6 my-2 text-xs animate-in fade-in slide-in-from-top-2">
+                <AlertCircle />
                 <span className="flex-1 text-xs">{error}</span>
-              </div>
+              </Alert>
             )}
 
             {/* Main Content Area */}
@@ -492,7 +495,7 @@ export default function ScreenRecordDrawer({
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
                     {/* LEFT COLUMN: Video Preview Viewport */}
                     <div className="lg:col-span-7 space-y-2">
-                      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video max-h-[38vh] lg:max-h-[50vh] w-full flex items-center justify-center border border-slate-800 shadow-xl group">
+                      <div className="relative rounded-2xl overflow-hidden bg-black aspect-video max-h-[38vh] lg:max-h-[50vh] w-full flex items-center justify-center border border-border shadow-xl group">
                         <video
                           ref={videoPreviewRef}
                           autoPlay
@@ -504,19 +507,19 @@ export default function ScreenRecordDrawer({
 
                         {/* Countdown Overlay */}
                         {recordState === "countdown" && (
-                          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center z-20 gap-2.5">
-                            <div className="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center animate-ping absolute" />
+                          <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center z-20 gap-2.5">
+                            <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center animate-ping absolute" />
                             <span className="text-6xl font-black text-white font-mono tracking-tighter drop-shadow-lg z-10">
                               {countdownTime}
                             </span>
-                            <p className="text-xs text-slate-300 font-semibold uppercase tracking-widest">
+                            <p className="text-xs text-white/70 font-semibold uppercase tracking-widest">
                               Get Ready...
                             </p>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={cancelCountdown}
-                              className="mt-1 text-xs text-slate-400 hover:text-white hover:bg-white/10"
+                              className="mt-1 text-xs text-white/70 hover:text-white hover:bg-white/10"
                             >
                               Cancel Countdown
                             </Button>
@@ -526,14 +529,14 @@ export default function ScreenRecordDrawer({
                         {/* Idle State Banner */}
                         {recordState === "idle" && (
                           <div className="text-center p-4 space-y-2 max-w-sm">
-                            <div className="w-12 h-12 rounded-xl bg-linear-to-tr from-lime-500/20 to-emerald-500/20 border border-lime-500/30 flex items-center justify-center mx-auto text-lime-500 shadow-inner">
+                            <div className="w-12 h-12 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto text-primary shadow-inner">
                               <Monitor className="w-6 h-6" />
                             </div>
                             <div className="space-y-0.5">
                               <h3 className="text-base font-bold text-white tracking-tight">
                                 Ready to Record
                               </h3>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-xs text-white/60">
                                 Configure studio options on the right and click start.
                               </p>
                             </div>
@@ -543,11 +546,11 @@ export default function ScreenRecordDrawer({
                         {/* Live Recording HUD Status Bar */}
                         {(recordState === "recording" || recordState === "paused") && (
                           <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10 pointer-events-none">
-                            <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg pointer-events-auto">
+                            <div className="flex items-center gap-2 bg-black/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg pointer-events-auto">
                               <span
                                 className={`w-2 h-2 rounded-full ${recordState === "recording"
-                                  ? "bg-red-500 animate-pulse"
-                                  : "bg-amber-500"
+                                  ? "bg-destructive animate-pulse"
+                                  : "bg-primary"
                                   }`}
                               />
                               <span className="text-xs font-mono font-bold text-white">
@@ -555,8 +558,8 @@ export default function ScreenRecordDrawer({
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg text-[10px] font-semibold text-slate-300 pointer-events-auto">
-                              <span className="text-lime-400 uppercase font-mono">{resolution}</span>
+                            <div className="flex items-center gap-1.5 bg-black/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg text-xs font-semibold text-white/70 pointer-events-auto">
+                              <span className="text-primary uppercase font-mono">{resolution}</span>
                               <span>•</span>
                               <span>{fps} FPS</span>
                               <span>•</span>
@@ -569,15 +572,15 @@ export default function ScreenRecordDrawer({
 
                         {/* Processing Video Overlay */}
                         {isProcessing && (
-                          <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-2.5 p-4 text-center animate-in fade-in">
-                            <div className="w-12 h-12 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-lg shadow-red-500/20">
-                              <Loader2 className="w-6 h-6 animate-spin text-red-500" />
+                          <div className="absolute inset-0 bg-black/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-2.5 p-4 text-center animate-in fade-in">
+                            <div className="w-12 h-12 rounded-xl bg-destructive/20 border border-destructive/30 flex items-center justify-center text-destructive">
+                              <Loader2 className="w-6 h-6 animate-spin" />
                             </div>
                             <div className="space-y-0.5">
                               <h4 className="text-xs font-extrabold text-white">
                                 {processingStatus || "Processing Recording..."}
                               </h4>
-                              <p className="text-[11px] text-slate-400 max-w-xs leading-relaxed">
+                              <p className="text-xs text-white/60 max-w-xs leading-relaxed">
                                 Transmuxing container, fixing timeline duration, and generating thumbnails.
                               </p>
                             </div>
@@ -592,59 +595,59 @@ export default function ScreenRecordDrawer({
                         <div className="space-y-2.5">
                           {/* Row 1: Mic & Webcam Toggles */}
                           <div className="grid grid-cols-2 gap-2">
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={handleToggleMic}
                               className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${isMicEnabled
-                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
-                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                ? "bg-primary/10 border-primary/40 text-primary"
+                                : "bg-card border-border hover:border-ring"
                                 }`}
                             >
                               <div
-                                className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                                   }`}
                               >
                                 {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold truncate">Microphone</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                <p className="text-xs text-muted-foreground truncate">
                                   {isMicEnabled ? "Voice On" : "Muted"}
                                 </p>
                               </div>
-                            </button>
+                            </Button>
 
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={handleToggleWebcam}
                               className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${isWebcamEnabled
-                                ? "bg-lime-500/10 border-lime-500/40 text-lime-700 dark:text-lime-400"
-                                : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                                ? "bg-primary/10 border-primary/40 text-primary"
+                                : "bg-card border-border hover:border-ring"
                                 }`}
                             >
                               <div
-                                className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-lime-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
+                                className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                                   }`}
                               >
                                 {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold truncate">Webcam PIP</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                <p className="text-xs text-muted-foreground truncate">
                                   {isWebcamEnabled ? "Active PIP" : "Disabled"}
                                 </p>
                               </div>
-                            </button>
+                            </Button>
                           </div>
 
                           {/* Compact Auto-Expanded Webcam PIP Controls */}
                           {isWebcamEnabled && (
-                            <div className="p-2.5 rounded-xl bg-slate-100/90 dark:bg-slate-900/90 border border-lime-500/30 space-y-2 animate-in fade-in slide-in-from-top-2">
-                              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1">
-                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                  <Sparkles className="w-3 h-3 text-lime-500" /> Webcam PIP Options
+                            <div className="p-2.5 rounded-xl bg-muted/60 border border-primary/30 space-y-2 animate-in fade-in slide-in-from-top-2">
+                              <div className="flex items-center justify-between border-b border-border pb-1">
+                                <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                  <Sparkles className="w-3 h-3 text-primary" /> Webcam PIP Options
                                 </h4>
-                                <span className="text-[9px] font-bold bg-lime-500/15 text-lime-600 dark:text-lime-400 px-1.5 py-0.2 rounded-full">
+                                <span className="text-xs font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
                                   Active
                                 </span>
                               </div>
@@ -652,7 +655,7 @@ export default function ScreenRecordDrawer({
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {/* Camera Device */}
                                 <div className="space-y-0.5">
-                                  <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                     Camera Device
                                   </Label>
                                   <Select
@@ -660,7 +663,7 @@ export default function ScreenRecordDrawer({
                                     onValueChange={(val) => handleSelectCameraDevice(val || "")}
                                     disabled={cameraDevices.length === 0}
                                   >
-                                    <SelectTrigger size="sm" className="w-full h-7 text-xs bg-white dark:bg-slate-800">
+                                    <SelectTrigger size="sm" className="w-full h-7 text-xs">
                                       <SelectValue placeholder="Select camera" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -679,66 +682,66 @@ export default function ScreenRecordDrawer({
 
                                 {/* Corner Position */}
                                 <div className="space-y-0.5">
-                                  <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                     Position Corner
                                   </Label>
-                                  <div className="grid grid-cols-2 gap-0.5 bg-white dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                                  <div className="grid grid-cols-2 gap-0.5 bg-card p-0.5 rounded-lg border border-border">
                                     {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
-                                      <button
+                                      <Button variant="ghost"
                                         key={c}
                                         type="button"
                                         onClick={() => setWebcamCorner(c)}
-                                        className={`text-[9px] font-bold py-0.5 px-1 rounded-sm capitalize transition-all ${webcamCorner === c
-                                          ? "bg-lime-500 text-white shadow-xs"
-                                          : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                        className={`text-xs font-bold py-0.5 px-1 rounded-sm capitalize transition-all ${webcamCorner === c
+                                          ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                          : "text-muted-foreground hover:bg-muted"
                                           }`}
                                       >
                                         {c.replace("-", " ")}
-                                      </button>
+                                      </Button>
                                     ))}
                                   </div>
                                 </div>
 
                                 {/* Frame Shape */}
                                 <div className="space-y-0.5">
-                                  <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                     Frame Shape
                                   </Label>
                                   <div className="flex items-center gap-0.5">
                                     {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                      <button
+                                      <Button variant="ghost"
                                         key={s}
                                         type="button"
                                         onClick={() => setWebcamShape(s)}
-                                        className={`flex-1 text-[9px] font-bold py-1 rounded-lg capitalize transition-all border ${webcamShape === s
-                                          ? "bg-lime-500 text-white border-lime-600 shadow-xs"
-                                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                                        className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamShape === s
+                                          ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                          : "bg-card border-border text-muted-foreground"
                                           }`}
                                       >
                                         {s.replace("-", " ")}
-                                      </button>
+                                      </Button>
                                     ))}
                                   </div>
                                 </div>
 
                                 {/* PIP Preview Size */}
                                 <div className="space-y-0.5">
-                                  <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                     Preview Size
                                   </Label>
                                   <div className="flex items-center gap-0.5">
                                     {(["small", "medium", "large"] as WebcamSize[]).map((sz) => (
-                                      <button
+                                      <Button variant="ghost"
                                         key={sz}
                                         type="button"
                                         onClick={() => setWebcamSize(sz)}
-                                        className={`flex-1 text-[9px] font-bold py-1 rounded-lg capitalize transition-all border ${webcamSize === sz
-                                          ? "bg-lime-500 text-white border-lime-600 shadow-xs"
-                                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
+                                        className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamSize === sz
+                                          ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                          : "bg-card border-border text-muted-foreground"
                                           }`}
                                       >
                                         {sz}
-                                      </button>
+                                      </Button>
                                     ))}
                                   </div>
                                 </div>
@@ -749,52 +752,52 @@ export default function ScreenRecordDrawer({
                           {/* 2x2 Grid of Studio Settings for Compact Resolution Fitting */}
                           <div className="grid grid-cols-2 gap-2">
                             {/* Resolution Selector */}
-                            <div className="bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                              <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                            <div className="bg-card p-2.5 rounded-xl border border-border space-y-1">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                 Resolution
                               </Label>
                               <div className="grid grid-cols-4 gap-0.5">
                                 {(["720p", "1080p", "1440p", "4k"] as ResolutionPreset[]).map((res) => (
-                                  <button
+                                  <Button variant="ghost"
                                     key={res}
                                     type="button"
                                     onClick={() => handleSelectResolution(res)}
-                                    className={`h-6.5 rounded-lg text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
-                                      ? "bg-lime-500 text-white border-lime-500 shadow-xs"
-                                      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    className={`h-7 rounded-lg text-xs font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
+                                      ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                      : "bg-muted border-border text-muted-foreground hover:bg-accent"
                                       }`}
                                   >
                                     {res}
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             </div>
 
                             {/* Frame Rate (FPS) Selector */}
-                            <div className="bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                              <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                            <div className="bg-card p-2.5 rounded-xl border border-border space-y-1">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                 Frame Rate (FPS)
                               </Label>
                               <div className="grid grid-cols-4 gap-0.5">
                                 {([15, 24, 30, 60] as TargetFps[]).map((rate) => (
-                                  <button
+                                  <Button variant="ghost"
                                     key={rate}
                                     type="button"
                                     onClick={() => handleSelectFps(rate)}
-                                    className={`h-6.5 rounded-lg text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
-                                      ? "bg-lime-500 text-white border-lime-500 shadow-xs"
-                                      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    className={`h-7 rounded-lg text-xs font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
+                                      ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                      : "bg-muted border-border text-muted-foreground hover:bg-accent"
                                       }`}
                                   >
                                     {rate}
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             </div>
 
                             {/* Countdown Delay */}
-                            <div className="bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                              <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block">
+                            <div className="bg-card p-2.5 rounded-xl border border-border space-y-1">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
                                 Countdown Timer
                               </Label>
                               <div className="grid grid-cols-3 gap-0.5">
@@ -803,25 +806,25 @@ export default function ScreenRecordDrawer({
                                   { value: 3, label: "3s" },
                                   { value: 5, label: "5s" },
                                 ].map((cd) => (
-                                  <button
+                                  <Button variant="ghost"
                                     key={cd.value}
                                     type="button"
                                     onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
-                                    className={`h-6.5 rounded-lg text-[10px] font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
-                                      ? "bg-lime-500 text-white border-lime-500 shadow-xs"
-                                      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    className={`h-7 rounded-lg text-xs font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
+                                      ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                      : "bg-muted border-border text-muted-foreground hover:bg-accent"
                                       }`}
                                   >
                                     {cd.label}
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             </div>
 
                             {/* Bitrate Quality */}
-                            <div className="bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1">
-                              <Label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                                <Zap className="w-2.5 h-2.5 text-lime-500" /> Quality
+                            <div className="bg-card p-2.5 rounded-xl border border-border space-y-1">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                                <Zap className="w-2.5 h-2.5 text-primary" /> Quality
                               </Label>
                               <div className="grid grid-cols-3 gap-0.5">
                                 {[
@@ -829,17 +832,17 @@ export default function ScreenRecordDrawer({
                                   { id: "balanced", label: "Bal" },
                                   { id: "max_quality", label: "Max" },
                                 ].map((b) => (
-                                  <button
+                                  <Button variant="ghost"
                                     key={b.id}
                                     type="button"
                                     onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
-                                    className={`h-6.5 rounded-lg text-[10px] font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
-                                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-xs"
-                                      : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                    className={`h-7 rounded-lg text-xs font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
+                                      ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                      : "bg-muted border-border text-muted-foreground hover:bg-accent"
                                       }`}
                                   >
                                     {b.label}
-                                  </button>
+                                  </Button>
                                 ))}
                               </div>
                             </div>
@@ -849,107 +852,107 @@ export default function ScreenRecordDrawer({
 
                       {/* Live Mid-Recording Controls Bar */}
                       {(recordState === "recording" || recordState === "paused") && (
-                        <div className="p-3 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/15 text-white shadow-2xl space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-1.5">
+                        <div className="p-3 rounded-2xl bg-popover text-popover-foreground backdrop-blur-xl border border-border shadow-2xl space-y-2.5 animate-in fade-in slide-in-from-bottom-2">
+                          <div className="flex items-center justify-between border-b border-border pb-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
+                              <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                              <h4 className="text-xs font-extrabold uppercase tracking-wider text-foreground">
                                 Live Recording Controls
                               </h4>
                             </div>
-                            <span className="text-[10px] font-bold bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-bold bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
                               Live Active
                             </span>
                           </div>
 
                           {/* Mic & Webcam Toggles */}
                           <div className="grid grid-cols-2 gap-2">
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={handleToggleMic}
                               className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${isMicEnabled
-                                ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                                ? "bg-primary/20 border-primary/40 text-primary"
+                                : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
                                 }`}
                             >
                               <div
-                                className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                                className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                                   }`}
                               >
                                 {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold truncate">Mic Audio</p>
-                                <p className="text-[10px] opacity-75 truncate">
+                                <p className="text-xs opacity-75 truncate">
                                   {isMicEnabled ? "Unmuted" : "Muted"}
                                 </p>
                               </div>
-                            </button>
+                            </Button>
 
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               onClick={handleToggleWebcam}
                               className={`flex items-center gap-2 p-2 rounded-xl border text-left transition-all ${isWebcamEnabled
-                                ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                                : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
+                                ? "bg-primary/20 border-primary/40 text-primary"
+                                : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
                                 }`}
                             >
                               <div
-                                className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
+                                className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                                   }`}
                               >
                                 {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
                                 <p className="text-xs font-bold truncate">Webcam PIP</p>
-                                <p className="text-[10px] opacity-75 truncate">
+                                <p className="text-xs opacity-75 truncate">
                                   {isWebcamEnabled ? "Active" : "Disabled"}
                                 </p>
                               </div>
-                            </button>
+                            </Button>
                           </div>
 
                           {/* Live Advanced Webcam Controls */}
                           {isWebcamEnabled && (
-                            <div className="space-y-2 pt-1.5 border-t border-white/10">
+                            <div className="space-y-2 pt-1.5 border-t border-border">
                               <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                   PIP Corner Position
                                 </Label>
-                                <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
+                                <div className="grid grid-cols-2 gap-1 bg-muted/50 p-1 rounded-xl border border-border">
                                   {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
-                                    <button
+                                    <Button variant="ghost"
                                       key={c}
                                       type="button"
                                       onClick={() => setWebcamCorner(c)}
-                                      className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
-                                        ? "bg-lime-500 text-slate-950 shadow-xs"
-                                        : "text-slate-300 hover:bg-white/10"
+                                      className={`h-6 text-xs font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
+                                        ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                        : "text-muted-foreground hover:bg-muted"
                                         }`}
                                     >
                                       {c.replace("-", " ")}
-                                    </button>
+                                    </Button>
                                   ))}
                                 </div>
                               </div>
 
                               <div className="space-y-1">
-                                <Label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                   PIP Frame Shape
                                 </Label>
                                 <div className="flex items-center gap-1">
                                   {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                    <button
+                                    <Button variant="ghost"
                                       key={s}
                                       type="button"
                                       onClick={() => setWebcamShape(s)}
-                                      className={`flex-1 h-6.5 text-[10px] font-bold rounded-lg capitalize transition-all border flex items-center justify-center ${webcamShape === s
-                                        ? "bg-lime-500 text-slate-950 border-lime-500 shadow-xs"
-                                        : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                      className={`flex-1 h-7 text-xs font-bold rounded-lg capitalize transition-all border flex items-center justify-center ${webcamShape === s
+                                        ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                        : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
                                         }`}
                                     >
                                       {s.replace("-", " ")}
-                                    </button>
+                                    </Button>
                                   ))}
                                 </div>
                               </div>
@@ -961,12 +964,12 @@ export default function ScreenRecordDrawer({
                       {/* Primary Studio Action Bar - Always in View */}
                       <div className="pt-1">
                         {recordState === "idle" && (
-                          <Button
+                          <Button variant="ghost"
                             size="lg"
                             onClick={startRecording}
-                            className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-4.5 rounded-xl shadow-lg shadow-red-500/20 text-sm sm:text-base gap-2.5 group transition-all hover:scale-[1.01]"
+                            className="w-full font-extrabold gap-2.5 group transition-all hover:scale-[1.01]"
                           >
-                            <Disc className="w-5 h-5 animate-pulse text-white" />
+                            <Disc className="w-5 h-5 animate-pulse" />
                             Start Screen Recording
                           </Button>
                         )}
@@ -978,16 +981,17 @@ export default function ScreenRecordDrawer({
                               variant="outline"
                               onClick={pauseRecording}
                               disabled={isProcessing}
-                              className="font-bold rounded-xl py-4.5 border-slate-300 dark:border-slate-700 gap-2 text-xs sm:text-sm"
+                              className="font-bold rounded-xl gap-2 text-xs sm:text-sm"
                             >
-                              <Pause className="w-4 h-4 text-amber-500 fill-current" /> Pause
+                              <Pause className="w-4 h-4 text-primary fill-current" /> Pause
                             </Button>
 
                             <Button
                               size="lg"
+                              variant="danger"
                               onClick={stopRecording}
                               disabled={isProcessing}
-                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl py-4.5 shadow-lg shadow-red-600/25 gap-2 disabled:opacity-75 text-xs sm:text-sm"
+                              className="font-extrabold rounded-xl gap-2 text-xs sm:text-sm"
                             >
                               {isProcessing ? (
                                 <>
@@ -1006,20 +1010,21 @@ export default function ScreenRecordDrawer({
 
                         {recordState === "paused" && (
                           <div className="grid grid-cols-2 gap-2.5">
-                            <Button
+                            <Button variant="ghost"
                               size="lg"
                               onClick={resumeRecording}
                               disabled={isProcessing}
-                              className="bg-lime-600 hover:bg-lime-700 text-white font-extrabold rounded-xl py-4.5 shadow-lg gap-2 text-xs sm:text-sm"
+                              className="font-extrabold rounded-xl gap-2 text-xs sm:text-sm"
                             >
                               <Play className="w-4 h-4 fill-current" /> Resume
                             </Button>
 
                             <Button
                               size="lg"
+                              variant="danger"
                               onClick={stopRecording}
                               disabled={isProcessing}
-                              className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl py-4.5 shadow-lg shadow-red-600/25 gap-2 disabled:opacity-75 text-xs sm:text-sm"
+                              className="font-extrabold rounded-xl gap-2 text-xs sm:text-sm"
                             >
                               {isProcessing ? (
                                 <>
@@ -1046,7 +1051,7 @@ export default function ScreenRecordDrawer({
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
                     {/* Left Column: Video Preview Player & Trimmer */}
                     <div className="lg:col-span-7 space-y-2.5">
-                      <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video max-h-[36vh] lg:max-h-[46vh] w-full flex items-center justify-center border border-slate-800 shadow-xl group">
+                      <div className="relative rounded-2xl overflow-hidden bg-black aspect-video max-h-[36vh] lg:max-h-[46vh] w-full flex items-center justify-center border border-border shadow-xl group">
                         {previewUrl && (
                           <video
                             key={previewUrl}
@@ -1059,7 +1064,7 @@ export default function ScreenRecordDrawer({
 
                         {/* Trimmed Badge */}
                         {isTrimmed && (
-                          <div className="absolute top-2.5 left-2.5 bg-lime-500/90 backdrop-blur-md text-slate-950 px-2 py-0.5 rounded-full text-[11px] font-black shadow-md flex items-center gap-1 z-10 animate-in fade-in">
+                          <div className="absolute top-2.5 left-2.5 bg-primary text-primary-foreground backdrop-blur-md px-2 py-0.5 rounded-full text-xs font-black shadow-md flex items-center gap-1 z-10 animate-in fade-in">
                             <Scissors className="w-3 h-3" />
                             Trimmed Video
                           </div>
@@ -1067,9 +1072,9 @@ export default function ScreenRecordDrawer({
                       </div>
 
                       {/* Video Trimmer Toggle & Stats Bar */}
-                      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <div className="flex flex-wrap items-center justify-between gap-2 p-2 rounded-xl bg-muted border border-border">
                         <div className="flex items-center gap-2">
-                          <Button
+                          <Button variant="ghost"
                             type="button"
                             size="sm"
                             onClick={() => {
@@ -1080,8 +1085,8 @@ export default function ScreenRecordDrawer({
                             }}
                             disabled={uploading}
                             className={`rounded-xl text-xs font-extrabold gap-1.5 h-7 transition-all ${showTrimmer
-                              ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
-                              : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-2xs"
+                              ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+                              : "border border-primary/40 text-primary hover:bg-primary/10"
                               }`}
                           >
                             <Scissors className="w-3 h-3" />
@@ -1099,7 +1104,7 @@ export default function ScreenRecordDrawer({
                                 setShowTrimmer(false);
                               }}
                               disabled={uploading}
-                              className="rounded-xl text-xs font-bold h-7 text-slate-500 hover:text-red-500 gap-1 hover:bg-red-500/10"
+                              className="rounded-xl text-xs font-bold h-7 text-muted-foreground hover:text-destructive gap-1 hover:bg-destructive/10"
                             >
                               <RotateCcw className="w-3 h-3" />
                               Revert to Original
@@ -1108,8 +1113,8 @@ export default function ScreenRecordDrawer({
                         </div>
 
                         {metadata && (
-                          <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600 dark:text-slate-300 pr-1">
-                            <span className="font-bold text-slate-900 dark:text-white">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground pr-1">
+                            <span className="font-bold text-foreground">
                               {formatDuration(metadata.durationSeconds)}
                             </span>
                             <span>•</span>
@@ -1141,8 +1146,8 @@ export default function ScreenRecordDrawer({
                     <form onSubmit={handleUpload} className="lg:col-span-5 flex flex-col h-full justify-between gap-3">
                       <div className="space-y-2.5">
                         <div className="space-y-1">
-                          <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                            Recording Title <span className="text-red-500">*</span>
+                          <Label className="text-xs font-bold">
+                            Recording Title <span className="text-destructive">*</span>
                           </Label>
                           <Input
                             value={title}
@@ -1155,7 +1160,7 @@ export default function ScreenRecordDrawer({
                         </div>
 
                         <div className="space-y-1">
-                          <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <Label className="text-xs font-bold">
                             Description (Optional)
                           </Label>
                           <RichTextEditor
@@ -1184,13 +1189,13 @@ export default function ScreenRecordDrawer({
                           className="p-2.5 space-y-2"
                         />
 
-                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 transition-all hover:border-slate-300 dark:hover:border-slate-700">
+                        <div className="p-2.5 rounded-xl bg-muted/40 border border-border transition-all hover:border-ring">
                           <div className="flex items-center justify-between gap-2.5">
                             <div className="flex items-center gap-2 min-w-0">
                               <div
                                 className={`p-1.5 rounded-lg shrink-0 transition-colors ${requireHls
-                                  ? "bg-lime-500/15 text-lime-600 dark:text-lime-400"
-                                  : "bg-slate-200/60 dark:bg-slate-800 text-slate-400"
+                                  ? "bg-primary/15 text-primary"
+                                  : "bg-secondary/60 text-secondary-foreground"
                                   }`}
                               >
                                 <Layers className="w-3.5 h-3.5" />
@@ -1198,58 +1203,44 @@ export default function ScreenRecordDrawer({
                               <div className="space-y-0.5 min-w-0">
                                 <label
                                   htmlFor="drawer-requireHls-toggle"
-                                  className="text-xs font-bold text-slate-900 dark:text-slate-100 cursor-pointer block truncate"
+                                  className="text-xs font-bold text-foreground cursor-pointer block truncate"
                                 >
                                   HLS Multi-Bitrate Ladder
                                 </label>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                                <p className="text-xs text-muted-foreground leading-tight">
                                   {requireHls
                                     ? "Transcode to adaptive ladder (480p to 4K)"
                                     : "Store original video without transcoding"}
                                 </p>
                               </div>
                             </div>
-                            <button
+                            <Switch
                               id="drawer-requireHls-toggle"
-                              type="button"
-                              role="switch"
-                              aria-checked={requireHls}
+                              checked={requireHls}
+                              onCheckedChange={(checked) => setRequireHls(checked)}
                               disabled={uploading}
-                              onClick={() => setRequireHls(!requireHls)}
-                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${requireHls ? "bg-lime-500" : "bg-slate-300 dark:bg-slate-700"
-                                }`}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${requireHls ? "translate-x-4" : "translate-x-0"
-                                  }`}
-                              />
-                            </button>
+                            />
                           </div>
                         </div>
                       </div>
 
                       {/* Upload Progress Bar */}
                       {uploading && (
-                        <div className="space-y-1.5 p-2.5 rounded-xl bg-lime-500/10 border border-lime-500/20">
-                          <div className="flex justify-between text-xs font-bold text-lime-700 dark:text-lime-400">
+                        <div className="space-y-1.5 p-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                          <div className="flex justify-between text-xs font-bold text-primary">
                             <span>{statusText || "Uploading recording..."}</span>
                             <span>{progress}%</span>
                           </div>
-                          <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div
-                              className="bg-lime-500 h-full transition-all duration-300"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
+                          <Progress value={progress} />
                         </div>
                       )}
 
                       {/* Sticky Action Buttons: Save / Download / Re-record (Always in View) */}
-                      <div className="sticky bottom-0 bg-popover/95 backdrop-blur-md pt-2 pb-0.5 border-t border-slate-200/80 dark:border-slate-800/80 space-y-2 z-10">
-                        <Button
+                      <div className="sticky bottom-0 bg-popover/95 backdrop-blur-md pt-2 pb-0.5 border-t border-border space-y-2 z-10">
+                        <Button variant="ghost"
                           type="submit"
                           disabled={uploading || !title.trim() || checkingQuota || isQuotaExceeded}
-                          className="w-full bg-lime-500 hover:bg-lime-600 text-white font-extrabold rounded-xl py-4 shadow-md shadow-lime-500/20 gap-2 text-sm"
+                          className="w-full font-extrabold rounded-xl shadow-md gap-2 text-sm"
                         >
                           <UploadCloud className="w-4 h-4" />
                           {uploading ? "Uploading..." : "Save Recording to Account"}
@@ -1261,9 +1252,9 @@ export default function ScreenRecordDrawer({
                             variant="outline"
                             onClick={() => handleDownload()}
                             disabled={uploading}
-                            className="rounded-xl border-slate-300 dark:border-slate-700 font-bold text-xs h-8 gap-1.5"
+                            className="rounded-xl font-bold text-xs h-8 gap-1.5"
                           >
-                            <Download className="w-3.5 h-3.5 text-lime-600" /> Download WebM
+                            <Download className="w-3.5 h-3.5 text-primary" /> Download WebM
                           </Button>
 
                           <Button
@@ -1271,7 +1262,7 @@ export default function ScreenRecordDrawer({
                             variant="ghost"
                             onClick={handleReRecord}
                             disabled={uploading}
-                            className="rounded-xl font-bold text-xs h-8 gap-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                            className="rounded-xl font-bold text-xs h-8 gap-1.5 text-muted-foreground hover:text-foreground"
                           >
                             <RotateCcw className="w-3.5 h-3.5" /> Re-record
                           </Button>
@@ -1327,7 +1318,7 @@ export default function ScreenRecordDrawer({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="space-y-3 text-center sm:text-left">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto sm:mx-0">
+            <div className="w-12 h-12 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary mx-auto sm:mx-0">
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div>
@@ -1335,13 +1326,13 @@ export default function ScreenRecordDrawer({
                 High File Size Warning
               </DialogTitle>
               <DialogDescription>
-                Selecting <strong className="text-amber-500">{highQualityConfirm.settingLabel}</strong> will significantly increase video quality, but will result in substantially higher output file sizes and may consume more disk storage and network bandwidth.
+                Selecting <strong className="text-primary">{highQualityConfirm.settingLabel}</strong> will significantly increase video quality, but will result in substantially higher output file sizes and may consume more disk storage and network bandwidth.
               </DialogDescription>
             </div>
           </DialogHeader>
 
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium">
-            💡 <strong>Pro Tip:</strong> For standard recordings, 30 FPS, Balanced bitrate, or 1080p produces smooth quality while keeping the file size compact.
+          <div className="p-3 rounded-xl bg-muted/60 border border-border text-xs text-muted-foreground font-medium">
+            💡 <strong className="text-foreground">Pro Tip:</strong> For standard recordings, 30 FPS, Balanced bitrate, or 1080p produces smooth quality while keeping the file size compact.
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
@@ -1351,7 +1342,7 @@ export default function ScreenRecordDrawer({
             >
               Cancel
             </Button>
-            <Button
+            <Button variant="ghost"
               onClick={() => {
                 highQualityConfirm.onConfirm();
                 setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));

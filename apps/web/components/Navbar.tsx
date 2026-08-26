@@ -24,7 +24,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
   const userInitial = userName ? userName.charAt(0).toUpperCase() : userEmail.charAt(0).toUpperCase();
 
   return (
-    <header className="h-16 shrink-0 border-b border-border bg-white/50 dark:bg-slate-900/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
+    <header className="h-16 shrink-0 border-b border-border bg-background/50 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 w-full">
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Mobile Hamburger Button */}
         <Button
@@ -95,7 +95,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
           </Avatar>
           <div className="text-left hidden sm:block max-w-[120px] md:max-w-[160px] truncate">
             <p className="text-xs font-semibold text-foreground truncate">{userName || "User"}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{userEmail}</p>
+            <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
           </div>
         </Link>
 
@@ -103,7 +103,7 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
           variant="ghost"
           size="icon"
           onClick={() => signOut({ callbackUrl: "/auth/login" })}
-          className="h-9 w-9 text-muted-foreground hover:text-red-600 hover:bg-red-500/10 rounded-xl"
+          className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
           title="Sign Out"
           aria-label="Sign Out"
         >

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
 
 interface ApiKeyItem {
   id: string;
@@ -155,28 +156,28 @@ export default function DeveloperPage() {
 
               {/* Display raw secret ONCE */}
               {createdRawKey && (
-                <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                      <ShieldAlert className="w-4 h-4 shrink-0" /> Secret Key Created — Save It Now!
-                    </span>
+                <Alert>
+                  <AlertTitle className="flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                    <ShieldAlert className="w-4 h-4 shrink-0" /> Secret Key Created — Save It Now!
+                  </AlertTitle>
+                  <AlertAction>
                     <Button
                       size="sm"
                       variant="secondary"
                       onClick={() => copyToClipboard(createdRawKey)}
-                      className="gap-1 font-semibold text-amber-700 dark:text-amber-300"
+                      className="gap-1 font-semibold cursor-pointer"
                     >
                       {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedKey ? "Copied" : "Copy Secret"}
                     </Button>
-                  </div>
+                  </AlertAction>
                   <pre className="bg-muted text-foreground border border-border p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
                     {createdRawKey}
                   </pre>
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                  <AlertDescription className="text-xs">
                     This key will never be shown again. It is securely hashed at rest in our database.
-                  </p>
-                </div>
+                  </AlertDescription>
+                </Alert>
               )}
             </CardContent>
           </Card>
@@ -197,13 +198,15 @@ export default function DeveloperPage() {
                     <span className="text-xs text-muted-foreground">
                       Created {new Date(key.createdAt).toLocaleDateString()}
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       onClick={() => setApiKeys(apiKeys.filter((k) => k.id !== key.id))}
-                      className="p-2 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                       title="Delete Key"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -219,9 +222,10 @@ export default function DeveloperPage() {
             <h3 className="font-bold text-base text-foreground">Register Webhook Endpoint</h3>
 
             {webhookMsg && (
-              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm">
-                {webhookMsg}
-              </div>
+              <Alert className="border-primary/30 bg-primary/10">
+                <Check />
+                <AlertTitle className="text-primary">{webhookMsg}</AlertTitle>
+              </Alert>
             )}
 
             <form onSubmit={handleCreateWebhook} className="space-y-4">
@@ -290,14 +294,11 @@ export default function DeveloperPage() {
                     </Button>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-mono text-muted-foreground break-all">Secret: {wh.secret}</span>
+                    <span className="text-xs font-mono text-muted-foreground break-all">Secret: {wh.secret}</span>
                     {wh.events.map((ev) => (
-                      <span
-                        key={ev}
-                        className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-primary/10 text-primary"
-                      >
+                      <Badge key={ev} variant="lime">
                         {ev}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>

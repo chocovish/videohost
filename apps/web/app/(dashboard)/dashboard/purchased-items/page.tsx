@@ -38,6 +38,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
 
@@ -263,7 +270,7 @@ export default function PurchasedItemsPage() {
         <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Unlocked Videos</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <Film className="w-4 h-4" />
             </div>
           </div>
@@ -276,7 +283,7 @@ export default function PurchasedItemsPage() {
         <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Playlists / Courses</span>
-            <div className="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <ListVideo className="w-4 h-4" />
             </div>
           </div>
@@ -289,7 +296,7 @@ export default function PurchasedItemsPage() {
         <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Total Invested</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
@@ -331,7 +338,7 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("VIDEO")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <Film className="w-3.5 h-3.5 text-blue-500" /> Videos
+              <Film className="w-3.5 h-3.5 text-primary" /> Videos
             </Button>
             <Button
               size="sm"
@@ -339,7 +346,7 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("PLAYLIST")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <ListVideo className="w-3.5 h-3.5 text-purple-500" /> Playlists
+              <ListVideo className="w-3.5 h-3.5 text-primary" /> Playlists
             </Button>
             <Button
               size="sm"
@@ -347,23 +354,24 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("MEETING")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <Ticket className="w-3.5 h-3.5 text-amber-500" /> Meeting Passes
+              <Ticket className="w-3.5 h-3.5 text-primary" /> Meeting Passes
             </Button>
           </div>
 
           {/* Sort Selector */}
           <div className="flex items-center gap-1.5 pl-1">
             <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0 hidden sm:inline" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="h-9 px-2.5 rounded-xl border border-border bg-background text-xs font-medium text-foreground focus:outline-hidden focus:ring-2 focus:ring-primary cursor-pointer"
-            >
-              <option value="newest">Newest Purchased</option>
-              <option value="oldest">Oldest Purchased</option>
-              <option value="title">Title (A-Z)</option>
-              <option value="price">Price (High to Low)</option>
-            </select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+              <SelectTrigger size="sm" className="w-44 text-xs font-medium cursor-pointer" aria-label="Sort purchases">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest Purchased</SelectItem>
+                <SelectItem value="oldest">Oldest Purchased</SelectItem>
+                <SelectItem value="title">Title (A-Z)</SelectItem>
+                <SelectItem value="price">Price (High to Low)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -405,7 +413,7 @@ export default function PurchasedItemsPage() {
               >
                 <div>
                   {/* Thumbnail / Header Area */}
-                  <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
+                  <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
                     {item.thumbnailUrl ? (
                       <img
                         src={item.thumbnailUrl}
@@ -413,7 +421,7 @@ export default function PurchasedItemsPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : isMeeting ? (
-                      <div className="flex flex-col items-center gap-2 text-amber-400 p-4 text-center">
+                      <div className="flex flex-col items-center gap-2 text-primary p-4 text-center">
                         <Ticket className="w-12 h-12" />
                         <span className="text-xs font-bold uppercase tracking-wider">
                           Digital Entry Pass
@@ -427,7 +435,7 @@ export default function PurchasedItemsPage() {
                         </span>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-slate-500">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Film className="w-12 h-12" />
                         <span className="text-xs font-bold uppercase tracking-wider">
                           Video Item
@@ -442,8 +450,8 @@ export default function PurchasedItemsPage() {
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                       <Badge
                         variant={isMeeting ? "outline" : isPlaylist ? "default" : "secondary"}
-                        className={`gap-1 text-[10px] font-extrabold uppercase backdrop-blur-md shadow-xs ${
-                          isMeeting ? "bg-amber-500/20 border-amber-500/40 text-amber-400" : ""
+                        className={`gap-1 text-xs font-extrabold uppercase backdrop-blur-md shadow-xs ${
+                          isMeeting ? "text-muted-foreground" : ""
                         }`}
                       >
                         {isMeeting ? (
@@ -460,16 +468,16 @@ export default function PurchasedItemsPage() {
                           </>
                         )}
                       </Badge>
-                      <Badge className="bg-emerald-500/90 text-white font-black text-[10px] tracking-wider gap-1 border-0 shadow-xs">
-                        <CheckCircle2 className="w-3 h-3 text-white" /> UNLOCKED
+                      <Badge className="font-black text-xs tracking-wider gap-1 shadow-xs">
+                        <CheckCircle2 className="w-3 h-3" /> UNLOCKED
                       </Badge>
                     </div>
 
                     {/* Duration / Item Count / Meeting Start (Bottom Right) */}
                     <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
                       {isMeeting && item.meetingInfo?.scheduledStart ? (
-                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-[11px] font-bold text-slate-100 rounded-md flex items-center gap-1 border border-white/10">
-                          <Calendar className="w-3 h-3 text-amber-400" />
+                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-xs font-bold text-white rounded-md flex items-center gap-1 border border-white/10">
+                          <Calendar className="w-3 h-3 text-primary" />
                           {new Date(item.meetingInfo.scheduledStart).toLocaleDateString(undefined, {
                             month: "short",
                             day: "numeric",
@@ -478,14 +486,14 @@ export default function PurchasedItemsPage() {
                           })}
                         </span>
                       ) : item.durationSeconds ? (
-                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-[11px] font-bold text-slate-100 rounded-md flex items-center gap-1 border border-white/10">
+                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-xs font-bold text-white rounded-md flex items-center gap-1 border border-white/10">
                           <Clock className="w-3 h-3 text-primary" />
                           {formatDuration(item.durationSeconds)}
                         </span>
                       ) : null}
 
                       {isPlaylist && item.itemCount !== undefined && (
-                        <span className="px-2 py-0.5 bg-primary/95 text-white text-[11px] font-black rounded-md flex items-center gap-1 shadow-xs">
+                        <span className="px-2 py-0.5 bg-primary/95 text-primary-foreground text-xs font-black rounded-md flex items-center gap-1 shadow-xs">
                           <PlayCircle className="w-3 h-3" />
                           {item.itemCount} {item.itemCount === 1 ? "video" : "videos"}
                         </span>
@@ -512,7 +520,7 @@ export default function PurchasedItemsPage() {
                         </span>
                       </div>
 
-                      <span className="text-[11px] font-medium text-muted-foreground shrink-0">
+                      <span className="text-xs font-medium text-muted-foreground shrink-0">
                         {new Date(item.purchasedAt).toLocaleDateString(undefined, {
                           year: "numeric",
                           month: "short",
@@ -541,7 +549,7 @@ export default function PurchasedItemsPage() {
                         <span className="text-xs font-bold text-foreground">
                           {formatPrice(item.amount, item.currency)}
                         </span>
-                        <Badge variant="outline" className="text-[10px] uppercase font-mono py-0 h-4.5">
+                        <Badge variant="outline" className="text-xs uppercase font-mono py-0 h-4.5">
                           {item.paymentMethod}
                         </Badge>
                       </div>
@@ -550,7 +558,7 @@ export default function PurchasedItemsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setSelectedReceipt(item)}
-                        className="h-7 px-2 text-[11px] font-semibold text-muted-foreground hover:text-foreground gap-1"
+                        className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground gap-1"
                       >
                         <Receipt className="w-3 h-3 text-primary" /> Receipt
                       </Button>
@@ -559,10 +567,12 @@ export default function PurchasedItemsPage() {
                     {/* Playlist Items Dropdown Preview */}
                     {isPlaylist && item.playlistVideos.length > 0 && (
                       <div className="pt-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => togglePlaylistExpand(item.id)}
-                          className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground hover:text-foreground py-1 px-2 rounded-lg bg-muted/40 hover:bg-muted transition-colors cursor-pointer"
+                          className="w-full flex items-center justify-between text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer bg-muted/40 hover:bg-muted rounded-lg"
                         >
                           <span className="flex items-center gap-1.5">
                             <ListVideo className="w-3.5 h-3.5 text-primary" />
@@ -573,14 +583,14 @@ export default function PurchasedItemsPage() {
                           ) : (
                             <ChevronDown className="w-3.5 h-3.5" />
                           )}
-                        </button>
+                        </Button>
 
                         {isExpanded && (
                           <div className="mt-2 space-y-1.5 max-h-48 overflow-y-auto pr-1">
                             {item.playlistVideos.map((video, idx) => (
                               <div
                                 key={video.id}
-                                className="flex items-center justify-between text-[11px] p-1.5 rounded-md bg-muted/30 border border-border/40"
+                                className="flex items-center justify-between text-xs p-1.5 rounded-md bg-muted/30 border border-border/40"
                               >
                                 <span className="font-medium truncate max-w-[200px] text-foreground">
                                   {idx + 1}. {video.title}
@@ -610,8 +620,7 @@ export default function PurchasedItemsPage() {
                     target={isMeeting ? "_self" : "_blank"}
                     className={cn(
                       buttonVariants({ variant: "default" }),
-                      "w-full gap-2 font-bold shadow-xs",
-                      isMeeting ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : ""
+                      "w-full gap-2 font-bold shadow-xs"
                     )}
                   >
                     {isMeeting ? (
@@ -644,7 +653,7 @@ export default function PurchasedItemsPage() {
         <DialogContent size="lg" className="sm:max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
           <DialogHeader variant="bordered" className="shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <div>
@@ -662,7 +671,7 @@ export default function PurchasedItemsPage() {
                 <div className="p-3.5 rounded-xl bg-muted/50 border border-border space-y-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                         Item Purchased
                       </span>
                       <h4 className="font-bold text-foreground text-base">
@@ -679,25 +688,25 @@ export default function PurchasedItemsPage() {
 
                   <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border text-xs">
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Creator / Organization</span>
+                      <span className="text-muted-foreground block text-xs">Creator / Organization</span>
                       <span className="font-semibold text-foreground">
                         {selectedReceipt.organization.name}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Purchase Date</span>
+                      <span className="text-muted-foreground block text-xs">Purchase Date</span>
                       <span className="font-semibold text-foreground">
                         {new Date(selectedReceipt.purchasedAt).toLocaleString()}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Amount Paid</span>
+                      <span className="text-muted-foreground block text-xs">Amount Paid</span>
                       <span className="font-bold text-primary text-sm">
                         {formatPrice(selectedReceipt.amount, selectedReceipt.currency)}
                       </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Payment Method</span>
+                      <span className="text-muted-foreground block text-xs">Payment Method</span>
                       <span className="font-semibold text-foreground uppercase">
                         {selectedReceipt.paymentMethod}
                       </span>
@@ -709,7 +718,7 @@ export default function PurchasedItemsPage() {
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                      <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
                         Order Reference ID
                       </span>
                       <span className="font-mono text-xs text-foreground truncate block">
@@ -724,7 +733,7 @@ export default function PurchasedItemsPage() {
                       title="Copy Order ID"
                     >
                       {copiedId === "orderId" ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <Check className="w-3.5 h-3.5 text-primary" />
                       ) : (
                         <Copy className="w-3.5 h-3.5" />
                       )}
@@ -734,7 +743,7 @@ export default function PurchasedItemsPage() {
                   {selectedReceipt.paymentId && (
                     <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border">
                       <div className="min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
                           Gateway Payment ID
                         </span>
                         <span className="font-mono text-xs text-foreground truncate block">
@@ -749,7 +758,7 @@ export default function PurchasedItemsPage() {
                         title="Copy Payment ID"
                       >
                         {copiedId === "payId" ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <Check className="w-3.5 h-3.5 text-primary" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
@@ -778,8 +787,7 @@ export default function PurchasedItemsPage() {
                   target={selectedReceipt.contentType === "MEETING" ? "_self" : "_blank"}
                   className={cn(
                     buttonVariants({ variant: "default" }),
-                    "w-full sm:w-auto flex-1 gap-2 font-bold",
-                    selectedReceipt.contentType === "MEETING" ? "bg-amber-500 hover:bg-amber-400 text-slate-950" : ""
+                    "w-full sm:w-auto flex-1 gap-2 font-bold"
                   )}
                 >
                   {selectedReceipt.contentType === "MEETING" ? (

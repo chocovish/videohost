@@ -31,6 +31,17 @@ import EditVideoModal from "@/components/EditVideoModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 import { formatBytes } from "@/lib/video-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -188,8 +199,8 @@ export default function VideoDetailPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-40 bg-slate-200 rounded-lg animate-pulse" />
-        <div className="h-96 w-full bg-slate-200 rounded-2xl animate-pulse" />
+        <Skeleton className="h-8 w-40 rounded-lg" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -340,13 +351,13 @@ export default function VideoDetailPage() {
             {video.playbackUrl ? (
               <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-2xl" />
             ) : video.status === "FAILED" ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-md mx-auto">
-                <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center border border-red-500/20">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-md mx-auto">
+                <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-base font-bold text-slate-100">Transcoding Failed</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-base font-bold text-foreground">Transcoding Failed</p>
+                  <p className="text-xs text-muted-foreground">
                     HLS adaptive bitrate encoding encountered an issue during processing.
                   </p>
                 </div>
@@ -362,17 +373,12 @@ export default function VideoDetailPage() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-3 p-6 text-center max-w-sm mx-auto">
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-sm mx-auto">
                 <Clock className="w-8 h-8 animate-spin text-primary" />
                 <div className="space-y-2 w-full">
-                  <p className="text-sm font-semibold text-slate-200">Video Transcoding in Progress</p>
-                  <p className="text-xs text-slate-400 font-medium">Progress: {video.progress || 0}%</p>
-                  <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-                    <div
-                      className="bg-primary h-2 transition-all duration-500 rounded-full"
-                      style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
-                    />
-                  </div>
+                  <p className="text-sm font-semibold text-foreground">Video Transcoding in Progress</p>
+                  <p className="text-xs text-muted-foreground font-medium">Progress: {video.progress || 0}%</p>
+                  <Progress value={Math.min(100, Math.max(0, video.progress || 0))} className="w-full" />
                 </div>
               </div>
             )}
@@ -456,13 +462,15 @@ export default function VideoDetailPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                     <span>IFRAME EMBED (RECOMMENDED)</span>
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => copyToClipboard(iframeEmbedCode, "iframe")}
-                      className="text-primary flex items-center gap-1 hover:underline p-1"
+                      className="h-auto p-1 gap-1"
                     >
                       {copiedType === "iframe" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "iframe" ? "Copied" : "Copy"}
-                    </button>
+                    </Button>
                   </div>
                   <pre className="p-3 bg-muted text-foreground border border-border text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {iframeEmbedCode}
@@ -472,13 +480,15 @@ export default function VideoDetailPage() {
                 <div className="space-y-2 pt-2">
                   <div className="flex justify-between items-center text-xs font-semibold text-muted-foreground">
                     <span>DIRECT VIDEO.JS EMBED</span>
-                    <button
+                    <Button
+                      variant="link"
+                      size="sm"
                       onClick={() => copyToClipboard(scriptEmbedCode, "script")}
-                      className="text-primary flex items-center gap-1 hover:underline p-1 cursor-pointer"
+                      className="h-auto p-1 gap-1 cursor-pointer"
                     >
                       {copiedType === "script" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedType === "script" ? "Copied" : "Copy"}
-                    </button>
+                    </Button>
                   </div>
                   <pre className="p-3 bg-muted text-foreground border border-border text-xs rounded-xl overflow-x-auto font-mono whitespace-pre-wrap break-all">
                     {scriptEmbedCode}
@@ -504,11 +514,12 @@ export default function VideoDetailPage() {
                             className="py-3 flex items-center justify-between gap-2 text-sm"
                           >
                             <div className="flex items-center gap-3">
-                              <span
-                                className={`font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${
+                              <Badge
+                                variant="outline"
+                                className={`gap-1.5 ${
                                   isAudio
-                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                    : "bg-primary/10 text-primary"
+                                    ? "bg-muted text-muted-foreground"
+                                    : "border-primary/20 bg-primary/10 text-primary"
                                 }`}
                               >
                                 {isAudio ? (
@@ -517,7 +528,7 @@ export default function VideoDetailPage() {
                                   <VideoIcon className="w-3.5 h-3.5" />
                                 )}
                                 {rend.resolution}
-                              </span>
+                              </Badge>
                               <span className="text-xs text-muted-foreground font-mono">
                                 {rend.bitrateKbps} kbps bitrate
                                 {rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
@@ -530,58 +541,57 @@ export default function VideoDetailPage() {
                   </>
                 ) : video.requireHls ? (
                   video.status === "FAILED" ? (
-                    <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 space-y-3">
-                      <div className="flex items-center justify-between gap-2 font-semibold text-red-800">
-                        <div className="flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4 text-red-600" />
-                          <span>Transcoding Failed (Require HLS = ON)</span>
-                        </div>
-                        <button
+                    <Alert variant="destructive" className="text-xs">
+                      <AlertTriangle />
+                      <AlertTitle className="flex items-center justify-between gap-2 font-semibold">
+                        <span>Transcoding Failed (Require HLS = ON)</span>
+                        <Button
+                          variant="destructive"
+                          size="xs"
                           onClick={handleRetryTranscode}
                           disabled={isRetrying}
-                          className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 shadow-2xs disabled:opacity-50"
+                          className="gap-1.5 shrink-0"
                         >
                           <RotateCcw className={`w-3.5 h-3.5 ${isRetrying ? "animate-spin" : ""}`} />
                           {isRetrying ? "Requeueing..." : "Retry Transcoding"}
-                        </button>
-                      </div>
-                      <p className="text-red-700/90 leading-relaxed">
+                        </Button>
+                      </AlertTitle>
+                      <AlertDescription className="text-xs leading-relaxed">
                         HLS transcoding failed during processing. Click the button above to retry transcoding or re-upload the video.
-                      </p>
-                    </div>
+                      </AlertDescription>
+                    </Alert>
                   ) : (
-                    <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 space-y-3">
-                      <div className="flex items-center justify-between gap-2 font-semibold text-amber-800">
-                        <div className="flex items-center gap-2">
-                          <RefreshCw className="w-4 h-4 animate-spin text-amber-600" />
-                          <span>Transcoding in Progress ({video.progress || 0}%)</span>
-                        </div>
-                        <button
+                    <Alert className="text-xs">
+                      <RefreshCw className="animate-spin" />
+                      <AlertTitle className="flex items-center justify-between gap-2 font-semibold">
+                        <span>Transcoding in Progress ({video.progress || 0}%)</span>
+                        <Button
+                          variant="outline"
+                          size="xs"
                           onClick={handleRefresh}
                           disabled={isRefreshing}
-                          className="px-2.5 py-1 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold rounded-lg transition-colors border border-amber-300 flex items-center gap-1 shrink-0"
+                          className="gap-1 shrink-0"
                         >
                           <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} /> Refresh Status
-                        </button>
-                      </div>
-                      <div className="w-full bg-amber-200/80 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className="bg-amber-600 h-2.5 transition-all duration-500 rounded-full"
-                          style={{ width: `${Math.min(100, Math.max(0, video.progress || 0))}%` }}
-                        />
-                      </div>
-                      <p className="text-amber-800/90 leading-relaxed">
-                        HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : `Processing ${video.progress || 0}%`}). Adaptive bitrate renditions will be available here once completed. Use the Refresh button above to check latest status.
-                      </p>
-                    </div>
+                        </Button>
+                      </AlertTitle>
+                      <AlertDescription className="text-xs space-y-3">
+                        <Progress value={Math.min(100, Math.max(0, video.progress || 0))} className="w-full" />
+                        <p className="leading-relaxed">
+                          HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : `Processing ${video.progress || 0}%`}). Adaptive bitrate renditions will be available here once completed. Use the Refresh button above to check latest status.
+                        </p>
+                      </AlertDescription>
+                    </Alert>
                   )
                 ) : (
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
-                    <p className="font-semibold text-slate-800">Direct Playback Mode (Require HLS = OFF)</p>
-                    <p>
-                      HLS transcoding was disabled for this video upon upload. The original video file is stored in Cloudflare R2 and served directly.
-                    </p>
-                  </div>
+                  <Alert className="text-xs">
+                    <AlertTitle className="text-xs font-semibold">Direct Playback Mode (Require HLS = OFF)</AlertTitle>
+                    <AlertDescription className="text-xs space-y-1 leading-relaxed">
+                      <p>
+                        HLS transcoding was disabled for this video upon upload. The original video file is stored in Cloudflare R2 and served directly.
+                      </p>
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}
@@ -592,23 +602,23 @@ export default function VideoDetailPage() {
                 {/* Stats Header */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
                       <Receipt className="w-3.5 h-3.5 text-primary" /> Total Video Revenue
                     </span>
                     <p className="text-xl font-black text-foreground">
                       {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, video?.currency || "USD")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}
                     </p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
-                      <DollarSign className="w-3.5 h-3.5 text-lime-500" /> Share Mode & Price
+                    <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-primary" /> Share Mode & Price
                     </span>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="uppercase text-[10px]">
+                      <Badge variant="outline" className="uppercase">
                         {video.shareAccessMode}
                       </Badge>
                       {video.shareAccessMode === "PURCHASABLE" && (
@@ -617,19 +627,19 @@ export default function VideoDetailPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {video.shareAccessMode === "PURCHASABLE" ? "Paid access enabled" : "Free / restricted sharing"}
                     </p>
                   </div>
 
                   <div className="p-4 rounded-xl bg-card border border-border space-y-1">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase flex items-center gap-1">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1">
                       <ShoppingBag className="w-3.5 h-3.5 text-primary" /> Total Buyers
                     </span>
                     <p className="text-xl font-black text-foreground">
                       {purchases.length}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Active user licenses
                     </p>
                   </div>
@@ -649,50 +659,48 @@ export default function VideoDetailPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-border rounded-xl">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-muted/60 border-b border-border text-muted-foreground font-semibold">
-                        <tr>
-                          <th className="py-3 px-4">Buyer</th>
-                          <th className="py-3 px-4">Amount Paid</th>
-                          <th className="py-3 px-4">Country</th>
-                          <th className="py-3 px-4">Purchased On</th>
-                          <th className="py-3 px-4">Payment ID</th>
-                          <th className="py-3 px-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
+                  <div className="border border-border rounded-xl">
+                    <Table className="text-left text-xs">
+                      <TableHeader className="bg-muted/60 text-muted-foreground font-semibold">
+                        <TableRow>
+                          <TableHead className="py-3 px-4">Buyer</TableHead>
+                          <TableHead className="py-3 px-4">Amount Paid</TableHead>
+                          <TableHead className="py-3 px-4">Country</TableHead>
+                          <TableHead className="py-3 px-4">Purchased On</TableHead>
+                          <TableHead className="py-3 px-4">Payment ID</TableHead>
+                          <TableHead className="py-3 px-4">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {purchases.map((p) => (
-                          <tr key={p.id} className="hover:bg-muted/30 transition-colors">
-                            <td className="py-3 px-4">
+                          <TableRow key={p.id} className="hover:bg-muted/30">
+                            <TableCell className="py-3 px-4">
                               <div className="font-semibold text-foreground">
                                 {p.user?.name || "Buyer"}
                               </div>
-                              <div className="text-[11px] text-muted-foreground font-mono">
+                              <div className="text-xs text-muted-foreground font-mono">
                                 {p.user?.email || "—"}
                               </div>
-                            </td>
-                            <td className="py-3 px-4 font-bold text-foreground">
-                              {formatMoney(p.amount, p.currency)} <span className="text-[10px] text-muted-foreground font-normal font-mono">({p.currency})</span>
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground font-mono">
+                            </TableCell>
+                            <TableCell className="py-3 px-4 font-bold text-foreground">
+                              {formatMoney(p.amount, p.currency)} <span className="text-xs text-muted-foreground font-normal font-mono">({p.currency})</span>
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-muted-foreground font-mono">
                               {p.countryCode || "GLOBAL"}
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground">
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-muted-foreground">
                               {new Date(p.createdAt).toLocaleDateString()} {new Date(p.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                            </TableCell>
+                            <TableCell className="py-3 px-4 text-muted-foreground font-mono text-xs">
                               {p.paymentId}
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                                {p.status}
-                              </span>
-                            </td>
-                          </tr>
+                            </TableCell>
+                            <TableCell className="py-3 px-4">
+                              <Badge variant="lime">{p.status}</Badge>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </div>
@@ -730,9 +738,9 @@ export default function VideoDetailPage() {
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 {formatBytes(video.sizeBytes)}
                 {video.requireHls && video.status !== "READY" && (
-                  <span className="text-[10px] text-amber-600 font-medium bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                  <Badge variant="outline" className="font-medium">
                     Original File
-                  </span>
+                  </Badge>
                 )}
               </span>
             </div>

@@ -43,6 +43,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ShareModal from "@/components/ShareModal";
 import {
   ShareAccessMode,
@@ -231,19 +232,19 @@ export default function PlaylistsPage() {
     switch (mode) {
       case "PUBLIC":
         return (
-          <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/30 bg-emerald-500/10">
+          <Badge variant="lime" className="gap-1">
             <Globe className="w-3 h-3" /> Public
           </Badge>
         );
       case "RESTRICTED":
         return (
-          <Badge variant="outline" className="gap-1 text-indigo-600 border-indigo-500/30 bg-indigo-500/10">
+          <Badge variant="outline" className="gap-1">
             <Lock className="w-3 h-3" /> Restricted
           </Badge>
         );
       case "PURCHASABLE":
         return (
-          <Badge variant="outline" className="gap-1 text-lime-600 border-lime-500/30 bg-lime-500/10">
+          <Badge variant="lime" className="gap-1">
             <DollarSign className="w-3 h-3" /> Purchasable
           </Badge>
         );
@@ -355,7 +356,7 @@ export default function PlaylistsPage() {
             >
               <div>
                 {/* Thumbnail / Header Stage */}
-                <Link href={`/dashboard/playlists/${pl.id}`} className="block relative aspect-video bg-slate-950 overflow-hidden">
+                <Link href={`/dashboard/playlists/${pl.id}`} className="block relative aspect-video bg-black overflow-hidden">
                   {pl.thumbnailUrl ? (
                     <img
                       src={pl.thumbnailUrl}
@@ -363,9 +364,9 @@ export default function PlaylistsPage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-linear-to-br from-slate-900 via-slate-800 to-slate-950 text-slate-400">
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
                       <ListVideo className="w-12 h-12 text-primary/70" />
-                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Empty Playlist</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Empty Playlist</span>
                     </div>
                   )}
 
@@ -380,12 +381,12 @@ export default function PlaylistsPage() {
                   {/* Right Playlist Stack Count Indicator */}
                   <div className="absolute bottom-2.5 right-2.5 flex items-center gap-2">
                     {pl.totalDurationSeconds > 0 && (
-                      <span className="px-2 py-0.5 bg-black/70 backdrop-blur-md text-[11px] font-bold text-slate-200 rounded-md flex items-center gap-1">
+                      <span className="px-2 py-0.5 bg-black/70 backdrop-blur-md text-xs font-bold text-white rounded-md flex items-center gap-1">
                         <Clock className="w-3 h-3 text-primary" />
                         {formatDuration(pl.totalDurationSeconds)}
                       </span>
                     )}
-                    <span className="px-2.5 py-0.5 bg-primary text-white text-[11px] font-black rounded-md flex items-center gap-1 shadow-2xs">
+                    <span className="px-2.5 py-0.5 bg-primary text-primary-foreground text-xs font-black rounded-md flex items-center gap-1 shadow-2xs">
                       <Film className="w-3 h-3" />
                       {pl.itemCount} {pl.itemCount === 1 ? "video" : "videos"}
                     </span>
@@ -404,16 +405,16 @@ export default function PlaylistsPage() {
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
                           <MoreVertical className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem
                           onClick={() => setShareTarget(pl)}
                           className="gap-2 font-medium cursor-pointer"
                         >
-                          <Share2 className="w-4 h-4 text-slate-500" />
+                          <Share2 className="w-4 h-4 text-muted-foreground" />
                           Share Playlist
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -429,13 +430,13 @@ export default function PlaylistsPage() {
                           }}
                           className="gap-2 font-medium cursor-pointer"
                         >
-                          <Pencil className="w-4 h-4 text-slate-500" />
+                          <Pencil className="w-4 h-4 text-muted-foreground" />
                           Rename & Settings
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => setDeleteTarget(pl)}
-                          className="gap-2 font-medium text-red-600 focus:text-red-600 cursor-pointer"
+                          className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                           Delete Playlist
@@ -478,9 +479,9 @@ export default function PlaylistsPage() {
           <form onSubmit={handleCreatePlaylist} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
               {createError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
-                  {createError}
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription className="text-xs font-medium">{createError}</AlertDescription>
+                </Alert>
               )}
 
               <div className="space-y-1.5">
@@ -530,7 +531,7 @@ export default function PlaylistsPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
+            <DialogFooter className="pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -563,9 +564,9 @@ export default function PlaylistsPage() {
           <form onSubmit={handleRenamePlaylist} className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 min-h-0 overflow-y-auto space-y-4 py-1 pr-1">
               {renameError && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-xs font-medium">
-                  {renameError}
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription className="text-xs font-medium">{renameError}</AlertDescription>
+                </Alert>
               )}
 
               <div className="space-y-1.5">
@@ -611,7 +612,7 @@ export default function PlaylistsPage() {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
+            <DialogFooter className="pt-3 border-t border-border shrink-0 mt-4">
               <Button
                 type="button"
                 variant="outline"

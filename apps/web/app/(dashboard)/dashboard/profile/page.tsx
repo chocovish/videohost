@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface UserProfile {
   id: string;
@@ -212,17 +213,17 @@ export default function ProfileSettingsPage() {
 
         <CardContent className="space-y-4">
           {nameSuccess && (
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
-              <span>{nameSuccess}</span>
-            </div>
+            <Alert className="border-primary/30 bg-primary/10">
+              <Check />
+              <AlertTitle className="text-primary">{nameSuccess}</AlertTitle>
+            </Alert>
           )}
 
           {nameError && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{nameError}</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>{nameError}</AlertTitle>
+            </Alert>
           )}
 
           <form onSubmit={handleNameSubmit} className="space-y-4">
@@ -242,11 +243,11 @@ export default function ProfileSettingsPage() {
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   {profile?.isGoogleAccount && (
                     <Badge variant="secondary" className="gap-1">
-                      <Sparkles className="w-3 h-3 text-blue-500" /> Signed in via Google
+                      <Sparkles className="w-3 h-3" /> Signed in via Google
                     </Badge>
                   )}
                   {profile?.hasPassword && (
-                    <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/30">
+                    <Badge variant="secondary" className="gap-1">
                       <ShieldCheck className="w-3 h-3" /> Password Login Enabled
                     </Badge>
                   )}
@@ -310,29 +311,27 @@ export default function ProfileSettingsPage() {
 
         <CardContent className="space-y-4">
           {!profile?.hasPassword && profile?.isGoogleAccount && (
-            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-xs leading-relaxed flex items-start gap-3">
-              <KeyRound className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold mb-0.5">Google OAuth Account Detected</p>
-                <p>
-                  You originally signed in with Google and do not have a password stored. You can set a password below if you wish to sign in directly with your email and password in the future.
-                </p>
-              </div>
-            </div>
+            <Alert>
+              <KeyRound />
+              <AlertTitle>Google OAuth Account Detected</AlertTitle>
+              <AlertDescription className="text-xs leading-relaxed">
+                You originally signed in with Google and do not have a password stored. You can set a password below if you wish to sign in directly with your email and password in the future.
+              </AlertDescription>
+            </Alert>
           )}
 
           {passwordSuccess && (
-            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-sm flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
-              <span>{passwordSuccess}</span>
-            </div>
+            <Alert className="border-primary/30 bg-primary/10">
+              <Check />
+              <AlertTitle className="text-primary">{passwordSuccess}</AlertTitle>
+            </Alert>
           )}
 
           {passwordError && (
-            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{passwordError}</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle />
+              <AlertTitle>{passwordError}</AlertTitle>
+            </Alert>
           )}
 
           <form onSubmit={handlePasswordSubmit} className="space-y-4">

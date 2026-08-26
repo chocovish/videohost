@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -279,7 +280,7 @@ export function ShareAccessModeSelector({
               className="shrink-0 h-9 gap-1.5 px-3"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <Check className="w-3.5 h-3.5 text-primary" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}
@@ -296,7 +297,7 @@ export function ShareAccessModeSelector({
             <Sparkles className="w-3.5 h-3.5 text-primary" />
             {customTitle || "Share & Access Mode"}
           </Label>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {customDescription ||
               (targetType === "meeting"
                 ? "Controls who can enter the meeting"
@@ -338,7 +339,7 @@ export function ShareAccessModeSelector({
                   {meta.title}
                   {id === "PURCHASABLE" && <Tag className="w-2.5 h-2.5 text-primary" />}
                 </p>
-                <p className="text-[10px] sm:text-[11px] text-muted-foreground leading-tight mt-0.5">
+                <p className="text-xs text-muted-foreground leading-tight mt-0.5">
                   {meta.desc}
                 </p>
               </div>
@@ -357,7 +358,7 @@ export function ShareAccessModeSelector({
                 {targetType === "meeting" ? "Entry Pass Pricing" : "Content Pricing"}
               </h4>
             </div>
-            <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">
+            <Badge variant="lime">
               Paid Access
             </Badge>
           </div>
@@ -414,7 +415,7 @@ export function ShareAccessModeSelector({
                 </Button>
               )}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Visitors worldwide without country-specific overrides will see this price in their checkout.
             </p>
           </div>
@@ -426,14 +427,16 @@ export function ShareAccessModeSelector({
                 <Globe className="w-3.5 h-3.5 text-primary" /> Country-Specific Pricing Overrides
               </Label>
               {!showAddCountryForm && (
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="sm"
                   onClick={() => setShowAddCountryForm(true)}
                   disabled={isInteractiveDisabled}
-                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  className="h-auto p-0 text-xs font-bold gap-1 disabled:opacity-50"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Country
-                </button>
+                </Button>
               )}
             </div>
 
@@ -450,7 +453,7 @@ export function ShareAccessModeSelector({
                     className="p-2.5 rounded-xl border border-border bg-card flex items-center justify-between text-xs shadow-2xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-[10px]">
+                      <span className="font-mono font-bold px-1.5 py-0.5 rounded bg-muted text-xs">
                         {cp.countryCode}
                       </span>
                       <span className="font-medium text-foreground">{cp.countryName}</span>
@@ -459,21 +462,23 @@ export function ShareAccessModeSelector({
                       <span className="font-bold text-primary">
                         {cp.currency} {Number(cp.amount).toFixed(2)}
                       </span>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => handleRemoveCountryPrice(cp.countryCode)}
                         disabled={isInteractiveDisabled}
-                        className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer disabled:opacity-50"
                         title="Remove country rule"
+                        className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[11px] text-muted-foreground italic">
+              <p className="text-xs text-muted-foreground italic">
                 No country overrides configured. All countries will use the base price.
               </p>
             )}
@@ -486,16 +491,18 @@ export function ShareAccessModeSelector({
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground">Add Country Pricing</span>
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
                     onClick={() => {
                       setShowAddCountryForm(false);
                       setCountryError(null);
                     }}
-                    className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
@@ -577,16 +584,16 @@ export function ShareAccessModeSelector({
 
       {/* RESTRICTED INVITE SECTION (Active when accessMode === "RESTRICTED") */}
       {accessMode === "RESTRICTED" && (
-        <div className="p-3.5 sm:p-4 rounded-2xl bg-blue-500/5 dark:bg-blue-500/10 border border-blue-500/20 space-y-3 animate-in fade-in duration-200">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-accent/30 border border-border space-y-3 animate-in fade-in duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-blue-500" />
-              <Label className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+              <Mail className="w-4 h-4 text-primary" />
+              <Label className="text-xs font-bold uppercase tracking-wider text-foreground">
                 {targetType === "meeting" ? "Invite Restricted Attendees" : "Invite Restricted Viewers"}
               </Label>
             </div>
             {(inviteEmails.length > 0 || allowedEmails.length > 0) && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary">
                 {onAddEmail ? `${allowedEmails.length} invited` : `${inviteEmails.length} added`}
               </Badge>
             )}
@@ -628,22 +635,24 @@ export function ShareAccessModeSelector({
               </div>
 
               {!showNoteField ? (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="xs"
                   onClick={() => setShowNoteField(true)}
-                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  className="h-auto p-0 text-muted-foreground hover:text-foreground"
                 >
                   + Add message to invitation
-                </button>
+                </Button>
               ) : (
                 <div className="space-y-1 animate-in fade-in duration-150">
-                  <textarea
+                  <Textarea
                     rows={2}
                     disabled={isInteractiveDisabled || addingEmail}
                     placeholder="Add an optional note to the invite email..."
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                    className="text-xs min-h-0 rounded-md bg-background border-input py-1.5 px-3"
                   />
                 </div>
               )}
@@ -692,39 +701,43 @@ export function ShareAccessModeSelector({
                         value={emailSearch}
                         onChange={(e) => setEmailSearch(e.target.value)}
                         placeholder="Search emails..."
-                        className="h-7 pl-7 pr-7 text-[11px] bg-background"
+                        className="h-7 pl-7 pr-7 text-xs bg-background"
                       />
                       {emailSearch && (
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-xs"
                           onClick={() => setEmailSearch("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           aria-label="Clear search"
                         >
                           <X className="w-3 h-3" />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}
                   <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto">
                     {filteredInviteEmails.length === 0 ? (
-                      <p className="text-[11px] text-muted-foreground px-0.5 py-1">No matching emails</p>
+                      <p className="text-xs text-muted-foreground px-0.5 py-1">No matching emails</p>
                     ) : (
                       filteredInviteEmails.map((email) => (
                         <Badge
                           key={email}
                           variant="secondary"
-                          className="gap-1 py-0 px-1.5 h-6 text-[11px] font-normal bg-background border border-border"
+                          className="gap-1 py-0 px-1.5 h-6 font-normal bg-background border border-border"
                         >
                           <span className="max-w-[180px] truncate">{email}</span>
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon-xs"
                             onClick={() => handleRemoveLocalEmail(email)}
-                            className="text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                            className="size-4 p-0 text-muted-foreground hover:text-destructive"
                             aria-label={`Remove ${email}`}
                           >
                             <X className="w-2.5 h-2.5" />
-                          </button>
+                          </Button>
                         </Badge>
                       ))
                     )}
@@ -738,7 +751,7 @@ export function ShareAccessModeSelector({
           {allowedEmails.length > 0 && onAddEmail && (
             <div className="pt-2 border-t border-border space-y-1.5">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5" />
                   Access ({emailQuery ? `${filteredAllowedEmails.length}/${allowedEmails.length}` : allowedEmails.length})
                 </p>
@@ -751,53 +764,57 @@ export function ShareAccessModeSelector({
                   value={emailSearch}
                   onChange={(e) => setEmailSearch(e.target.value)}
                   placeholder="Search emails..."
-                  className="h-7 pl-7 pr-7 text-[11px] bg-background"
+                  className="h-7 pl-7 pr-7 text-xs bg-background"
                 />
                 {emailSearch && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-xs"
                     onClick={() => setEmailSearch("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     aria-label="Clear search"
                   >
                     <X className="w-3 h-3" />
-                  </button>
+                  </Button>
                 )}
               </div>
 
               <div className="max-h-48 overflow-y-auto rounded-md border border-border bg-card p-1.5">
                 {filteredAllowedEmails.length === 0 ? (
-                  <p className="px-1 py-1 text-[11px] text-muted-foreground">No matching emails</p>
+                  <p className="px-1 py-1 text-xs text-muted-foreground">No matching emails</p>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {filteredAllowedEmails.map((item) => (
                       <span
                         key={item.id}
-                        className="inline-flex items-center gap-0.5 max-w-full h-6 pl-1.5 pr-0.5 rounded-md border border-border bg-muted/40 text-[11px] hover:bg-muted/70 transition-colors"
+                        className="inline-flex items-center gap-0.5 max-w-full h-6 pl-1.5 pr-0.5 rounded-md border border-border bg-muted/40 text-xs hover:bg-muted/70 transition-colors"
                         title={item.email}
                       >
                         <span className="truncate font-medium text-foreground max-w-[11rem]">
                           {item.email}
                         </span>
                         {item.isNew && (
-                          <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                          <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-primary">
                             new
                           </span>
                         )}
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon-xs"
                           disabled={isInteractiveDisabled || deletingEmailId === item.id}
                           onClick={() => handleRemoveLiveEmail(item.id, item.email)}
                           title="Remove access"
                           aria-label={`Remove ${item.email}`}
-                          className="shrink-0 h-4 w-4 inline-flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer disabled:opacity-50"
+                          className="shrink-0 size-4 text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 p-0"
                         >
                           {deletingEmailId === item.id ? (
                             <Loader2 className="w-2.5 h-2.5 animate-spin text-destructive" />
                           ) : (
                             <X className="w-2.5 h-2.5" />
                           )}
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>
