@@ -12,17 +12,37 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     where: { id, organizationId: authCtx.orgId },
   });
 
-  if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
+  if (!video) {
+    return NextResponse.json({ error: "Video not found" }, { status: 404 });
+  }
+
+  let hasThumbnail: boolean | undefined = undefined;
+  try {
+    const body = await req.json();
+    if (typeof body?.hasThumbnail === "boolean") {
+      hasThumbnail = body.hasThumbnail;
+    }
+  } catch {}
 
   if (video.requireHls) {
+    if (hasThumbnail === false && video.thumbnailKey) {
+      await db.video.update({
+        where: { id },
+        data: { thumbnailKey: null },
+      });
+    }
+
+    const skipThumbnail =
+      hasThumbnail !== undefined ? hasThumbnail : Boolean(video.thumbnailKey);
+
     await db.video.update({
       where: { id },
       data: { status: "QUEUED" },
     });
 
-    await addTranscodeJob(video.id, authCtx.orgId);
+    await addTranscodeJob(video.id, authCtx.orgId, { skipThumbnail });
 
-    return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued" });
+    return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued", skipThumbnail });
   } else {
     await db.video.update({
       where: { id },

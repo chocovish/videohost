@@ -25,6 +25,8 @@ export interface TranscodeJobPayload {
   s3?: S3ConfigContext;
   renditions?: RenditionConfig[];
   hlsSegments?: number;
+  skipThumbnail?: boolean;
+  generateThumbnail?: boolean;
 }
 
 export const JOB_CANCELLED_CODE = "JOB_CANCELLED";
@@ -328,9 +330,6 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const totalRenditions = targetRenditions.length;
 
     // 4. Transcode all renditions into a single DASH manifest (master.mpd)
-    const { darNum, darDen } = computeTargetDAR(width, height, sar);
-    console.log(`[Worker] Canonical DAR: ${darNum}:${darDen}`);
-
     const filterParts: string[] = [];
     if (totalRenditions > 1) {
       filterParts.push(
@@ -339,9 +338,8 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
-      const renditionSar = computeRenditionSAR(rend.width, rend.height, darNum, darDen);
       filterParts.push(
-        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setsar=${renditionSar}[o${i}]`
+        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setsar=1[o${i}]`
       );
     });
     const filterComplex = filterParts.join(";");
@@ -450,43 +448,54 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       fs.writeFileSync(masterManifestPath, masterManifest);
     }
 
-    // 6. Generate Thumbnail (thumbnail-{unique}.webp)
-    const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const thumbFileName = `thumbnail-${unique}.webp`;
-    const thumbnailPath = path.join(tempDir, thumbFileName).replace(/\\/g, "/");
-    await new Promise<void>((resolve, reject) => {
-      const seekTime = isFinite(duration) && duration > 0 ? Math.min(1.0, duration / 2) : 0;
-      const thumbCommand = ffmpeg(inputPath)
-        .seekInput(seekTime)
-        .frames(1)
-        .outputOptions([
-          "-vf", "scale='min(1280,iw)':-2",
-          "-c:v", "libwebp",
-          "-quality", "82",
-        ])
-        .output(thumbnailPath)
-        .on("end", () => resolve())
-        .on("error", (err) => reject(isCancelled() ? new JobCancelledError(videoId) : err));
+    // 6. Generate Thumbnail (thumbnail-{unique}.webp) if not skipped
+    const shouldGenerateThumbnail =
+      payload.skipThumbnail === true || payload.generateThumbnail === false
+        ? false
+        : true;
 
-      activeEntry.command = thumbCommand;
-      thumbCommand.run();
-    });
-
-    assertNotCancelled();
-
-    // 7. Upload DASH structure & thumbnail to R2 (20% of total progress)
     const orgId = organizationId || "default";
     const s3DashPrefix = `${orgId}/${videoId}/dash`;
-    const s3ThumbKey = `${orgId}/${videoId}/${thumbFileName}`;
+    let s3ThumbKey: string | null = null;
 
+    if (shouldGenerateThumbnail) {
+      const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const thumbFileName = `thumbnail-${unique}.webp`;
+      const thumbnailPath = path.join(tempDir, thumbFileName).replace(/\\/g, "/");
+      await new Promise<void>((resolve, reject) => {
+        const seekTime = isFinite(duration) && duration > 0 ? Math.min(1.0, duration / 2) : 0;
+        const thumbCommand = ffmpeg(inputPath)
+          .seekInput(seekTime)
+          .frames(1)
+          .outputOptions([
+            "-vf", "scale='min(1280,iw)':-2",
+            "-c:v", "libwebp",
+            "-quality", "82",
+          ])
+          .output(thumbnailPath)
+          .on("end", () => resolve())
+          .on("error", (err) => reject(isCancelled() ? new JobCancelledError(videoId) : err));
+
+        activeEntry.command = thumbCommand;
+        thumbCommand.run();
+      });
+
+      assertNotCancelled();
+
+      s3ThumbKey = `${orgId}/${videoId}/${thumbFileName}`;
+      console.log(`[Worker] Uploading thumbnail (${thumbFileName}) to R2...`);
+      await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3);
+    } else {
+      console.log(`[Worker] Skipping thumbnail generation for videoId: ${videoId} (thumbnail already set)`);
+    }
+
+    // 7. Upload DASH structure to R2 (20% of total progress)
     console.log(`[Worker] Uploading DASH renditions to R2 under ${s3DashPrefix}...`);
     await uploadDirectoryToS3(dashOutputDir, s3DashPrefix, payload.s3, (uploadRatio) => {
       const uploadProgress = calculateUploadProgress(uploadRatio * 0.9);
       reporter.report(uploadProgress, "PROCESSING");
     });
 
-    console.log(`[Worker] Uploading thumbnail (${thumbFileName}) to R2...`);
-    const thumbnailUrl = await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3);
     const finalUploadProgress = calculateUploadProgress(1.0);
     await reporter.report(finalUploadProgress, "PROCESSING");
 
@@ -523,23 +532,32 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const { streamSizes, totalSize: totalDashSizeBytes } = calculateDashStreamSizes(dashOutputDir);
     const combinedSizeBytes = originalSizeBytes + totalDashSizeBytes;
 
-    // Allocate shared audio size equally across video representations
+    // Allocate audio stream separately if present
     const audioStreamIndex = totalRenditions; // Audio stream is mapped after video renditions
     const audioSizeBytes = hasAudio ? (streamSizes.get(audioStreamIndex) || 0) : 0;
-    const audioSharePerRendition = totalRenditions > 0 ? Math.round(audioSizeBytes / totalRenditions) : 0;
 
     const renditionsResult = targetRenditions.map((r, i) => {
       const videoStreamSize = streamSizes.get(i) || 0;
-      const renditionTotalSize = videoStreamSize + audioSharePerRendition;
       return {
         resolution: r.resolution,
         width: r.width,
         height: r.height,
         bitrateKbps: r.bitrateKbps,
         storageKey: s3DashPrefix,
-        sizeBytes: renditionTotalSize,
+        sizeBytes: videoStreamSize,
       };
     });
+
+    if (hasAudio) {
+      renditionsResult.push({
+        resolution: "Audio (AAC)",
+        width: 0,
+        height: 0,
+        bitrateKbps: 128,
+        storageKey: s3DashPrefix,
+        sizeBytes: audioSizeBytes,
+      });
+    }
 
     console.log(
       `[Worker] Size stats for ${videoId}: Original=${originalSizeBytes} B, DASH=${totalDashSizeBytes} B, Combined=${combinedSizeBytes} B`

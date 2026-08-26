@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     const orgId = (session as any).organizationId as string;
-    const { videoId } = await req.json();
+    const { videoId, hasThumbnail } = await req.json();
 
     if (!videoId) {
       return NextResponse.json({ error: "videoId is required" }, { status: 400 });
@@ -25,6 +25,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
+    // If client explicitly indicated no thumbnail was uploaded, ensure thumbnailKey is null
+    if (hasThumbnail === false && video.thumbnailKey) {
+      await db.video.update({
+        where: { id: videoId },
+        data: { thumbnailKey: null },
+      });
+    }
+
+    const skipThumbnail =
+      hasThumbnail !== undefined ? Boolean(hasThumbnail) : Boolean(video.thumbnailKey);
+
     if (video.requireHls) {
       // Update status to QUEUED and queue transcoding job
       await db.video.update({
@@ -32,9 +43,9 @@ export async function POST(req: Request) {
         data: { status: "QUEUED" },
       });
 
-      await addTranscodeJob(videoId, orgId);
+      await addTranscodeJob(videoId, orgId, { skipThumbnail });
 
-      return NextResponse.json({ success: true, status: "QUEUED", videoId, requireHls: true });
+      return NextResponse.json({ success: true, status: "QUEUED", videoId, requireHls: true, skipThumbnail });
     } else {
       // Direct video playback without HLS transcoding - set status to READY
       await db.video.update({

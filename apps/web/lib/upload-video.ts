@@ -103,6 +103,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
 
   onProgress?.(85, "Processing thumbnail...");
 
+  let thumbnailUploaded = false;
   if (metadata?.thumbnailBlob) {
     try {
       let targetThumbUrl = thumbnailUploadUrl;
@@ -122,11 +123,14 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
 
       if (targetThumbUrl) {
         onProgress?.(90, "Uploading thumbnail...");
-        await fetch(targetThumbUrl, {
+        const thumbRes = await fetch(targetThumbUrl, {
           method: "PUT",
           headers: { "Content-Type": "image/webp" },
           body: metadata.thumbnailBlob,
         });
+        if (thumbRes.ok) {
+          thumbnailUploaded = true;
+        }
       }
     } catch (thumbErr) {
       console.warn("Failed to upload client thumbnail:", thumbErr);
@@ -142,7 +146,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
   const completeRes = await fetch("/api/upload/complete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ videoId }),
+    body: JSON.stringify({ videoId, hasThumbnail: thumbnailUploaded }),
   });
 
   if (!completeRes.ok) {

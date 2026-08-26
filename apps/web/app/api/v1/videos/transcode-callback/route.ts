@@ -106,6 +106,7 @@ export async function POST(req: Request) {
       }
 
       const oldThumbKey = video.thumbnailKey;
+      const finalThumbKey = thumbnailKey || oldThumbKey;
 
       await db.video.update({
         where: { id: videoId },
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
           durationSeconds: durationSeconds || 0,
           sourceWidth: sourceWidth || 1280,
           sourceHeight: sourceHeight || 720,
-          thumbnailKey: thumbnailKey,
+          thumbnailKey: finalThumbKey,
         },
       });
 
@@ -126,7 +127,7 @@ export async function POST(req: Request) {
         );
       }
 
-      console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes`);
+      console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes (thumbnail: ${finalThumbKey || "none"})`);
 
       // Dispatch Webhooks
       triggerWebhooks(orgId, "video.ready", {

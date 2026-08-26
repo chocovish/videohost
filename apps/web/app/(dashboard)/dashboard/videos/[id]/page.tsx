@@ -21,6 +21,8 @@ import {
   DollarSign,
   Receipt,
   ShoppingBag,
+  Volume2,
+  Video as VideoIcon,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
 import ShareModal from "@/components/ShareModal";
@@ -491,27 +493,39 @@ export default function VideoDetailPage() {
                 {video.renditions?.length > 0 ? (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      Adaptive bitrate renditions packaged into fMP4 / HLS streams:
+                      Adaptive bitrate stream representations packaged into fMP4 / HLS streams:
                     </p>
                     <div className="divide-y divide-border">
-                      {video.renditions.map((rend) => (
-                        <div key={rend.resolution} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
-                          <div className="flex items-center gap-3">
-                            <span className="font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg">
-                              {rend.resolution}
-                            </span>
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {rend.bitrateKbps} kbps bitrate{rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => copyToClipboard(rend.playlistUrl, rend.resolution)}
-                            className="text-xs text-primary hover:underline font-medium self-start sm:self-auto"
+                      {video.renditions.map((rend) => {
+                        const isAudio = rend.resolution.toLowerCase().includes("audio");
+                        return (
+                          <div
+                            key={rend.resolution}
+                            className="py-3 flex items-center justify-between gap-2 text-sm"
                           >
-                            {copiedType === rend.resolution ? "Copied URL" : "Copy Playlist URL"}
-                          </button>
-                        </div>
-                      ))}
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5 ${
+                                  isAudio
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                    : "bg-primary/10 text-primary"
+                                }`}
+                              >
+                                {isAudio ? (
+                                  <Volume2 className="w-3.5 h-3.5" />
+                                ) : (
+                                  <VideoIcon className="w-3.5 h-3.5" />
+                                )}
+                                {rend.resolution}
+                              </span>
+                              <span className="text-xs text-muted-foreground font-mono">
+                                {rend.bitrateKbps} kbps bitrate
+                                {rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </>
                 ) : video.requireHls ? (

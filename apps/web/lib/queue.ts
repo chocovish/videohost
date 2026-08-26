@@ -27,7 +27,11 @@ if (process.env.NODE_ENV !== "production" && transcodeQueue) {
   globalThis.transcodeQueue = transcodeQueue;
 }
 
-export async function addTranscodeJob(videoId: string, orgId: string) {
+export async function addTranscodeJob(
+  videoId: string,
+  orgId: string,
+  options?: { skipThumbnail?: boolean }
+) {
   const containerUrl = process.env.CONTAINER_WORKER_URL;
   const workerSecret = process.env.WORKER_SECRET_TOKEN;
 
@@ -40,6 +44,11 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   const video = await db.video.findUnique({ where: { id: videoId } });
   const originalKey = video?.originalKey || `${orgId}/${videoId}/original.mp4`;
   const callbackUrl = `${baseUrl.replace(/\/$/, "")}/api/v1/videos/transcode-callback`;
+
+  const skipThumbnail =
+    options?.skipThumbnail !== undefined
+      ? options.skipThumbnail
+      : Boolean(video?.thumbnailKey);
 
   const region =
     (process.env.R2_REGION || process.env.S3_REGION || "").replace(/^["']|["']$/g, "").trim() ||
@@ -59,7 +68,7 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
   const rawSegments = parseInt(process.env.STREAMING_SEGMENTS || process.env.HLS_SEGMENTS || "0", 10);
   const hlsSegments = isNaN(rawSegments) ? 0 : rawSegments;
   console.log(
-    `[Queue Dispatch] Configured HLS renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${hlsSegments}`
+    `[Queue Dispatch] Configured HLS renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${hlsSegments}, skipThumbnail: ${skipThumbnail}`
   );
 
   if (containerUrl) {
@@ -84,6 +93,8 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
           s3: s3Config,
           renditions,
           hlsSegments,
+          skipThumbnail,
+          generateThumbnail: !skipThumbnail,
         }),
       });
 
@@ -113,6 +124,8 @@ export async function addTranscodeJob(videoId: string, orgId: string) {
         s3: s3Config,
         renditions,
         hlsSegments,
+        skipThumbnail,
+        generateThumbnail: !skipThumbnail,
       },
       {
         attempts: 3,
