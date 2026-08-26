@@ -964,7 +964,7 @@ export default function ScreenRecordDrawer({
                       {/* Primary Studio Action Bar - Always in View */}
                       <div className="pt-1">
                         {recordState === "idle" && (
-                          <Button variant="ghost"
+                          <Button
                             size="lg"
                             onClick={startRecording}
                             className="w-full font-extrabold gap-2.5 group transition-all hover:scale-[1.01]"
@@ -1010,7 +1010,7 @@ export default function ScreenRecordDrawer({
 
                         {recordState === "paused" && (
                           <div className="grid grid-cols-2 gap-2.5">
-                            <Button variant="ghost"
+                            <Button
                               size="lg"
                               onClick={resumeRecording}
                               disabled={isProcessing}
@@ -1237,7 +1237,7 @@ export default function ScreenRecordDrawer({
 
                       {/* Sticky Action Buttons: Save / Download / Re-record (Always in View) */}
                       <div className="sticky bottom-0 bg-popover/95 backdrop-blur-md pt-2 pb-0.5 border-t border-border space-y-2 z-10">
-                        <Button variant="ghost"
+                        <Button
                           type="submit"
                           disabled={uploading || !title.trim() || checkingQuota || isQuotaExceeded}
                           className="w-full font-extrabold rounded-xl shadow-md gap-2 text-sm"
