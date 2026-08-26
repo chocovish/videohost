@@ -64,29 +64,60 @@ export async function POST(
         },
       });
       createdInvites.push(invite);
+    }
 
-      // Dispatch email
-      sendMeetingInvitationEmail({
-        toEmail: email,
-        hostName: senderName,
-        meetingTitle: meeting.title,
-        meetingDescription: meeting.description,
-        scheduledStart: meeting.scheduledStart,
-        scheduledEnd: meeting.scheduledEnd,
-        joinUrl,
-        meetingId: meeting.id,
-        organizationName: meeting.organization?.name || "Taped",
-      }).catch((err) => console.error("Error sending invite email to", email, err));
+    // Concurrently await and dispatch emails
+    const sendResults = await Promise.allSettled(
+      validEmails.map((email) =>
+        sendMeetingInvitationEmail({
+          toEmail: email,
+          hostName: senderName,
+          meetingTitle: meeting.title,
+          meetingDescription: meeting.description,
+          scheduledStart: meeting.scheduledStart,
+          scheduledEnd: meeting.scheduledEnd,
+          joinUrl,
+          meetingId: meeting.id,
+          organizationName: meeting.organization?.name || "Taped",
+        })
+      )
+    );
+
+    const successfulSends = sendResults.filter((r) => r.status === "fulfilled");
+    const failedSends = sendResults.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+
+    if (failedSends.length > 0) {
+      console.error(
+        "Some meeting invite emails failed to deliver:",
+        failedSends.map((f) => f.reason instanceof Error ? f.reason.message : String(f.reason))
+      );
+    }
+
+    if (successfulSends.length === 0 && validEmails.length > 0) {
+      const firstError = failedSends[0]?.reason instanceof Error ? failedSends[0].reason.message : String(failedSends[0]?.reason || "Failed to deliver invite email");
+      return NextResponse.json(
+        {
+          error: `Failed to deliver invitation email: ${firstError}`,
+          count: validEmails.length,
+          sentCount: 0,
+          failedCount: failedSends.length,
+          invites: createdInvites,
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
       success: true,
-      message: `Invitations sent to ${validEmails.length} recipient(s)`,
+      message: `Invitations sent to ${successfulSends.length} recipient(s)${failedSends.length > 0 ? ` (${failedSends.length} delivery failed)` : ""}`,
       count: validEmails.length,
+      sentCount: successfulSends.length,
+      failedCount: failedSends.length,
       invites: createdInvites,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Failed to send meeting invites";
     console.error("POST /api/meetings/[id]/invite error:", err);
-    return NextResponse.json({ error: err.message || "Failed to send meeting invites" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

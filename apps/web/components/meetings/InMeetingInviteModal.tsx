@@ -115,14 +115,15 @@ export default function InMeetingInviteModal({
         throw new Error(data.error || "Failed to send email invites");
       }
 
-      setSuccessMsg(`Invitations successfully sent to ${allEmails.length} recipient(s)!`);
+      setSuccessMsg(data.message || `Invitations successfully sent to ${allEmails.length} recipient(s)!`);
       setInviteEmails([]);
       setEmailInput("");
       setTimeout(() => {
         setSuccessMsg(null);
       }, 4000);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Failed to send invitation emails");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to send invitation emails";
+      setErrorMsg(errorMsg);
     } finally {
       setIsSending(false);
     }

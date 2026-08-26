@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { sendShareEmail } from "@/lib/mail";
-
+import { sendShareEmail, sendMeetingInvitationEmail } from "@/lib/mail";
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
   if (!authCtx) {
@@ -235,7 +234,7 @@ export async function POST(req: Request) {
             });
           }
 
-          // Add newly added emails
+          // Add newly added emails & send notification
           const newlyAdded = normalizedEmails.filter((e) => !existingEmailSet.has(e.email));
           for (const item of newlyAdded) {
             await db.meetingInvite.upsert({
@@ -243,6 +242,30 @@ export async function POST(req: Request) {
               create: { meetingId: targetId, email: item.email, role: "attendee" },
               update: {},
             });
+          }
+
+          if (newlyAdded.length > 0) {
+            const meetingObj = await db.meeting.findUnique({
+              where: { id: targetId },
+            });
+            const baseUrl = process.env.APP_URL || "http://localhost:3000";
+            const joinUrl = `${baseUrl}/meet/${targetId}`;
+
+            await Promise.allSettled(
+              newlyAdded.map((item) =>
+                sendMeetingInvitationEmail({
+                  toEmail: item.email,
+                  hostName: senderName,
+                  meetingTitle: targetTitle || meetingObj?.title || "Video Meeting",
+                  meetingDescription: meetingObj?.description,
+                  scheduledStart: meetingObj?.scheduledStart,
+                  scheduledEnd: meetingObj?.scheduledEnd,
+                  joinUrl,
+                  meetingId: targetId,
+                  organizationName: org.name,
+                })
+              )
+            );
           }
         } else {
           const existing = await db.sharedEmail.findMany({
@@ -390,15 +413,35 @@ export async function POST(req: Request) {
       const senderName = user?.name || user?.email?.split("@")[0] || "A teammate";
 
       try {
-        await sendShareEmail({
-          toEmail: cleanEmail,
-          senderName,
-          organizationName: org.name,
-          targetType: targetType as "video" | "playlist",
-          targetTitle,
-          shareUrl,
-          message: message || undefined,
-        });
+        if (targetType === "meeting") {
+          const meetingObj = await db.meeting.findUnique({
+            where: { id: targetId },
+          });
+          const baseUrl = process.env.APP_URL || "http://localhost:3000";
+          const joinUrl = `${baseUrl}/meet/${targetId}`;
+
+          await sendMeetingInvitationEmail({
+            toEmail: cleanEmail,
+            hostName: senderName,
+            meetingTitle: targetTitle || meetingObj?.title || "Video Meeting",
+            meetingDescription: meetingObj?.description,
+            scheduledStart: meetingObj?.scheduledStart,
+            scheduledEnd: meetingObj?.scheduledEnd,
+            joinUrl,
+            meetingId: targetId,
+            organizationName: org.name,
+          });
+        } else {
+          await sendShareEmail({
+            toEmail: cleanEmail,
+            senderName,
+            organizationName: org.name,
+            targetType: targetType as "video" | "playlist",
+            targetTitle,
+            shareUrl,
+            message: message || undefined,
+          });
+        }
       } catch (mailErr) {
         console.error("[Share API] Error sending email invite:", mailErr);
       }

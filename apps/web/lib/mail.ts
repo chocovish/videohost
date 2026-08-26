@@ -324,12 +324,43 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
     organizationName,
   } = options;
 
-  const formattedTime = scheduledStart
-    ? new Intl.DateTimeFormat("en-US", {
-      dateStyle: "full",
-      timeStyle: "short",
-    }).format(new Date(scheduledStart))
-    : "Instant Meeting (Happening Now)";
+  if (!toEmail || !toEmail.includes("@")) {
+    throw new Error(`Invalid recipient email address: ${toEmail}`);
+  }
+
+  let formattedTime = "Instant Meeting (Happening Now)";
+  if (scheduledStart) {
+    const d = new Date(scheduledStart);
+    if (!isNaN(d.getTime())) {
+      try {
+        formattedTime = new Intl.DateTimeFormat("en-US", {
+          dateStyle: "full",
+          timeStyle: "short",
+        }).format(d);
+      } catch {
+        formattedTime = d.toLocaleString();
+      }
+    }
+  }
+
+  const cleanHostName = (hostName || "Host").replace(/["\r\n]/g, "'").trim();
+  const cleanOrgName = (organizationName || "Taped").replace(/["\r\n]/g, "'").trim();
+  const cleanMeetingTitle = (meetingTitle || "Video Meeting").replace(/[\r\n]/g, " ").trim();
+  const senderEmail = process.env.SMTP_FROM || process.env.SMTP_USER || "support@taped.in";
+
+  const textContent = [
+    `Meeting Invitation: ${cleanMeetingTitle}`,
+    `${cleanHostName} invited you to join a video conference on ${cleanOrgName}.`,
+    ``,
+    `When: ${formattedTime}`,
+    meetingDescription ? `Agenda: ${meetingDescription}` : null,
+    `Meeting ID: ${meetingId}`,
+    `Join URL: ${joinUrl}`,
+    ``,
+    `Powered by Taped HD Video Conferencing`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   const html = `
     <!DOCTYPE html>
@@ -357,22 +388,23 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
       <body>
         <div class="container">
           <div class="badge">LiveKit Video Meeting</div>
-          <h1>${meetingTitle}</h1>
-          <p class="host-sub"><strong>${hostName}</strong> invited you to join a video conference on <strong>${organizationName}</strong>.</p>
+          <h1>${cleanMeetingTitle}</h1>
+          <p class="host-sub"><strong>${cleanHostName}</strong> invited you to join a video conference on <strong>${cleanOrgName}</strong>.</p>
           
           <div class="details-card">
             <div class="detail-row">
               <div class="detail-label">When</div>
               <div class="detail-val">${formattedTime}</div>
             </div>
-            ${meetingDescription
-      ? `
+            ${
+              meetingDescription
+                ? `
             <div class="detail-row" style="margin-top: 14px;">
               <div class="detail-label">Agenda / Description</div>
               <div class="detail-val" style="font-weight: 400; color: #cbd5e1;">${meetingDescription}</div>
             </div>`
-      : ""
-    }
+                : ""
+            }
             <div class="detail-row" style="margin-top: 14px;">
               <div class="detail-label">Meeting ID</div>
               <div class="detail-val"><span class="code-tag">${meetingId}</span></div>
@@ -388,23 +420,22 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
 
           <div class="footer">
             Powered by <strong>Taped</strong> HD Video Conferencing.<br/>
-            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+            &copy; ${new Date().getFullYear()} ${cleanOrgName}. All rights reserved.
           </div>
         </div>
       </body>
     </html>
   `;
 
-  try {
-    await transporter.sendMail({
-      from: `"${hostName} via Taped" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-      to: toEmail,
-      subject: `Meeting Invitation: ${meetingTitle}`,
-      html,
-    });
-  } catch (err) {
-    console.error("Failed to send meeting invitation email to", toEmail, err);
-  }
+  const sendInfo = await transporter.sendMail({
+    from: `"${cleanHostName} via Taped" <${senderEmail}>`,
+    to: toEmail,
+    subject: `Meeting Invitation: ${cleanMeetingTitle}`,
+    text: textContent,
+    html,
+  });
+
+  return sendInfo;
 }
 
 export interface SendShareOtpEmailOptions {

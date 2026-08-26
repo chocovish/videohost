@@ -173,32 +173,45 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Send invitation emails asynchronously
+    // Send invitation emails
     const baseUrl = process.env.APP_URL || "http://localhost:3000";
     const joinUrl = `${baseUrl}/meet/${meeting.id}`;
 
     if (Array.isArray(inviteEmails) && inviteEmails.length > 0) {
-      for (const rawEmail of inviteEmails) {
-        const email = rawEmail.trim().toLowerCase();
-        if (email && email.includes("@")) {
-          sendMeetingInvitationEmail({
-            toEmail: email,
-            hostName: userName,
-            meetingTitle: meeting.title,
-            meetingDescription: meeting.description,
-            scheduledStart: meeting.scheduledStart,
-            scheduledEnd: meeting.scheduledEnd,
-            joinUrl,
-            meetingId: meeting.id,
-            organizationName: orgName,
-          }).catch((e) => console.error("Error sending invite email:", e));
+      const validInviteEmails = inviteEmails
+        .map((raw: unknown) => (typeof raw === "string" ? raw.trim().toLowerCase() : ""))
+        .filter((e: string) => e && e.includes("@"));
+
+      if (validInviteEmails.length > 0) {
+        const results = await Promise.allSettled(
+          validInviteEmails.map((email: string) =>
+            sendMeetingInvitationEmail({
+              toEmail: email,
+              hostName: userName,
+              meetingTitle: meeting.title,
+              meetingDescription: meeting.description,
+              scheduledStart: meeting.scheduledStart,
+              scheduledEnd: meeting.scheduledEnd,
+              joinUrl,
+              meetingId: meeting.id,
+              organizationName: orgName,
+            })
+          )
+        );
+
+        const failed = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+        if (failed.length > 0) {
+          console.error(
+            "POST /api/meetings: Some invite emails failed to deliver:",
+            failed.map((f) => f.reason instanceof Error ? f.reason.message : String(f.reason))
+          );
         }
       }
     }
-
     return NextResponse.json({ meeting, joinUrl }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Failed to create meeting";
     console.error("POST /api/meetings error:", err);
-    return NextResponse.json({ error: err.message || "Failed to create meeting" }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

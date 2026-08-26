@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getRoomServiceClient, getEgressClient } from "@/lib/livekit";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { sendMeetingInvitationEmail } from "@/lib/mail";
 import { EgressStatus } from "livekit-server-sdk";
-
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -121,6 +121,9 @@ export async function PATCH(
       include: {
         organization: {
           include: { plan: true },
+        },
+        createdBy: {
+          select: { id: true, name: true, email: true },
         },
       },
     });
@@ -240,8 +243,8 @@ export async function PATCH(
     // Synchronize restricted inviteEmails if provided
     if (Array.isArray(body.inviteEmails)) {
       const cleanEmails = body.inviteEmails
-        .map((e: any) => (typeof e === "string" ? e.trim().toLowerCase() : ""))
-        .filter((e: string) => e.includes("@"));
+        .map((e: unknown) => (typeof e === "string" ? e.trim().toLowerCase() : ""))
+        .filter((e: string) => e && e.includes("@"));
 
       const currentInvites = await db.meetingInvite.findMany({
         where: { meetingId: meeting.id },
@@ -264,6 +267,35 @@ export async function PATCH(
             create: { meetingId: meeting.id, email, role: "attendee" },
             update: {},
           });
+        }
+
+        const senderName = session?.user?.name || meeting.createdBy?.name || "Host";
+        const baseUrl = process.env.APP_URL || "http://localhost:3000";
+        const joinUrl = `${baseUrl}/meet/${meeting.id}`;
+        const orgName = meeting.organization?.name || "Taped";
+
+        const sendResults = await Promise.allSettled(
+          toAdd.map((email: string) =>
+            sendMeetingInvitationEmail({
+              toEmail: email,
+              hostName: senderName,
+              meetingTitle: updateData.title || meeting.title,
+              meetingDescription: updateData.description !== undefined ? updateData.description : meeting.description,
+              scheduledStart: updateData.scheduledStart !== undefined ? updateData.scheduledStart : meeting.scheduledStart,
+              scheduledEnd: updateData.scheduledEnd !== undefined ? updateData.scheduledEnd : meeting.scheduledEnd,
+              joinUrl,
+              meetingId: meeting.id,
+              organizationName: orgName,
+            })
+          )
+        );
+
+        const failedSends = sendResults.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+        if (failedSends.length > 0) {
+          console.error(
+            "PATCH /api/meetings/[id]: Some invite emails failed to deliver:",
+            failedSends.map((f) => f.reason instanceof Error ? f.reason.message : String(f.reason))
+          );
         }
       }
     }
