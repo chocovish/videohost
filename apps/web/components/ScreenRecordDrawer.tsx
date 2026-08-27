@@ -966,7 +966,7 @@ export default function ScreenRecordDrawer({
                         {recordState === "idle" && (
                           <Button
                             size="lg"
-                            variant="record"
+                            variant="destructive"
                             onClick={startRecording}
                             className="w-full font-extrabold gap-2.5 group transition-all hover:scale-[1.01]"
                           >
@@ -989,7 +989,7 @@ export default function ScreenRecordDrawer({
 
                             <Button
                               size="lg"
-                              variant="danger"
+                              variant="destructive"
                               onClick={stopRecording}
                               disabled={isProcessing}
                               className="font-extrabold rounded-xl gap-2 text-xs sm:text-sm"
@@ -1022,7 +1022,7 @@ export default function ScreenRecordDrawer({
 
                             <Button
                               size="lg"
-                              variant="danger"
+                              variant="destructive"
                               onClick={stopRecording}
                               disabled={isProcessing}
                               className="font-extrabold rounded-xl gap-2 text-xs sm:text-sm"

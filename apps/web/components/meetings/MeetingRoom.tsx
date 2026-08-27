@@ -578,7 +578,7 @@ function RoomContent({
               <div className="flex items-center gap-1.5">
                 {meeting.isFreePlan ? (
                   <Button
-                    variant="darkOutline"
+                    variant="outline"
                     size="sm"
                     onClick={() => setIsUpgradeModalOpen(true)}
                     className="inline-flex gap-1.5 text-slate-300 hover:text-white border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 transition-colors shadow-xs"
@@ -595,7 +595,7 @@ function RoomContent({
                     {/* If Recording: Show Live Adjust Layout Button */}
                     {isRecording && (
                       <Button
-                        variant="dark"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           setRecordingError(null);
@@ -611,7 +611,7 @@ function RoomContent({
 
                     {/* Start Record or Stop Record Button */}
                     <Button
-                      variant={isRecording ? "dangerOutline" : "dark"}
+                      variant={isRecording ? "destructive" : "default"}
                       size="sm"
                       onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
                       disabled={isUpdatingRecord}
@@ -633,7 +633,7 @@ function RoomContent({
             {/* Invite Button (Org Members / Host Only) */}
             {(meeting.isOrgMember || meeting.isHost) && (
               <Button
-                variant="lime"
+                variant="default"
                 size="sm"
                 onClick={() => setIsInviteOpen(true)}
                 className="gap-1.5"
@@ -645,7 +645,7 @@ function RoomContent({
 
             {/* Participants Drawer Toggle Button (Desktop only, hidden on mobile) */}
             <Button
-              variant={isParticipantsOpen ? "dark" : "darkOutline"}
+              variant={isParticipantsOpen ? "secondary" : "outline"}
               size="icon-sm"
               onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
               className={`hidden sm:inline-flex relative transition-colors ${
@@ -662,7 +662,7 @@ function RoomContent({
             {/* End / Leave Button */}
             {meeting.isHost ? (
               <Button
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 onClick={handleEndMeetingForAll}
                 title="End meeting for everyone"
@@ -672,7 +672,7 @@ function RoomContent({
               </Button>
             ) : (
               <Button
-                variant="danger"
+                variant="destructive"
                 size="sm"
                 onClick={handleLeaveMeeting}
                 title="Leave meeting"
@@ -688,7 +688,7 @@ function RoomContent({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="darkOutline"
+                  variant="outline"
                   size="icon-sm"
                   className="text-slate-300 hover:text-white"
                   title="More meeting options"

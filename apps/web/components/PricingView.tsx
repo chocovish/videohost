@@ -729,13 +729,13 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
           {orgDetails.billingMode === "RECURRING" && orgDetails.subscriptionStatus !== "CANCELLED" ? (
             <Button
               type="button"
-              variant="dangerOutline"
+              variant="outline"
               size="sm"
               onClick={() => {
                 setPendingPlanSwitch("free");
                 setConfirmCancelModalOpen(true);
               }}
-              className="shrink-0"
+              className="shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Cancel Subscription
             </Button>
@@ -933,12 +933,12 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                     {plan.id !== "free" && currentPlan !== "free" && orgDetails?.billingMode === "RECURRING" && orgDetails?.subscriptionStatus !== "CANCELLED" && (
                       <Button
                         type="button"
-                        variant="dangerOutline"
+                        variant="outline"
                         onClick={() => {
                           setPendingPlanSwitch("free");
                           setConfirmCancelModalOpen(true);
                         }}
-                        className="w-full"
+                        className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
                         Cancel Subscription
                       </Button>
@@ -959,10 +959,8 @@ export default function PricingView({ isEmbedded = false }: PricingViewProps) {
                     onClick={() => handleSelectPlan(plan.id as any)}
                     disabled={updatingPlan !== null || loadingPlan}
                     variant={
-                      plan.id === "pro"
+                      plan.id === "pro" || plan.id === "enterprise"
                         ? "default"
-                        : plan.id === "enterprise"
-                        ? "dark"
                         : plan.id === "basic"
                         ? "secondary"
                         : "outline"

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cva, type VariantProps } from "class-variance-authority";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RiCloseLine } from "@remixicon/react";
@@ -55,7 +56,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/60 duration-150 backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-black/60 duration-200 backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -64,15 +65,9 @@ function DialogOverlay({
 }
 
 const dialogContentVariants = cva(
-  "fixed top-1/2 left-1/2 z-50 flex flex-col w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-background p-6 text-foreground shadow-2xl duration-150 outline-none max-h-[90vh] sm:rounded-xl data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+  "fixed top-1/2 left-1/2 z-50 flex flex-col w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg duration-200 outline-none max-h-[90vh] data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
   {
     variants: {
-      variant: {
-        default: "border-border bg-background text-foreground",
-        dark: "border border-slate-800 bg-slate-900 text-slate-100 shadow-2xl",
-        glass:
-          "border border-slate-800/80 bg-slate-900/95 backdrop-blur-2xl text-slate-100 shadow-2xl",
-      },
       size: {
         sm: "max-w-[calc(100%-2rem)] sm:max-w-sm",
         default: "max-w-[calc(100%-2rem)] sm:max-w-lg",
@@ -82,7 +77,6 @@ const dialogContentVariants = cva(
       },
     },
     defaultVariants: {
-      variant: "default",
       size: "default",
     },
   }
@@ -99,7 +93,6 @@ function DialogContent({
   children,
   showCloseButton = true,
   hideCloseButton,
-  variant = "default",
   size = "default",
   ...props
 }: DialogContentProps) {
@@ -110,16 +103,16 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className={cn(dialogContentVariants({ variant, size }), className)}
+        className={cn(dialogContentVariants({ size }), className)}
         {...props}
       >
         {children}
         {shouldShowClose && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-md p-1 opacity-70 text-muted-foreground ring-offset-background transition-opacity hover:opacity-100 hover:bg-muted hover:text-foreground focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none cursor-pointer"
+            className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-hidden focus:ring-2 focus:ring-ring cursor-pointer"
           >
-            <RiCloseLine className="w-4 h-4" />
+            <RiCloseLine className="size-4" />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}
@@ -128,84 +121,53 @@ function DialogContent({
   );
 }
 
-const dialogHeaderVariants = cva("flex flex-col gap-1.5 text-center sm:text-left shrink-0", {
-  variants: {
-    variant: {
-      default: "text-left",
-      bordered: "border-b border-border pb-4 text-left",
-      centered: "text-center items-center",
-    },
-  },
-  defaultVariants: {
-    variant: "default",
-  },
-});
-
-export type DialogHeaderProps = React.ComponentProps<"div"> &
-  VariantProps<typeof dialogHeaderVariants>;
-
-function DialogHeader({ className, variant = "default", ...props }: DialogHeaderProps) {
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn(dialogHeaderVariants({ variant }), className)}
+      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
       {...props}
     />
   );
 }
 
-const dialogFooterVariants = cva(
-  "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-2 shrink-0",
-  {
-    variants: {
-      variant: {
-        default: "",
-        bordered: "border-t border-border pt-4",
-        centered: "justify-center items-center",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
-
-export type DialogFooterProps = React.ComponentProps<"div"> &
-  VariantProps<typeof dialogFooterVariants> & {
-    showCloseButton?: boolean;
-  };
-
 function DialogFooter({
   className,
-  showCloseButton = false,
-  variant = "default",
   children,
+  showCloseButton = false,
+  closeButtonText = "Close",
   ...props
-}: DialogFooterProps) {
+}: React.ComponentProps<"div"> & {
+  showCloseButton?: boolean;
+  closeButtonText?: string;
+}) {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn(dialogFooterVariants({ variant }), className)}
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
       {...props}
     >
-      {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
-          Close
-        </DialogPrimitive.Close>
+        <DialogClose asChild>
+          <Button variant="outline">{closeButtonText}</Button>
+        </DialogClose>
       )}
+      {children}
     </div>
   );
 }
 
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+function DialogTitle({
+  className,
+  ...props
+}: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn(
-        "text-lg font-semibold leading-none tracking-tight text-foreground",
-        className
-      )}
+      className={cn("text-lg font-semibold leading-none tracking-tight text-foreground", className)}
       {...props}
     />
   );
@@ -218,10 +180,7 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn(
-        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
-        className
-      )}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -238,7 +197,4 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-  dialogContentVariants,
-  dialogHeaderVariants,
-  dialogFooterVariants,
 };

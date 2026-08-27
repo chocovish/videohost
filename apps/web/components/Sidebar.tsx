@@ -285,29 +285,38 @@ export default function Sidebar({
             </div>
           )}
           <div
-            className={`p-1 bg-muted/60 border border-border rounded-xl flex items-center gap-1 ${isCollapsed && !isMobile ? "flex-col" : ""
-              }`}
+            className={`p-1 bg-muted/70 border border-border/60 rounded-xl flex items-center gap-1 ${
+              isCollapsed && !isMobile ? "flex-col" : ""
+            }`}
           >
             <Button
+              type="button"
               onClick={() => handleModeSwitch("CREATOR")}
               disabled={isUpdatingMode}
               title="Creator Mode: Manage uploads & library"
-              variant={viewMode === "CREATOR" ? "secondary" : "ghost"}
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${viewMode !== "CREATOR" ? "text-muted-foreground" : ""
-                }`}
+              variant="ghost"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                viewMode === "CREATOR"
+                  ? "bg-card text-foreground shadow-xs border border-border/60 hover:bg-card hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50 border border-transparent shadow-none"
+              }`}
             >
-              <Video className="w-3.5 h-3.5 text-primary" />
+              <Video className="w-3.5 h-3.5 text-primary shrink-0" />
               {(!isCollapsed || isMobile) && <span>Creator</span>}
             </Button>
             <Button
+              type="button"
               onClick={() => handleModeSwitch("VIEWER")}
               disabled={isUpdatingMode}
               title="Viewer Mode: Access content shared with you"
-              variant={viewMode === "VIEWER" ? "secondary" : "ghost"}
-              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${viewMode !== "VIEWER" ? "text-muted-foreground" : ""
-                }`}
+              variant="ghost"
+              className={`flex-1 w-full py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                viewMode === "VIEWER"
+                  ? "bg-card text-foreground shadow-xs border border-border/60 hover:bg-card hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50 border border-transparent shadow-none"
+              }`}
             >
-              <Eye className="w-3.5 h-3.5 text-primary" />
+              <Eye className="w-3.5 h-3.5 text-primary shrink-0" />
               {(!isCollapsed || isMobile) && <span>Viewer</span>}
             </Button>
           </div>
@@ -340,10 +349,10 @@ export default function Sidebar({
                         if (isMobile) closeMobile();
                       }}
                       title={isCollapsed && !isMobile ? item.label : undefined}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isCollapsed && !isMobile ? "justify-center px-2" : ""
+                      className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors duration-150 ${isCollapsed && !isMobile ? "justify-center px-2" : ""
                         } ${isActive
                           ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                         }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
@@ -362,7 +371,7 @@ export default function Sidebar({
         {/* Quota Progress Meter */}
         {viewMode === "CREATOR" && (
           <div
-            className={`p-3.5 rounded-xl bg-muted/50 border border-border space-y-2 ${isCollapsed && !isMobile ? "p-2 text-center" : ""
+            className={`p-3.5 rounded-xl bg-card border border-border space-y-2 ${isCollapsed && !isMobile ? "p-2 text-center" : ""
               }`}
           >
             {!isCollapsed || isMobile ? (
@@ -392,30 +401,36 @@ export default function Sidebar({
         )}
 
         {/* Theme Mode Toggle (Light / Dark) */}
-        <div className="p-2 rounded-xl border border-border bg-card/50 space-y-1.5">
+        <div className="p-2.5 rounded-xl border border-border bg-card space-y-2">
           {(!isCollapsed || isMobile) && (
             <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground px-1">
               <Palette className="w-3 h-3 text-primary" /> Appearance
             </div>
           )}
-          <div className={`grid ${isCollapsed && !isMobile ? "grid-cols-1" : "grid-cols-2"} gap-1 bg-muted p-1 rounded-lg`}>
+          <div className={`grid ${isCollapsed && !isMobile ? "grid-cols-1" : "grid-cols-2"} gap-1 bg-muted/70 p-1 rounded-xl border border-border/60`}>
             <Button
+              type="button"
               onClick={() => toggleThemeMode("light")}
               title="Light Mode"
-              variant={themeMode === "light" ? "secondary" : "ghost"}
-              className={`py-1 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
-                themeMode !== "light" ? "text-muted-foreground hover:text-foreground" : "font-semibold"
+              variant="ghost"
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                themeMode === "light"
+                  ? "bg-card text-foreground shadow-xs border border-border/60 hover:bg-card hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50 border border-transparent shadow-none"
               }`}
             >
               <Sun className="w-3.5 h-3.5 text-primary shrink-0" />
               {(!isCollapsed || isMobile) && <span>Light</span>}
             </Button>
             <Button
+              type="button"
               onClick={() => toggleThemeMode("dark")}
               title="Dark Mode"
-              variant={themeMode === "dark" ? "secondary" : "ghost"}
-              className={`py-1 px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
-                themeMode !== "dark" ? "text-muted-foreground hover:text-foreground" : "font-semibold"
+              variant="ghost"
+              className={`py-1.5 px-2 rounded-lg text-xs font-semibold transition-colors duration-150 flex items-center justify-center gap-1.5 cursor-pointer ${
+                themeMode === "dark"
+                  ? "bg-card text-foreground shadow-xs border border-border/60 hover:bg-card hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50 border border-transparent shadow-none"
               }`}
             >
               <Moon className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -463,7 +478,7 @@ export default function Sidebar({
 
       {/* Desktop Sticky Sidebar */}
       <aside
-        className={`hidden md:flex flex-col border-r border-border bg-card/70 backdrop-blur-xl h-full sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${isCollapsed ? "w-20" : "w-64"
+        className={`hidden md:flex flex-col border-r border-border bg-sidebar h-full sticky top-0 transition-all duration-300 ease-in-out shrink-0 z-30 ${isCollapsed ? "w-20" : "w-64"
           }`}
       >
         <SidebarInner isMobile={false} />

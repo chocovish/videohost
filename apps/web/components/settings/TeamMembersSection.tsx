@@ -231,7 +231,7 @@ export function TeamMembersSection({
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
                   {m.role === "OWNER" ? (
-                    <Badge variant="lime" className="uppercase">
+                    <Badge variant="secondary" className="uppercase">
                       OWNER
                     </Badge>
                   ) : (

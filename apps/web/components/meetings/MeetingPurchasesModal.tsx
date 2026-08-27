@@ -145,7 +145,7 @@ export default function MeetingPurchasesModal({
                   ID: {meeting.id}
                 </Badge>
                 {currentAccessMode === "PURCHASABLE" && (
-                  <Badge variant="lime" className="font-bold">
+                  <Badge variant="secondary" className="font-bold">
                     Paid Pass
                   </Badge>
                 )}
@@ -320,7 +320,7 @@ export default function MeetingPurchasesModal({
                             <Badge
                               variant={
                                 p.status === "COMPLETED"
-                                  ? "lime"
+                                  ? "default"
                                   : p.status === "PENDING"
                                   ? "secondary"
                                   : "outline"

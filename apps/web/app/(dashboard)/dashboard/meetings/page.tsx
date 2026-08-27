@@ -316,7 +316,7 @@ export default function MeetingsDashboardPage() {
               return (
                 <div
                   key={meeting.id}
-                  className={`group glass-card rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden hover:shadow-xl ${isLive
+                  className={`group glass-card card-hover rounded-2xl border transition-all duration-300 flex flex-col justify-between overflow-hidden hover:shadow-lg hover:-translate-y-1 ${isLive
                       ? "border-primary/50 shadow-primary/5 ring-2 ring-primary/20"
                       : "border-border hover:border-primary/50"
                     }`}
@@ -494,7 +494,7 @@ export default function MeetingsDashboardPage() {
             {pastMeetings.map((meeting) => (
               <div
                 key={meeting.id}
-                className="p-4 sm:p-5 rounded-2xl glass-card border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 transition-all shadow-2xs"
+                className="p-4 sm:p-5 rounded-2xl glass-card card-hover border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary/50 hover:-translate-y-0.5 hover:shadow-md transition-all shadow-2xs"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2.5 flex-wrap">

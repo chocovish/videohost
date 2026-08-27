@@ -495,7 +495,7 @@ export default function PlaylistDetailPage() {
     switch (mode) {
       case "PUBLIC":
         return (
-          <Badge variant="lime" className="gap-1.5">
+          <Badge variant="secondary" className="gap-1.5">
             <Globe className="w-3.5 h-3.5" /> Public
           </Badge>
         );
@@ -915,7 +915,7 @@ export default function PlaylistDetailPage() {
                         {p.paymentId}
                       </TableCell>
                       <TableCell className="py-3 px-4">
-                        <Badge variant="lime">{p.status}</Badge>
+                        <Badge variant="secondary">{p.status}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1035,7 +1035,7 @@ export default function PlaylistDetailPage() {
                         {/* Add Button */}
                         <div>
                           {video.alreadyInPlaylist ? (
-                            <Badge variant="lime" className="gap-1">
+                            <Badge variant="secondary" className="gap-1">
                               <CheckCircle2 className="w-3.5 h-3.5" /> Added
                             </Badge>
                           ) : (

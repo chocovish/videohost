@@ -1,12 +1,22 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
-import { Noto_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans, Fredoka } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { getImpersonationSession } from "@/lib/admin-auth";
 
-const notoSans = Noto_Sans({ subsets: ['latin'], variable: '--font-sans' });
+const fontSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+const fontHeading = Fredoka({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  weight: ["500", "600", "700"],
+});
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://taped.app";
 
@@ -91,7 +101,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const impersonation = await getImpersonationSession();
 
   return (
-    <html lang="en" className={cn("font-sans", notoSans.variable)}>
+    <html lang="en" className={cn("font-sans", fontSans.variable, fontHeading.variable)}>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

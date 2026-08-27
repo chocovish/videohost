@@ -1,0 +1,515 @@
+/*
+ * ==========================================================================
+ * THEMES.CSS — Single Source of Truth for Design Systems & Themes
+ * ==========================================================================
+ * All visual styles (colors, radiuses, shadows, borders, fonts) are
+ * controlled exclusively through CSS variables here.
+ * Stock Shadcn components read these variables directly.
+ * ==========================================================================
+ */
+
+/* ==========================================================================
+   1. DEFAULT THEME: "Toon Pop / Cartoonish" (Light Mode)
+   ========================================================================== */
+:root,
+[data-theme="pop"] {
+  /* Surface & Base */
+  --background: oklch(0.985 0.012 85);
+  --foreground: oklch(0.18 0.04 275);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.04 275);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.04 275);
+
+  /* Brand & Accents */
+  --primary: oklch(0.58 0.24 285);
+  --primary-foreground: oklch(0.99 0.01 285);
+  --secondary: oklch(0.94 0.06 95);
+  --secondary-foreground: oklch(0.24 0.08 95);
+  --muted: oklch(0.945 0.018 85);
+  --muted-foreground: oklch(0.46 0.035 275);
+  --accent: oklch(0.93 0.08 140);
+  --accent-foreground: oklch(0.22 0.08 140);
+  --destructive: oklch(0.62 0.25 28);
+  --destructive-foreground: oklch(0.99 0.01 28);
+
+  /* Borders & Focus */
+  --border: oklch(0.18 0.04 275 / 16%);
+  --input: oklch(0.18 0.04 275 / 16%);
+  --ring: oklch(0.58 0.24 285);
+
+  /* Radius Scale */
+  --radius: 0.95rem;
+
+  /* Comic Tactile Drop Shadows - Cartoon Electric Purple Tint */
+  --comic-shadow: oklch(0.55 0.22 285 / 35%);
+  --comic-shadow-sm: oklch(0.55 0.22 285 / 22%);
+  --comic-shadow-subtle: oklch(0.55 0.22 285 / 12%);
+  --comic-shadow-colored: oklch(0.58 0.24 285 / 45%);
+
+  /* Tailwind / Shadcn Shadow Tokens (Small, Tactile & Crisp) */
+  --shadow-xs: 1.5px 1.5px 0px 0px var(--comic-shadow-subtle);
+  --shadow-sm: 2.5px 2.5px 0px 0px var(--comic-shadow-subtle);
+  --shadow-md: 3.5px 3.5px 0px 0px var(--comic-shadow-sm);
+  --shadow-lg: 4.5px 4.5px 0px 0px var(--comic-shadow);
+  --shadow-xl: 6px 6px 0px 0px var(--comic-shadow);
+  --shadow-2xl: 7.5px 7.5px 0px 0px var(--comic-shadow);
+
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.99 0.01 85);
+  --sidebar-foreground: oklch(0.18 0.04 275);
+  --sidebar-primary: oklch(0.58 0.24 285);
+  --sidebar-primary-foreground: oklch(0.99 0.01 285);
+  --sidebar-accent: oklch(0.94 0.06 95);
+  --sidebar-accent-foreground: oklch(0.18 0.04 275);
+  --sidebar-border: oklch(0.18 0.04 275 / 12%);
+  --sidebar-ring: oklch(0.58 0.24 285);
+
+  /* Visual Charts */
+  --chart-1: oklch(0.68 0.22 45);
+  --chart-2: oklch(0.72 0.22 140);
+  --chart-3: oklch(0.58 0.24 285);
+  --chart-4: oklch(0.70 0.20 220);
+  --chart-5: oklch(0.78 0.20 90);
+
+  /* Typography & Dynamics */
+  --theme-border-width: 2px;
+  --theme-heading-font: var(--font-heading), var(--font-sans), cursive, sans-serif;
+  --theme-btn-transform: translate(-1px, -1px);
+  --theme-card-hover-transform: translateY(-2.5px);
+  --theme-active-transform: translate(1px, 1px);
+}
+
+/* ==========================================================================
+   2. DEFAULT THEME: "Toon Pop / Comic Midnight" (Dark Mode)
+   ========================================================================== */
+.dark,
+.dark[data-theme="pop"],
+[data-theme="pop"].dark {
+  --background: oklch(0.14 0.03 275);
+  --foreground: oklch(0.98 0.01 90);
+  --card: oklch(0.19 0.038 275);
+  --card-foreground: oklch(0.98 0.01 90);
+  --popover: oklch(0.19 0.038 275);
+  --popover-foreground: oklch(0.98 0.01 90);
+
+  --primary: oklch(0.72 0.24 290);
+  --primary-foreground: oklch(0.12 0.03 275);
+  --secondary: oklch(0.26 0.05 275);
+  --secondary-foreground: oklch(0.98 0.01 90);
+  --muted: oklch(0.24 0.04 275);
+  --muted-foreground: oklch(0.72 0.02 275);
+  --accent: oklch(0.28 0.06 140);
+  --accent-foreground: oklch(0.92 0.15 140);
+  --destructive: oklch(0.68 0.24 28);
+  --destructive-foreground: oklch(0.99 0.01 28);
+
+  --border: oklch(0.98 0.01 90 / 14%);
+  --input: oklch(0.98 0.01 90 / 18%);
+  --ring: oklch(0.72 0.24 290);
+
+  --comic-shadow: oklch(0.68 0.24 290 / 40%);
+  --comic-shadow-sm: oklch(0.68 0.24 290 / 25%);
+  --comic-shadow-subtle: oklch(0.68 0.24 290 / 14%);
+  --comic-shadow-colored: oklch(0.72 0.24 290 / 50%);
+
+  --shadow-xs: 1.5px 1.5px 0px 0px var(--comic-shadow-subtle);
+  --shadow-sm: 2.5px 2.5px 0px 0px var(--comic-shadow-subtle);
+  --shadow-md: 3.5px 3.5px 0px 0px var(--comic-shadow-sm);
+  --shadow-lg: 4.5px 4.5px 0px 0px var(--comic-shadow);
+  --shadow-xl: 6px 6px 0px 0px var(--comic-shadow);
+  --shadow-2xl: 7.5px 7.5px 0px 0px var(--comic-shadow);
+
+  --sidebar: oklch(0.16 0.03 275);
+  --sidebar-foreground: oklch(0.98 0.01 90);
+  --sidebar-primary: oklch(0.72 0.24 290);
+  --sidebar-primary-foreground: oklch(0.12 0.03 275);
+  --sidebar-accent: oklch(0.24 0.04 275);
+  --sidebar-accent-foreground: oklch(0.98 0.01 90);
+  --sidebar-border: oklch(0.98 0.01 90 / 12%);
+  --sidebar-ring: oklch(0.72 0.24 290);
+}
+
+/* ==========================================================================
+   3. ALTERNATE THEMES (Multi-Theme Support)
+   ========================================================================== */
+
+/* Theme: Electric Arcade (Gold & Coral Comic) */
+[data-theme="arcade"] {
+  --primary: oklch(0.78 0.20 85);
+  --primary-foreground: oklch(0.18 0.04 85);
+  --secondary: oklch(0.92 0.08 45);
+  --secondary-foreground: oklch(0.20 0.08 45);
+  --accent: oklch(0.70 0.22 25);
+  --accent-foreground: oklch(0.99 0.01 25);
+  --ring: oklch(0.78 0.20 85);
+  --comic-shadow: oklch(0.68 0.20 55 / 38%);
+  --comic-shadow-sm: oklch(0.68 0.20 55 / 24%);
+  --comic-shadow-subtle: oklch(0.68 0.20 55 / 12%);
+  --comic-shadow-colored: oklch(0.70 0.22 25 / 45%);
+}
+.dark[data-theme="arcade"],
+[data-theme="arcade"].dark {
+  --primary: oklch(0.82 0.20 85);
+  --primary-foreground: oklch(0.15 0.04 85);
+  --secondary: oklch(0.28 0.06 45);
+  --secondary-foreground: oklch(0.98 0.01 45);
+  --accent: oklch(0.75 0.22 25);
+  --accent-foreground: oklch(0.12 0.03 25);
+  --ring: oklch(0.82 0.20 85);
+  --comic-shadow: oklch(0.78 0.20 65 / 42%);
+  --comic-shadow-sm: oklch(0.78 0.20 65 / 26%);
+  --comic-shadow-subtle: oklch(0.78 0.20 65 / 14%);
+  --comic-shadow-colored: oklch(0.75 0.22 25 / 50%);
+}
+
+/* Theme: Bubblegum Mint (Candy Pink & Mint) */
+[data-theme="bubblegum"] {
+  --primary: oklch(0.68 0.24 350);
+  --primary-foreground: oklch(0.99 0.01 350);
+  --secondary: oklch(0.92 0.08 160);
+  --secondary-foreground: oklch(0.20 0.08 160);
+  --accent: oklch(0.80 0.18 160);
+  --accent-foreground: oklch(0.15 0.08 160);
+  --ring: oklch(0.68 0.24 350);
+  --comic-shadow: oklch(0.65 0.22 350 / 38%);
+  --comic-shadow-sm: oklch(0.65 0.22 350 / 24%);
+  --comic-shadow-subtle: oklch(0.65 0.22 350 / 12%);
+  --comic-shadow-colored: oklch(0.68 0.24 350 / 45%);
+}
+.dark[data-theme="bubblegum"],
+[data-theme="bubblegum"].dark {
+  --primary: oklch(0.75 0.22 350);
+  --primary-foreground: oklch(0.15 0.04 350);
+  --secondary: oklch(0.26 0.06 160);
+  --secondary-foreground: oklch(0.98 0.01 160);
+  --accent: oklch(0.75 0.18 160);
+  --accent-foreground: oklch(0.12 0.04 160);
+  --ring: oklch(0.75 0.22 350);
+  --comic-shadow: oklch(0.72 0.22 350 / 42%);
+  --comic-shadow-sm: oklch(0.72 0.22 350 / 26%);
+  --comic-shadow-subtle: oklch(0.72 0.22 350 / 14%);
+  --comic-shadow-colored: oklch(0.75 0.22 350 / 50%);
+}
+
+/* Theme: Electric Comic Lime */
+[data-theme="lime"] {
+  --primary: oklch(0.72 0.24 135);
+  --primary-foreground: oklch(0.15 0.06 135);
+  --secondary: oklch(0.92 0.06 285);
+  --secondary-foreground: oklch(0.22 0.06 285);
+  --accent: oklch(0.58 0.24 285);
+  --accent-foreground: oklch(0.99 0.01 285);
+  --ring: oklch(0.72 0.24 135);
+  --comic-shadow: oklch(0.62 0.22 135 / 38%);
+  --comic-shadow-sm: oklch(0.62 0.22 135 / 24%);
+  --comic-shadow-subtle: oklch(0.62 0.22 135 / 12%);
+  --comic-shadow-colored: oklch(0.72 0.24 135 / 45%);
+}
+.dark[data-theme="lime"],
+[data-theme="lime"].dark {
+  --primary: oklch(0.78 0.24 135);
+  --primary-foreground: oklch(0.12 0.06 135);
+  --secondary: oklch(0.25 0.05 285);
+  --secondary-foreground: oklch(0.98 0.01 285);
+  --accent: oklch(0.72 0.24 290);
+  --accent-foreground: oklch(0.12 0.03 275);
+  --ring: oklch(0.78 0.24 135);
+  --comic-shadow: oklch(0.72 0.22 135 / 42%);
+  --comic-shadow-sm: oklch(0.72 0.22 135 / 26%);
+  --comic-shadow-subtle: oklch(0.72 0.22 135 / 14%);
+  --comic-shadow-colored: oklch(0.78 0.24 135 / 50%);
+}
+
+/* Theme: Splashy Cyan */
+[data-theme="ocean"] {
+  --primary: oklch(0.65 0.20 220);
+  --primary-foreground: oklch(0.99 0.01 220);
+  --secondary: oklch(0.94 0.06 85);
+  --secondary-foreground: oklch(0.22 0.06 85);
+  --accent: oklch(0.78 0.20 85);
+  --accent-foreground: oklch(0.18 0.04 85);
+  --ring: oklch(0.65 0.20 220);
+  --comic-shadow: oklch(0.60 0.18 220 / 38%);
+  --comic-shadow-sm: oklch(0.60 0.18 220 / 24%);
+  --comic-shadow-subtle: oklch(0.60 0.18 220 / 12%);
+  --comic-shadow-colored: oklch(0.65 0.20 220 / 45%);
+}
+.dark[data-theme="ocean"],
+[data-theme="ocean"].dark {
+  --primary: oklch(0.72 0.20 220);
+  --primary-foreground: oklch(0.12 0.04 220);
+  --secondary: oklch(0.26 0.05 85);
+  --secondary-foreground: oklch(0.98 0.01 85);
+  --accent: oklch(0.82 0.20 85);
+  --accent-foreground: oklch(0.15 0.04 85);
+  --ring: oklch(0.72 0.20 220);
+  --comic-shadow: oklch(0.68 0.18 220 / 42%);
+  --comic-shadow-sm: oklch(0.68 0.18 220 / 26%);
+  --comic-shadow-subtle: oklch(0.68 0.18 220 / 14%);
+  --comic-shadow-colored: oklch(0.72 0.20 220 / 50%);
+}
+
+/* Theme: Clean Minimal Modern (No hard comic shadows, 1px subtle borders) */
+[data-theme="minimal"] {
+  --radius: 0.625rem;
+  --theme-border-width: 1px;
+  --comic-shadow: rgba(0, 0, 0, 0.08);
+  --comic-shadow-sm: rgba(0, 0, 0, 0.04);
+  --comic-shadow-subtle: rgba(0, 0, 0, 0.03);
+  --comic-shadow-colored: rgba(0, 0, 0, 0.06);
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+
+  --theme-heading-font: var(--font-sans), system-ui, sans-serif;
+  --theme-btn-transform: none;
+  --theme-card-hover-transform: translateY(-2px);
+  --theme-active-transform: none;
+}
+
+/* ==========================================================================
+   4. COMPONENT THEME LAYER (Controlled purely via CSS variables)
+   ========================================================================== */
+
+/* CARDS */
+[data-slot="card"],
+.card {
+  border-width: var(--theme-border-width, 1px);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-slot="card-title"] {
+  font-family: var(--theme-heading-font);
+}
+
+/* Universal Interactive & Hoverable Card States */
+.card-hover,
+.hover-lift,
+[data-slot="card"][data-variant="interactive"] {
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+}
+
+.card-hover:hover,
+.hover-lift:hover,
+[data-slot="card"][data-variant="interactive"]:hover {
+  transform: var(--theme-card-hover-transform, translateY(-2.5px));
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--foreground) 25%, var(--border));
+}
+
+/* BUTTONS */
+[data-slot="button"] {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled) {
+  box-shadow: var(--shadow-xs);
+}
+
+[data-slot="button"][data-variant="default"]:not(:disabled) {
+  box-shadow: var(--shadow-sm);
+}
+
+[data-slot="button"]:hover:not(:disabled):not([data-variant="ghost"]):not([data-variant="link"]):not([data-variant="secondary"]) {
+  transform: var(--theme-btn-transform, none);
+}
+
+[data-slot="button"]:active:not(:disabled):not([data-variant="ghost"]):not([data-variant="link"]):not([data-variant="secondary"]) {
+  transform: var(--theme-active-transform, none);
+  box-shadow: 0px 0px 0px 0px transparent !important;
+}
+
+/* INPUTS & TEXTAREAS */
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="select-trigger"] {
+  border-width: var(--theme-border-width, 1px) !important;
+  box-shadow: var(--shadow-xs);
+  transition: all 0.15s ease-out;
+}
+
+[data-slot="input"]:focus-visible,
+[data-slot="textarea"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible {
+  border-color: var(--foreground) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* TABS */
+[data-slot="tabs-list"] {
+  border-width: var(--theme-border-width, 1px);
+  box-shadow: var(--shadow-xs);
+}
+
+[data-slot="tabs-trigger"][data-active] {
+  border-width: var(--theme-border-width, 1px);
+  border-color: var(--border);
+  box-shadow: var(--shadow-xs);
+}
+
+/* DIALOGS, DRAWERS, SHEETS */
+[data-slot="dialog-content"],
+[data-slot="drawer-content"],
+[data-slot="sheet-content"] {
+  border-width: var(--theme-border-width, 1px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+[data-slot="dialog-title"],
+[data-slot="drawer-title"],
+[data-slot="sheet-title"] {
+  font-family: var(--theme-heading-font);
+}
+
+/* DROPDOWN & TOOLTIP POPUPS */
+[data-slot="dropdown-menu-content"],
+[data-slot="popover-content"] {
+  border-width: var(--theme-border-width, 1px) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+[data-slot="tooltip-content"] {
+  border-width: var(--theme-border-width, 1px) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* BADGES */
+[data-slot="badge"] {
+  border-width: var(--theme-border-width, 1px);
+  box-shadow: var(--shadow-xs);
+}
+
+/* TABLES */
+[data-slot="table"] {
+  border-collapse: separate;
+}
+
+[data-slot="table-head"] {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* RICH TEXT EDITOR */
+[data-slot="rich-text-editor"] {
+  border-width: var(--theme-border-width, 1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ==========================================================================
+   5. REUSABLE THEME UTILITIES & TEXTURES
+   ========================================================================== */
+
+.shadow-comic-sm {
+  box-shadow: var(--shadow-xs);
+}
+
+.shadow-comic {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-comic-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-comic-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.shadow-comic-xl {
+  box-shadow: var(--shadow-xl);
+}
+
+.shadow-comic-primary {
+  box-shadow: 4px 4px 0px 0px var(--primary);
+}
+
+/* Tactile Spring Press Physics */
+.comic-press {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.comic-press:hover {
+  transform: var(--theme-btn-transform, translate(-1.5px, -1.5px));
+  box-shadow: var(--shadow-md);
+}
+
+.comic-press:active {
+  transform: var(--theme-active-transform, translate(2px, 2px));
+  box-shadow: var(--shadow-xs);
+}
+
+/* Comic Card Elevation */
+.comic-card {
+  border: var(--theme-border-width, 1px) solid var(--border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.comic-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--foreground);
+}
+
+/* Textures */
+.bg-comic-dots {
+  background-image: radial-gradient(
+    var(--comic-shadow-subtle) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 20px 20px;
+}
+
+.bg-comic-grid {
+  background-image: 
+    linear-gradient(to right, var(--comic-shadow-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--comic-shadow-subtle) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.bg-comic-stripes {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--comic-shadow-subtle) 10px,
+    var(--comic-shadow-subtle) 20px
+  );
+}
+
+/* Glassmorphism Blend */
+.glass-card {
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: var(--theme-border-width, 1px) solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.dark .glass-card {
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  border: var(--theme-border-width, 1px) solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-card.card-hover:hover,
+.glass-card-hover:hover {
+  transform: var(--theme-card-hover-transform, translateY(-2.5px));
+  box-shadow: var(--shadow-lg);
+  border-color: color-mix(in srgb, var(--foreground) 25%, var(--border));
+}

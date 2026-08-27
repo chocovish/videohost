@@ -228,7 +228,7 @@ export default function PurchasedItemsPage() {
             <h1 className="text-2xl font-extrabold tracking-tight text-foreground">
               Purchased Items
             </h1>
-            <Badge variant="lime" className="gap-1 font-bold">
+            <Badge variant="secondary" className="font-bold">
               <Sparkles className="w-3 h-3 text-primary" />
               {items.length} Unlocked
             </Badge>
@@ -409,7 +409,7 @@ export default function PurchasedItemsPage() {
             return (
               <div
                 key={item.id}
-                className="bg-card border border-border/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
+                className="bg-card glass-card card-hover border border-border/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
                   {/* Thumbnail / Header Area */}
@@ -651,7 +651,7 @@ export default function PurchasedItemsPage() {
         }}
       >
         <DialogContent size="lg" className="sm:max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
-          <DialogHeader variant="bordered" className="shrink-0">
+          <DialogHeader className="shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
@@ -681,7 +681,7 @@ export default function PurchasedItemsPage() {
                         Type: {selectedReceipt.contentType}
                       </span>
                     </div>
-                    <Badge variant="lime" className="font-bold">
+                    <Badge variant="secondary" className="font-bold">
                       PAID & UNLOCKED
                     </Badge>
                   </div>

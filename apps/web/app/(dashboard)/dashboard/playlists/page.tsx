@@ -232,7 +232,7 @@ export default function PlaylistsPage() {
     switch (mode) {
       case "PUBLIC":
         return (
-          <Badge variant="lime" className="gap-1">
+          <Badge variant="secondary" className="gap-1">
             <Globe className="w-3 h-3" /> Public
           </Badge>
         );
@@ -244,7 +244,7 @@ export default function PlaylistsPage() {
         );
       case "PURCHASABLE":
         return (
-          <Badge variant="lime" className="gap-1">
+          <Badge variant="secondary" className="gap-1">
             <DollarSign className="w-3 h-3" /> Purchasable
           </Badge>
         );
@@ -352,7 +352,7 @@ export default function PlaylistsPage() {
           {filteredPlaylists.map((pl) => (
             <div
               key={pl.id}
-              className="group relative bg-card border border-border rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
+              className="group relative glass-card card-hover rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* Thumbnail / Header Stage */}
@@ -361,7 +361,7 @@ export default function PlaylistsPage() {
                     <img
                       src={pl.thumbnailUrl}
                       alt={pl.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">

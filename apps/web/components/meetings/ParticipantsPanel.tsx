@@ -287,7 +287,7 @@ export default function ParticipantsPanel({
             </div>
 
             <Button
-              variant="darkGhost"
+              variant="ghost"
               size="icon-xs"
               onClick={onClose}
               title="Close panel"
@@ -300,7 +300,7 @@ export default function ParticipantsPanel({
           <div className="flex items-center gap-2">
             {canModerate && (
               <Button
-                variant="darkOutline"
+                variant="outline"
                 size="sm"
                 onClick={() => setIsMuteAllModalOpen(true)}
                 className="flex-1 gap-1.5 text-slate-200 hover:text-white font-medium"
@@ -313,7 +313,7 @@ export default function ParticipantsPanel({
 
             {onOpenInvite && (isHost || isOrgMember) && (
               <Button
-                variant="lime"
+                variant="default"
                 size="sm"
                 onClick={onOpenInvite}
                 className="flex-1 gap-1.5"
@@ -479,7 +479,7 @@ export default function ParticipantsPanel({
                           {/* Quick Mute Mic button */}
                           {isMicrophoneEnabled && (
                             <Button
-                              variant="darkOutline"
+                              variant="outline"
                               size="icon-xs"
                               onClick={() =>
                                 handleModerateAction(
@@ -504,7 +504,7 @@ export default function ParticipantsPanel({
                           {/* Quick Stop Video button */}
                           {isCameraEnabled && (
                             <Button
-                              variant="darkOutline"
+                              variant="outline"
                               size="icon-xs"
                               onClick={() =>
                                 handleModerateAction(
@@ -529,7 +529,7 @@ export default function ParticipantsPanel({
                           {/* Quick Stop Screen Share button */}
                           {isScreenShareEnabled && (
                             <Button
-                              variant="darkOutline"
+                              variant="outline"
                               size="icon-xs"
                               onClick={() =>
                                 handleModerateAction(
@@ -554,7 +554,7 @@ export default function ParticipantsPanel({
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
-                                variant="darkOutline"
+                                variant="outline"
                                 size="icon-xs"
                                 className="text-slate-400 hover:text-white"
                                 title="More participant options"

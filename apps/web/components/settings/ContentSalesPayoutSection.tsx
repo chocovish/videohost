@@ -294,7 +294,7 @@ export function ContentSalesPayoutSection({
           >
             <Receipt className="w-3.5 h-3.5" />
             <span>Sales Ledger</span>
-            <Badge variant="lime" className="ml-0.5 font-mono">
+            <Badge variant="secondary" className="ml-0.5 font-mono">
               {purchases.length}
             </Badge>
           </Button>
@@ -619,7 +619,7 @@ export function ContentSalesPayoutSection({
 
                       {/* Status */}
                       <TableCell className="py-3.5 px-4">
-                        <Badge variant="lime" className="uppercase">
+                        <Badge variant="secondary" className="uppercase">
                           {purchase.status}
                         </Badge>
                       </TableCell>
@@ -666,7 +666,7 @@ export function ContentSalesPayoutSection({
               ) : (
                 <Button
                   type="button"
-                  variant="warningOutline"
+                  variant="outline"
                   size="sm"
                   onClick={() => setMonetizationTab("bank")}
                   className="rounded-2xl shrink-0"
@@ -821,7 +821,7 @@ export function ContentSalesPayoutSection({
               <div className="pt-1">
                 <Button
                   type="submit"
-                  variant="lime"
+                  variant="default"
                   disabled={
                     hasPendingWithdrawal ||
                     !bankAccount ||
@@ -922,7 +922,7 @@ export function ContentSalesPayoutSection({
                                 : w.status === "PROCESSING"
                                   ? "outline"
                                   : w.status === "COMPLETED" || w.status === "APPROVED"
-                                    ? "lime"
+                                    ? "default"
                                     : "destructive"
                             }
                             className="uppercase"
@@ -1287,7 +1287,7 @@ export function ContentSalesPayoutSection({
                 {currentActivePlan === "enterprise" ? (
                   <Badge>Active Tier</Badge>
                 ) : (
-                  <Badge variant="lime">Lowest Rate</Badge>
+                  <Badge variant="secondary">Lowest Rate</Badge>
                 )}
               </div>
               <div className="space-y-0.5">

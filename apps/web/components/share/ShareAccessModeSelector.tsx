@@ -358,7 +358,7 @@ export function ShareAccessModeSelector({
                 {targetType === "meeting" ? "Entry Pass Pricing" : "Content Pricing"}
               </h4>
             </div>
-            <Badge variant="lime">
+            <Badge variant="secondary">
               Paid Access
             </Badge>
           </div>

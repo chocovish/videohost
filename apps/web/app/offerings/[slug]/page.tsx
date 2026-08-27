@@ -94,10 +94,15 @@ export async function generateMetadata({
 
 export default async function OfferingsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ preview?: string; device?: "desktop" | "tablet" | "mobile" }>;
 }) {
   const { slug } = await params;
+  const sParams = searchParams ? await searchParams : undefined;
+  const isPreview = sParams?.preview === "true";
+  const previewDevice = sParams?.device;
   const session = await auth();
   const visitorUserId = session?.user?.id;
   const visitorEmail = session?.user?.email?.toLowerCase();
@@ -214,6 +219,8 @@ export default async function OfferingsPage({
         items,
         isLoggedIn: Boolean(visitorUserId),
       }}
+      isPreview={isPreview}
+      previewDevice={previewDevice}
     />
   );
 }

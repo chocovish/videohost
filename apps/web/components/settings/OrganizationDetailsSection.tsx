@@ -119,7 +119,7 @@ export function OrganizationDetailsSection({
               <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4 text-primary" /> Organization Logo
               </label>
-              <Badge variant="lime" className="font-mono">
+              <Badge variant="secondary" className="font-mono">
                 1:1 Ratio
               </Badge>
             </div>
@@ -200,7 +200,7 @@ export function OrganizationDetailsSection({
               <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-primary" /> Organization Cover Photo / Banner
               </label>
-              <Badge variant="lime" className="font-mono">
+              <Badge variant="secondary" className="font-mono">
                 3:1 Banner Ratio
               </Badge>
             </div>

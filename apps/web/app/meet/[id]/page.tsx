@@ -299,7 +299,7 @@ export default function MeetPage() {
           <div className="space-y-2.5 pt-2">
             {isUserLeft || isNetwork ? (
               <Button
-                variant="lime"
+                variant="default"
                 size="lg"
                 onClick={() => {
                   setLeaveState(null);
@@ -311,7 +311,7 @@ export default function MeetPage() {
               </Button>
             ) : canReopen ? (
               <Button
-                variant="lime"
+                variant="default"
                 size="lg"
                 disabled={isReopening}
                 onClick={handleReopenMeeting}
@@ -327,7 +327,7 @@ export default function MeetPage() {
             ) : null}
 
             <Button
-              variant={!isUserLeft && !isNetwork && !canReopen ? "lime" : "dark"}
+              variant={!isUserLeft && !isNetwork && !canReopen ? "default" : "outline"}
               size="lg"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
               className="w-full gap-2 font-bold cursor-pointer"
@@ -376,7 +376,7 @@ export default function MeetPage() {
 
           <div className="space-y-3 pt-2">
             <Button
-              variant="lime"
+              variant="default"
               size="lg"
               onClick={() => router.push(`/share/${id}`)}
               className="w-full gap-2 font-black cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950"
@@ -415,7 +415,7 @@ export default function MeetPage() {
           <div className="space-y-2 pt-2">
             {requiresAuth ? (
               <Button
-                variant="lime"
+                variant="default"
                 size="lg"
                 onClick={() => router.push(`/auth/login?callbackUrl=/meet/${id}`)}
                 className="w-full font-bold"
@@ -424,7 +424,7 @@ export default function MeetPage() {
               </Button>
             ) : (
               <Button
-                variant="lime"
+                variant="default"
                 size="lg"
                 onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
                 className="w-full gap-2 font-bold"

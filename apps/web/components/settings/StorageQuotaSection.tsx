@@ -78,7 +78,7 @@ export function StorageQuotaSection({
           />
           <Button
             type="submit"
-            variant="dark"
+            variant="default"
             className="w-full"
           >
             Request Custom Storage Override

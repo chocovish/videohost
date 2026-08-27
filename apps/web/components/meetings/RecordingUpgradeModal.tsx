@@ -47,7 +47,6 @@ export default function RecordingUpgradeModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        variant="glass"
         size="default"
         className="border-slate-800 bg-slate-950 text-slate-100 p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-w-lg z-70 max-h-[90vh] flex flex-col"
       >
@@ -151,10 +150,10 @@ export default function RecordingUpgradeModal({
 
           <Button
             type="button"
-            variant="lime"
+            variant="default"
             size="sm"
             onClick={handleUpgrade}
-            className="w-full sm:w-auto gap-2 font-bold cursor-pointer shadow-lg shadow-lime-500/20"
+            className="w-full sm:w-auto gap-2 font-bold cursor-pointer"
           >
             <Sparkles className="w-4 h-4" />
             <span>Upgrade to Paid Plan</span>

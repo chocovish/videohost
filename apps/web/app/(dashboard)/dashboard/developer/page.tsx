@@ -296,8 +296,7 @@ export default function DeveloperPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-mono text-muted-foreground break-all">Secret: {wh.secret}</span>
                     {wh.events.map((ev) => (
-                      <Badge key={ev} variant="lime">
-                        {ev}
+                      <Badge key={ev} variant="secondary">
                       </Badge>
                     ))}
                   </div>

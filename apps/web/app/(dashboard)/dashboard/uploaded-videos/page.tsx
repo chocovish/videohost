@@ -352,7 +352,7 @@ function UploadedVideosContent() {
     switch (status) {
       case "READY":
         return (
-          <Badge variant="lime" className="gap-1">
+          <Badge variant="secondary" className="gap-1">
             <CheckCircle2 className="w-3 h-3" /> Ready
           </Badge>
         );
@@ -629,14 +629,14 @@ function UploadedVideosContent() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-1 overflow-x-auto p-1.5 -m-1.5 w-full sm:w-auto justify-start sm:justify-end scrollbar-none">
           {["ALL", "READY", "PROCESSING", "FAILED"].map((st) => (
             <Button
               key={st}
               variant={statusFilter === st ? "default" : "ghost"}
               size="sm"
               onClick={() => setStatusFilter(st)}
-              className="text-xs font-semibold h-8"
+              className="text-xs font-semibold h-8 shrink-0"
             >
               {st}
             </Button>
@@ -662,10 +662,10 @@ function UploadedVideosContent() {
                 <div
                   key={folder.id}
                   onClick={() => navigateToFolder(folder.id)}
-                  className={`group cursor-pointer glass-card rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
+                  className={`group cursor-pointer glass-card card-hover rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
                     isSelected
                       ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
-                      : "border-border hover:border-primary/50 hover:shadow-xl"
+                      : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
                   }`}
                 >
                   {/* Checkbox Overlay (Top Left) */}
@@ -826,10 +826,10 @@ function UploadedVideosContent() {
               return (
                 <div
                   key={video.id}
-                  className={`group glass-card rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
+                  className={`group glass-card card-hover rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
                     isSelected
                       ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
-                      : "border-border hover:shadow-xl"
+                      : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
                   }`}
                 >
                   <div>

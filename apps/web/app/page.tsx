@@ -14,6 +14,7 @@ import {
   Ticket,
   UploadCloud,
   Video,
+  Sparkles,
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
@@ -215,50 +216,51 @@ export default function LandingPage() {
 
       <main className="w-full flex-1">
         {/* ── HERO ─────────────────────────────────────────────── */}
-        <section className="border-b border-border">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-14 sm:pb-20">
+        <section className="border-b-2 border-border bg-comic-dots relative overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-14 sm:pb-20 relative z-10">
             <div className="grid lg:grid-cols-[1.15fr_1fr] gap-12 lg:gap-16 items-center">
               <div>
-                <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary border border-primary/30 bg-primary/5 rounded-full px-3.5 py-1.5 mb-6">
+                <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary border-2 border-primary/40 bg-primary/10 rounded-full px-4 py-1.5 mb-6 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)] -rotate-1 hover:rotate-0 transition-transform cursor-default">
                   <LockKeyhole className="w-3.5 h-3.5" />
                   Only who you invite can ever watch
                 </p>
-
-                <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.05]">
+                <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.1] font-heading">
                   Host videos.
                   <br />
                   Meet live.
                   <br />
-                  <span className="text-primary">Share on your terms.</span>
+                  <span className="text-primary underline decoration-wavy decoration-amber-400 decoration-[3px] underline-offset-8 inline-block mt-2">
+                    Share on your terms.
+                  </span>
                 </h1>
 
                 <p className="mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl font-medium">
                   Taped hosts your videos and live meetings, then locks them down to{" "}
-                  <strong className="text-foreground">the exact people you invite by email</strong>{" "}
+                  <strong className="text-foreground font-bold">the exact people you invite by email</strong>{" "}
                   — nobody else can access your content. Brand every viewer page with{" "}
-                  <strong className="text-foreground">your logo</strong>, showcase your work on a{" "}
-                  <strong className="text-foreground">dedicated offerings page</strong>, and{" "}
-                  <strong className="text-foreground">monetize</strong> when you&apos;re ready.
+                  <strong className="text-foreground font-bold">your logo</strong>, showcase your work on a{" "}
+                  <strong className="text-foreground font-bold">dedicated offerings page</strong>, and{" "}
+                  <strong className="text-foreground font-bold">monetize</strong> when you&apos;re ready.
                 </p>
 
-                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                <div className="mt-8 flex flex-col sm:flex-row gap-3.5">
                   <Link
                     href="/auth/register"
-                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-primary text-primary-foreground font-extrabold text-base hover:opacity-90 active:scale-[0.98] transition-all"
+                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[4px_4px_0px_0px_var(--comic-shadow)] hover:-translate-y-0.5 hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
                   >
                     Start free — 2GB included
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/record"
-                    className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border-2 border-border font-bold text-base hover:border-primary hover:text-primary transition-all"
+                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-border bg-card text-foreground font-extrabold text-base shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:border-foreground hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
                   >
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-4 h-4 text-primary" />
                     Open studio recorder
                   </Link>
                 </div>
 
-                <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs sm:text-sm font-semibold text-muted-foreground">
+                <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs sm:text-sm font-bold text-muted-foreground">
                   {[
                     "No credit card required",
                     "Email-verified viewers only",
@@ -272,45 +274,47 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              {/* Flat product mock panel */}
+              {/* Cartoon product mock panel */}
               <div className="hidden lg:block">
-                <div className="rounded-2xl border-2 border-border overflow-hidden bg-card">
-                  <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border bg-muted">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                    <span className="ml-3 text-[11px] font-mono font-bold text-muted-foreground">
+                <div className="rounded-3xl border-2 border-border overflow-hidden bg-card shadow-[8px_8px_0px_0px_var(--comic-shadow)] hover:shadow-[10px_10px_0px_0px_var(--comic-shadow)] transition-all">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-border bg-muted/60">
+                    <span className="w-3 h-3 rounded-full bg-rose-400 border border-rose-600" />
+                    <span className="w-3 h-3 rounded-full bg-amber-400 border border-amber-600" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 border border-emerald-600" />
+                    <span className="ml-3 text-xs font-mono font-bold text-muted-foreground">
                       taped.app/share/q4-strategy
                     </span>
                   </div>
-                  <div className="p-5 space-y-4">
-                    <div className="aspect-video rounded-xl bg-muted border-2 border-border flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <MonitorPlay className="w-8 h-8" />
-                      <span className="text-xs font-bold uppercase tracking-wider">
+                  <div className="p-6 space-y-4">
+                    <div className="aspect-video rounded-2xl bg-muted border-2 border-border flex flex-col items-center justify-center gap-2.5 text-muted-foreground shadow-[inset_1px_1px_3px_0px_rgba(0,0,0,0.06)]">
+                      <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[3px_3px_0px_0px_var(--comic-shadow)]">
+                        <MonitorPlay className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-extrabold uppercase tracking-wider font-heading text-foreground">
                         Your video · Your branding
                       </span>
                     </div>
-                    <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 px-4 py-3">
-                      <div className="flex items-center gap-2.5 mb-2">
+                    <div className="rounded-2xl border-2 border-emerald-500/40 bg-emerald-500/10 px-4 py-3.5 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                      <div className="flex items-center gap-2 mb-2">
                         <LockKeyhole className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <span className="text-xs font-bold">Shared with 3 specific people</span>
+                        <span className="text-xs font-extrabold">Shared with 3 specific people</span>
                       </div>
-                      <ul className="space-y-1 pl-6 text-[11px] font-semibold text-muted-foreground">
+                      <ul className="space-y-1 pl-6 text-xs font-bold text-muted-foreground">
                         <li>✓ maya@client.com — verified</li>
                         <li>✓ dev@partner.io — verified</li>
                         <li>✕ anyoneelse@anywhere.com — blocked</li>
                       </ul>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl border border-border p-3 text-center">
-                        <p className="text-lg font-black text-primary">6</p>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mt-0.5">
+                      <div className="rounded-2xl border-2 border-border bg-card p-3.5 text-center shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                        <p className="text-2xl font-black text-primary font-heading">6</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground mt-0.5">
                           Courses live
                         </p>
                       </div>
-                      <div className="rounded-xl border border-border p-3 text-center">
-                        <p className="text-lg font-black text-primary">100%</p>
-                        <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mt-0.5">
+                      <div className="rounded-2xl border-2 border-border bg-card p-3.5 text-center shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                        <p className="text-2xl font-black text-primary font-heading">100%</p>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground mt-0.5">
                           White-label pages
                         </p>
                       </div>
@@ -323,8 +327,8 @@ export default function LandingPage() {
         </section>
 
         {/* ── STATS STRIP ──────────────────────────────────────── */}
-        <section aria-label="Key platform stats" className="border-b border-border">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
+        <section aria-label="Key platform stats" className="border-b-2 border-border bg-card">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 divide-x-2 divide-border">
             {[
               { value: "2 GB", label: "Free storage forever" },
               { value: "3.5%", label: "Lowest sale commission" },
@@ -333,10 +337,10 @@ export default function LandingPage() {
             ].map((stat, i) => (
               <div
                 key={stat.label}
-                className={`py-8 sm:py-10 px-4 sm:px-6 text-center ${i > 1 ? "border-t md:border-t-0 border-border" : ""}`}
+                className={`py-8 sm:py-10 px-4 sm:px-6 text-center ${i > 1 ? "border-t-2 md:border-t-0 border-border" : ""}`}
               >
-                <p className="text-3xl sm:text-4xl font-black tracking-tight">{stat.value}</p>
-                <p className="mt-1 text-xs sm:text-sm font-semibold text-muted-foreground">
+                <p className="text-3xl sm:text-4xl font-black tracking-tight font-heading text-foreground">{stat.value}</p>
+                <p className="mt-1 text-xs sm:text-sm font-bold text-muted-foreground">
                   {stat.label}
                 </p>
               </div>
@@ -345,42 +349,41 @@ export default function LandingPage() {
         </section>
 
         {/* ── THREE PILLARS ────────────────────────────────────── */}
-        <section className="border-b border-border" id="platform">
+        <section className="border-b-2 border-border" id="platform">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="max-w-2xl">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 What Taped does best
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 Three pillars. One uncompromising platform.
               </h2>
             </div>
 
-            <div className="mt-12 grid md:grid-cols-3 gap-4">
+            <div className="mt-12 grid md:grid-cols-3 gap-5">
               {PILLARS.map((pillar) => (
                 <article
                   key={pillar.title}
-                  className={`rounded-2xl border-2 p-6 ${pillar.highlight
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-card"
-                    }`}
+                  className={`rounded-3xl border-2 p-7 transition-all duration-200 hover:-translate-y-1 ${
+                    pillar.highlight
+                      ? "border-primary bg-primary/10 shadow-[6px_6px_0px_0px_var(--comic-shadow)]"
+                      : "border-border bg-card shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] hover:border-foreground"
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-5">
                     <div
-                      className={`w-11 h-11 rounded-xl flex items-center justify-center ${pillar.highlight ? "bg-primary" : "bg-primary/10"
-                        }`}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center border-2 border-foreground/15 shadow-[2.5px_2.5px_0px_0px_var(--comic-shadow-subtle)] ${
+                        pillar.highlight ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"
+                      }`}
                     >
-                      <pillar.icon
-                        className={`w-5 h-5 ${pillar.highlight ? "text-primary-foreground" : "text-primary"
-                          }`}
-                      />
+                      <pillar.icon className="w-6 h-6" />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       {pillar.kicker}
                     </span>
                   </div>
-                  <h3 className="text-lg font-extrabold tracking-tight">{pillar.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-medium">
+                  <h3 className="text-xl font-bold tracking-tight font-heading">{pillar.title}</h3>
+                  <p className="mt-2.5 text-sm text-muted-foreground leading-relaxed font-medium">
                     {pillar.description}
                   </p>
                 </article>
@@ -390,14 +393,14 @@ export default function LandingPage() {
         </section>
 
         {/* ── BRANDED VIEWER EXPERIENCE ────────────────────────── */}
-        <section className="border-b border-border bg-muted" id="branding">
+        <section className="border-b-2 border-border bg-muted/40" id="branding">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
               <div>
                 <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                   Your brand, front and center
                 </p>
-                <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+                <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                   The viewer never sees us. Only you.
                 </h2>
                 <p className="mt-4 text-muted-foreground font-medium leading-relaxed">
@@ -412,7 +415,7 @@ export default function LandingPage() {
                     "Point a call-to-action button at your calendar, site or offer",
                     "Embeddable player keeps your branding on your own website too",
                   ].map((point) => (
-                    <li key={point} className="flex items-start gap-2.5 text-sm font-medium">
+                    <li key={point} className="flex items-start gap-2.5 text-sm font-semibold">
                       <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                       {point}
                     </li>
@@ -420,28 +423,28 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              {/* Flat branding mockup */}
-              <div className="rounded-2xl border-2 border-border bg-card overflow-hidden shadow-sm">
-                <div className="aspect-video bg-muted flex items-center justify-center relative">
-                  <div className="absolute top-3 left-3 rounded-md bg-background border border-border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+              {/* Cartoon branding mockup */}
+              <div className="rounded-3xl border-2 border-border bg-card overflow-hidden shadow-[8px_8px_0px_0px_var(--comic-shadow)]">
+                <div className="aspect-video bg-muted/60 flex items-center justify-center relative border-b-2 border-border">
+                  <div className="absolute top-3 left-3 rounded-xl bg-card border-2 border-border px-3 py-1 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
                     <Palette className="w-3 h-3 text-primary" />
                     Your Logo Here
                   </div>
-                  <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-                    <Clapperboard className="w-6 h-6 text-primary-foreground" />
+                  <div className="w-16 h-16 rounded-2xl bg-primary text-primary-foreground border-2 border-foreground/20 flex items-center justify-center shadow-[4px_4px_0px_0px_var(--comic-shadow)] animate-pop-spring">
+                    <Clapperboard className="w-7 h-7" />
                   </div>
-                  <div className="absolute bottom-3 left-3 right-3 h-1.5 rounded-full bg-border overflow-hidden">
-                    <div className="h-full w-2/3 bg-primary" />
+                  <div className="absolute bottom-3 left-3 right-3 h-2 rounded-full bg-border overflow-hidden">
+                    <div className="h-full w-2/3 bg-primary rounded-full" />
                   </div>
                 </div>
-                <div className="p-5 space-y-3">
-                  <div className="h-3 w-3/4 rounded bg-border" />
-                  <div className="h-3 w-1/2 rounded bg-border" />
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="h-7 w-28 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-primary">
+                <div className="p-6 space-y-3">
+                  <div className="h-4 w-3/4 rounded-full bg-muted" />
+                  <div className="h-3 w-1/2 rounded-full bg-muted/70" />
+                  <div className="flex items-center justify-between pt-3">
+                    <div className="h-8 px-4 rounded-xl bg-primary text-primary-foreground border-2 border-foreground/15 flex items-center justify-center text-xs font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_var(--comic-shadow)]">
                       Book a demo
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
                       Your domain feel
                     </span>
                   </div>
@@ -452,13 +455,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── OFFERINGS STOREFRONT ─────────────────────────────── */}
-        <section className="border-b border-border" id="offerings">
+        <section className="border-b-2 border-border" id="offerings">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="max-w-2xl">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 One link for everything you do
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 A dedicated page for your offerings & events.
               </h2>
               <p className="mt-4 text-muted-foreground font-medium leading-relaxed">
@@ -493,20 +496,20 @@ export default function LandingPage() {
               ].map((card) => (
                 <article
                   key={card.title}
-                  className="rounded-2xl border-2 border-border p-6 bg-card transition-colors hover:border-primary/50"
+                  className="rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5px_5px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
-                    <card.icon className="w-5 h-5 text-primary" />
+                  <div className="w-12 h-12 rounded-2xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center mb-5 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                    <card.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-extrabold tracking-tight">{card.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-medium">
+                  <h3 className="font-extrabold tracking-tight font-heading text-base">{card.title}</h3>
+                  <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed font-medium">
                     {card.desc}
                   </p>
                 </article>
               ))}
             </div>
 
-            <p className="mt-8 text-sm font-semibold text-muted-foreground">
+            <p className="mt-8 text-sm font-bold text-muted-foreground">
               Plus testimonials, FAQs, social links, featured videos and inquiry forms — fully
               configurable, published under your own slug.{" "}
             </p>
@@ -514,27 +517,27 @@ export default function LandingPage() {
         </section>
 
         {/* ── MORE FEATURES ────────────────────────────────────── */}
-        <section className="border-b border-border" id="features">
+        <section className="border-b-2 border-border" id="features">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="max-w-2xl">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 And everything around it
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 The details that make it complete.
               </h2>
             </div>
 
-            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {FEATURES.map((feature) => (
                 <article
                   key={feature.title}
-                  className="group rounded-2xl border-2 border-border p-6 bg-card transition-colors hover:border-primary/50"
+                  className="group rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3.5px_3.5px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:[&>svg]:text-primary-foreground transition-colors">
-                    <feature.icon className="w-5 h-5 text-primary transition-colors" />
+                  <div className="w-12 h-12 rounded-2xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:border-foreground/20 group-hover:[&>svg]:text-primary-foreground transition-all shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                    <feature.icon className="w-6 h-6 text-primary transition-colors" />
                   </div>
-                  <h3 className="text-lg font-extrabold tracking-tight">{feature.title}</h3>
+                  <h3 className="text-lg font-bold tracking-tight font-heading">{feature.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-medium">
                     {feature.description}
                   </p>
@@ -545,13 +548,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── MONETIZE ─────────────────────────────────────────── */}
-        <section className="border-b border-border bg-muted" id="monetize">
+        <section className="border-b-2 border-border bg-muted/40" id="monetize">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="max-w-2xl mx-auto text-center">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 Built-in monetization
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 Monetize your videos & meetings.
               </h2>
               <p className="mt-4 text-muted-foreground font-medium leading-relaxed">
@@ -561,7 +564,7 @@ export default function LandingPage() {
             </div>
 
             {/* What you can sell */}
-            <div className="mt-12 grid md:grid-cols-2 max-w-4xl mx-auto gap-4">
+            <div className="mt-12 grid md:grid-cols-2 max-w-4xl mx-auto gap-5">
               {[
                 {
                   icon: Clapperboard,
@@ -584,22 +587,22 @@ export default function LandingPage() {
               ].map((item) => (
                 <article
                   key={item.name}
-                  className="rounded-2xl border-2 border-border bg-card p-6 flex flex-col"
+                  className="rounded-3xl border-2 border-border bg-card p-6 flex flex-col shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] transition-all"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
-                      <item.icon className="w-5 h-5" />
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground border-2 border-foreground/15 flex items-center justify-center shrink-0 shadow-[2.5px_2.5px_0px_0px_var(--comic-shadow-subtle)]">
+                      <item.icon className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold tracking-tight">{item.name}</h3>
-                      <p className="text-xs font-semibold text-muted-foreground">{item.tagline}</p>
+                      <h3 className="font-extrabold tracking-tight font-heading text-lg">{item.name}</h3>
+                      <p className="text-xs font-bold text-muted-foreground">{item.tagline}</p>
                     </div>
                   </div>
                   <ul className="mt-5 space-y-2.5 flex-1">
                     {item.points.map((point) => (
                       <li
                         key={point}
-                        className="flex items-start gap-2 text-sm font-medium text-muted-foreground"
+                        className="flex items-start gap-2 text-sm font-semibold text-muted-foreground"
                       >
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         {point}
@@ -611,19 +614,19 @@ export default function LandingPage() {
             </div>
 
             {/* Commission breakdown panel */}
-            <div className="mt-4 rounded-2xl border-2 border-primary/40 bg-card overflow-hidden">
+            <div className="mt-6 rounded-3xl border-2 border-border bg-card overflow-hidden shadow-[8px_8px_0px_0px_var(--comic-shadow)]">
               <div className="grid md:grid-cols-[1fr_auto] items-stretch">
                 <div className="p-6 sm:p-8">
-                  <h3 className="text-xl sm:text-2xl font-black tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-black tracking-tight font-heading">
                     The lowest commission in the market. Period.
                   </h3>
                   <p className="mt-2 text-sm sm:text-base text-muted-foreground font-medium leading-relaxed max-w-lg">
                     While other platforms quietly take 10–30%, our platform fee starts at just{" "}
-                    <strong className="text-foreground">6.5%</strong> and shrinks to{" "}
-                    <strong className="text-primary">3.5%</strong> as you grow. No hidden listing
+                    <strong className="text-foreground font-bold">6.5%</strong> and shrinks to{" "}
+                    <strong className="text-primary font-bold">3.5%</strong> as you grow. No hidden listing
                     fees. No monthly minimums to sell.
                   </p>
-                  <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs sm:text-sm font-semibold text-muted-foreground">
+                  <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs sm:text-sm font-bold text-muted-foreground">
                     <li className="flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-primary" /> Secure checkout included
                     </li>
@@ -635,12 +638,12 @@ export default function LandingPage() {
                     </li>
                   </ul>
                 </div>
-                <div className="border-t md:border-t-0 md:border-l border-border bg-primary text-primary-foreground p-6 sm:p-8 flex flex-col justify-center items-center text-center min-w-56">
-                  <p className="text-xs font-black uppercase tracking-widest opacity-80">
+                <div className="border-t-2 md:border-t-0 md:border-l-2 border-border bg-primary text-primary-foreground p-6 sm:p-8 flex flex-col justify-center items-center text-center min-w-56 shadow-inner">
+                  <p className="text-xs font-black uppercase tracking-widest opacity-90">
                     Platform fee from
                   </p>
-                  <p className="text-6xl font-black tracking-tighter leading-none my-2">3.5%</p>
-                  <p className="text-xs font-semibold opacity-80">
+                  <p className="text-6xl font-black tracking-tighter leading-none my-2 font-heading">3.5%</p>
+                  <p className="text-xs font-bold opacity-90">
                     The lowest platform fee anywhere
                   </p>
                   <Link
@@ -656,30 +659,30 @@ export default function LandingPage() {
         </section>
 
         {/* ── HOW IT WORKS ─────────────────────────────────────── */}
-        <section className="border-b border-border" id="how-it-works">
+        <section className="border-b-2 border-border" id="how-it-works">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="max-w-2xl">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 From idea to income
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 Four steps. That&apos;s the whole workflow.
               </h2>
             </div>
 
-            <ol className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ol className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {STEPS.map((step) => (
                 <li
                   key={step.number}
-                  className="relative rounded-2xl border-2 border-border p-6 bg-card"
+                  className="relative rounded-3xl border-2 border-border p-6 bg-card shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1 transition-all"
                 >
                   <span
                     aria-hidden
-                    className="absolute top-5 right-6 text-4xl font-black text-primary/15 select-none"
+                    className="absolute top-5 right-6 text-4xl font-black text-primary/20 font-heading select-none"
                   >
                     {step.number}
                   </span>
-                  <h3 className="text-lg font-extrabold tracking-tight">{step.title}</h3>
+                  <h3 className="text-lg font-bold tracking-tight font-heading">{step.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground leading-relaxed font-medium">
                     {step.description}
                   </p>
@@ -690,25 +693,25 @@ export default function LandingPage() {
         </section>
 
         {/* ── FAQ ──────────────────────────────────────────────── */}
-        <section className="border-b border-border" id="faq">
+        <section className="border-b-2 border-border" id="faq">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
             <div className="text-center mb-10">
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-3">
                 Answers, upfront
               </p>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight font-heading">
                 Frequently asked questions
               </h2>
             </div>
 
-            <div className="divide-y divide-border border-y-2 border-border">
+            <div className="divide-y-2 divide-border border-y-2 border-border">
               {FAQ_DATA.map((faq) => (
                 <details key={faq.question} className="group py-5">
-                  <summary className="flex items-center justify-between gap-4 cursor-pointer list-none text-left font-extrabold text-base sm:text-lg tracking-tight marker:hidden [&::-webkit-details-marker]:hidden">
+                  <summary className="flex items-center justify-between gap-4 cursor-pointer list-none text-left font-bold text-base sm:text-lg tracking-tight font-heading marker:hidden [&::-webkit-details-marker]:hidden">
                     {faq.question}
                     <span
                       aria-hidden
-                      className="shrink-0 w-7 h-7 rounded-full border-2 border-border flex items-center justify-center text-lg font-bold text-muted-foreground group-open:bg-primary group-open:border-primary group-open:text-primary-foreground transition-colors"
+                      className="shrink-0 w-8 h-8 rounded-xl border-2 border-border flex items-center justify-center text-lg font-extrabold text-muted-foreground group-open:bg-primary group-open:border-primary group-open:text-primary-foreground shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)] transition-colors"
                     >
                       +
                     </span>
@@ -723,32 +726,32 @@ export default function LandingPage() {
         </section>
 
         {/* ── FINAL CTA ────────────────────────────────────────── */}
-        <section className="bg-primary text-primary-foreground">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight max-w-3xl mx-auto">
+        <section className="bg-primary text-primary-foreground border-b-2 border-border relative overflow-hidden">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center relative z-10">
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight max-w-3xl mx-auto font-heading">
               Your content. Your audience. Nobody else gets in.
             </h2>
-            <p className="mt-4 text-base sm:text-lg font-medium opacity-90 max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg font-semibold opacity-90 max-w-2xl mx-auto leading-relaxed">
               Start hosting privately today — 2GB free storage, branded viewer pages and your own
               offerings page, ready the moment you sign up.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
                 href="/auth/register"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-background text-foreground font-extrabold text-base hover:opacity-90 active:scale-[0.98] transition-all"
+                className="comic-press w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-card text-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
               >
                 Create your free account
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/record"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full border-2 border-primary-foreground/40 font-bold text-base hover:bg-primary-foreground/10 transition-all"
+                className="comic-press w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-primary-foreground/40 text-primary-foreground bg-primary-foreground/10 font-bold text-base shadow-[2.5px_2.5px_0px_0px_var(--comic-shadow-subtle)] hover:bg-primary-foreground/20 active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
               >
                 <Camera className="w-4 h-4" />
                 Try the recorder first
               </Link>
             </div>
-            <p className="mt-6 text-xs font-semibold opacity-75">
+            <p className="mt-6 text-xs font-bold opacity-80">
               Free forever plan · No credit card · Lowest commission in the market
             </p>
           </div>

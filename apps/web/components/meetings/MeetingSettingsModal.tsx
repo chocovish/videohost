@@ -253,7 +253,7 @@ export default function MeetingSettingsModal() {
         </div>
 
         <Button
-          variant="darkGhost"
+          variant="ghost"
           size="icon-xs"
           onClick={handleClose}
           title="Close Settings"
@@ -551,7 +551,7 @@ export default function MeetingSettingsModal() {
                       <p className="text-[11px] text-slate-500">Enable camera to see your live preview</p>
                     </div>
                     <Button
-                      variant="lime"
+                      variant="default"
                       size="sm"
                       onClick={() => localParticipant?.setCameraEnabled(true)}
                       className="px-4 rounded-xl gap-1.5"
@@ -604,7 +604,7 @@ export default function MeetingSettingsModal() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white uppercase tracking-wider">Meeting Room Link</span>
                 <Button
-                  variant="lime"
+                  variant="default"
                   size="xs"
                   onClick={handleCopyLink}
                   className="gap-1 font-bold"

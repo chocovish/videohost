@@ -32,14 +32,14 @@ export function OrganizationSwitcherSection({
   onSwitchOrg,
   onCreateOrgClick,
 }: OrganizationSwitcherSectionProps) {
-  const getRoleBadgeStyle = (role: string): "default" | "secondary" | "destructive" | "outline" | "lime" => {
+  const getRoleBadgeStyle = (role: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (role.toUpperCase()) {
       case "OWNER":
         return "default";
       case "ADMIN":
         return "secondary";
       case "MEMBER":
-        return "lime";
+        return "outline";
       default:
         return "outline";
     }
@@ -117,7 +117,7 @@ export function OrganizationSwitcherSection({
                   </div>
 
                   {org.isActive && (
-                    <Badge variant="lime" className="uppercase tracking-wider shrink-0">
+                    <Badge variant="secondary" className="uppercase tracking-wider shrink-0">
                       <CheckCircle2 className="w-3 h-3" /> Active
                     </Badge>
                   )}

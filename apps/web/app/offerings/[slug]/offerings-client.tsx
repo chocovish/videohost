@@ -191,6 +191,16 @@ export const THEME_PALETTES: Record<
     heroGradient: string;
   }
 > = {
+  pop: {
+    bg: "#0e0918",
+    card: "#181028",
+    cardBorder: "rgba(168, 85, 247, 0.22)",
+    text: "#fdf4ff",
+    subtext: "#d8b4fe",
+    accent: "#a855f7",
+    glow: "rgba(168, 85, 247, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(168, 85, 247, 0.20) 0%, rgba(14, 9, 24, 0) 100%)",
+  },
   obsidian: {
     bg: "#030712",
     card: "#0b1329",
@@ -198,28 +208,68 @@ export const THEME_PALETTES: Record<
     text: "#f8fafc",
     subtext: "#94a3b8",
     accent: "#84cc16",
-    glow: "rgba(132, 204, 22, 0.15)",
-    heroGradient: "linear-gradient(180deg, rgba(132, 204, 22, 0.12) 0%, rgba(3, 7, 18, 0) 100%)",
+    glow: "rgba(132, 204, 22, 0.28)",
+    heroGradient: "linear-gradient(180deg, rgba(132, 204, 22, 0.16) 0%, rgba(3, 7, 18, 0) 100%)",
+  },
+  arcade: {
+    bg: "#100c04",
+    card: "#1f180a",
+    cardBorder: "rgba(234, 179, 8, 0.22)",
+    text: "#fefce8",
+    subtext: "#fde047",
+    accent: "#eab308",
+    glow: "rgba(234, 179, 8, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(234, 179, 8, 0.20) 0%, rgba(16, 12, 4, 0) 100%)",
+  },
+  bubblegum: {
+    bg: "#14060f",
+    card: "#260c1d",
+    cardBorder: "rgba(236, 72, 153, 0.22)",
+    text: "#fff1f2",
+    subtext: "#fbcfe8",
+    accent: "#ec4899",
+    glow: "rgba(236, 72, 153, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(236, 72, 153, 0.20) 0%, rgba(20, 6, 15, 0) 100%)",
+  },
+  lime: {
+    bg: "#071203",
+    card: "#0f2407",
+    cardBorder: "rgba(132, 204, 22, 0.22)",
+    text: "#f7fee7",
+    subtext: "#bef264",
+    accent: "#84cc16",
+    glow: "rgba(132, 204, 22, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(132, 204, 22, 0.20) 0%, rgba(7, 18, 3, 0) 100%)",
+  },
+  ocean: {
+    bg: "#040d1a",
+    card: "#091930",
+    cardBorder: "rgba(14, 165, 233, 0.22)",
+    text: "#f0f9ff",
+    subtext: "#7dd3fc",
+    accent: "#0ea5e9",
+    glow: "rgba(14, 165, 233, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(14, 165, 233, 0.20) 0%, rgba(4, 13, 26, 0) 100%)",
   },
   aurora: {
     bg: "#070b19",
     card: "#0f172a",
-    cardBorder: "rgba(99, 102, 241, 0.16)",
+    cardBorder: "rgba(99, 102, 241, 0.18)",
     text: "#f8fafc",
     subtext: "#94a3b8",
     accent: "#6366f1",
-    glow: "rgba(99, 102, 241, 0.18)",
-    heroGradient: "linear-gradient(180deg, rgba(99, 102, 241, 0.16) 0%, rgba(7, 11, 25, 0) 100%)",
+    glow: "rgba(99, 102, 241, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(99, 102, 241, 0.18) 0%, rgba(7, 11, 25, 0) 100%)",
   },
   sunset: {
     bg: "#0f0714",
     card: "#1e0e24",
-    cardBorder: "rgba(249, 115, 22, 0.16)",
+    cardBorder: "rgba(249, 115, 22, 0.18)",
     text: "#fff1f2",
     subtext: "#fda4af",
     accent: "#f97316",
-    glow: "rgba(249, 115, 22, 0.18)",
-    heroGradient: "linear-gradient(180deg, rgba(249, 115, 22, 0.16) 0%, rgba(15, 7, 20, 0) 100%)",
+    glow: "rgba(249, 115, 22, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(249, 115, 22, 0.18) 0%, rgba(15, 7, 20, 0) 100%)",
   },
   "minimal-light": {
     bg: "#f8fafc",
@@ -228,48 +278,58 @@ export const THEME_PALETTES: Record<
     text: "#0f172a",
     subtext: "#64748b",
     accent: "#2563eb",
-    glow: "rgba(37, 99, 235, 0.12)",
-    heroGradient: "linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, rgba(248, 250, 252, 0) 100%)",
+    glow: "rgba(37, 99, 235, 0.22)",
+    heroGradient: "linear-gradient(180deg, rgba(37, 99, 235, 0.10) 0%, rgba(248, 250, 252, 0) 100%)",
+  },
+  minimal: {
+    bg: "#f8fafc",
+    card: "#ffffff",
+    cardBorder: "rgba(0, 0, 0, 0.08)",
+    text: "#0f172a",
+    subtext: "#64748b",
+    accent: "#2563eb",
+    glow: "rgba(37, 99, 235, 0.22)",
+    heroGradient: "linear-gradient(180deg, rgba(37, 99, 235, 0.10) 0%, rgba(248, 250, 252, 0) 100%)",
   },
   cyberpunk: {
     bg: "#070312",
     card: "#130724",
-    cardBorder: "rgba(6, 182, 212, 0.2)",
+    cardBorder: "rgba(6, 182, 212, 0.22)",
     text: "#ecfeff",
     subtext: "#a5f3fc",
     accent: "#06b6d4",
-    glow: "rgba(6, 182, 212, 0.22)",
-    heroGradient: "linear-gradient(180deg, rgba(6, 182, 212, 0.18) 0%, rgba(7, 3, 18, 0) 100%)",
+    glow: "rgba(6, 182, 212, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(6, 182, 212, 0.20) 0%, rgba(7, 3, 18, 0) 100%)",
   },
   "rose-gold": {
     bg: "#0d070b",
     card: "#1b0f17",
-    cardBorder: "rgba(244, 114, 182, 0.16)",
+    cardBorder: "rgba(244, 114, 182, 0.18)",
     text: "#fff1f2",
     subtext: "#fbcfe8",
     accent: "#f43f5e",
-    glow: "rgba(244, 63, 94, 0.18)",
-    heroGradient: "linear-gradient(180deg, rgba(244, 63, 94, 0.15) 0%, rgba(13, 7, 11, 0) 100%)",
+    glow: "rgba(244, 63, 94, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(244, 63, 94, 0.18) 0%, rgba(13, 7, 11, 0) 100%)",
   },
   emerald: {
     bg: "#03140d",
     card: "#082218",
-    cardBorder: "rgba(16, 185, 129, 0.18)",
+    cardBorder: "rgba(16, 185, 129, 0.2)",
     text: "#ecfdf5",
     subtext: "#a7f3d0",
     accent: "#10b981",
-    glow: "rgba(16, 185, 129, 0.18)",
-    heroGradient: "linear-gradient(180deg, rgba(16, 185, 129, 0.16) 0%, rgba(3, 20, 13, 0) 100%)",
+    glow: "rgba(16, 185, 129, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(16, 185, 129, 0.18) 0%, rgba(3, 20, 13, 0) 100%)",
   },
   midnight: {
     bg: "#020617",
     card: "#091124",
-    cardBorder: "rgba(56, 189, 248, 0.16)",
+    cardBorder: "rgba(56, 189, 248, 0.18)",
     text: "#f0f9ff",
     subtext: "#7dd3fc",
     accent: "#38bdf8",
-    glow: "rgba(56, 189, 248, 0.16)",
-    heroGradient: "linear-gradient(180deg, rgba(56, 189, 248, 0.15) 0%, rgba(2, 6, 23, 0) 100%)",
+    glow: "rgba(56, 189, 248, 0.35)",
+    heroGradient: "linear-gradient(180deg, rgba(56, 189, 248, 0.18) 0%, rgba(2, 6, 23, 0) 100%)",
   },
 };
 
@@ -381,8 +441,49 @@ export default function OfferingsLandingClient({
   isPreview = false,
   previewDevice = "desktop",
 }: OfferingsLandingClientProps) {
-  const isMobileView = isPreview && previewDevice === "mobile";
-  const isTabletView = isPreview && previewDevice === "tablet";
+  const [liveOverrideConfig, setLiveOverrideConfig] = useState<OfferingsConfigData | null>(null);
+  const [liveOverrideItems, setLiveOverrideItems] = useState<OfferingItemData[] | null>(null);
+  const [currentDevice, setCurrentDevice] = useState<"desktop" | "tablet" | "mobile">(previewDevice);
+  const [isInIframe, setIsInIframe] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const inIframe = window.parent !== window;
+      setIsInIframe(inIframe);
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlDevice = searchParams.get("device");
+      if (urlDevice === "mobile" || urlDevice === "tablet" || urlDevice === "desktop") {
+        setCurrentDevice(urlDevice);
+      }
+
+      if (inIframe) {
+        window.parent.postMessage({ type: "OFFERINGS_PREVIEW_FRAME_READY" }, "*");
+      }
+
+      const handleMessage = (event: MessageEvent) => {
+        if (!event.data || typeof event.data !== "object") return;
+        if (event.data.type === "OFFERINGS_PREVIEW_UPDATE") {
+          if (event.data.config) {
+            setLiveOverrideConfig(event.data.config);
+          }
+          if (event.data.items) {
+            setLiveOverrideItems(event.data.items);
+          }
+          if (event.data.previewDevice) {
+            setCurrentDevice(event.data.previewDevice);
+          }
+        }
+      };
+
+      window.addEventListener("message", handleMessage);
+      return () => window.removeEventListener("message", handleMessage);
+    }
+  }, []);
+
+  const isPreviewMode = isPreview || isInIframe;
+  const isMobileView = isPreviewMode && currentDevice === "mobile";
+  const isTabletView = isPreviewMode && currentDevice === "tablet";
 
   const offeringsGridClass = isMobileView
     ? "grid grid-cols-1 gap-4"
@@ -400,32 +501,6 @@ export default function OfferingsLandingClient({
     ? "grid grid-cols-2 gap-2 pt-3"
     : "grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4";
 
-  const [liveOverrideConfig, setLiveOverrideConfig] = useState<OfferingsConfigData | null>(null);
-  const [liveOverrideItems, setLiveOverrideItems] = useState<OfferingItemData[] | null>(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (window.parent !== window) {
-        window.parent.postMessage({ type: "OFFERINGS_PREVIEW_FRAME_READY" }, "*");
-      }
-
-      const handleMessage = (event: MessageEvent) => {
-        if (!event.data || typeof event.data !== "object") return;
-        if (event.data.type === "OFFERINGS_PREVIEW_UPDATE") {
-          if (event.data.config) {
-            setLiveOverrideConfig(event.data.config);
-          }
-          if (event.data.items) {
-            setLiveOverrideItems(event.data.items);
-          }
-        }
-      };
-
-      window.addEventListener("message", handleMessage);
-      return () => window.removeEventListener("message", handleMessage);
-    }
-  }, []);
-
   const config: OfferingsConfigData = liveOverrideConfig || liveConfig || initialData?.config || {};
   const items: OfferingItemData[] = liveOverrideItems || liveItems || initialData?.items || [];
   const org = initialData?.organization || {
@@ -439,6 +514,15 @@ export default function OfferingsLandingClient({
   const themeKey = config.themePreset || "obsidian";
   const theme = THEME_PALETTES[themeKey] || THEME_PALETTES.obsidian;
   const accentColor = config.accentColor || theme.accent;
+  const effectiveGlow = useMemo(() => {
+    if (config.accentColor) {
+      if (config.accentColor.startsWith("#") && config.accentColor.length === 7) {
+        return `${config.accentColor}25`;
+      }
+      return config.accentColor;
+    }
+    return theme.glow;
+  }, [config.accentColor, theme.glow]);
 
   // Filter & Search State
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
@@ -737,6 +821,48 @@ export default function OfferingsLandingClient({
         color: theme.text,
       }}
     >
+      {/* Sleek Preview Scrollbar & Inset Controls */}
+      {isPreviewMode && (
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              isMobileView || isTabletView
+                ? `
+              html, body {
+                scrollbar-width: none !important;
+                -ms-overflow-style: none !important;
+                overflow-x: hidden !important;
+              }
+              ::-webkit-scrollbar {
+                display: none !important;
+                width: 0px !important;
+                height: 0px !important;
+              }
+            `
+                : `
+              html, body {
+                scrollbar-width: thin !important;
+                scrollbar-color: rgba(140, 140, 150, 0.35) transparent !important;
+                overflow-x: hidden !important;
+              }
+              ::-webkit-scrollbar {
+                width: 6px !important;
+                height: 6px !important;
+              }
+              ::-webkit-scrollbar-track {
+                background: transparent !important;
+              }
+              ::-webkit-scrollbar-thumb {
+                background: rgba(140, 140, 150, 0.35) !important;
+                border-radius: 9999px !important;
+              }
+              ::-webkit-scrollbar-thumb:hover {
+                background: rgba(140, 140, 150, 0.6) !important;
+              }
+            `,
+          }}
+        />
+      )}
       {/* Background Ambience Layer */}
       {config.backgroundStyle === "mesh-gradient" && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -842,7 +968,7 @@ export default function OfferingsLandingClient({
 
               <Button
                 onClick={() => handleOpenInquiry()}
-                className="text-xs sm:text-sm font-semibold rounded-xl px-3 sm:px-4 py-2 text-white shadow-lg transition-transform active:scale-95 cursor-pointer"
+                className="text-xs sm:text-sm font-semibold rounded-xl px-3 sm:px-4 py-2 text-white shadow-xs transition-transform active:scale-95 cursor-pointer"
                 style={{ backgroundColor: accentColor }}
               >
                 {config.ctaText || "Explore Offerings"}
@@ -856,10 +982,11 @@ export default function OfferingsLandingClient({
           <div className="max-w-4xl mx-auto">
             {/* Banner Cover */}
             <div
-              className={`w-full ${isMobileView ? "h-32" : "h-36 sm:h-52 md:h-64"} ${roundnessClass} overflow-hidden relative border shadow-2xl transition-all`}
+              className={`w-full ${isMobileView ? "h-32" : "h-36 sm:h-52 md:h-64"} ${roundnessClass} overflow-hidden relative border transition-all`}
               style={{
                 backgroundColor: theme.card,
                 borderColor: theme.cardBorder,
+                boxShadow: `0 8px 30px -4px ${effectiveGlow}`,
               }}
             >
               {config.bannerUrl ? (
@@ -883,14 +1010,23 @@ export default function OfferingsLandingClient({
             </div>
 
             {/* Creator Identity Bar (Overlapping Banner) */}
-            <div className={`relative ${isMobileView ? "px-2 -mt-10 flex flex-col items-center gap-3 text-center" : "px-2 sm:px-6 -mt-12 sm:-mt-16 flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 text-center sm:text-left"}`}>
-              <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4">
+            <div
+              className={`relative px-2 sm:px-6 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left ${
+                config.showAvatar !== false
+                  ? isMobileView
+                    ? "-mt-10"
+                    : "-mt-10 sm:mt-0"
+                  : "pt-4 sm:pt-6"
+              }`}
+            >
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                 {config.showAvatar !== false && (
                   <div
-                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl p-1 shadow-2xl shrink-0 relative border-2 transition-transform hover:scale-105"
+                    className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl p-1 shrink-0 relative border-2 transition-transform hover:scale-105 sm:-mt-14"
                     style={{
                       backgroundColor: theme.card,
                       borderColor: accentColor,
+                      boxShadow: `0 8px 24px -2px ${effectiveGlow}`,
                     }}
                   >
                     {config.avatarUrl || org.logoUrl ? (
@@ -908,7 +1044,7 @@ export default function OfferingsLandingClient({
                       </div>
                     )}
                     <div
-                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-lg border"
+                      className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center shadow-xs border"
                       style={{ backgroundColor: accentColor, borderColor: theme.bg }}
                       title="Verified Creator"
                     >
@@ -917,11 +1053,11 @@ export default function OfferingsLandingClient({
                   </div>
                 )}
 
-                <div className="space-y-1">
+                <div className="space-y-1 sm:pt-3">
                   <div className="flex items-center justify-center sm:justify-start gap-2">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{org.name}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight font-heading">{org.name}</h1>
                     <span
-                      className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border"
+                      className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shadow-xs"
                       style={{
                         backgroundColor: `${accentColor}15`,
                         borderColor: `${accentColor}35`,
@@ -939,7 +1075,7 @@ export default function OfferingsLandingClient({
 
               {/* Social Links Pill Bar */}
               {config.socialLinks && Object.entries(config.socialLinks).some(([_, url]) => Boolean(url && url.trim())) && (
-                <div className="flex items-center justify-center flex-wrap gap-1.5 pt-2 sm:pt-0">
+                <div className="flex items-center justify-center flex-wrap gap-1.5 pt-2 sm:pt-3">
                   {Object.entries(config.socialLinks)
                     .filter(([_, url]) => Boolean(url && url.trim()))
                     .map(([platformKey, rawUrl]) => {
@@ -965,7 +1101,7 @@ export default function OfferingsLandingClient({
                           href={finalHref}
                           target={isEmail ? undefined : "_blank"}
                           rel={isEmail ? undefined : "noopener noreferrer"}
-                          className="p-2 rounded-xl border transition-all hover:scale-110"
+                          className="p-2 rounded-xl border shadow-xs transition-all hover:scale-110"
                           style={{
                             backgroundColor: theme.card,
                             borderColor: theme.cardBorder,
@@ -984,7 +1120,7 @@ export default function OfferingsLandingClient({
             {/* Headline, Subheadline & Bio */}
             <div className="mt-8 space-y-4 text-center sm:text-left">
               {config.headline && (
-                <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight font-heading">
                   {config.headline}
                 </h2>
               )}
@@ -1010,20 +1146,21 @@ export default function OfferingsLandingClient({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center sm:justify-start gap-2.5 sm:gap-3 pt-2">
-                <button
+                <Button
                   type="button"
                   onClick={() => executeCtaAction(config.ctaAction || "SCROLL_OFFERINGS", config.ctaUrl || "#offerings")}
-                  className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-xl flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 cursor-pointer text-center"
+                  className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm text-white shadow-xs flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 cursor-pointer text-center"
                   style={{ backgroundColor: accentColor }}
                 >
                   <span>{config.ctaText || "Explore Offerings"}</span>
                   {renderCtaIcon(config.ctaAction || "SCROLL_OFFERINGS", <ArrowRight className="w-4 h-4" />)}
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => executeCtaAction(config.secondaryCtaAction || "INQUIRY_MODAL", config.secondaryCtaUrl || "#inquiry")}
-                  className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm border flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 cursor-pointer text-center"
+                  className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm border shadow-xs flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-95 cursor-pointer text-center"
                   style={{
                     backgroundColor: theme.card,
                     borderColor: theme.cardBorder,
@@ -1032,7 +1169,7 @@ export default function OfferingsLandingClient({
                 >
                   <span>{config.secondaryCtaText || "Explore Meetings"}</span>
                   {renderCtaIcon(config.secondaryCtaAction || "INQUIRY_MODAL", <Calendar className="w-4 h-4" />)}
-                </button>
+                </Button>
               </div>
 
               {/* Social Proof Stats Counters */}
@@ -1041,13 +1178,22 @@ export default function OfferingsLandingClient({
                   {config.stats.map((st, i) => (
                     <div
                       key={i}
-                      className={`p-3.5 ${roundnessClass} border text-center transition-all hover:scale-[1.02]`}
+                      className={`p-3.5 ${roundnessClass} border text-center transition-all duration-200 hover:-translate-y-0.5`}
                       style={{
                         backgroundColor: `${theme.card}80`,
                         borderColor: theme.cardBorder,
+                        boxShadow: `2px 2px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.boxShadow = `3.5px 3.5px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}`;
+                        e.currentTarget.style.borderColor = accentColor;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.boxShadow = `2px 2px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`;
+                        e.currentTarget.style.borderColor = theme.cardBorder;
                       }}
                     >
-                      <div className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
+                      <div className="text-lg sm:text-xl font-black tracking-tight font-heading" style={{ color: accentColor }}>
                         {st.value}
                       </div>
                       <div className="text-[11px] font-semibold mt-0.5 truncate" style={{ color: theme.subtext }}>
@@ -1066,16 +1212,17 @@ export default function OfferingsLandingClient({
           <section className="py-8 px-4 sm:px-6">
             <div className="max-w-4xl mx-auto">
               <div
-                className={`p-5 sm:p-8 ${roundnessClass} border shadow-2xl relative overflow-hidden`}
+                className={`p-5 sm:p-8 ${roundnessClass} border relative overflow-hidden`}
                 style={{
                   backgroundColor: theme.card,
                   borderColor: theme.cardBorder,
+                  boxShadow: `0 8px 30px -4px ${effectiveGlow}`,
                 }}
               >
                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider mb-3" style={{ color: accentColor }}>
                   <Sparkles className="w-4 h-4" /> Creator Spotlight & Showreel
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold mb-4">Watch Introduction & Showcase</h3>
+                <h3 className="text-xl sm:text-2xl font-bold mb-4 font-heading">Watch Introduction & Showcase</h3>
                 <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black/60 relative border border-white/10 shadow-inner">
                   {(() => {
                     const videoMeta = resolveVideoEmbedDetails(config.featuredVideoUrl);
@@ -1115,7 +1262,7 @@ export default function OfferingsLandingClient({
                 <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                   <Layers className="w-4 h-4" /> Catalog
                 </div>
-                <h3 className="text-xl sm:text-3xl font-extrabold tracking-tight">Available Offerings</h3>
+                <h3 className="text-xl sm:text-3xl font-extrabold tracking-tight font-heading">Available Offerings</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
                   Filter by playlists, meetings, video assets, and digital resources.
                 </p>
@@ -1129,7 +1276,7 @@ export default function OfferingsLandingClient({
                   placeholder="Search offerings..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border transition-all focus:outline-none"
+                  className="w-full pl-9 pr-8 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm border shadow-xs transition-all focus:outline-none"
                   style={{
                     backgroundColor: theme.card,
                     borderColor: theme.cardBorder,
@@ -1173,12 +1320,16 @@ export default function OfferingsLandingClient({
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all flex items-center gap-1.5 sm:gap-2 border cursor-pointer snap-start ${isActive ? "shadow-md" : "hover:opacity-80"
-                      }`}
+                    className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all duration-200 flex items-center gap-1.5 sm:gap-2 border cursor-pointer snap-start ${
+                      isActive ? "scale-[1.02]" : "hover:opacity-90 hover:-translate-y-0.5"
+                    }`}
                     style={{
                       backgroundColor: isActive ? accentColor : theme.card,
                       borderColor: isActive ? accentColor : theme.cardBorder,
                       color: isActive ? "#ffffff" : theme.text,
+                      boxShadow: isActive
+                        ? `3px 3px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}`
+                        : `1.5px 1.5px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`,
                     }}
                   >
                     <span>{cat.label}</span>
@@ -1200,7 +1351,7 @@ export default function OfferingsLandingClient({
                 style={{ backgroundColor: theme.card, borderColor: theme.cardBorder }}
               >
                 <Package className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-30" />
-                <h4 className="text-sm sm:text-base font-bold">No offerings match your filter</h4>
+                <h4 className="text-sm sm:text-base font-bold font-heading">No offerings match your filter</h4>
                 <p className="text-xs sm:text-sm mt-1" style={{ color: theme.subtext }}>
                   Try selecting a different category or clearing your search term.
                 </p>
@@ -1211,7 +1362,7 @@ export default function OfferingsLandingClient({
                     setSelectedCategory("ALL");
                     setSearchQuery("");
                   }}
-                  className="mt-4 text-xs font-semibold"
+                  className="mt-4 text-xs font-semibold shadow-xs"
                 >
                   Reset Filters
                 </Button>
@@ -1221,11 +1372,23 @@ export default function OfferingsLandingClient({
                 {filteredItems.map((item) => (
                   <div
                     key={item.id}
-                    className={`flex flex-col justify-between ${roundnessClass} border transition-all duration-300 hover:shadow-2xl overflow-hidden group min-w-0`}
+                    className={`flex flex-col justify-between ${roundnessClass} border transition-all duration-300 hover:-translate-y-1.5 overflow-hidden group min-w-0 offerings-card`}
                     style={{
                       backgroundColor: theme.card,
                       borderColor: item.isFeatured ? accentColor : theme.cardBorder,
-                      boxShadow: item.isFeatured ? `0 10px 30px ${theme.glow}` : undefined,
+                      boxShadow: item.isFeatured
+                        ? `3.5px 3.5px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}, 0 8px 24px -4px ${effectiveGlow}`
+                        : `2.5px 2.5px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `4.5px 4.5px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}, 0 10px 28px -4px ${effectiveGlow}`;
+                      e.currentTarget.style.borderColor = accentColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = item.isFeatured
+                        ? `3.5px 3.5px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}, 0 8px 24px -4px ${effectiveGlow}`
+                        : `2.5px 2.5px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`;
+                      e.currentTarget.style.borderColor = item.isFeatured ? accentColor : theme.cardBorder;
                     }}
                   >
                     {/* Card Media / Thumbnail */}
@@ -1238,14 +1401,14 @@ export default function OfferingsLandingClient({
                         />
                         {item.badge && (
                           <div
-                            className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white shadow-lg backdrop-blur-md"
+                            className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white shadow-xs backdrop-blur-md"
                             style={{ backgroundColor: accentColor }}
                           >
                             {item.badge}
                           </div>
                         )}
                         {item.meetingDuration && (
-                          <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold bg-black/70 text-white backdrop-blur-md flex items-center gap-1 border border-white/10">
+                          <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg text-[9px] sm:text-[10px] font-bold bg-black/70 text-white backdrop-blur-md flex items-center gap-1 border border-white/10 shadow-xs">
                             <Clock className="w-3 h-3 text-sky-400" />
                             {item.meetingDuration}
                           </div>
@@ -1260,7 +1423,7 @@ export default function OfferingsLandingClient({
                         {!item.coverImageUrl && (
                           <div className="flex items-center justify-between gap-2 flex-wrap">
                             <div
-                              className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg border"
+                              className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-lg border shadow-xs"
                               style={{
                                 backgroundColor: `${accentColor}12`,
                                 borderColor: `${accentColor}30`,
@@ -1272,7 +1435,7 @@ export default function OfferingsLandingClient({
                             </div>
                             {item.badge && (
                               <span
-                                className="px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-white"
+                                className="px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs"
                                 style={{ backgroundColor: accentColor }}
                               >
                                 {item.badge}
@@ -1281,7 +1444,7 @@ export default function OfferingsLandingClient({
                           </div>
                         )}
 
-                        <h4 className="text-base sm:text-lg font-extrabold tracking-tight leading-snug break-words group-hover:text-primary transition-colors">
+                        <h4 className="text-base sm:text-lg font-extrabold tracking-tight leading-snug break-words group-hover:text-primary transition-colors font-heading">
                           {item.title}
                         </h4>
 
@@ -1494,7 +1657,7 @@ export default function OfferingsLandingClient({
                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                   <Star className="w-4 h-4 fill-current" /> {config.testimonialsBadge || sections.testimonialsBadge || "Student & Client Reviews"}
                 </div>
-                <h3 className="text-xl sm:text-3xl font-black tracking-tight">{config.testimonialsTitle || sections.testimonialsTitle || "Trusted by Creators & Engineers"}</h3>
+                <h3 className="text-xl sm:text-3xl font-black tracking-tight font-heading">{config.testimonialsTitle || sections.testimonialsTitle || "Trusted by Creators & Engineers"}</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
                   {config.testimonialsSubtitle || sections.testimonialsSubtitle || sections.testimonialsDescription || "Read what students, founders, and attendees say about our sessions and programs."}
                 </p>
@@ -1504,10 +1667,19 @@ export default function OfferingsLandingClient({
                 {config.testimonials.map((t, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 sm:p-6 ${roundnessClass} border flex flex-col justify-between space-y-3 sm:space-y-4 transition-all hover:shadow-lg min-w-0`}
+                    className={`p-4 sm:p-6 ${roundnessClass} border flex flex-col justify-between space-y-3 sm:space-y-4 transition-all duration-200 hover:-translate-y-1 min-w-0`}
                     style={{
                       backgroundColor: theme.card,
                       borderColor: theme.cardBorder,
+                      boxShadow: `2.5px 2.5px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `4.5px 4.5px 0px 0px ${effectiveGlow || "var(--comic-shadow)"}`;
+                      e.currentTarget.style.borderColor = accentColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = `2.5px 2.5px 0px 0px ${effectiveGlow || "var(--comic-shadow-subtle)"}`;
+                      e.currentTarget.style.borderColor = theme.cardBorder;
                     }}
                   >
                     <div className="space-y-2.5 sm:space-y-3 min-w-0">
@@ -1560,7 +1732,7 @@ export default function OfferingsLandingClient({
                 <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                   <MessageSquare className="w-4 h-4" /> FAQ
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Frequently Asked Questions</h3>
+                <h3 className="text-2xl sm:text-3xl font-black tracking-tight font-heading">Frequently Asked Questions</h3>
                 <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
                   Everything you need to know about enrollments, meetings, and assets.
                 </p>
@@ -1613,17 +1785,18 @@ export default function OfferingsLandingClient({
           <section id="contact" className="py-8 sm:py-16 px-3 sm:px-6 border-t" style={{ borderColor: theme.cardBorder }}>
             <div className="max-w-3xl mx-auto">
               <div
-                className={`p-4 sm:p-8 md:p-10 ${roundnessClass} border shadow-2xl relative overflow-hidden`}
+                className={`p-4 sm:p-8 md:p-10 ${roundnessClass} border relative overflow-hidden`}
                 style={{
                   backgroundColor: theme.card,
                   borderColor: theme.cardBorder,
+                  boxShadow: `0 8px 30px -4px ${effectiveGlow}`,
                 }}
               >
                 <div className="text-center max-w-xl mx-auto space-y-2 mb-8">
                   <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider" style={{ color: accentColor }}>
                     <Mail className="w-4 h-4" /> Get in Touch
                   </div>
-                  <h3 className="text-2xl sm:text-3xl font-black tracking-tight">Direct Message or Custom Request</h3>
+                  <h3 className="text-2xl sm:text-3xl font-black tracking-tight font-heading">Direct Message or Custom Request</h3>
                   <p className="text-xs sm:text-sm" style={{ color: theme.subtext }}>
                     Have questions about a playlist, workshop, or want to schedule a tailored session? Send a note directly.
                   </p>
@@ -1727,7 +1900,7 @@ export default function OfferingsLandingClient({
                     <Button
                       type="submit"
                       disabled={submittingInquiry}
-                      className="w-full py-3 rounded-xl font-bold text-sm text-white shadow-xl flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+                      className="w-full py-3 rounded-xl font-bold text-sm text-white shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
                       style={{ backgroundColor: accentColor }}
                     >
                       <Send className="w-4 h-4" />
@@ -1760,7 +1933,7 @@ export default function OfferingsLandingClient({
 
         {/* Mobile Sticky Quick Action Bar */}
         <div
-          className="sm:hidden fixed bottom-0 left-0 right-0 p-3 z-30 backdrop-blur-xl border-t flex items-center gap-2 shadow-2xl"
+          className="sm:hidden fixed bottom-0 left-0 right-0 p-3 z-30 backdrop-blur-xl border-t flex items-center gap-2"
           style={{
             backgroundColor: `${theme.bg}ee`,
             borderColor: theme.cardBorder,
@@ -1779,7 +1952,7 @@ export default function OfferingsLandingClient({
           </a>
           <button
             onClick={() => handleOpenInquiry()}
-            className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white text-center shadow-lg transition-transform active:scale-95"
+            className="flex-1 py-2.5 px-3 rounded-xl text-xs font-bold text-white text-center shadow-xs transition-transform active:scale-95"
             style={{ backgroundColor: accentColor }}
           >
             {config.secondaryCtaText || "Explore Meetings"}

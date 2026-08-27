@@ -695,7 +695,7 @@ export default function VideoDetailPage() {
                               {p.paymentId}
                             </TableCell>
                             <TableCell className="py-3 px-4">
-                              <Badge variant="lime">{p.status}</Badge>
+                              <Badge variant="secondary">{p.status}</Badge>
                             </TableCell>
                           </TableRow>
                         ))}

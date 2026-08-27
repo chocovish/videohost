@@ -37,6 +37,7 @@ import {
   Crop,
   ExternalLink,
   Info,
+  Lock,
 } from "lucide-react";
 import {
   OfferingsConfigData,
@@ -78,7 +79,12 @@ export interface PlaylistItemSummary {
 }
 
 const THEME_PRESET_OPTIONS = [
+  { id: "pop", name: "Toon Pop Purple", accent: "#a855f7", bg: "#0e0918", card: "#181028" },
   { id: "obsidian", name: "Obsidian Dark", accent: "#84cc16", bg: "#030712", card: "#0b1329" },
+  { id: "arcade", name: "Electric Arcade", accent: "#eab308", bg: "#100c04", card: "#1f180a" },
+  { id: "bubblegum", name: "Bubblegum Mint", accent: "#ec4899", bg: "#14060f", card: "#260c1d" },
+  { id: "lime", name: "Comic Lime", accent: "#84cc16", bg: "#071203", card: "#0f2407" },
+  { id: "ocean", name: "Splashy Cyan", accent: "#0ea5e9", bg: "#040d1a", card: "#091930" },
   { id: "aurora", name: "Aurora Glow", accent: "#6366f1", bg: "#070b19", card: "#0f172a" },
   { id: "sunset", name: "Sunset Velvet", accent: "#f97316", bg: "#0f0714", card: "#1e0e24" },
   { id: "minimal-light", name: "Minimal Light", accent: "#2563eb", bg: "#f8fafc", card: "#ffffff" },
@@ -142,15 +148,16 @@ export default function OfferingsDashboardPage() {
             bannerUrl: newBannerData || (removeBanner ? null : config.bannerUrl),
           },
           items,
+          previewDevice,
         },
         "*"
       );
     }
-  }, [config, items, newAvatarData, removeAvatar, newBannerData, removeBanner]);
+  }, [config, items, newAvatarData, removeAvatar, newBannerData, removeBanner, previewDevice]);
 
   useEffect(() => {
     sendPreviewUpdate();
-  }, [config, items, newAvatarData, removeAvatar, newBannerData, removeBanner, sendPreviewUpdate]);
+  }, [config, items, newAvatarData, removeAvatar, newBannerData, removeBanner, previewDevice, sendPreviewUpdate]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -844,49 +851,12 @@ export default function OfferingsDashboardPage() {
             <Link
               href={`/offerings/${config.orgSlug || ""}`}
               target="_blank"
-              className={buttonVariants({ variant: "lime", size: "sm" }) + " cursor-pointer"}
+              className={buttonVariants({ variant: "default", size: "sm" }) + " cursor-pointer"}
             >
               <span>View Public Page</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           </div>
-        </div>
-
-        {/* Global Save Button & Status */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-          <Button
-            variant="lime"
-            size="lg"
-            onClick={() => handleOpenItemModal()}
-            className="text-xs font-bold gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Offering</span>
-          </Button>
-
-          <Button
-            size="lg"
-            onClick={handleSaveConfig}
-            disabled={saving}
-            className="text-xs font-bold gap-1.5 cursor-pointer"
-          >
-            {saving ? (
-              <span className="flex items-center gap-1.5">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Saving...</span>
-              </span>
-            ) : saveSuccess ? (
-              <span className="flex items-center gap-1.5">
-                <Check className="w-4 h-4" />
-                <span>Saved!</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5">
-                <Save className="w-3.5 h-3.5" />
-                <span>Save Customizer</span>
-              </span>
-            )}
-          </Button>
         </div>
       </div>
 
@@ -916,26 +886,61 @@ export default function OfferingsDashboardPage() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={seeding}
-              onClick={handleSeedDefaults}
-              className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
-            >
-              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-primary" />}
-              <span>Seed Sample Offerings</span>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => handleOpenItemModal()}
-              className="text-xs font-bold gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Offering</span>
-            </Button>
-          </div>
+          {/* Contextual Action Buttons based on Active Tab */}
+          {activeTab === "catalog" && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={seeding}
+                onClick={handleSeedDefaults}
+                className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
+              >
+                {seeding ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                )}
+                <span>Seed Sample Offerings</span>
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleOpenItemModal()}
+                className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Offering</span>
+              </Button>
+            </div>
+          )}
+
+          {activeTab === "customizer" && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleSaveConfig}
+                disabled={saving}
+                className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+              >
+                {saving ? (
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </span>
+                ) : saveSuccess ? (
+                  <span className="flex items-center gap-1.5">
+                    <Check className="w-4 h-4" />
+                    <span>Saved!</span>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Customization</span>
+                  </span>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* TAB 1: OFFERINGS CATALOG */}
@@ -975,7 +980,7 @@ export default function OfferingsDashboardPage() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
+                  className="rounded-2xl border border-border bg-card glass-card card-hover shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 flex flex-col justify-between overflow-hidden"
                 >
                   <div>
                     {item.coverImageUrl && (
@@ -2239,14 +2244,14 @@ export default function OfferingsDashboardPage() {
             {/* Right Live Device Preview Column (7 cols) */}
             <div className="lg:col-span-7 sticky top-20 space-y-3">
               {/* Device Toolbar */}
-              <div className="p-3 bg-card border border-border rounded-2xl flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-1.5 bg-muted p-1 rounded-xl">
+              <div className="p-2.5 bg-card border border-border rounded-2xl flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-1 bg-muted/70 p-1 rounded-xl">
                   <Button
                     type="button"
                     variant={previewDevice === "desktop" ? "secondary" : "ghost"}
                     size="xs"
                     onClick={() => setPreviewDevice("desktop")}
-                    className="font-bold cursor-pointer"
+                    className="font-bold cursor-pointer text-xs h-7 px-2.5"
                   >
                     <Monitor className="w-3.5 h-3.5" />
                     <span>Desktop</span>
@@ -2256,7 +2261,7 @@ export default function OfferingsDashboardPage() {
                     variant={previewDevice === "tablet" ? "secondary" : "ghost"}
                     size="xs"
                     onClick={() => setPreviewDevice("tablet")}
-                    className="font-bold cursor-pointer"
+                    className="font-bold cursor-pointer text-xs h-7 px-2.5"
                   >
                     <Tablet className="w-3.5 h-3.5" />
                     <span>Tablet</span>
@@ -2266,38 +2271,114 @@ export default function OfferingsDashboardPage() {
                     variant={previewDevice === "mobile" ? "secondary" : "ghost"}
                     size="xs"
                     onClick={() => setPreviewDevice("mobile")}
-                    className="font-bold cursor-pointer"
+                    className="font-bold cursor-pointer text-xs h-7 px-2.5"
                   >
                     <Smartphone className="w-3.5 h-3.5" />
                     <span>Mobile</span>
                   </Button>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pr-1">
                   <span className="text-xs font-bold text-muted-foreground hidden sm:inline">
                     Live Preview
                   </span>
-                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  {config.orgSlug && (
+                    <a
+                      href={`/offerings/${config.orgSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors ml-1 p-1 hover:bg-muted rounded-md"
+                      title="Open live page in new tab"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* Device Mockup Frame */}
-              <div
-                className={`mx-auto border border-border rounded-3xl overflow-hidden shadow-2xl bg-foreground transition-all duration-300 ${
-                  previewDevice === "mobile"
-                    ? "max-w-[390px] h-[780px] border-4 border-border ring-8 ring-foreground/20"
-                    : previewDevice === "tablet"
-                    ? "max-w-[700px] h-[780px] border-4 border-border ring-8 ring-foreground/20"
-                    : "w-full h-[780px]"
-                }`}
-              >
-                <iframe
-                  ref={iframeRef}
-                  src={`/offerings/${config.orgSlug || "preview"}?preview=true`}
-                  className="w-full h-full border-0 bg-transparent"
-                  title="Live Offerings Preview"
-                  onLoad={() => sendPreviewUpdate()}
-                />
+              {/* Device Mockup Frame Container */}
+              <div className="w-full flex justify-center items-start">
+                {previewDevice === "desktop" ? (
+                  /* Desktop Browser Window Mockup */
+                  <div className="w-full h-[780px] rounded-2xl border border-border/80 bg-card overflow-hidden shadow-[0_12px_36px_-6px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.04)] dark:shadow-[0_18px_48px_-10px_rgba(0,0,0,0.55)] flex flex-col transition-all duration-300">
+                    {/* Browser Chrome Header */}
+                    <div className="h-9 px-3.5 bg-muted/60 border-b border-border/70 flex items-center justify-between shrink-0 select-none">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]/90 border border-[#e0443e]/40" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]/90 border border-[#dea123]/40" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]/90 border border-[#1aab29]/40" />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-background/80 border border-border/60 text-[11px] text-muted-foreground font-mono max-w-[260px] truncate shadow-xs">
+                        <Lock className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span className="truncate">taped.to/offerings/{config.orgSlug || "studio"}</span>
+                      </div>
+
+                      <div className="w-10 flex justify-end">
+                        <a
+                          href={`/offerings/${config.orgSlug || "preview"}?preview=true`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground hover:text-foreground transition-colors p-0.5 rounded hover:bg-background/60"
+                          title="Open in new tab"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Viewport Frame */}
+                    <div className="flex-1 w-full relative bg-background overflow-hidden">
+                      <iframe
+                        ref={iframeRef}
+                        src={`/offerings/${config.orgSlug || "preview"}?preview=true&device=desktop`}
+                        className="w-full h-full border-0 bg-transparent block"
+                        title="Live Offerings Preview - Desktop"
+                        onLoad={() => sendPreviewUpdate()}
+                      />
+                    </div>
+                  </div>
+                ) : previewDevice === "tablet" ? (
+                  /* Tablet Device Mockup */
+                  <div className="w-full max-w-[680px] h-[780px] rounded-[32px] border-[10px] border-zinc-800 dark:border-zinc-800/90 bg-zinc-950 p-0.5 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10 flex flex-col transition-all duration-300 relative">
+                    {/* Tablet Top Camera dot */}
+                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-700/60 mx-auto my-1.5 shrink-0" />
+
+                    {/* Screen */}
+                    <div className="flex-1 w-full rounded-[22px] overflow-hidden bg-background relative">
+                      <iframe
+                        ref={iframeRef}
+                        src={`/offerings/${config.orgSlug || "preview"}?preview=true&device=tablet`}
+                        className="w-full h-full border-0 bg-transparent block"
+                        title="Live Offerings Preview - Tablet"
+                        onLoad={() => sendPreviewUpdate()}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* Smartphone Mockup */
+                  <div className="w-full max-w-[380px] h-[780px] rounded-[44px] border-[10px] border-zinc-800 dark:border-zinc-800/90 bg-zinc-950 p-1 shadow-[0_20px_50px_-10px_rgba(0,0,0,0.25)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] ring-1 ring-white/10 flex flex-col transition-all duration-300 relative">
+                    {/* Dynamic Island */}
+                    <div className="w-24 h-4 bg-zinc-900 border border-zinc-700/40 rounded-full absolute top-3.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center justify-end pr-2.5 shadow-sm">
+                      <div className="w-2 h-2 rounded-full bg-zinc-800 border border-blue-900/40" />
+                    </div>
+
+                    {/* Screen */}
+                    <div className="flex-1 w-full rounded-[34px] overflow-hidden bg-background relative pt-4">
+                      <iframe
+                        ref={iframeRef}
+                        src={`/offerings/${config.orgSlug || "preview"}?preview=true&device=mobile`}
+                        className="w-full h-full border-0 bg-transparent block"
+                        title="Live Offerings Preview - Mobile"
+                        onLoad={() => sendPreviewUpdate()}
+                      />
+                    </div>
+
+                    {/* Home Indicator Bar */}
+                    <div className="w-28 h-1 bg-foreground/20 rounded-full absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 pointer-events-none" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2627,7 +2708,7 @@ export default function OfferingsDashboardPage() {
                             </p>
                           )}
                           <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                            <Badge variant="lime" className="uppercase tracking-wider">
+                            <Badge variant="secondary" className="uppercase tracking-wider">
                               Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
@@ -2695,7 +2776,7 @@ export default function OfferingsDashboardPage() {
                           </p>
                         )}
                         <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                          <Badge variant="lime" className="uppercase tracking-wider">
+                          <Badge variant="secondary" className="uppercase tracking-wider">
                             Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
@@ -2864,7 +2945,7 @@ export default function OfferingsDashboardPage() {
                             </p>
                           )}
                           <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                            <Badge variant="lime" className="uppercase tracking-wider">
+                            <Badge variant="secondary" className="uppercase tracking-wider">
                               Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
@@ -2938,7 +3019,7 @@ export default function OfferingsDashboardPage() {
                         Automatically determined for visitors based on content pricing & access mode (Purchase, View / Request Access, or View).
                       </div>
                     </div>
-                    <Badge variant="lime" className="uppercase tracking-wider shrink-0">
+                    <Badge variant="secondary" className="uppercase tracking-wider shrink-0">
                       Auto-Calculated
                     </Badge>
                   </div>
@@ -3354,8 +3435,8 @@ export default function OfferingsDashboardPage() {
 
       {/* IN-DASHBOARD VIDEO PREVIEW MODAL */}
       <Dialog open={!!previewVideoModalUrl} onOpenChange={() => setPreviewVideoModalUrl(null)}>
-        <DialogContent className="max-w-4xl p-2 sm:p-4 rounded-3xl border border-border shadow-2xl bg-foreground">
-          <div className="aspect-video w-full rounded-2xl overflow-hidden bg-foreground">
+        <DialogContent className="max-w-4xl p-2 sm:p-4 rounded-2xl border border-border shadow-xl bg-card">
+          <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
             {(() => {
               const videoMeta = resolveVideoEmbedDetails(previewVideoModalUrl);
               if (!videoMeta) return null;

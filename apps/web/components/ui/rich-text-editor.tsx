@@ -314,6 +314,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
       <TooltipProvider delay={200}>
         <div
           ref={ref}
+          data-slot="rich-text-editor"
           className={cn(
             "group/editor relative flex flex-col w-full rounded-xl border border-border bg-card text-card-foreground shadow-xs transition-all",
             isFocused && "border-ring ring-3 ring-ring/20",
@@ -325,7 +326,7 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
           {showToolbar && !readOnly && (
             <div
               className={cn(
-                "flex items-center gap-1 px-2 py-1.5 border-b border-border/80 bg-muted/20 backdrop-blur-xs rounded-t-xl select-none overflow-x-auto whitespace-nowrap scrollbar-none",
+                "flex items-center gap-1 px-2 py-1.5 border-b border-border/80 bg-muted/20 rounded-t-xl select-none overflow-x-auto whitespace-nowrap scrollbar-none",
                 toolbarClassName
               )}
             >
