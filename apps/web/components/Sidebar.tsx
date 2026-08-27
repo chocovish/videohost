@@ -470,7 +470,7 @@ export default function Sidebar({
             className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
             onClick={closeMobile}
           />
-          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-sidebar text-sidebar-foreground border-r border-border z-50 animate-in slide-in-from-left duration-300 overflow-y-auto">
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-card text-card-foreground border-r border-border shadow-2xl z-50 animate-in slide-in-from-left duration-300 overflow-y-auto">
             <SidebarInner isMobile={true} />
           </aside>
         </div>
