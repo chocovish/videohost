@@ -44,6 +44,7 @@ import {
   WebcamCorner,
   WebcamShape,
   WebcamSize,
+  RecordingLayoutMode,
   ResolutionPreset,
 } from "@/lib/recording-compositor";
 import {
@@ -130,6 +131,10 @@ export default function ScreenRecordDrawer({
     setWebcamShape,
     webcamSize,
     setWebcamSize,
+    layoutMode,
+    setLayoutMode,
+    handleSetLayoutMode,
+    handleToggleLayoutMode,
     fps,
     setFps,
     resolution,
@@ -558,14 +563,35 @@ export default function ScreenRecordDrawer({
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-1.5 bg-black/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg text-xs font-semibold text-white/70 pointer-events-auto">
-                              <span className="text-primary uppercase font-mono">{resolution}</span>
-                              <span>•</span>
-                              <span>{fps} FPS</span>
-                              <span>•</span>
-                              <span>{isWebcamEnabled ? "Cam Active" : "No Cam"}</span>
-                              <span>•</span>
-                              <span>{isMicEnabled ? "Mic On" : "Muted"}</span>
+                            <div className="flex items-center gap-1.5 pointer-events-auto">
+                              <button
+                                type="button"
+                                onClick={handleToggleLayoutMode}
+                                className="h-6 text-xs px-2.5 rounded-full bg-black/90 hover:bg-neutral-800 text-white border border-white/15 font-bold flex items-center gap-1.5 cursor-pointer shadow-md"
+                                title={layoutMode === "camera-only" ? "Switch to Screen + PIP" : "Switch to Camera Only"}
+                              >
+                                {layoutMode === "camera-only" ? (
+                                  <>
+                                    <Layers className="w-3 h-3 text-primary" />
+                                    <span>Screen + PIP</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Camera className="w-3 h-3 text-primary" />
+                                    <span>Camera Only</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <div className="hidden sm:flex items-center gap-1.5 bg-black/90 backdrop-blur-md border border-white/10 px-2.5 py-1 rounded-full shadow-lg text-xs font-semibold text-white/70">
+                                <span className="text-primary uppercase font-mono">{resolution}</span>
+                                <span>•</span>
+                                <span>{fps} FPS</span>
+                                <span>•</span>
+                                <span>{layoutMode === "camera-only" ? "Full Camera" : isWebcamEnabled ? "Cam Active" : "No Cam"}</span>
+                                <span>•</span>
+                                <span>{isMicEnabled ? "Mic On" : "Muted"}</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -593,6 +619,39 @@ export default function ScreenRecordDrawer({
                     <div className="lg:col-span-5 flex flex-col justify-between gap-2.5">
                       {recordState === "idle" && (
                         <div className="space-y-2.5">
+                          {/* Row 0: Stream Layout Selector */}
+                          <div className="bg-card p-2 rounded-xl border border-border space-y-1">
+                            <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                              Recording Stream Mode
+                            </Label>
+                            <div className="grid grid-cols-2 gap-1">
+                              <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => handleSetLayoutMode("screen-cam")}
+                                className={`h-7 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 border ${layoutMode === "screen-cam"
+                                  ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                  : "bg-muted border-border text-muted-foreground hover:bg-accent"
+                                  }`}
+                              >
+                                <Layers className="w-3.5 h-3.5" />
+                                Screen + PIP
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => handleSetLayoutMode("camera-only")}
+                                className={`h-7 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 border ${layoutMode === "camera-only"
+                                  ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                  : "bg-muted border-border text-muted-foreground hover:bg-accent"
+                                  }`}
+                              >
+                                <Camera className="w-3.5 h-3.5" />
+                                Camera Only
+                              </Button>
+                            </div>
+                          </div>
+
                           {/* Row 1: Mic & Webcam Toggles */}
                           <div className="grid grid-cols-2 gap-2">
                             <Button variant="ghost"
@@ -632,9 +691,9 @@ export default function ScreenRecordDrawer({
                                 {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs font-bold truncate">Webcam PIP</p>
+                                <p className="text-xs font-bold truncate">Webcam</p>
                                 <p className="text-xs text-muted-foreground truncate">
-                                  {isWebcamEnabled ? "Active PIP" : "Disabled"}
+                                  {isWebcamEnabled ? (layoutMode === "camera-only" ? "Full Cam" : "Active PIP") : "Disabled"}
                                 </p>
                               </div>
                             </Button>
@@ -645,14 +704,14 @@ export default function ScreenRecordDrawer({
                             <div className="p-2.5 rounded-xl bg-muted/60 border border-primary/30 space-y-2 animate-in fade-in slide-in-from-top-2">
                               <div className="flex items-center justify-between border-b border-border pb-1">
                                 <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                  <Sparkles className="w-3 h-3 text-primary" /> Webcam PIP Options
+                                  <Sparkles className="w-3 h-3 text-primary" /> Webcam {layoutMode === "camera-only" ? "Camera Device" : "PIP Options"}
                                 </h4>
                                 <span className="text-xs font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
-                                  Active
+                                  {layoutMode === "camera-only" ? "Full Camera" : "PIP Active"}
                                 </span>
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className={`grid grid-cols-1 ${layoutMode === "screen-cam" ? "sm:grid-cols-2" : ""} gap-2`}>
                                 {/* Camera Device */}
                                 <div className="space-y-0.5">
                                   <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
@@ -680,71 +739,75 @@ export default function ScreenRecordDrawer({
                                   </Select>
                                 </div>
 
-                                {/* Corner Position */}
-                                <div className="space-y-0.5">
-                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Position Corner
-                                  </Label>
-                                  <div className="grid grid-cols-2 gap-0.5 bg-card p-0.5 rounded-lg border border-border">
-                                    {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
-                                      <Button variant="ghost"
-                                        key={c}
-                                        type="button"
-                                        onClick={() => setWebcamCorner(c)}
-                                        className={`text-xs font-bold py-0.5 px-1 rounded-sm capitalize transition-all ${webcamCorner === c
-                                          ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
-                                          : "text-muted-foreground hover:bg-muted"
-                                          }`}
-                                      >
-                                        {c.replace("-", " ")}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </div>
+                                {layoutMode === "screen-cam" && (
+                                  <>
+                                    {/* Corner Position */}
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                                        Position Corner
+                                      </Label>
+                                      <div className="grid grid-cols-2 gap-0.5 bg-card p-0.5 rounded-lg border border-border">
+                                        {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
+                                          <Button variant="ghost"
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setWebcamCorner(c)}
+                                            className={`text-xs font-bold py-0.5 px-1 rounded-sm capitalize transition-all ${webcamCorner === c
+                                              ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                              : "text-muted-foreground hover:bg-muted"
+                                              }`}
+                                          >
+                                            {c.replace("-", " ")}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
 
-                                {/* Frame Shape */}
-                                <div className="space-y-0.5">
-                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Frame Shape
-                                  </Label>
-                                  <div className="flex items-center gap-0.5">
-                                    {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                      <Button variant="ghost"
-                                        key={s}
-                                        type="button"
-                                        onClick={() => setWebcamShape(s)}
-                                        className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamShape === s
-                                          ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
-                                          : "bg-card border-border text-muted-foreground"
-                                          }`}
-                                      >
-                                        {s.replace("-", " ")}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </div>
+                                    {/* Frame Shape */}
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                                        Frame Shape
+                                      </Label>
+                                      <div className="flex items-center gap-0.5">
+                                        {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
+                                          <Button variant="ghost"
+                                            key={s}
+                                            type="button"
+                                            onClick={() => setWebcamShape(s)}
+                                            className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamShape === s
+                                              ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                              : "bg-card border-border text-muted-foreground"
+                                              }`}
+                                          >
+                                            {s.replace("-", " ")}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
 
-                                {/* PIP Preview Size */}
-                                <div className="space-y-0.5">
-                                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
-                                    Preview Size
-                                  </Label>
-                                  <div className="flex items-center gap-0.5">
-                                    {(["small", "medium", "large"] as WebcamSize[]).map((sz) => (
-                                      <Button variant="ghost"
-                                        key={sz}
-                                        type="button"
-                                        onClick={() => setWebcamSize(sz)}
-                                        className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamSize === sz
-                                          ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
-                                          : "bg-card border-border text-muted-foreground"
-                                          }`}
-                                      >
-                                        {sz}
-                                      </Button>
-                                    ))}
-                                  </div>
-                                </div>
+                                    {/* PIP Preview Size */}
+                                    <div className="space-y-0.5">
+                                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                                        Preview Bubble Size
+                                      </Label>
+                                      <div className="flex items-center gap-0.5">
+                                        {(["small", "medium", "large", "extra-large"] as WebcamSize[]).map((sz) => (
+                                          <Button variant="ghost"
+                                            key={sz}
+                                            type="button"
+                                            onClick={() => setWebcamSize(sz)}
+                                            className={`flex-1 text-xs font-bold py-1 rounded-lg capitalize transition-all border ${webcamSize === sz
+                                              ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                              : "bg-card border-border text-muted-foreground"
+                                              }`}
+                                          >
+                                            {sz === "extra-large" ? "XL" : sz}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </div>
                           )}
@@ -865,6 +928,44 @@ export default function ScreenRecordDrawer({
                             </span>
                           </div>
 
+                          {/* Stream View Switcher (Screen + Cam PIP vs Full Camera) */}
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                Stream View Mode
+                              </Label>
+                              <span className="text-[10px] text-primary font-semibold">
+                                {layoutMode === "camera-only" ? "Full Camera Active" : "Screen + PIP Active"}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 bg-muted/50 p-1 rounded-xl border border-border">
+                              <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => handleSetLayoutMode("screen-cam")}
+                                className={`h-7 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${layoutMode === "screen-cam"
+                                  ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-muted"
+                                  }`}
+                              >
+                                <Layers className="w-3.5 h-3.5" />
+                                Screen + PIP
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={() => handleSetLayoutMode("camera-only")}
+                                className={`h-7 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${layoutMode === "camera-only"
+                                  ? "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-muted"
+                                  }`}
+                              >
+                                <Camera className="w-3.5 h-3.5" />
+                                Camera Only
+                              </Button>
+                            </div>
+                          </div>
+
                           {/* Mic & Webcam Toggles */}
                           <div className="grid grid-cols-2 gap-2">
                             <Button variant="ghost"
@@ -904,17 +1005,39 @@ export default function ScreenRecordDrawer({
                                 {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
                               </div>
                               <div className="min-w-0">
-                                <p className="text-xs font-bold truncate">Webcam PIP</p>
+                                <p className="text-xs font-bold truncate">Webcam</p>
                                 <p className="text-xs opacity-75 truncate">
-                                  {isWebcamEnabled ? "Active" : "Disabled"}
+                                  {isWebcamEnabled ? (layoutMode === "camera-only" ? "Full Cam" : "Active PIP") : "Disabled"}
                                 </p>
                               </div>
                             </Button>
                           </div>
 
                           {/* Live Advanced Webcam Controls */}
-                          {isWebcamEnabled && (
+                          {isWebcamEnabled && layoutMode === "screen-cam" && (
                             <div className="space-y-2 pt-1.5 border-t border-border">
+                              {/* Live Camera Bubble Size */}
+                              <div className="space-y-1">
+                                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                  Camera Bubble Size
+                                </Label>
+                                <div className="flex items-center gap-0.5">
+                                  {(["small", "medium", "large", "extra-large"] as WebcamSize[]).map((sz) => (
+                                    <Button variant="ghost"
+                                      key={sz}
+                                      type="button"
+                                      onClick={() => setWebcamSize(sz)}
+                                      className={`flex-1 h-7 text-xs font-bold rounded-lg capitalize transition-all border ${webcamSize === sz
+                                        ? "bg-primary text-primary-foreground border-primary shadow-xs hover:bg-primary/90 hover:text-primary-foreground"
+                                        : "bg-card border-border text-muted-foreground hover:bg-muted"
+                                        }`}
+                                    >
+                                      {sz === "extra-large" ? "XL" : sz}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+
                               <div className="space-y-1">
                                 <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                   PIP Corner Position

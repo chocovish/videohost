@@ -11,6 +11,7 @@ import {
   WebcamCorner,
   WebcamShape,
   WebcamSize,
+  RecordingLayoutMode,
   ResolutionPreset,
 } from "@/lib/recording-compositor";
 
@@ -41,6 +42,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const [webcamCorner, setWebcamCorner] = useState<WebcamCorner>("bottom-left");
   const [webcamShape, setWebcamShape] = useState<WebcamShape>("circle");
   const [webcamSize, setWebcamSize] = useState<WebcamSize>("medium");
+  const [layoutMode, setLayoutMode] = useState<RecordingLayoutMode>("screen-cam");
   const [fps, setFps] = useState<TargetFps>(30);
   const [resolution, setResolution] = useState<ResolutionPreset>("1080p");
   const [compressionMode, setCompressionMode] = useState<CompressionPreset>("compact");
@@ -138,13 +140,43 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
 
     if (nextState) {
       await setupWebcamStream();
-    } else if (webcamStreamRef.current) {
-      webcamStreamRef.current.getTracks().forEach((track) => track.stop());
-      webcamStreamRef.current = null;
-      if (compositorRef.current) {
-        compositorRef.current.setWebcamStream(null);
+    } else {
+      if (layoutMode === "camera-only") {
+        setLayoutMode("screen-cam");
+        if (compositorRef.current) {
+          compositorRef.current.layoutMode = "screen-cam";
+        }
+      }
+      if (webcamStreamRef.current) {
+        webcamStreamRef.current.getTracks().forEach((track) => track.stop());
+        webcamStreamRef.current = null;
+        if (compositorRef.current) {
+          compositorRef.current.setWebcamStream(null);
+        }
       }
     }
+  };
+
+  // Switch layout mode (Screen + Cam PIP vs Camera Only)
+  const handleSetLayoutMode = async (mode: RecordingLayoutMode) => {
+    setLayoutMode(mode);
+    if (compositorRef.current) {
+      compositorRef.current.layoutMode = mode;
+    }
+    if (mode === "camera-only") {
+      if (!isWebcamEnabled || !webcamStreamRef.current) {
+        setIsWebcamEnabled(true);
+        if (compositorRef.current) {
+          compositorRef.current.isWebcamEnabled = true;
+        }
+        await setupWebcamStream();
+      }
+    }
+  };
+
+  const handleToggleLayoutMode = async () => {
+    const nextMode: RecordingLayoutMode = layoutMode === "camera-only" ? "screen-cam" : "camera-only";
+    await handleSetLayoutMode(nextMode);
   };
 
   // Switch camera device
@@ -178,8 +210,9 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       compositorRef.current.webcamShape = webcamShape;
       compositorRef.current.webcamSize = webcamSize;
       compositorRef.current.isWebcamEnabled = isWebcamEnabled;
+      compositorRef.current.layoutMode = layoutMode;
     }
-  }, [webcamCorner, webcamShape, webcamSize, isWebcamEnabled]);
+  }, [webcamCorner, webcamShape, webcamSize, isWebcamEnabled, layoutMode]);
 
   const cleanupStreams = useCallback(() => {
     if (countdownTimerRef.current) {
@@ -244,6 +277,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     setOriginalRecordedFile(null);
     setIsTrimmed(false);
     setIsWebcamEnabled(false);
+    setLayoutMode("screen-cam");
     setIsMicEnabled(false);
     setWasMicEnabledOnStart(false);
     setCountdownTime(0);
@@ -310,13 +344,17 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         webcamCorner,
         webcamShape,
         webcamSize,
-        isWebcamEnabled,
+        isWebcamEnabled: isWebcamEnabled || layoutMode === "camera-only",
+        layoutMode,
       });
       compositorRef.current = compositor;
       compositor.setScreenStream(displayStream);
 
-      // 3. Acquire webcam stream if enabled
-      if (isWebcamEnabled) {
+      // 3. Acquire webcam stream if enabled or if in camera-only layout mode
+      if (isWebcamEnabled || layoutMode === "camera-only") {
+        if (!isWebcamEnabled) {
+          setIsWebcamEnabled(true);
+        }
         await setupWebcamStream();
       }
 
@@ -612,6 +650,10 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     setWebcamShape,
     webcamSize,
     setWebcamSize,
+    layoutMode,
+    setLayoutMode,
+    handleSetLayoutMode,
+    handleToggleLayoutMode,
     fps,
     setFps,
     resolution,

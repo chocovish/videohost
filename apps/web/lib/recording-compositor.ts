@@ -1,6 +1,7 @@
 export type WebcamCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-export type WebcamShape = "circle" | "squircle" | "square";
-export type WebcamSize = "small" | "medium" | "large";
+export type WebcamShape = "circle" | "squircle" | "rounded-square" | "square";
+export type WebcamSize = "small" | "medium" | "large" | "extra-large";
+export type RecordingLayoutMode = "screen-cam" | "camera-only";
 export type ResolutionPreset = "native" | "720p" | "1080p" | "4k";
 
 export interface CompositorOptions {
@@ -8,6 +9,7 @@ export interface CompositorOptions {
   webcamShape?: WebcamShape;
   webcamSize?: WebcamSize;
   isWebcamEnabled?: boolean;
+  layoutMode?: RecordingLayoutMode;
 }
 
 export class RecordingCompositor {
@@ -25,6 +27,7 @@ export class RecordingCompositor {
   public webcamShape: WebcamShape = "circle";
   public webcamSize: WebcamSize = "medium";
   public isWebcamEnabled: boolean = true;
+  public layoutMode: RecordingLayoutMode = "screen-cam";
 
   constructor(options?: CompositorOptions) {
     this.canvas = document.createElement("canvas");
@@ -52,6 +55,7 @@ export class RecordingCompositor {
     if (options?.webcamShape) this.webcamShape = options.webcamShape;
     if (options?.webcamSize) this.webcamSize = options.webcamSize;
     if (options?.isWebcamEnabled !== undefined) this.isWebcamEnabled = options.isWebcamEnabled;
+    if (options?.layoutMode) this.layoutMode = options.layoutMode;
   }
 
   public setScreenStream(stream: MediaStream | null) {
@@ -162,13 +166,24 @@ export class RecordingCompositor {
   };
 
   private renderFrame() {
-    const { canvas, ctx, screenVideo, webcamVideo } = this;
+    const { canvas, ctx, screenVideo, webcamVideo, layoutMode, isWebcamEnabled } = this;
 
-    // Dynamically adjust canvas dimensions to screen video dimensions if available
-    if (screenVideo.videoWidth > 0 && screenVideo.videoHeight > 0) {
-      if (canvas.width !== screenVideo.videoWidth || canvas.height !== screenVideo.videoHeight) {
-        canvas.width = screenVideo.videoWidth;
-        canvas.height = screenVideo.videoHeight;
+    // Dynamically adjust canvas dimensions to screen video dimensions if available, or webcam video
+    if (layoutMode === "camera-only") {
+      if (webcamVideo.videoWidth > 0 && webcamVideo.videoHeight > 0) {
+        if (canvas.width !== webcamVideo.videoWidth || canvas.height !== webcamVideo.videoHeight) {
+          if (screenVideo.videoWidth === 0) {
+            canvas.width = webcamVideo.videoWidth;
+            canvas.height = webcamVideo.videoHeight;
+          }
+        }
+      }
+    } else {
+      if (screenVideo.videoWidth > 0 && screenVideo.videoHeight > 0) {
+        if (canvas.width !== screenVideo.videoWidth || canvas.height !== screenVideo.videoHeight) {
+          canvas.width = screenVideo.videoWidth;
+          canvas.height = screenVideo.videoHeight;
+        }
       }
     }
 
@@ -179,25 +194,50 @@ export class RecordingCompositor {
     ctx.fillStyle = "#090d16";
     ctx.fillRect(0, 0, W, H);
 
-    // 1. Draw Screen Capture Stream
-    if (screenVideo.readyState >= 2 && screenVideo.videoWidth > 0) {
-      ctx.drawImage(screenVideo, 0, 0, W, H);
+    if (layoutMode === "camera-only") {
+      // 1. Draw Full Webcam Stream
+      if (
+        isWebcamEnabled &&
+        webcamVideo.readyState >= 2 &&
+        webcamVideo.videoWidth > 0 &&
+        webcamVideo.videoHeight > 0
+      ) {
+        const camW = webcamVideo.videoWidth;
+        const camH = webcamVideo.videoHeight;
+        const scale = Math.max(W / camW, H / camH);
+        const cropW = W / scale;
+        const cropH = H / scale;
+        const cropX = (camW - cropW) / 2;
+        const cropY = (camH - cropH) / 2;
+        ctx.drawImage(webcamVideo, cropX, cropY, cropW, cropH, 0, 0, W, H);
+      } else {
+        // Placeholder state while waiting for camera stream
+        ctx.fillStyle = "#1e293b";
+        ctx.font = "bold 24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Waiting for Camera Stream...", W / 2, H / 2);
+      }
     } else {
-      // Placeholder state while waiting for stream frame
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 24px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Waiting for Screen Capture Stream...", W / 2, H / 2);
-    }
+      // 1. Draw Screen Capture Stream
+      if (screenVideo.readyState >= 2 && screenVideo.videoWidth > 0) {
+        ctx.drawImage(screenVideo, 0, 0, W, H);
+      } else {
+        // Placeholder state while waiting for stream frame
+        ctx.fillStyle = "#1e293b";
+        ctx.font = "bold 24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Waiting for Screen Capture Stream...", W / 2, H / 2);
+      }
 
-    // 2. Draw Webcam Stream Overlay (if enabled & active)
-    if (
-      this.isWebcamEnabled &&
-      webcamVideo.readyState >= 2 &&
-      webcamVideo.videoWidth > 0 &&
-      webcamVideo.videoHeight > 0
-    ) {
-      this.drawWebcamOverlay(W, H);
+      // 2. Draw Webcam Stream Overlay (if enabled & active)
+      if (
+        isWebcamEnabled &&
+        webcamVideo.readyState >= 2 &&
+        webcamVideo.videoWidth > 0 &&
+        webcamVideo.videoHeight > 0
+      ) {
+        this.drawWebcamOverlay(W, H);
+      }
     }
   }
 
@@ -208,7 +248,9 @@ export class RecordingCompositor {
     const baseSize = Math.min(W, H);
     let overlaySizeScale = 0.22; // medium default (22%)
     if (webcamSize === "small") overlaySizeScale = 0.16;
+    if (webcamSize === "medium") overlaySizeScale = 0.22;
     if (webcamSize === "large") overlaySizeScale = 0.30;
+    if (webcamSize === "extra-large") overlaySizeScale = 0.40;
 
     const overlayW = Math.round(baseSize * overlaySizeScale);
     const overlayH = overlayW; // Keep 1:1 ratio for circle / square / squircle
@@ -247,7 +289,7 @@ export class RecordingCompositor {
       const centerY = y + overlayH / 2;
       const radius = overlayW / 2;
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    } else if (webcamShape === "squircle") {
+    } else if (webcamShape === "squircle" || webcamShape === "rounded-square") {
       cornerRadius = Math.round(overlayW * 0.28);
       this.drawRoundedRectPath(ctx, x, y, overlayW, overlayH, cornerRadius);
     } else {
@@ -272,7 +314,7 @@ export class RecordingCompositor {
       const centerY = y + overlayH / 2;
       const radius = overlayW / 2 - 3; // 3px white ring border
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    } else if (webcamShape === "squircle") {
+    } else if (webcamShape === "squircle" || webcamShape === "rounded-square") {
       this.drawRoundedRectPath(ctx, x + 3, y + 3, overlayW - 6, overlayH - 6, Math.max(0, cornerRadius - 3));
     } else {
       this.drawRoundedRectPath(ctx, x + 3, y + 3, overlayW - 6, overlayH - 6, Math.max(0, cornerRadius - 3));
