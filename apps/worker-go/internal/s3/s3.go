@@ -1,0 +1,304 @@
+package s3
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"videohost-worker-go/internal/urlutils"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	s3client "github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	smithy "github.com/aws/smithy-go"
+)
+
+type S3ConfigContext struct {
+	Endpoint        string `json:"endpoint"`
+	AccessKeyId     string `json:"accessKeyId"`
+	SecretAccessKey string `json:"secretAccessKey"`
+	Bucket          string `json:"bucket"`
+	Region          string `json:"region,omitempty"`
+	CdnHost         string `json:"cdnHost,omitempty"`
+}
+
+var (
+	ociRegex = regexp.MustCompile(`(?i)(?:compat\.objectstorage|objectstorage)\.([a-z0-9-]+)\.oraclecloud\.com`)
+	awsRegex = regexp.MustCompile(`(?i)s3[.-]([a-z0-9-]+)\.amazonaws\.com`)
+)
+
+func GetRegionFromEndpoint(endpoint string, overrideRegion string) string {
+	if overrideRegion != "" && overrideRegion != "auto" {
+		return overrideRegion
+	}
+	if matches := ociRegex.FindStringSubmatch(endpoint); len(matches) > 1 {
+		return matches[1]
+	}
+	if matches := awsRegex.FindStringSubmatch(endpoint); len(matches) > 1 {
+		return matches[1]
+	}
+	return "auto"
+}
+
+type S3ClientInfo struct {
+	Client  *s3client.Client
+	Bucket  string
+	CdnHost string
+}
+
+func GetS3ClientAndBucket(ctx context.Context, cfg *S3ConfigContext) (*S3ClientInfo, error) {
+	if cfg == nil || cfg.Endpoint == "" {
+		return nil, errors.New("S3 configuration with endpoint is required from payload")
+	}
+
+	rawEndpoint := cfg.Endpoint
+	endpoint := urlutils.UseDockerHostForLocalhost(rawEndpoint)
+
+	accessKeyId := cfg.AccessKeyId
+	if accessKeyId == "" {
+		accessKeyId = "minioadmin"
+	}
+
+	secretAccessKey := cfg.SecretAccessKey
+	if secretAccessKey == "" {
+		secretAccessKey = "passpass"
+	}
+
+	bucket := cfg.Bucket
+	if bucket == "" {
+		bucket = "videohost"
+	}
+
+	region := GetRegionFromEndpoint(rawEndpoint, cfg.Region)
+	clientRegion := region
+	if clientRegion == "" || clientRegion == "auto" {
+		clientRegion = "us-east-1"
+	}
+
+	cdnHost := cfg.CdnHost
+	if cdnHost == "" {
+		cdnHost = fmt.Sprintf("%s/%s", strings.TrimRight(rawEndpoint, "/"), bucket)
+	}
+
+	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(clientRegion),
+		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, secretAccessKey, "")),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+
+	client := s3client.NewFromConfig(awsCfg, func(o *s3client.Options) {
+		o.BaseEndpoint = aws.String(endpoint)
+		o.UsePathStyle = true
+		if clientRegion != "" {
+			o.Region = clientRegion
+		}
+	})
+
+	return &S3ClientInfo{
+		Client:  client,
+		Bucket:  bucket,
+		CdnHost: cdnHost,
+	}, nil
+}
+
+func EnsureBucketExists(ctx context.Context, cfg *S3ConfigContext) error {
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	_, headErr := info.Client.HeadBucket(ctx, &s3client.HeadBucketInput{
+		Bucket: aws.String(info.Bucket),
+	})
+
+	if headErr != nil {
+		// Attempt to create bucket
+		_, createErr := info.Client.CreateBucket(ctx, &s3client.CreateBucketInput{
+			Bucket: aws.String(info.Bucket),
+		})
+		if createErr != nil {
+			var apiErr smithy.APIError
+			if !errors.As(createErr, &apiErr) || (apiErr.ErrorCode() != "BucketAlreadyOwnedByYou" && apiErr.ErrorCode() != "BucketAlreadyExists") {
+				fmt.Printf("[S3] Failed to auto-create bucket %s: %v\n", info.Bucket, createErr)
+			}
+		}
+	}
+
+	// Set CORS configuration
+	_, _ = info.Client.PutBucketCors(ctx, &s3client.PutBucketCorsInput{
+		Bucket: aws.String(info.Bucket),
+		CORSConfiguration: &s3types.CORSConfiguration{
+			CORSRules: []s3types.CORSRule{
+				{
+					AllowedHeaders: []string{"*"},
+					AllowedMethods: []string{"GET", "PUT", "POST", "DELETE", "HEAD"},
+					AllowedOrigins: []string{"*"},
+					ExposeHeaders:  []string{"ETag", "Content-Range", "Accept-Ranges", "Content-Length"},
+					MaxAgeSeconds:  aws.Int32(3000),
+				},
+			},
+		},
+	})
+
+	return nil
+}
+
+func DownloadFileFromS3(ctx context.Context, key, destinationPath string, cfg *S3ConfigContext) error {
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	out, err := info.Client.GetObject(ctx, &s3client.GetObjectInput{
+		Bucket: aws.String(info.Bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("GetObject failed for key %s in bucket %s: %w", key, info.Bucket, err)
+	}
+	defer out.Body.Close()
+
+	if err := os.MkdirAll(filepath.Dir(destinationPath), 0755); err != nil {
+		return err
+	}
+
+	destFile, err := os.Create(destinationPath)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file %s: %w", destinationPath, err)
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, out.Body)
+	if err != nil {
+		return fmt.Errorf("failed writing downloaded S3 data: %w", err)
+	}
+
+	return nil
+}
+
+func UploadFileToS3(ctx context.Context, filePath, key, contentType string, cfg *S3ConfigContext) (string, error) {
+	_ = EnsureBucketExists(ctx, cfg)
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return "", err
+	}
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file %s for S3 upload: %w", filePath, err)
+	}
+	defer file.Close()
+
+	uploader := manager.NewUploader(info.Client, func(u *manager.Uploader) {
+		u.PartSize = 5 * 1024 * 1024 // 5MB part size
+		u.Concurrency = 4
+	})
+
+	_, err = uploader.Upload(ctx, &s3client.PutObjectInput{
+		Bucket:      aws.String(info.Bucket),
+		Key:         aws.String(key),
+		Body:        file,
+		ContentType: aws.String(contentType),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed uploading %s to S3: %w", key, err)
+	}
+
+	return fmt.Sprintf("%s/%s", strings.TrimRight(info.CdnHost, "/"), strings.TrimLeft(key, "/")), nil
+}
+
+func DetectContentType(fileName string) string {
+	ext := strings.ToLower(filepath.Ext(fileName))
+	switch ext {
+	case ".m3u8":
+		return "application/x-mpegURL"
+	case ".mpd":
+		return "application/dash+xml"
+	case ".ts":
+		return "video/MP2T"
+	case ".m4s", ".mp4":
+		return "video/mp4"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".webp":
+		return "image/webp"
+	case ".vtt":
+		return "text/vtt"
+	default:
+		return "application/octet-stream"
+	}
+}
+
+func UploadDirectoryToS3(ctx context.Context, dirPath, keyPrefix string, cfg *S3ConfigContext, onProgress func(ratio float64)) error {
+	_ = EnsureBucketExists(ctx, cfg)
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	var filePaths []string
+	err = filepath.Walk(dirPath, func(p string, fileInfo os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !fileInfo.IsDir() {
+			filePaths = append(filePaths, p)
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk directory %s: %w", dirPath, err)
+	}
+
+	totalFiles := len(filePaths)
+	uploadedCount := 0
+
+	uploader := manager.NewUploader(info.Client, func(u *manager.Uploader) {
+		u.PartSize = 5 * 1024 * 1024
+		u.Concurrency = 4
+	})
+
+	for _, fullPath := range filePaths {
+		relPath, err := filepath.Rel(dirPath, fullPath)
+		if err != nil {
+			continue
+		}
+		forwardRelPath := filepath.ToSlash(relPath)
+		s3Key := fmt.Sprintf("%s/%s", strings.TrimRight(keyPrefix, "/"), forwardRelPath)
+		contentType := DetectContentType(fullPath)
+
+		file, err := os.Open(fullPath)
+		if err != nil {
+			return fmt.Errorf("failed to open file %s: %w", fullPath, err)
+		}
+
+		_, err = uploader.Upload(ctx, &s3client.PutObjectInput{
+			Bucket:      aws.String(info.Bucket),
+			Key:         aws.String(s3Key),
+			Body:        file,
+			ContentType: aws.String(contentType),
+		})
+		file.Close()
+
+		if err != nil {
+			return fmt.Errorf("failed to upload directory file %s to S3: %w", s3Key, err)
+		}
+
+		uploadedCount++
+		if onProgress != nil && totalFiles > 0 {
+			onProgress(float64(uploadedCount) / float64(totalFiles))
+		}
+	}
+
+	return nil
+}

@@ -22,7 +22,7 @@ export interface TranscodeJobPayload {
   organizationId: string;
   originalKey: string;
   callbackUrl?: string;
-  s3?: S3ConfigContext;
+  s3: S3ConfigContext;
   renditions?: RenditionConfig[];
   hlsSegments?: number;
   skipThumbnail?: boolean;
@@ -82,56 +82,6 @@ export function bitrateForHeight(height: number): number {
   if (height <= 1080) return 5500;
   if (height <= 1440) return 9000;
   return 18000;
-}
-
-export function parseEnvRenditions(): RenditionConfig[] {
-  const envResolutions =
-    process.env.RENDITION_RESOLUTIONS || process.env.HLS_RENDITION_RESOLUTIONS;
-  if (!envResolutions) return DEFAULT_RESOLUTION_LADDER;
-
-  const standardMap: Record<string, RenditionConfig> = {
-    "360": { resolution: "360p", width: 640, height: 360, bitrateKbps: 800 },
-    "360p": { resolution: "360p", width: 640, height: 360, bitrateKbps: 800 },
-    "480": { resolution: "480p", width: 854, height: 480, bitrateKbps: 1000 },
-    "480p": { resolution: "480p", width: 854, height: 480, bitrateKbps: 1000 },
-    "720": { resolution: "720p", width: 1280, height: 720, bitrateKbps: 3000 },
-    "720p": { resolution: "720p", width: 1280, height: 720, bitrateKbps: 3000 },
-    "1080": { resolution: "1080p", width: 1920, height: 1080, bitrateKbps: 5500 },
-    "1080p": { resolution: "1080p", width: 1920, height: 1080, bitrateKbps: 5500 },
-    "1440": { resolution: "1440p", width: 2560, height: 1440, bitrateKbps: 9000 },
-    "1440p": { resolution: "1440p", width: 2560, height: 1440, bitrateKbps: 9000 },
-    "2160": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
-    "2160p": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
-    "4k": { resolution: "4k", width: 3840, height: 2160, bitrateKbps: 18000 },
-  };
-
-  const tokens = envResolutions
-    .split(",")
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
-
-  const parsed: RenditionConfig[] = [];
-  for (const token of tokens) {
-    if (standardMap[token]) {
-      parsed.push(standardMap[token]);
-    } else {
-      const numMatch = token.match(/^(\d+)/);
-      if (numMatch) {
-        const height = parseInt(numMatch[1], 10);
-        let width = Math.round((height * 16) / 9);
-        if (width % 2 !== 0) width += 1;
-
-        parsed.push({
-          resolution: `${height}p`,
-          width,
-          height,
-          bitrateKbps: bitrateForHeight(height),
-        });
-      }
-    }
-  }
-
-  return parsed.length > 0 ? parsed : DEFAULT_RESOLUTION_LADDER;
 }
 
 /**
@@ -262,18 +212,9 @@ export async function probeVideo(filePath: string): Promise<{
   });
 }
 
-export async function processVideoJob(payloadInput: TranscodeJobPayload | string): Promise<any> {
-  const rawPayload: TranscodeJobPayload =
-    typeof payloadInput === "string"
-      ? {
-          videoId: payloadInput,
-          organizationId: "default",
-          originalKey: `default/${payloadInput}/original.mp4`,
-        }
-      : payloadInput;
-
+export async function processVideoJob(payloadInput: TranscodeJobPayload): Promise<any> {
   // Transform incoming payload URLs with localhost to host.docker.internal for worker container network calls
-  const payload = useDockerHostForLocalhost(rawPayload);
+  const payload = useDockerHostForLocalhost(payloadInput);
 
   const { videoId, organizationId, originalKey, callbackUrl } = payload;
   console.log(`[Worker Stateless] Starting transcoding for videoId: ${videoId}, key: ${originalKey}`);
@@ -312,14 +253,13 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
       `[Worker] Video probed: ${width}x${height}, duration: ${duration}s, hasAudio: ${hasAudio}, sar: ${sar || "1:1"}`
     );
 
-    // Determine initial rendition candidates from payload or env or default ladder
+    // Determine initial rendition candidates from payload or default ladder
     const candidateRenditions =
       Array.isArray(payload.renditions) && payload.renditions.length > 0
         ? payload.renditions
-        : parseEnvRenditions();
+        : DEFAULT_RESOLUTION_LADDER;
 
-    // 3. Select renditions — NO UPSCALING, plus native rendition when it is
-    // meaningfully (>=100px) taller than the largest standard rung
+    // 3. Select renditions — NO UPSCALING, plus native rendition when gap >= 100px
     const targetRenditions = selectTargetRenditions(candidateRenditions, width, height);
     console.log(`[Worker] Generating renditions: ${targetRenditions.map((r) => r.resolution).join(", ")}`);
 
@@ -330,11 +270,6 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const totalRenditions = targetRenditions.length;
 
     // 4. Transcode all renditions into a single DASH manifest (master.mpd)
-    // All video representations must share one exact display aspect ratio,
-    // otherwise the DASH muxer rejects the adaptation set ("Conflicting
-    // stream aspect ratios"). Rendition widths are even-rounded per rung, so
-    // we enforce exact display aspect ratio using `setdar=${darNum}/${darDen}:max=1000000`
-    // (with :max=1000000 to prevent FFmpeg from approximating large fractional ratios to 1/1).
     const { darNum, darDen } = computeTargetDAR(width, height, sar);
 
     const filterParts: string[] = [];
@@ -540,7 +475,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     const combinedSizeBytes = originalSizeBytes + totalDashSizeBytes;
 
     // Allocate audio stream separately if present
-    const audioStreamIndex = totalRenditions; // Audio stream is mapped after video renditions
+    const audioStreamIndex = totalRenditions;
     const audioSizeBytes = hasAudio ? (streamSizes.get(audioStreamIndex) || 0) : 0;
 
     const renditionsResult = targetRenditions.map((r, i) => {
@@ -619,4 +554,3 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload | string
     } catch {}
   }
 }
-

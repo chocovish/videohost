@@ -12,25 +12,16 @@ import { Readable } from "stream";
 import { useDockerHostForLocalhost } from "./urlUtils";
 
 export interface S3ConfigContext {
-  endpoint?: string;
-  accessKeyId?: string;
-  secretAccessKey?: string;
-  bucket?: string;
+  endpoint: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  bucket: string;
   region?: string;
   cdnHost?: string;
 }
 
-function cleanEnv(val: string | undefined, fallback: string): string {
-  if (!val) return fallback;
-  const cleaned = val.replace(/["'\r\n]/g, "").trim();
-  return cleaned || fallback;
-}
-
 function getRegionFromEndpoint(endpoint: string, overrideRegion?: string): string {
   if (overrideRegion && overrideRegion !== "auto") return overrideRegion;
-  if (process.env.R2_REGION || process.env.S3_REGION) {
-    return cleanEnv(process.env.R2_REGION || process.env.S3_REGION, "auto");
-  }
   const ociMatch = endpoint.match(/(?:compat\.objectstorage|objectstorage)\.([a-z0-9-]+)\.oraclecloud\.com/i);
   if (ociMatch && ociMatch[1]) {
     return ociMatch[1];
@@ -42,14 +33,18 @@ function getRegionFromEndpoint(endpoint: string, overrideRegion?: string): strin
   return "auto";
 }
 
-export function getS3ClientAndBucket(config?: S3ConfigContext) {
-  const rawEndpoint = cleanEnv(config?.endpoint || process.env.R2_ENDPOINT, "http://localhost:9000");
+export function getS3ClientAndBucket(config: S3ConfigContext) {
+  if (!config || !config.endpoint) {
+    throw new Error("S3 configuration with endpoint is required from payload");
+  }
+
+  const rawEndpoint = config.endpoint;
   const endpoint = useDockerHostForLocalhost(rawEndpoint);
-  const accessKeyId = cleanEnv(config?.accessKeyId || process.env.R2_ACCESS_KEY_ID, "minioadmin");
-  const secretAccessKey = cleanEnv(config?.secretAccessKey || process.env.R2_SECRET_ACCESS_KEY, "passpass");
-  const bucket = cleanEnv(config?.bucket || process.env.R2_BUCKET_NAME, "videohost");
-  const region = getRegionFromEndpoint(rawEndpoint, config?.region);
-  const cdnHost = cleanEnv(config?.cdnHost, `${rawEndpoint}/${bucket}`);
+  const accessKeyId = config.accessKeyId || "minioadmin";
+  const secretAccessKey = config.secretAccessKey || "passpass";
+  const bucket = config.bucket || "videohost";
+  const region = getRegionFromEndpoint(rawEndpoint, config.region);
+  const cdnHost = config.cdnHost || `${rawEndpoint}/${bucket}`;
 
   const client = new S3Client({
     region,
@@ -63,7 +58,7 @@ export function getS3ClientAndBucket(config?: S3ConfigContext) {
   return { client, bucket, cdnHost };
 }
 
-export async function ensureBucketExists(config?: S3ConfigContext): Promise<void> {
+export async function ensureBucketExists(config: S3ConfigContext): Promise<void> {
   const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
 
   try {
@@ -101,7 +96,7 @@ export async function ensureBucketExists(config?: S3ConfigContext): Promise<void
 export async function downloadFileFromS3(
   key: string,
   destinationPath: string,
-  config?: S3ConfigContext
+  config: S3ConfigContext
 ): Promise<void> {
   const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
   const command = new GetObjectCommand({
@@ -124,7 +119,7 @@ export async function uploadStreamToS3(
   stream: Readable,
   key: string,
   contentType: string,
-  config?: S3ConfigContext
+  config: S3ConfigContext
 ): Promise<string> {
   await ensureBucketExists(config);
   const { client: s3, bucket: BUCKET_NAME, cdnHost } = getS3ClientAndBucket(config);
@@ -150,7 +145,7 @@ export async function uploadFileToS3(
   filePath: string,
   key: string,
   contentType: string,
-  config?: S3ConfigContext
+  config: S3ConfigContext
 ): Promise<string> {
   const fileStream = fs.createReadStream(filePath);
   return uploadStreamToS3(fileStream, key, contentType, config);
@@ -159,7 +154,7 @@ export async function uploadFileToS3(
 export async function uploadDirectoryToS3(
   dirPath: string,
   keyPrefix: string,
-  config?: S3ConfigContext,
+  config: S3ConfigContext,
   onProgress?: (progressRatio: number) => void
 ): Promise<void> {
   await ensureBucketExists(config);

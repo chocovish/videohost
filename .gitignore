@@ -10,6 +10,8 @@ out/
 dist/
 build/
 *.tsbuildinfo
+*.exe
+worker
 
 # Turborepo cache
 .turbo/

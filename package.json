@@ -7,8 +7,10 @@
     "build:all": "turbo run build",
     "build:web": "turbo run build --filter=@videohost/web",
     "build:worker": "turbo run build --filter=@videohost/worker",
+    "build:worker-go": "go build -C apps/worker-go -o worker ./cmd/worker",
     "dev": "turbo run dev --filter=@videohost/web",
     "dev:worker": "npm run dev --prefix apps/worker",
+    "dev:worker-go": "go run -C apps/worker-go ./cmd/worker",
     "dev:all": "turbo run dev",
     "start:web": "npm run start --prefix apps/web",
     "start:worker": "npm run start --prefix apps/worker",
@@ -17,6 +19,7 @@
     "db:push": "npm run --prefix packages/db push",
     "db:seed": "npm run --prefix packages/db seed",
     "test:worker": "node scripts/test-worker.js",
+    "test:worker-go": "go test -C apps/worker-go -v ./...",
     "livekit:up": "docker compose -f docker-compose.livekit.yml up -d",
     "livekit:down": "docker compose -f docker-compose.livekit.yml down",
     "livekit:logs": "docker compose -f docker-compose.livekit.yml logs -f"
