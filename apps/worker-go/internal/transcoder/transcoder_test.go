@@ -1,6 +1,7 @@
 package transcoder
 
 import (
+	"encoding/json"
 	"testing"
 )
 
@@ -51,4 +52,34 @@ func TestSelectTargetRenditions(t *testing.T) {
 		t.Errorf("expected native 900p rung as 3rd rendition, got %+v", selected900[2])
 	}
 }
+
+func TestFlexIntAndStreamingSegments(t *testing.T) {
+	cases := []struct {
+		jsonStr  string
+		expected int
+	}{
+		{`{"streamingSegments": 6}`, 6},
+		{`{"streamingSegments": "6"}`, 6},
+		{`{"streamingSegments": "0"}`, 0},
+		{`{"hlsSegments": 8}`, 8},
+		{`{"hlsSegments": "10"}`, 10},
+		{`{"streamingSegments": 0, "hlsSegments": 6}`, 6},
+		{`{}`, 0},
+	}
+
+	for _, c := range cases {
+		var p TranscodeJobPayload
+		if err := json.Unmarshal([]byte(c.jsonStr), &p); err != nil {
+			t.Fatalf("Unmarshal(%s) error: %v", c.jsonStr, err)
+		}
+		val := int(p.StreamingSegments)
+		if val <= 0 && int(p.HlsSegments) > 0 {
+			val = int(p.HlsSegments)
+		}
+		if val != c.expected {
+			t.Errorf("Unmarshal(%s) = %d; want %d", c.jsonStr, val, c.expected)
+		}
+	}
+}
+
 

@@ -65,10 +65,8 @@ export async function addTranscodeJob(
   };
 
   const renditions = parseRenditionResolutions();
-  const rawSegments = parseInt(process.env.STREAMING_SEGMENTS || process.env.HLS_SEGMENTS || "0", 10);
-  const hlsSegments = isNaN(rawSegments) ? 0 : rawSegments;
-
-  // WORKER_CORE: 0 = all available cores (auto), >0 = specific thread count
+  const rawSegmentsEnv = (process.env.STREAMING_SEGMENTS || "").replace(/["'\r\n]/g, "").trim();
+  const parsedSegments = rawSegmentsEnv !== "" ? parseInt(rawSegmentsEnv, 10) : 0;
   const rawWorkerCore = process.env.WORKER_CORE;
   const parsedWorkerCore = rawWorkerCore !== undefined && rawWorkerCore.trim() !== ""
     ? parseInt(rawWorkerCore.replace(/["'\r\n]/g, "").trim(), 10)
@@ -76,21 +74,19 @@ export async function addTranscodeJob(
   const threads = isNaN(parsedWorkerCore) || parsedWorkerCore < 0 ? 0 : parsedWorkerCore;
 
   console.log(
-    `[Queue Dispatch] Configured HLS renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${hlsSegments}, skipThumbnail: ${skipThumbnail}, threads: ${threads === 0 ? "0 (all cores)" : threads}`
+    `[Queue Dispatch] Configured DASH renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${streamingSegments}, skipThumbnail: ${skipThumbnail}, threads: ${threads === 0 ? "0 (all cores)" : threads}`
   );
 
-  const jobPayload = {
     videoId,
     organizationId: orgId,
     originalKey,
     callbackUrl,
     s3: s3Config,
     renditions,
-    hlsSegments,
+    streamingSegments,
+    hlsSegments: streamingSegments,
     skipThumbnail,
     generateThumbnail: !skipThumbnail,
-    threads,
-  };
 
   if (containerUrl) {
     console.log(`[Queue Dispatch] Triggering Container worker at ${containerUrl}/transcode for videoId: ${videoId}`);

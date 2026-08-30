@@ -26,6 +26,24 @@ const JobCancelledCode = "JOB_CANCELLED"
 
 var ErrJobCancelled = errors.New("transcode job cancelled")
 
+// FlexInt handles unmarshaling both JSON numbers (e.g. 6) and JSON strings (e.g. "6") into int.
+type FlexInt int
+
+func (f *FlexInt) UnmarshalJSON(b []byte) error {
+	str := strings.Trim(string(b), `"'`+" \r\n")
+	if str == "" || str == "null" {
+		*f = 0
+		return nil
+	}
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		*f = 0
+		return nil
+	}
+	*f = FlexInt(val)
+	return nil
+}
+
 type TranscodeJobPayload struct {
 	VideoId           string              `json:"videoId"`
 	OrganizationId    string              `json:"organizationId"`
@@ -33,7 +51,8 @@ type TranscodeJobPayload struct {
 	CallbackUrl       string              `json:"callbackUrl,omitempty"`
 	S3                *s3.S3ConfigContext `json:"s3,omitempty"`
 	Renditions        []RenditionConfig   `json:"renditions,omitempty"`
-	HlsSegments       int                 `json:"hlsSegments,omitempty"`
+	StreamingSegments FlexInt             `json:"streamingSegments,omitempty"`
+	HlsSegments       FlexInt             `json:"hlsSegments,omitempty"`
 	SkipThumbnail     *bool               `json:"skipThumbnail,omitempty"`
 	GenerateThumbnail *bool               `json:"generateThumbnail,omitempty"`
 	Threads           int                 `json:"threads,omitempty"`
@@ -248,18 +267,23 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	}
 	filterComplex := strings.Join(filterParts, ";")
 
-	isSingleFile := payload.HlsSegments <= 0
-	segDuration := 6
-	if !isSingleFile {
-		segDuration = int(math.Max(1, float64(payload.HlsSegments)))
+	segmentsVal := int(payload.StreamingSegments)
+	if segmentsVal <= 0 && int(payload.HlsSegments) > 0 {
+		segmentsVal = int(payload.HlsSegments)
 	}
 
-	modeStr := "Chunked Segments"
-	if isSingleFile {
-		modeStr = "Single-File (-single_file 1)"
+	isSingleFile := segmentsVal <= 0
+	segDuration := 6
+	if !isSingleFile {
+		segDuration = int(math.Max(1, float64(segmentsVal)))
 	}
-	fmt.Printf("[Worker] Packaging mode: %s (%ds segments) for %d representation(s)...\n",
-		modeStr, segDuration, totalRenditions)
+
+	modeStr := fmt.Sprintf("Chunked Segments (%ds chunk-stream*.m4s)", segDuration)
+	if isSingleFile {
+		modeStr = "Single-File (-single_file 1, byte-range stream_*.mp4)"
+	}
+	fmt.Printf("[Worker] Packaging mode: %s for %d representation(s)...\n",
+		modeStr, totalRenditions)
 
 	var dashPackagingOptions []string
 	if isSingleFile {

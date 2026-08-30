@@ -24,7 +24,8 @@ export interface TranscodeJobPayload {
   callbackUrl?: string;
   s3: S3ConfigContext;
   renditions?: RenditionConfig[];
-  hlsSegments?: number;
+  streamingSegments?: number | string;
+  hlsSegments?: number | string;
   skipThumbnail?: boolean;
   generateThumbnail?: boolean;
   threads?: number;
@@ -302,12 +303,20 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     });
     const filterComplex = filterParts.join(";");
 
-    const hlsSegmentsVal = typeof payload.hlsSegments === "number" ? payload.hlsSegments : 0;
-    const isSingleFile = hlsSegmentsVal <= 0;
-    const segDuration = isSingleFile ? 6 : Math.max(1, Math.round(hlsSegmentsVal));
+    const rawSegments = payload.streamingSegments ?? payload.hlsSegments;
+    let parsedSegments = 0;
+    if (typeof rawSegments === "number") {
+      parsedSegments = isNaN(rawSegments) ? 0 : rawSegments;
+    } else if (typeof rawSegments === "string") {
+      const p = parseInt(rawSegments.replace(/["'\r\n]/g, "").trim(), 10);
+      parsedSegments = isNaN(p) ? 0 : p;
+    }
+
+    const isSingleFile = parsedSegments <= 0;
+    const segDuration = isSingleFile ? 6 : Math.max(1, Math.round(parsedSegments));
 
     console.log(
-      `[Worker] Packaging mode: ${isSingleFile ? "Single-File (-single_file 1)" : `Chunked Segments (${segDuration}s segments)`} for ${totalRenditions} representation(s)...`
+      `[Worker] Packaging mode: ${isSingleFile ? "Single-File (-single_file 1, byte-range stream_*.mp4)" : `Chunked Segments (${segDuration}s chunk-stream*.m4s)`} for ${totalRenditions} representation(s)...`
     );
 
     const dashPackagingOptions = isSingleFile
