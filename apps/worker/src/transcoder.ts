@@ -27,6 +27,9 @@ export interface TranscodeJobPayload {
   hlsSegments?: number;
   skipThumbnail?: boolean;
   generateThumbnail?: boolean;
+  threads?: number;
+  workerCore?: number;
+  workerCores?: number;
 }
 
 export const JOB_CANCELLED_CODE = "JOB_CANCELLED";
@@ -217,7 +220,20 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   const payload = useDockerHostForLocalhost(payloadInput);
 
   const { videoId, organizationId, originalKey, callbackUrl } = payload;
+  const rawThreads =
+    typeof payload.threads === "number"
+      ? payload.threads
+      : typeof payload.workerCore === "number"
+      ? payload.workerCore
+      : typeof payload.workerCores === "number"
+      ? payload.workerCores
+      : 0;
+  const threadCount = isNaN(rawThreads) || rawThreads < 0 ? 0 : rawThreads;
+
   console.log(`[Worker Stateless] Starting transcoding for videoId: ${videoId}, key: ${originalKey}`);
+  console.log(
+    `[Worker Stateless] Using ${threadCount === 0 ? "all available cores (threads=0)" : `${threadCount} thread(s)`} for transcoding`
+  );
   console.log(`[Worker Stateless] Received job payload:`, JSON.stringify(payload, null, 2));
 
   const reporter = new ProgressReporter(videoId, organizationId || "default", callbackUrl);
@@ -318,6 +334,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
       const stderrLines: string[] = [];
       const encodeCommand = ffmpeg(inputPath)
         .outputOptions([
+          `-threads ${threadCount}`,
           `-filter_complex ${filterComplex}`,
           ...targetRenditions.map((_, i) => `-map [o${i}]`),
           `-map 0:a?`,
@@ -410,6 +427,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
           .seekInput(seekTime)
           .frames(1)
           .outputOptions([
+            "-threads", String(threadCount),
             "-vf", "scale='min(1280,iw)':-2",
             "-c:v", "libwebp",
             "-quality", "82",

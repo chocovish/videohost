@@ -27,15 +27,18 @@ const JobCancelledCode = "JOB_CANCELLED"
 var ErrJobCancelled = errors.New("transcode job cancelled")
 
 type TranscodeJobPayload struct {
-	VideoId           string             `json:"videoId"`
-	OrganizationId    string             `json:"organizationId"`
-	OriginalKey       string             `json:"originalKey"`
-	CallbackUrl       string             `json:"callbackUrl,omitempty"`
+	VideoId           string              `json:"videoId"`
+	OrganizationId    string              `json:"organizationId"`
+	OriginalKey       string              `json:"originalKey"`
+	CallbackUrl       string              `json:"callbackUrl,omitempty"`
 	S3                *s3.S3ConfigContext `json:"s3,omitempty"`
-	Renditions        []RenditionConfig  `json:"renditions,omitempty"`
-	HlsSegments       int                `json:"hlsSegments,omitempty"`
-	SkipThumbnail     *bool              `json:"skipThumbnail,omitempty"`
-	GenerateThumbnail *bool              `json:"generateThumbnail,omitempty"`
+	Renditions        []RenditionConfig   `json:"renditions,omitempty"`
+	HlsSegments       int                 `json:"hlsSegments,omitempty"`
+	SkipThumbnail     *bool               `json:"skipThumbnail,omitempty"`
+	GenerateThumbnail *bool               `json:"generateThumbnail,omitempty"`
+	Threads           int                 `json:"threads,omitempty"`
+	WorkerCore        int                 `json:"workerCore,omitempty"`
+	WorkerCores       int                 `json:"workerCores,omitempty"`
 }
 
 type ActiveJobEntry struct {
@@ -109,7 +112,23 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		payload.OriginalKey = fmt.Sprintf("%s/%s/original.mp4", orgId, videoId)
 	}
 
+	threadCount := payload.Threads
+	if threadCount <= 0 && payload.WorkerCore > 0 {
+		threadCount = payload.WorkerCore
+	}
+	if threadCount <= 0 && payload.WorkerCores > 0 {
+		threadCount = payload.WorkerCores
+	}
+	if threadCount < 0 {
+		threadCount = 0
+	}
+
 	fmt.Printf("[Worker Stateless] Starting transcoding for videoId: %s, key: %s\n", videoId, payload.OriginalKey)
+	if threadCount == 0 {
+		fmt.Println("[Worker Stateless] Using all available cores (threads=0) for transcoding")
+	} else {
+		fmt.Printf("[Worker Stateless] Using %d thread(s) for transcoding\n", threadCount)
+	}
 
 	reporter := progress.NewProgressReporter(videoId, orgId, payload.CallbackUrl)
 	_ = reporter.Report(ctx, 0, "PROCESSING", true, nil)
@@ -268,6 +287,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	// Build FFmpeg command arguments
 	ffmpegArgs := []string{
 		"-y",
+		"-threads", strconv.Itoa(threadCount),
 		"-i", inputPath,
 		"-filter_complex", filterComplex,
 	}
@@ -401,6 +421,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 
 		thumbCmd := exec.CommandContext(jobCtx, "ffmpeg",
 			"-y",
+			"-threads", strconv.Itoa(threadCount),
 			"-ss", fmt.Sprintf("%.2f", seekTime),
 			"-i", inputPath,
 			"-frames:v", "1",
