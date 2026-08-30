@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { sendMeetingInvitationEmail } from "@/lib/mail";
+import { getBaseUrl } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Send invitation emails
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
     const joinUrl = `${baseUrl}/meet/${meeting.id}`;
 
     if (Array.isArray(inviteEmails) && inviteEmails.length > 0) {

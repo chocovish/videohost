@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { sendShareEmail, sendMeetingInvitationEmail } from "@/lib/mail";
+import { getBaseUrl } from "@/lib/utils";
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
   if (!authCtx) {
@@ -71,7 +72,7 @@ export async function GET(req: Request) {
       allowedEmails = meeting.invites.map((i) => ({ id: i.id, email: i.email, createdAt: i.sentAt.toISOString() }));
     }
 
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
     const shareUrl = `${baseUrl}/share/${targetId}`;
 
     return NextResponse.json({
@@ -156,7 +157,7 @@ export async function POST(req: Request) {
       currentCountryPricing = (meeting.countryPricing as any[]) || [];
     }
 
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
     const shareUrl = `${baseUrl}/share/${targetId}`;
 
     // Handle Action: SAVE_ALL (Comprehensive batch save of mode, pricing, and allowed emails)
@@ -248,7 +249,7 @@ export async function POST(req: Request) {
             const meetingObj = await db.meeting.findUnique({
               where: { id: targetId },
             });
-            const baseUrl = process.env.APP_URL || "http://localhost:3000";
+            const baseUrl = getBaseUrl();
             const joinUrl = `${baseUrl}/meet/${targetId}`;
 
             await Promise.allSettled(
@@ -417,7 +418,7 @@ export async function POST(req: Request) {
           const meetingObj = await db.meeting.findUnique({
             where: { id: targetId },
           });
-          const baseUrl = process.env.APP_URL || "http://localhost:3000";
+          const baseUrl = getBaseUrl();
           const joinUrl = `${baseUrl}/meet/${targetId}`;
 
           await sendMeetingInvitationEmail({

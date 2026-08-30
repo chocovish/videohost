@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Plus_Jakarta_Sans, Fredoka } from "next/font/google";
-import { cn } from "@/lib/utils";
+import { cn, getBaseUrl } from "@/lib/utils";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { getImpersonationSession } from "@/lib/admin-auth";
 
@@ -18,7 +18,7 @@ const fontHeading = Fredoka({
   weight: ["500", "600", "700"],
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://taped.app";
+const baseUrl = getBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

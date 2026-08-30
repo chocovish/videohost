@@ -1,6 +1,7 @@
 import { Queue } from "bullmq";
 import { db } from "@videohost/db";
 import { parseRenditionResolutions } from "./renditions";
+import { getBaseUrl } from "./utils";
 
 const redisHost = process.env.REDIS_HOST;
 const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -35,7 +36,7 @@ export async function addTranscodeJob(
   const containerUrl = process.env.CONTAINER_WORKER_URL;
   const workerSecret = process.env.WORKER_SECRET_TOKEN;
 
-  const baseUrl = process.env.APP_URL || "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
   const cdnHost = `${r2Endpoint}/${process.env.R2_BUCKET_NAME}`;
 
@@ -43,7 +44,7 @@ export async function addTranscodeJob(
 
   const video = await db.video.findUnique({ where: { id: videoId } });
   const originalKey = video?.originalKey || `${orgId}/${videoId}/original.mp4`;
-  const callbackUrl = `${baseUrl.replace(/\/$/, "")}/api/v1/videos/transcode-callback`;
+  const callbackUrl = `${baseUrl}/api/v1/videos/transcode-callback`;
 
   const skipThumbnail =
     options?.skipThumbnail !== undefined
@@ -67,6 +68,7 @@ export async function addTranscodeJob(
   const renditions = parseRenditionResolutions();
   const rawSegmentsEnv = (process.env.STREAMING_SEGMENTS || "").replace(/["'\r\n]/g, "").trim();
   const parsedSegments = rawSegmentsEnv !== "" ? parseInt(rawSegmentsEnv, 10) : 0;
+  const streamingSegments = isNaN(parsedSegments) ? 0 : parsedSegments;
   const rawWorkerCore = process.env.WORKER_CORE;
   const parsedWorkerCore = rawWorkerCore !== undefined && rawWorkerCore.trim() !== ""
     ? parseInt(rawWorkerCore.replace(/["'\r\n]/g, "").trim(), 10)
@@ -77,6 +79,7 @@ export async function addTranscodeJob(
     `[Queue Dispatch] Configured DASH renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${streamingSegments}, skipThumbnail: ${skipThumbnail}, threads: ${threads === 0 ? "0 (all cores)" : threads}`
   );
 
+  const jobPayload = {
     videoId,
     organizationId: orgId,
     originalKey,
@@ -87,6 +90,8 @@ export async function addTranscodeJob(
     hlsSegments: streamingSegments,
     skipThumbnail,
     generateThumbnail: !skipThumbnail,
+    threads,
+  };
 
   if (containerUrl) {
     console.log(`[Queue Dispatch] Triggering Container worker at ${containerUrl}/transcode for videoId: ${videoId}`);

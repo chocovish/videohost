@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { getBaseUrl } from "./utils";
 
 export type CashfreeEnvironment = "SANDBOX" | "PRODUCTION";
 
@@ -127,12 +128,12 @@ function sanitizePhoneNumber(phone?: string): string {
  */
 function getWebhookNotifyUrl(customNotifyUrl?: string): string | undefined {
   if (customNotifyUrl) return customNotifyUrl;
-  const appUrl = (process.env.APP_URL || process.env.NEXTAUTH_URL || "").trim();
+  const appUrl = getBaseUrl();
   if (!appUrl) return undefined;
   if (/^https?:\/\/(localhost|127\.0\.0\.1)/i.test(appUrl)) {
     return undefined;
   }
-  return `${appUrl.replace(/\/+$/, "")}/api/payments/webhook`;
+  return `${appUrl}/api/payments/webhook`;
 }
 
 /**
@@ -164,7 +165,7 @@ export async function createCashfreeOrder(
     order_meta: {
       return_url:
         params.returnUrl ||
-        `${process.env.APP_URL || "http://localhost:3000"}/pricing?order_id={order_id}`,
+        `${getBaseUrl()}/pricing?order_id={order_id}`,
       ...(notifyUrl ? { notify_url: notifyUrl } : {}),
     },
     ...(params.notes ? { order_tags: params.notes } : {}),
@@ -332,7 +333,7 @@ export async function createCashfreeSubscription(
     subscription_meta: {
       return_url:
         params.returnUrl ||
-        `${process.env.APP_URL || "http://localhost:3000"}/pricing?subscription_id={subscription_id}`,
+        `${getBaseUrl()}/pricing?subscription_id={subscription_id}`,
       notification_channel: ["EMAIL"],
       ...(getWebhookNotifyUrl(params.notifyUrl)
         ? { notify_url: getWebhookNotifyUrl(params.notifyUrl) }

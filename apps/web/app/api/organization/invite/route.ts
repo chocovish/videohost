@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { sendOrgInviteEmail } from "@/lib/mail";
+import { getBaseUrl } from "@/lib/utils";
 
 export async function POST(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
     });
 
     const senderName = sender?.name || sender?.email?.split("@")[0] || "An organization admin";
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
     const inviteUrl = `${baseUrl}/invite/${token}`;
 
     let emailSent = false;

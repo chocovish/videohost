@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { getBaseUrl } from "./utils";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.maileroo.com",
@@ -121,7 +122,7 @@ export async function sendPasswordResetOtpEmail(email: string, otpCode: string) 
 }
 
 export async function sendVerificationEmail(email: string, token: string, callbackUrl?: string) {
-  const baseUrl = process.env.APP_URL || "http://localhost:3000";
+  const baseUrl = getBaseUrl();
   const callbackParam = callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : "";
   const confirmLink = `${baseUrl}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}${callbackParam}`;
 

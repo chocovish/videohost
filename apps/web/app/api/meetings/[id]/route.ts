@@ -5,6 +5,7 @@ import { getRoomServiceClient, getEgressClient } from "@/lib/livekit";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { sendMeetingInvitationEmail } from "@/lib/mail";
 import { EgressStatus } from "livekit-server-sdk";
+import { getBaseUrl } from "@/lib/utils";
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -270,7 +271,7 @@ export async function PATCH(
         }
 
         const senderName = session?.user?.name || meeting.createdBy?.name || "Host";
-        const baseUrl = process.env.APP_URL || "http://localhost:3000";
+        const baseUrl = getBaseUrl();
         const joinUrl = `${baseUrl}/meet/${meeting.id}`;
         const orgName = meeting.organization?.name || "Taped";
 

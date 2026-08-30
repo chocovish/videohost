@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
+import { getBaseUrl } from "@/lib/utils";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -77,7 +78,7 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
 
     const videoItems = await Promise.all(
       sharedVideos.map(async (video) => ({

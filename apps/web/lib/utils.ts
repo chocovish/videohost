@@ -42,3 +42,32 @@ export function formatCurrencyPrice(amount: number | null | undefined, currency:
   return `${sym}${num.toFixed(2)}`;
 }
 
+/**
+ * Resolves the application base URL without trailing slashes.
+ * Supports both client-side (window.location.origin) and server-side execution.
+ * Prioritizes NEXT_PUBLIC_APP_URL, APP_URL, and NEXTAUTH_URL environment variables.
+ */
+export function getBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/+$/, "");
+  }
+
+  const envUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.NEXTAUTH_URL;
+
+  if (envUrl) {
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    return trimmed.startsWith("localhost") || trimmed.startsWith("127.0.0.1")
+      ? `http://${trimmed}`
+      : `https://${trimmed}`;
+  }
+
+  return process.env.NODE_ENV === "production" ? "https://taped.app" : "http://localhost:3000";
+}
+
+

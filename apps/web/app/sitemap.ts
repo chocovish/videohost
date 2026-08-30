@@ -1,17 +1,10 @@
 import type { MetadataRoute } from "next";
 import { db } from "@videohost/db";
+import { getBaseUrl } from "@/lib/utils";
 
 // Force on-demand / dynamic generation on every request
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function getBaseUrl(): string {
-  const url =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://taped.app");
-  return url.replace(/\/+$/, "");
-}
 
 /**
  * Next.js 16 Dynamic Sitemap Generator

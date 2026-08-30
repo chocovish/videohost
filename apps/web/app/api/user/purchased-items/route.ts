@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
 import { db } from "@videohost/db";
+import { getBaseUrl } from "@/lib/utils";
 
 export async function GET(req: Request) {
   let userId: string | null = null;
@@ -78,7 +79,7 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const baseUrl = getBaseUrl();
 
     const purchases = await Promise.all(
       rawPurchases.map(async (purchase) => {
