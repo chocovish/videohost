@@ -1,12 +1,11 @@
 import {
   S3Client,
   GetObjectCommand,
-  PutObjectCommand,
   HeadBucketCommand,
   CreateBucketCommand,
-  PutBucketPolicyCommand,
   PutBucketCorsCommand,
 } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
@@ -121,8 +120,8 @@ export async function downloadFileFromS3(
   });
 }
 
-export async function uploadFileToS3(
-  filePath: string,
+export async function uploadStreamToS3(
+  stream: Readable,
   key: string,
   contentType: string,
   config?: S3ConfigContext
@@ -130,16 +129,31 @@ export async function uploadFileToS3(
   await ensureBucketExists(config);
   const { client: s3, bucket: BUCKET_NAME, cdnHost } = getS3ClientAndBucket(config);
 
-  const fileBuffer = fs.readFileSync(filePath);
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-    Body: fileBuffer,
-    ContentType: contentType,
+  const upload = new Upload({
+    client: s3,
+    params: {
+      Bucket: BUCKET_NAME,
+      Key: key,
+      Body: stream,
+      ContentType: contentType,
+    },
+    queueSize: 4,
+    partSize: 1024 * 1024 * 5, // 5MB minimum part size
+    leavePartsOnError: false,
   });
 
-  await s3.send(command);
+  await upload.done();
   return `${cdnHost.replace(/\/$/, "")}/${key}`;
+}
+
+export async function uploadFileToS3(
+  filePath: string,
+  key: string,
+  contentType: string,
+  config?: S3ConfigContext
+): Promise<string> {
+  const fileStream = fs.createReadStream(filePath);
+  return uploadStreamToS3(fileStream, key, contentType, config);
 }
 
 export async function uploadDirectoryToS3(
