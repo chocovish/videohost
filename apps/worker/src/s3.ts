@@ -4,6 +4,9 @@ import {
   HeadBucketCommand,
   CreateBucketCommand,
   PutBucketCorsCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
@@ -96,22 +99,40 @@ export async function ensureBucketExists(config: S3ConfigContext): Promise<void>
 export async function downloadFileFromS3(
   key: string,
   destinationPath: string,
-  config: S3ConfigContext
+  config: S3ConfigContext,
+  signal?: AbortSignal
 ): Promise<void> {
+  if (signal?.aborted) throw new Error("JOB_CANCELLED");
   const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
   });
 
-  const response = await s3.send(command);
+  const response: any = await s3.send(command, signal ? { abortSignal: signal } as any : undefined);
   const stream = response.Body as Readable;
 
   return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      try { (stream as any).destroy?.(new Error("JOB_CANCELLED")); } catch {}
+      reject(new Error("JOB_CANCELLED"));
+    };
+    if (signal) signal.addEventListener("abort", onAbort, { once: true });
+
     const fileStream = fs.createWriteStream(destinationPath);
     stream.pipe(fileStream);
-    stream.on("error", reject);
-    fileStream.on("finish", resolve);
+    stream.on("error", (err) => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+      reject(err);
+    });
+    fileStream.on("finish", () => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+      resolve();
+    });
+    fileStream.on("error", (err) => {
+      if (signal) signal.removeEventListener("abort", onAbort);
+      reject(err);
+    });
   });
 }
 
@@ -119,8 +140,10 @@ export async function uploadStreamToS3(
   stream: Readable,
   key: string,
   contentType: string,
-  config: S3ConfigContext
+  config: S3ConfigContext,
+  signal?: AbortSignal
 ): Promise<string> {
+  if (signal?.aborted) throw new Error("JOB_CANCELLED");
   await ensureBucketExists(config);
   const { client: s3, bucket: BUCKET_NAME, cdnHost } = getS3ClientAndBucket(config);
 
@@ -137,7 +160,19 @@ export async function uploadStreamToS3(
     leavePartsOnError: false,
   });
 
-  await upload.done();
+  if (signal) {
+    const onAbort = () => {
+      try { (upload as any).abort(); } catch {}
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    try {
+      await upload.done();
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
+  } else {
+    await upload.done();
+  }
   return `${cdnHost.replace(/\/$/, "")}/${key}`;
 }
 
@@ -145,9 +180,22 @@ export async function uploadFileToS3(
   filePath: string,
   key: string,
   contentType: string,
-  config: S3ConfigContext
+  config: S3ConfigContext,
+  signal?: AbortSignal
 ): Promise<string> {
+  if (signal?.aborted) throw new Error("JOB_CANCELLED");
   const fileStream = fs.createReadStream(filePath);
+  if (signal) {
+    const onAbort = () => {
+      try { fileStream.destroy(new Error("JOB_CANCELLED")); } catch {}
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    try {
+      return await uploadStreamToS3(fileStream, key, contentType, config, signal);
+    } finally {
+      signal.removeEventListener("abort", onAbort);
+    }
+  }
   return uploadStreamToS3(fileStream, key, contentType, config);
 }
 
@@ -155,8 +203,10 @@ export async function uploadDirectoryToS3(
   dirPath: string,
   keyPrefix: string,
   config: S3ConfigContext,
-  onProgress?: (progressRatio: number) => void
+  onProgress?: (progressRatio: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
+  if (signal?.aborted) throw new Error("JOB_CANCELLED");
   await ensureBucketExists(config);
 
   const rawEntries = fs.readdirSync(dirPath, { recursive: true });
@@ -173,6 +223,7 @@ export async function uploadDirectoryToS3(
   let uploadedCount = 0;
 
   for (const fullPath of filePaths) {
+    if (signal?.aborted) throw new Error("JOB_CANCELLED");
     const relativePath = path.relative(dirPath, fullPath).replace(/\\/g, "/");
     const s3Key = `${keyPrefix}/${relativePath}`;
 
@@ -185,10 +236,64 @@ export async function uploadDirectoryToS3(
     else if (relativePath.endsWith(".webp")) contentType = "image/webp";
     else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
 
-    await uploadFileToS3(fullPath, s3Key, contentType, config);
+    await uploadFileToS3(fullPath, s3Key, contentType, config, signal);
     uploadedCount++;
     if (onProgress && totalFiles > 0) {
       onProgress(uploadedCount / totalFiles);
     }
   }
+}
+
+export async function deleteS3Prefix(
+  prefix: string,
+  config: S3ConfigContext
+): Promise<void> {
+  if (!prefix) return;
+  // Ensure prefix ends with / for folder deletion
+  const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
+  console.log(`[S3 Delete Prefix] Deleting prefix "${normalizedPrefix}"...`);
+  const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
+  let continuationToken: string | undefined = undefined;
+  let totalDeleted = 0;
+  do {
+    const listRes: any = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: normalizedPrefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+    const objects = listRes.Contents || [];
+    if (objects.length > 0) {
+      const keysToDelete = objects.filter((o: any) => o.Key).map((obj: any) => ({ Key: obj.Key! }));
+      try {
+        const delRes: any = await s3.send(
+          new DeleteObjectsCommand({
+            Bucket: BUCKET_NAME,
+            Delete: { Objects: keysToDelete, Quiet: false },
+          })
+        );
+        totalDeleted += delRes.Deleted?.length || keysToDelete.length;
+        if (delRes.Errors && delRes.Errors.length > 0) {
+          for (const e of delRes.Errors) {
+            if (e.Key) {
+              try {
+                await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: e.Key }));
+                totalDeleted++;
+              } catch {}
+            }
+          }
+        }
+      } catch {
+        for (const k of keysToDelete) {
+          try {
+            await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: k.Key }));
+            totalDeleted++;
+          } catch {}
+        }
+      }
+    }
+    continuationToken = listRes.NextContinuationToken;
+  } while (continuationToken);
+  console.log(`[S3 Delete Prefix] Deleted ${totalDeleted} object(s) under prefix "${normalizedPrefix}"`);
 }

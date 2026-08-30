@@ -27,6 +27,7 @@ import {
   CheckSquare,
   X,
   Ban,
+  RotateCcw,
 } from "lucide-react";
 import UploadModal from "@/components/UploadModal";
 import ScreenRecordDrawer from "@/components/ScreenRecordDrawer";
@@ -230,6 +231,31 @@ function UploadedVideosContent() {
   };
 
   const [cancellingVideoIds, setCancellingVideoIds] = useState<Set<string>>(new Set());
+  const [retryingVideoIds, setRetryingVideoIds] = useState<Set<string>>(new Set());
+
+  const handleRetryTranscode = async (e: React.MouseEvent, videoId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRetryingVideoIds((prev) => new Set(prev).add(videoId));
+    try {
+      const res = await fetch(`/api/v1/videos/${videoId}/retry`, { method: "POST" });
+      if (res.ok) {
+        await refreshAll();
+      } else {
+        const data = await res.json().catch(() => null);
+        alert(data?.error || "Failed to retry transcoding");
+      }
+    } catch (err) {
+      console.error("Error retrying transcode:", err);
+      alert("An error occurred while retrying transcoding");
+    } finally {
+      setRetryingVideoIds((prev) => {
+        const next = new Set(prev);
+        next.delete(videoId);
+        return next;
+      });
+    }
+  };
 
   const handleCancelTranscode = async (e: React.MouseEvent, videoId: string) => {
     e.preventDefault();
@@ -630,7 +656,7 @@ function UploadedVideosContent() {
         </div>
 
         <div className="flex items-center gap-1 overflow-x-auto p-1.5 -m-1.5 w-full sm:w-auto justify-start sm:justify-end scrollbar-none">
-          {["ALL", "READY", "PROCESSING", "FAILED"].map((st) => (
+          {["ALL", "READY", "PROCESSING", "FAILED", "CANCELLED"].map((st) => (
             <Button
               key={st}
               variant={statusFilter === st ? "default" : "ghost"}
@@ -964,6 +990,16 @@ function UploadedVideosContent() {
                                 {cancellingVideoIds.has(video.id) ? "Cancelling..." : "Cancel Transcoding"}
                               </DropdownMenuItem>
                             )}
+                            {(video.status === "FAILED" || video.status === "CANCELLED") && (
+                              <DropdownMenuItem
+                                onClick={(e) => handleRetryTranscode(e, video.id)}
+                                disabled={retryingVideoIds.has(video.id)}
+                                className="gap-2 font-medium cursor-pointer"
+                              >
+                                <RotateCcw className={`w-4 h-4 ${retryingVideoIds.has(video.id) ? "animate-spin" : ""}`} />
+                                {retryingVideoIds.has(video.id) ? "Retrying..." : "Retry Transcoding"}
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={(e) => handleDeleteVideo(e, video.id, video.title)}
@@ -987,7 +1023,7 @@ function UploadedVideosContent() {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2">
+                  <div className="p-4 pt-2 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground mt-2 gap-2">
                     <div className="flex items-center gap-2">
                       <span>{new Date(video.createdAt).toLocaleDateString()}</span>
                       <span
@@ -1001,6 +1037,19 @@ function UploadedVideosContent() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                      {(video.status === "FAILED" || video.status === "CANCELLED") && (
+                        <Button
+                          variant="destructive"
+                          size="xs"
+                          onClick={(e) => handleRetryTranscode(e, video.id)}
+                          disabled={retryingVideoIds.has(video.id)}
+                          className="gap-1 h-6 text-xs"
+                          title="Retry transcoding (cleans residual dash folder first)"
+                        >
+                          <RotateCcw className={`w-3 h-3 ${retryingVideoIds.has(video.id) ? "animate-spin" : ""}`} />
+                          {retryingVideoIds.has(video.id) ? "Retrying..." : "Retry"}
+                        </Button>
+                      )}
                       {getStatusBadge(video.status, video.progress)}
                     </div>
                   </div>

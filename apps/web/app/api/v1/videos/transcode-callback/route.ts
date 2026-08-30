@@ -138,6 +138,28 @@ export async function POST(req: Request) {
       });
 
       return NextResponse.json({ success: true, status: "READY", videoId });
+    } else if (status === "CANCELLED") {
+      await db.video.update({
+        where: { id: videoId },
+        data: { status: "CANCELLED", progress: 0 },
+      });
+
+      // Best-effort cleanup: delete any residual dash folder that may contain partial uploads
+      try {
+        const { deleteS3Prefix } = await import("@/lib/s3");
+        await deleteS3Prefix(`${orgId}/${videoId}/dash`);
+      } catch (e) {
+        console.warn(`[Transcode Callback] Failed to cleanup dash prefix for cancelled ${videoId}:`, e);
+      }
+
+      console.log(`[Transcode Callback] Video ${videoId} marked CANCELLED: ${error || "Cancelled by worker"}`);
+
+      triggerWebhooks(orgId, "video.failed", {
+        videoId,
+        error: error || "Transcoding cancelled",
+      });
+
+      return NextResponse.json({ success: true, status: "CANCELLED", videoId });
     } else {
       await db.video.update({
         where: { id: videoId },

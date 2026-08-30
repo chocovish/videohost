@@ -1,6 +1,6 @@
 import http from "http";
-import { cancelActiveTranscode, processVideoJob } from "./transcoder";
-import { cancelQueuedJob, enqueueJob, getQueueStats, isJobQueuedOrActive } from "./jobQueue";
+import { cancelActiveTranscode, cancelAllActiveJobs, processVideoJob } from "./transcoder";
+import { cancelQueuedJob, enqueueJob, getQueueStats, isJobQueuedOrActive, shutdownQueue } from "./jobQueue";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
 
 function getEnvString(val: string | undefined): string | undefined {
@@ -18,6 +18,7 @@ function getEnvInt(val: string | undefined, fallback: number): number {
 
 const PORT = getEnvInt(process.env.PORT, 8080);
 const WORKER_SECRET_TOKEN = getEnvString(process.env.WORKER_SECRET_TOKEN);
+let isShuttingDown = false;
 
 // Helper to write JSON response with localhost conversion
 function sendJsonResponse(res: http.ServerResponse, statusCode: number, data: any) {
@@ -50,6 +51,10 @@ const server = http.createServer(async (req, res) => {
 
   // Transcode trigger endpoint
   if (method === "POST" && (url === "/transcode" || url === "/api/transcode" || url === "/process")) {
+    if (isShuttingDown) {
+      sendJsonResponse(res, 503, { error: "Worker is shutting down" });
+      return;
+    }
     // Check Authorization token if configured
     if (WORKER_SECRET_TOKEN) {
       const authHeader = req.headers["authorization"];
@@ -187,3 +192,40 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`[Worker Service] Container HTTP Server listening on port ${PORT}`);
 });
+
+// Graceful SIGTERM/SIGINT handling: stop accepting new jobs, abort active encodes/uploads,
+// delete any partially uploaded dash folders (handled per-job), and report CANCELLED.
+async function handleShutdownSignal(signal: string) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`[Worker Service] Received ${signal} — shutting down gracefully...`);
+
+  // Stop accepting new connections
+  server.close(() => {
+    console.log("[Worker Service] HTTP server closed to new connections");
+  });
+
+  const forceExit = setTimeout(() => {
+    console.error("[Worker Service] Forced exit after timeout");
+    process.exit(1);
+  }, 10000);
+  (forceExit as any).unref?.();
+
+  try {
+    // Discard queued jobs that haven't started (no S3 data yet)
+    shutdownQueue();
+    // Cancel all active transcodes; per-job catch will delete S3 prefix and report CANCELLED
+    await cancelAllActiveJobs();
+    // Give in-flight cleanups a brief window to finish S3 deletes + callbacks
+    await new Promise((r) => setTimeout(r, 3000));
+  } catch (e: any) {
+    console.error("[Worker Service] Error during SIGTERM cleanup:", e?.message || e);
+  } finally {
+    clearTimeout(forceExit);
+    console.log("[Worker Service] Shutdown cleanup complete, exiting");
+    process.exit(0);
+  }
+}
+
+process.on("SIGTERM", () => handleShutdownSignal("SIGTERM"));
+process.on("SIGINT", () => handleShutdownSignal("SIGINT"));

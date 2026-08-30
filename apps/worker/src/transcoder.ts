@@ -1,7 +1,7 @@
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
-import { S3ConfigContext, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
+import { S3ConfigContext, deleteS3Prefix, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
 import {
   ProgressReporter,
@@ -46,6 +46,8 @@ export class JobCancelledError extends Error {
 interface ActiveJobEntry {
   controller: AbortController;
   command: ReturnType<typeof ffmpeg> | null;
+  payload?: TranscodeJobPayload;
+  reporter?: ProgressReporter;
 }
 
 // Tracks in-flight transcode jobs so they can be aborted on demand
@@ -69,6 +71,26 @@ export function cancelActiveTranscode(videoId: string): boolean {
 
 export function isTranscodeActive(videoId: string): boolean {
   return activeJobs.has(videoId);
+}
+
+export function getActiveJobIds(): string[] {
+  return Array.from(activeJobs.keys());
+}
+
+export async function cancelAllActiveJobs(): Promise<void> {
+  const ids = getActiveJobIds();
+  if (ids.length === 0) {
+    console.log("[Worker] SIGTERM cleanup: no active jobs");
+    return;
+  }
+  console.log(`[Worker] SIGTERM cleanup: cancelling ${ids.length} active job(s): ${ids.join(", ")}`);
+  for (const id of ids) {
+    cancelActiveTranscode(id);
+  }
+  // Give a short grace period for the transcoder's catch handler to perform S3 cleanup and CANCELLED callback.
+  // The per-job cleanup (S3 delete + callback) is handled inside processVideoJob's catch block after abort.
+  // We wait a bit to allow those async cleanups to start; actual exit is orchestrated by the SIGTERM handler in index.ts.
+  await new Promise((r) => setTimeout(r, 500));
 }
 
 export const DEFAULT_RESOLUTION_LADDER: RenditionConfig[] = [
@@ -240,9 +262,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   const reporter = new ProgressReporter(videoId, organizationId || "default", callbackUrl);
   await reporter.report(0, "PROCESSING", true);
 
-  // Register the job for cancellation support
+  // Register the job for cancellation support (store payload/reporter for SIGTERM cleanup)
   const controller = new AbortController();
-  const activeEntry: ActiveJobEntry = { controller, command: null };
+  const activeEntry: ActiveJobEntry = { controller, command: null, payload, reporter };
   activeJobs.set(videoId, activeEntry);
 
   const isCancelled = () => controller.signal.aborted;
@@ -260,7 +282,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
 
     // 1. Download original file from R2/S3
     console.log(`[Worker] Downloading source video: ${originalKey}`);
-    await downloadFileFromS3(originalKey, inputPath, payload.s3);
+    await downloadFileFromS3(originalKey, inputPath, payload.s3, controller.signal);
 
     assertNotCancelled();
 
@@ -453,7 +475,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
 
       s3ThumbKey = `${orgId}/${videoId}/${thumbFileName}`;
       console.log(`[Worker] Uploading thumbnail (${thumbFileName}) to R2...`);
-      await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3);
+      await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3, controller.signal);
     } else {
       console.log(`[Worker] Skipping thumbnail generation for videoId: ${videoId} (thumbnail already set)`);
     }
@@ -463,7 +485,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     await uploadDirectoryToS3(dashOutputDir, s3DashPrefix, payload.s3, (uploadRatio) => {
       const uploadProgress = calculateUploadProgress(uploadRatio * 0.9);
       reporter.report(uploadProgress, "PROCESSING");
-    });
+    }, controller.signal);
 
     const finalUploadProgress = calculateUploadProgress(1.0);
     await reporter.report(finalUploadProgress, "PROCESSING");
@@ -557,9 +579,36 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
 
     return resultPayload;
   } catch (err: any) {
-    if (err instanceof JobCancelledError || err?.code === JOB_CANCELLED_CODE) {
-      console.log(`[Worker] Transcode job for video ${videoId} was cancelled — skipping FAILED callback`);
-      throw err;
+    const isCancelledError =
+      err instanceof JobCancelledError ||
+      err?.code === JOB_CANCELLED_CODE ||
+      err?.message === "JOB_CANCELLED" ||
+      isCancelled();
+    if (isCancelledError) {
+      console.log(`[Worker] Transcode job for video ${videoId} was cancelled — cleaning up S3 and reporting CANCELLED`);
+      // Delete any partially uploaded dash data (best-effort)
+      const orgIdForCleanup = payload.organizationId || organizationId || "default";
+      const dashPrefix = `${orgIdForCleanup}/${videoId}/dash`;
+      try {
+        await deleteS3Prefix(dashPrefix, payload.s3);
+        console.log(`[Worker] Cleaned up S3 dash prefix for cancelled video ${videoId}`);
+      } catch (cleanupErr: any) {
+        console.error(`[Worker] Failed to cleanup S3 prefix for cancelled video ${videoId}:`, cleanupErr?.message || cleanupErr);
+      }
+      // Notify webapp that processing was cancelled (so UI can show retry)
+      try {
+        const cancelledPayload = {
+          videoId,
+          organizationId: orgIdForCleanup,
+          status: "CANCELLED" as const,
+          progress: 0,
+          error: "Transcoding cancelled (worker shutdown or user cancelled)",
+        };
+        await reporter.report(0, "CANCELLED", true, cancelledPayload);
+      } catch (reportErr: any) {
+        console.error(`[Worker] Failed to report CANCELLED callback for ${videoId}:`, reportErr?.message || reportErr);
+      }
+      throw err instanceof JobCancelledError ? err : new JobCancelledError(videoId);
     }
 
     console.error(`[Worker] Error transcoding video ${videoId}:`, err);

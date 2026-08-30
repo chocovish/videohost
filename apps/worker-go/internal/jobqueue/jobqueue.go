@@ -92,6 +92,19 @@ func (q *JobQueue) GetQueueStats() QueueStats {
 	}
 }
 
+// Shutdown clears pending queue on SIGTERM and prevents new jobs from starting.
+func (q *JobQueue) Shutdown() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if len(q.pending) > 0 {
+		fmt.Printf("[Job Queue] SIGTERM shutdown: discarding %d pending job(s)\n", len(q.pending))
+		for _, e := range q.pending {
+			close(e.Done)
+		}
+		q.pending = make([]*QueueEntry, 0)
+	}
+}
+
 // EnqueueJob queues a video transcoding job. Returns a channel that closes with any error when the job finishes.
 func (q *JobQueue) EnqueueJob(videoId string, run JobRunner) <-chan error {
 	q.mu.Lock()

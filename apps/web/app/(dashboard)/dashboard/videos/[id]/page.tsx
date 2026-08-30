@@ -245,7 +245,7 @@ export default function VideoDetailPage() {
           <ArrowLeft className="w-4 h-4" /> Back to Videos
         </Link>
         <div className="flex flex-wrap items-center gap-2">
-          {video.status === "FAILED" && (
+          {(video.status === "FAILED" || video.status === "CANCELLED") && (
             <Button
               variant="destructive"
               size="sm"
@@ -350,15 +350,17 @@ export default function VideoDetailPage() {
           <div className="aspect-video w-full rounded-2xl overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
             {video.playbackUrl ? (
               <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-2xl" />
-            ) : video.status === "FAILED" ? (
+            ) : video.status === "FAILED" || video.status === "CANCELLED" ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-md mx-auto">
                 <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-base font-bold text-foreground">Transcoding Failed</p>
+                  <p className="text-base font-bold text-foreground">{video.status === "CANCELLED" ? "Transcoding Cancelled" : "Transcoding Failed"}</p>
                   <p className="text-xs text-muted-foreground">
-                    HLS adaptive bitrate encoding encountered an issue during processing.
+                    {video.status === "CANCELLED"
+                      ? "Video processing was cancelled and any partial encodes were cleaned up. You can retry encoding."
+                      : "HLS adaptive bitrate encoding encountered an issue during processing."}
                   </p>
                 </div>
                 <Button
@@ -540,11 +542,11 @@ export default function VideoDetailPage() {
                     </div>
                   </>
                 ) : video.requireHls ? (
-                  video.status === "FAILED" ? (
+                  video.status === "FAILED" || video.status === "CANCELLED" ? (
                     <Alert variant="destructive" className="text-xs">
                       <AlertTriangle />
                       <AlertTitle className="flex items-center justify-between gap-2 font-semibold">
-                        <span>Transcoding Failed (Require HLS = ON)</span>
+                        <span>{video.status === "CANCELLED" ? "Transcoding Cancelled (Require HLS = ON)" : "Transcoding Failed (Require HLS = ON)"}</span>
                         <Button
                           variant="destructive"
                           size="xs"
@@ -557,7 +559,9 @@ export default function VideoDetailPage() {
                         </Button>
                       </AlertTitle>
                       <AlertDescription className="text-xs leading-relaxed">
-                        HLS transcoding failed during processing. Click the button above to retry transcoding or re-upload the video.
+                        {video.status === "CANCELLED"
+                          ? "Transcoding was cancelled and any partial dash segments were cleaned up. Click retry to re-encode."
+                          : "HLS transcoding failed during processing. Click the button above to retry transcoding or re-upload the video."}
                       </AlertDescription>
                     </Alert>
                   ) : (

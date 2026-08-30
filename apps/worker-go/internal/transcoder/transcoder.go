@@ -61,9 +61,11 @@ type TranscodeJobPayload struct {
 }
 
 type ActiveJobEntry struct {
-	cancel context.CancelFunc
-	cmd    *exec.Cmd
-	mu     sync.Mutex
+	cancel   context.CancelFunc
+	cmd      *exec.Cmd
+	mu       sync.Mutex
+	payload  TranscodeJobPayload
+	reporter *progress.ProgressReporter
 }
 
 var activeJobs sync.Map
@@ -92,6 +94,29 @@ func CancelActiveTranscode(videoId string) bool {
 func IsTranscodeActive(videoId string) bool {
 	_, ok := activeJobs.Load(videoId)
 	return ok
+}
+
+func GetActiveJobIds() []string {
+	var ids []string
+	activeJobs.Range(func(k, _ any) bool {
+		ids = append(ids, k.(string))
+		return true
+	})
+	return ids
+}
+
+func CancelAllActiveJobs() {
+	ids := GetActiveJobIds()
+	if len(ids) == 0 {
+		fmt.Println("[Worker] SIGTERM cleanup: no active jobs")
+		return
+	}
+	fmt.Printf("[Worker] SIGTERM cleanup: cancelling %d active job(s): %s\n", len(ids), strings.Join(ids, ", "))
+	for _, id := range ids {
+		CancelActiveTranscode(id)
+	}
+	// Brief grace to let per-job catch handlers perform S3 cleanup + CANCELLED callbacks
+	time.Sleep(500 * time.Millisecond)
 }
 
 type RenditionResult struct {
@@ -156,8 +181,10 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	defer cancel()
 
 	activeEntry := &ActiveJobEntry{
-		cancel: cancel,
-		cmd:    nil,
+		cancel:   cancel,
+		cmd:      nil,
+		payload:  payload,
+		reporter: reporter,
 	}
 	activeJobs.Store(videoId, activeEntry)
 	defer activeJobs.Delete(videoId)
@@ -189,7 +216,25 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	// Helper for reporting failure on error
 	handleError := func(err error) error {
 		if errors.Is(err, ErrJobCancelled) || isCancelled() {
-			fmt.Printf("[Worker] Transcode job for video %s was cancelled — skipping FAILED callback\n", videoId)
+			fmt.Printf("[Worker] Transcode job for video %s was cancelled — cleaning up S3 and reporting CANCELLED\n", videoId)
+			// Best-effort delete any partially uploaded dash data
+			dashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
+			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cleanupCancel()
+			if delErr := s3.DeleteS3Prefix(cleanupCtx, dashPrefix, payload.S3); delErr != nil {
+				fmt.Printf("[Worker] Failed to cleanup S3 prefix for cancelled video %s: %v\n", videoId, delErr)
+			} else {
+				fmt.Printf("[Worker] Cleaned up S3 dash prefix for cancelled video %s\n", videoId)
+			}
+			// Notify webapp that processing was cancelled (so UI can show retry)
+			cancelledPayload := map[string]any{
+				"videoId":        videoId,
+				"organizationId": orgId,
+				"status":         "CANCELLED",
+				"progress":       0,
+				"error":          "Transcoding cancelled (worker shutdown or user cancelled)",
+			}
+			_ = reporter.Report(context.Background(), 0, "CANCELLED", true, cancelledPayload)
 			return ErrJobCancelled
 		}
 		fmt.Printf("[Worker] Error transcoding video %s: %v\n", videoId, err)

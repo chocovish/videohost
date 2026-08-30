@@ -258,6 +258,56 @@ export async function deleteFileFromS3(key: string): Promise<void> {
   }
 }
 
+export async function deleteS3Prefix(prefix: string): Promise<void> {
+  if (!prefix) return;
+  const normalizedPrefix = prefix.endsWith("/") ? prefix : `${prefix}/`;
+  console.log(`[S3 Delete Prefix] Deleting prefix "${normalizedPrefix}"...`);
+  let continuationToken: string | undefined = undefined;
+  let totalDeleted = 0;
+  do {
+    const listResponse: any = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: normalizedPrefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+    const objects = listResponse.Contents || [];
+    if (objects.length > 0) {
+      const keysToDelete = objects.filter((o: any) => o.Key).map((obj: any) => ({ Key: obj.Key! }));
+      try {
+        const deleteRes = await s3.send(
+          new DeleteObjectsCommand({
+            Bucket: BUCKET_NAME,
+            Delete: { Objects: keysToDelete, Quiet: false },
+            ChecksumAlgorithm: "SHA256",
+          })
+        );
+        totalDeleted += deleteRes.Deleted?.length || 0;
+        if (deleteRes.Errors && deleteRes.Errors.length > 0) {
+          for (const errObj of deleteRes.Errors) {
+            if (errObj.Key) {
+              try {
+                await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: errObj.Key }));
+                totalDeleted++;
+              } catch {}
+            }
+          }
+        }
+      } catch {
+        for (const k of keysToDelete) {
+          try {
+            await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: k.Key }));
+            totalDeleted++;
+          } catch {}
+        }
+      }
+    }
+    continuationToken = listResponse.NextContinuationToken;
+  } while (continuationToken);
+  console.log(`[S3 Delete Prefix] Deleted ${totalDeleted} object(s) under prefix "${normalizedPrefix}"`);
+}
+
 export async function uploadBufferToS3(key: string, body: Buffer, contentType: string = "image/png"): Promise<void> {
   await ensureBucketExists();
   const command = new PutObjectCommand({

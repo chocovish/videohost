@@ -302,3 +302,85 @@ func UploadDirectoryToS3(ctx context.Context, dirPath, keyPrefix string, cfg *S3
 
 	return nil
 }
+
+func DeleteS3Prefix(ctx context.Context, prefix string, cfg *S3ConfigContext) error {
+	if prefix == "" || cfg == nil {
+		return nil
+	}
+	normalizedPrefix := prefix
+	if !strings.HasSuffix(normalizedPrefix, "/") {
+		normalizedPrefix += "/"
+	}
+	fmt.Printf("[S3 Delete Prefix] Deleting prefix \"%s\"...\n", normalizedPrefix)
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	var continuationToken *string
+	totalDeleted := 0
+
+	for {
+		listOut, err := info.Client.ListObjectsV2(ctx, &s3client.ListObjectsV2Input{
+			Bucket:            aws.String(info.Bucket),
+			Prefix:            aws.String(normalizedPrefix),
+			ContinuationToken: continuationToken,
+		})
+		if err != nil {
+			return fmt.Errorf("failed listing prefix %s: %w", normalizedPrefix, err)
+		}
+
+		if len(listOut.Contents) > 0 {
+			var keysToDelete []s3types.ObjectIdentifier
+			for _, obj := range listOut.Contents {
+				if obj.Key != nil {
+					keysToDelete = append(keysToDelete, s3types.ObjectIdentifier{Key: obj.Key})
+				}
+			}
+
+			// Batch delete up to 1000 keys per request (DeleteObjects limit)
+			for i := 0; i < len(keysToDelete); i += 1000 {
+				end := i + 1000
+				if end > len(keysToDelete) {
+					end = len(keysToDelete)
+				}
+				batch := keysToDelete[i:end]
+				delOut, err := info.Client.DeleteObjects(ctx, &s3client.DeleteObjectsInput{
+					Bucket: aws.String(info.Bucket),
+					Delete: &s3types.Delete{Objects: batch, Quiet: aws.Bool(false)},
+				})
+				if err != nil {
+					// fallback to individual deletes
+					for _, k := range batch {
+						_, _ = info.Client.DeleteObject(ctx, &s3client.DeleteObjectInput{
+							Bucket: aws.String(info.Bucket),
+							Key:    k.Key,
+						})
+						totalDeleted++
+					}
+					continue
+				}
+				totalDeleted += len(delOut.Deleted)
+				if len(delOut.Errors) > 0 {
+					for _, e := range delOut.Errors {
+						if e.Key != nil {
+							_, _ = info.Client.DeleteObject(ctx, &s3client.DeleteObjectInput{
+								Bucket: aws.String(info.Bucket),
+								Key:    e.Key,
+							})
+							totalDeleted++
+						}
+					}
+				}
+			}
+		}
+
+		if listOut.NextContinuationToken == nil {
+			break
+		}
+		continuationToken = listOut.NextContinuationToken
+	}
+
+	fmt.Printf("[S3 Delete Prefix] Deleted %d object(s) under prefix \"%s\"\n", totalDeleted, normalizedPrefix)
+	return nil
+}

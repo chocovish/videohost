@@ -3,7 +3,7 @@ import { useLocalhostForDockerHost } from "./urlUtils";
 export interface ProgressReportPayload {
   videoId: string;
   organizationId?: string;
-  status: "PROCESSING" | "READY" | "FAILED";
+  status: "PROCESSING" | "READY" | "FAILED" | "CANCELLED";
   progress: number;
   [key: string]: any;
 }
@@ -29,7 +29,7 @@ export class ProgressReporter {
    */
   public async report(
     currentProgress: number,
-    status: "PROCESSING" | "READY" | "FAILED" = "PROCESSING",
+    status: "PROCESSING" | "READY" | "FAILED" | "CANCELLED" = "PROCESSING",
     force: boolean = false,
     extraData: Record<string, any> = {}
   ): Promise<void> {

@@ -45,6 +45,16 @@ export function getQueueStats(): { active: number; queued: number; maxConcurrent
   };
 }
 
+export function shutdownQueue(): void {
+  if (pending.length > 0) {
+    console.log(`[Job Queue] SIGTERM shutdown: discarding ${pending.length} pending job(s)`);
+    for (const entry of pending) {
+      try { entry.resolve(); } catch {}
+    }
+    pending.length = 0;
+  }
+}
+
 /**
  * Enqueues a job and resolves/rejects only once the job finishes running.
  * At most WORKER_MAX_CONCURRENT_JOBS jobs run at the same time.
