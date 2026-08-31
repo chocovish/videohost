@@ -40,13 +40,13 @@ export const metadata: Metadata = {
     "free video hosting 2gb",
   ],
   alternates: {
-    canonical: "https://taped.app",
+    canonical: "https://taped.in",
   },
   openGraph: {
     title: "Taped — Private Video Hosting & Meetings. Share Only With Who You Choose",
     description:
       "Host videos and live meetings behind exact-email access control. Brand your viewer pages, showcase your offerings, and monetize with the lowest commission in the market.",
-    url: "https://taped.app",
+    url: "https://taped.in",
     siteName: "Taped",
     images: [
       {
@@ -163,7 +163,7 @@ export default function LandingPage() {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: "Taped",
-    url: "https://taped.app",
+    url: "https://taped.in",
     description:
       "Private video hosting and meetings platform: upload or record in-browser, stream adaptive HLS, restrict access to specific users by verified email, customize branded viewer pages, run a dedicated offerings storefront, and monetize videos and meetings with commissions as low as 3.5%.",
     applicationCategory: "MultimediaApplication",
@@ -282,7 +282,7 @@ export default function LandingPage() {
                     <span className="w-3 h-3 rounded-full bg-amber-400 border border-amber-600" />
                     <span className="w-3 h-3 rounded-full bg-emerald-400 border border-emerald-600" />
                     <span className="ml-3 text-xs font-mono font-bold text-muted-foreground">
-                      taped.app/share/q4-strategy
+                      taped.in/share/q4-strategy
                     </span>
                   </div>
                   <div className="p-6 space-y-4">

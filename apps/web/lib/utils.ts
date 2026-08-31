@@ -67,7 +67,7 @@ export function getBaseUrl(): string {
       : `https://${trimmed}`;
   }
 
-  return process.env.NODE_ENV === "production" ? "https://taped.app" : "http://localhost:3000";
+  return process.env.NODE_ENV === "production" ? "https://taped.in" : "http://localhost:3000";
 }
 
 
