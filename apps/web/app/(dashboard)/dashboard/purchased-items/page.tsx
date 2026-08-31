@@ -38,6 +38,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import {
   Select,
   SelectContent,
@@ -414,7 +415,13 @@ export default function PurchasedItemsPage() {
                 <div>
                   {/* Thumbnail / Header Area */}
                   <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
-                    {item.thumbnailUrl ? (
+                    {!isMeeting && !isPlaylist ? (
+                      <VideoThumbnail
+                        src={item.thumbnailUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : item.thumbnailUrl ? (
                       <img
                         src={item.thumbnailUrl}
                         alt={item.title}
@@ -427,18 +434,11 @@ export default function PurchasedItemsPage() {
                           Digital Entry Pass
                         </span>
                       </div>
-                    ) : isPlaylist ? (
+                    ) : (
                       <div className="flex flex-col items-center gap-2 text-primary p-4 text-center">
                         <ListVideo className="w-12 h-12" />
                         <span className="text-xs font-bold uppercase tracking-wider">
                           Playlist Collection
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Film className="w-12 h-12" />
-                        <span className="text-xs font-bold uppercase tracking-wider">
-                          Video Item
                         </span>
                       </div>
                     )}

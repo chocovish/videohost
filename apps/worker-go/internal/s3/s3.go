@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"videohost-worker-go/internal/urlutils"
 
@@ -261,43 +262,94 @@ func UploadDirectoryToS3(ctx context.Context, dirPath, keyPrefix string, cfg *S3
 	}
 
 	totalFiles := len(filePaths)
-	uploadedCount := 0
+	if totalFiles == 0 {
+		return nil
+	}
 
 	uploader := manager.NewUploader(info.Client, func(u *manager.Uploader) {
 		u.PartSize = 5 * 1024 * 1024
 		u.Concurrency = 4
 	})
 
-	for _, fullPath := range filePaths {
-		relPath, err := filepath.Rel(dirPath, fullPath)
-		if err != nil {
-			continue
-		}
-		forwardRelPath := filepath.ToSlash(relPath)
-		s3Key := fmt.Sprintf("%s/%s", strings.TrimRight(keyPrefix, "/"), forwardRelPath)
-		contentType := DetectContentType(fullPath)
+	concurrency := 5
+	if totalFiles < concurrency {
+		concurrency = totalFiles
+	}
 
-		file, err := os.Open(fullPath)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", fullPath, err)
-		}
+	jobs := make(chan string, totalFiles)
+	for _, p := range filePaths {
+		jobs <- p
+	}
+	close(jobs)
 
-		_, err = uploader.Upload(ctx, &s3client.PutObjectInput{
-			Bucket:      aws.String(info.Bucket),
-			Key:         aws.String(s3Key),
-			Body:        file,
-			ContentType: aws.String(contentType),
-		})
-		file.Close()
+	var wg sync.WaitGroup
+	var progressMu sync.Mutex
+	var errOnce sync.Once
+	var uploadErr error
 
-		if err != nil {
-			return fmt.Errorf("failed to upload directory file %s to S3: %w", s3Key, err)
-		}
+	uploadCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-		uploadedCount++
-		if onProgress != nil && totalFiles > 0 {
-			onProgress(float64(uploadedCount) / float64(totalFiles))
-		}
+	uploadedCount := 0
+
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for fullPath := range jobs {
+				select {
+				case <-uploadCtx.Done():
+					return
+				default:
+				}
+
+				relPath, relErr := filepath.Rel(dirPath, fullPath)
+				if relErr != nil {
+					continue
+				}
+				forwardRelPath := filepath.ToSlash(relPath)
+				s3Key := fmt.Sprintf("%s/%s", strings.TrimRight(keyPrefix, "/"), forwardRelPath)
+				contentType := DetectContentType(fullPath)
+
+				file, openErr := os.Open(fullPath)
+				if openErr != nil {
+					errOnce.Do(func() {
+						uploadErr = fmt.Errorf("failed to open file %s: %w", fullPath, openErr)
+						cancel()
+					})
+					return
+				}
+
+				_, upErr := uploader.Upload(uploadCtx, &s3client.PutObjectInput{
+					Bucket:      aws.String(info.Bucket),
+					Key:         aws.String(s3Key),
+					Body:        file,
+					ContentType: aws.String(contentType),
+				})
+				file.Close()
+
+				if upErr != nil {
+					errOnce.Do(func() {
+						uploadErr = fmt.Errorf("failed to upload directory file %s to S3: %w", s3Key, upErr)
+						cancel()
+					})
+					return
+				}
+
+				progressMu.Lock()
+				uploadedCount++
+				if onProgress != nil && totalFiles > 0 {
+					onProgress(float64(uploadedCount) / float64(totalFiles))
+				}
+				progressMu.Unlock()
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if uploadErr != nil {
+		return uploadErr
 	}
 
 	return nil
@@ -384,3 +436,23 @@ func DeleteS3Prefix(ctx context.Context, prefix string, cfg *S3ConfigContext) er
 	fmt.Printf("[S3 Delete Prefix] Deleted %d object(s) under prefix \"%s\"\n", totalDeleted, normalizedPrefix)
 	return nil
 }
+
+func DeleteS3Object(ctx context.Context, key string, cfg *S3ConfigContext) error {
+	if key == "" || cfg == nil {
+		return nil
+	}
+	info, err := GetS3ClientAndBucket(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	_, err = info.Client.DeleteObject(ctx, &s3client.DeleteObjectInput{
+		Bucket: aws.String(info.Bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("failed deleting S3 object %s: %w", key, err)
+	}
+	fmt.Printf("[S3 Delete Object] Deleted object \"%s\"\n", key)
+	return nil
+}
+

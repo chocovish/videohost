@@ -159,7 +159,7 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		})
 
 		// Asynchronously process job through bounded queue
-		s.queue.EnqueueJob(videoId, func() error {
+		s.queue.EnqueueJob(videoId, payload.OrganizationId, payload.CallbackUrl, func() error {
 			_, err := transcoder.ProcessVideoJob(context.Background(), payload)
 			if err != nil {
 				fmt.Printf("[Worker HTTP] Async error processing videoId %s: %v\n", videoId, err)

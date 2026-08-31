@@ -1,5 +1,5 @@
 import { db } from "@videohost/db";
-import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { getPlaybackUrl, getThumbnailPlaybackUrl } from "@/lib/s3";
 import VideoPlayer from "@/components/VideoPlayer";
 
 export default async function EmbedPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +17,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const srcUrl = await getPlaybackUrl(video);
+  const srcUrl = await getPlaybackUrl(video as any);
 
   if (!srcUrl) {
     return (
@@ -27,7 +27,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const posterUrl = video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : undefined;
+  const posterUrl = (await getThumbnailPlaybackUrl(video as any)) || undefined;
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden m-0 p-0 flex items-center justify-center">

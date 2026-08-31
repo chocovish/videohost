@@ -130,8 +130,27 @@ export async function getPlaybackUrl(video: {
   originalKey: string;
   requireHls?: boolean;
   renditions?: any[];
+  storageType?: string | null;
+  bunnyVideoId?: string | null;
+  bunnyLibraryId?: string | null;
 }): Promise<string | null> {
   if (video.status !== "READY") return null;
+
+  // Bunny branch – provide CDN / iframe URL directly
+  const isBunnyStorage = ((video as any).storageType?.toLowerCase?.() === "bunny") || Boolean((video as any).bunnyVideoId);
+  const hasBunnyId = Boolean((video as any).bunnyVideoId);
+  if (isBunnyStorage || hasBunnyId) {
+    const guid = (video as any).bunnyVideoId || video.originalKey;
+    if (!guid) return null;
+    try {
+      const { getBunnyPlaybackUrl } = await import("./bunny");
+      return getBunnyPlaybackUrl(guid, { libraryId: (video as any).bunnyLibraryId || undefined });
+    } catch {
+      // Fallback to guid if bunny module unavailable
+      return guid;
+    }
+  }
+
   if (video.requireHls || (video.renditions && video.renditions.length > 0)) {
     const rawStorageKey = video.renditions?.[0]?.storageKey;
     if (rawStorageKey) {
@@ -149,6 +168,23 @@ export async function getPlaybackUrl(video: {
     return getDashPlaybackUrl(video.organizationId, video.id);
   }
   return await getPresignedPlaybackUrl(video.originalKey);
+}
+
+export async function getThumbnailPlaybackUrl(video: {
+  thumbnailKey?: string | null;
+  storageType?: string | null;
+  bunnyVideoId?: string | null;
+}): Promise<string | null> {
+  const st = ((video as any).storageType || "").toLowerCase();
+  if ((st === "bunny" || (video as any).bunnyVideoId) && (video as any).bunnyVideoId) {
+    try {
+      const { getBunnyThumbnailUrl } = await import("./bunny");
+      const thumb = getBunnyThumbnailUrl((video as any).bunnyVideoId);
+      if (thumb) return thumb;
+    } catch {}
+  }
+  if (video.thumbnailKey) return getPresignedPlaybackUrl(video.thumbnailKey);
+  return null;
 }
 
 export function getDashPlaybackUrl(organizationId: string, videoId: string): string {

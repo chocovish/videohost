@@ -36,6 +36,7 @@ import RenameFolderModal from "@/components/RenameFolderModal";
 import ShareModal from "@/components/ShareModal";
 import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -69,6 +70,7 @@ interface VideoItem {
   sizeBytes?: number | null;
   requireHls?: boolean;
   thumbnailUrl?: string;
+  storageType?: string | null;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE";
   createdAt: string;
   folderId?: string | null;
@@ -205,6 +207,27 @@ function UploadedVideosContent() {
     clearSelection();
     refreshAll();
   }, [currentFolderId]);
+
+  // Background polling for videos in progress (Bunny encoding or HLS transcoding)
+  const hasProcessingVideos = videos.some(
+    (v) => v.status === "PROCESSING" || v.status === "QUEUED" || v.status === "UPLOADING"
+  );
+
+  useEffect(() => {
+    if (!hasProcessingVideos) return;
+    const interval = setInterval(() => {
+      const url = currentFolderId ? `/api/v1/videos?folderId=${currentFolderId}` : "/api/v1/videos?folderId=root";
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.data) {
+            setVideos(data.data);
+          }
+        })
+        .catch(() => {});
+    }, 40000);
+    return () => clearInterval(interval);
+  }, [hasProcessingVideos, currentFolderId]);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
     type: "folder" | "video";
@@ -890,18 +913,14 @@ function UploadedVideosContent() {
                         href={`/dashboard/videos/${video.id}`}
                         className="w-full h-full block relative cursor-pointer"
                       >
-                        {video.thumbnailUrl ? (
-                          <img
-                            src={video.thumbnailUrl}
-                            alt={video.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground">
-                            <Film className="w-10 h-10 mb-1" />
-                            <span className="text-xs">No Preview</span>
-                          </div>
-                        )}
+                        <VideoThumbnail
+                          src={video.thumbnailUrl}
+                          alt={video.title}
+                          status={video.status}
+                          storageType={video.storageType}
+                          progress={video.progress}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
 
                         {/* Play Overlay */}
                           {video.status === "READY" && (

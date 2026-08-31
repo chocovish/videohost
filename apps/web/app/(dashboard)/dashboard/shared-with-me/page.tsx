@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
+import VideoThumbnail from "@/components/VideoThumbnail";
 
 interface SharedItem {
   id: string;
@@ -175,22 +176,26 @@ export default function SharedWithYouPage() {
               <div>
                 {/* Header Preview / Icon */}
                 <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
-                  {item.type === "video" || item.type === "playlist" ? (
+                  {item.type === "video" ? (
+                    <VideoThumbnail
+                      src={item.thumbnailUrl}
+                      alt={item.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : item.type === "playlist" ? (
                     item.thumbnailUrl ? (
                       <img
                         src={item.thumbnailUrl}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                    ) : item.type === "playlist" ? (
+                    ) : (
                       <div className="flex flex-col items-center gap-2 text-primary">
                         <ListVideo className="w-12 h-12" />
                         <span className="text-xs font-bold uppercase tracking-wider text-primary">
                           Playlist Collection
                         </span>
                       </div>
-                    ) : (
-                      <Film className="w-12 h-12 text-muted-foreground" />
                     )
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-primary">

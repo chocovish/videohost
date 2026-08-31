@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
 import { getPresignedUploadUrl, getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { getStorageType } from "@/lib/storage";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -85,6 +86,89 @@ export async function POST(req: Request) {
       }
     }
 
+    // ------------------------------------------------------------------
+    // Branch: Bunny.net Stream vs S3
+    // ------------------------------------------------------------------
+    const storageType = getStorageType({ requireHls: isHls });
+    console.log(`[Upload Init] storageType=${storageType} for video ${video.id} (org ${orgId})`);
+
+    if (storageType === "bunny") {
+      // --------- BUNNY PATH -------------------------------------------------
+      try {
+        const { ensureBunnyCollectionForOrg, createBunnyVideo, createBunnyTusCredentials, getBunnyConfig } = await import(
+          "@/lib/bunny"
+        );
+        const { collectionId, collectionName } = await ensureBunnyCollectionForOrg(orgId);
+        const cfg = getBunnyConfig();
+        const bunnyVideo = await createBunnyVideo({ title, collectionId });
+        const bunnyVideoId = bunnyVideo.guid;
+
+        const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+        const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+
+        await db.video.update({
+          where: { id: video.id },
+          data: {
+            originalKey: bunnyVideoId, // store guid as originalKey for traceability
+            storageType: "bunny",
+            bunnyVideoId,
+            bunnyLibraryId: cfg.libraryId,
+            bunnyCollectionId: collectionId,
+            thumbnailKey, // keep for S3 thumbnail fallback; Bunny thumb uploaded via proxy
+            storageMeta: {
+              provider: "bunny",
+              libraryId: cfg.libraryId,
+              collectionId,
+              collectionName,
+              bunnyGuid: bunnyVideoId,
+            } as any,
+          },
+        });
+
+        const tus = createBunnyTusCredentials(bunnyVideoId, 86400, cfg);
+
+        // Proxy URLs (keeps API key secret) – client PUTs here, we stream to Bunny
+        const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "";
+        const proxyUploadUrl = `/api/bunny/upload/${video.id}`;
+        const proxyThumbnailUploadUrl = `/api/bunny/thumbnail/${video.id}`;
+
+        console.log(`[Upload Init Bunny] video ${video.id} → bunny guid ${bunnyVideoId}, collection ${collectionId}`);
+
+        return NextResponse.json({
+          id: video.id,
+          title: video.title,
+          status: video.status,
+          requireHls: video.requireHls,
+          folderId: video.folderId,
+          storageType: "bunny",
+          bunnyVideoId,
+          libraryId: cfg.libraryId,
+          collectionId,
+          uploadUrl: proxyUploadUrl,
+          thumbnailUploadUrl: proxyThumbnailUploadUrl,
+          // TUS credentials for clients that want resumable upload directly to Bunny
+          tus: {
+            endpoint: tus.tusEndpoint,
+            videoId: tus.videoId,
+            libraryId: tus.libraryId,
+            expirationTime: tus.expirationTime,
+            signature: tus.signature,
+          },
+          originalKey: bunnyVideoId,
+          createdAt: video.createdAt,
+        });
+      } catch (bunnyErr: any) {
+        console.error("[Upload Init Bunny Error]", bunnyErr);
+        // Cleanup DB record if bunny creation failed
+        await db.video.delete({ where: { id: video.id } }).catch(() => {});
+        return NextResponse.json(
+          { error: bunnyErr?.message || "Failed to create Bunny video", code: "BUNNY_ERROR" },
+          { status: 500 }
+        );
+      }
+    }
+
+    // --------- S3 PATH (default) -------------------------------------------
     let ext = "mp4";
     if (fileName && typeof fileName === "string" && fileName.includes(".")) {
       const parts = fileName.split(".");
@@ -103,11 +187,13 @@ export async function POST(req: Request) {
 
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey, thumbnailKey },
+      data: { originalKey, thumbnailKey, storageType: "s3" },
     });
 
     const uploadUrl = await getPresignedUploadUrl(originalKey, resolvedContentType);
     const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
+
+    console.log(`[Upload Init S3] video ${video.id} → key ${originalKey}`);
 
     return NextResponse.json({
       id: video.id,
@@ -115,6 +201,7 @@ export async function POST(req: Request) {
       status: video.status,
       requireHls: video.requireHls,
       folderId: video.folderId,
+      storageType: "s3",
       uploadUrl,
       thumbnailUploadUrl,
       originalKey,
@@ -161,6 +248,7 @@ export async function GET(req: Request) {
   const formattedVideos = await Promise.all(
     videos.map(async (v) => {
       const computedSizeBytes = v.sizeBytes !== null ? Number(v.sizeBytes) : null;
+      const { resolvePlaybackUrl, resolveThumbnailUrl } = await import("@/lib/storage");
 
       return {
         id: v.id,
@@ -176,8 +264,10 @@ export async function GET(req: Request) {
         shareAccessMode: v.shareAccessMode,
         price: v.price,
         currency: v.currency || "USD",
-        playbackUrl: await getPlaybackUrl(v),
-        thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+        storageType: (v as any).storageType || "s3",
+        bunnyVideoId: (v as any).bunnyVideoId || null,
+        playbackUrl: await resolvePlaybackUrl(v as any),
+        thumbnailUrl: await resolveThumbnailUrl(v as any),
         createdAt: v.createdAt,
       };
     })

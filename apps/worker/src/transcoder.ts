@@ -1,7 +1,7 @@
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
-import { S3ConfigContext, deleteS3Prefix, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
+import { S3ConfigContext, deleteS3Object, deleteS3Prefix, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
 import {
   ProgressReporter,
@@ -48,6 +48,7 @@ interface ActiveJobEntry {
   command: ReturnType<typeof ffmpeg> | null;
   payload?: TranscodeJobPayload;
   reporter?: ProgressReporter;
+  done: Promise<void>;
 }
 
 // Tracks in-flight transcode jobs so they can be aborted on demand
@@ -77,7 +78,8 @@ export function getActiveJobIds(): string[] {
   return Array.from(activeJobs.keys());
 }
 
-export async function cancelAllActiveJobs(): Promise<void> {
+export async function cancelAllActiveJobs(timeoutMs: number = 8000): Promise<void> {
+  const entries = Array.from(activeJobs.values());
   const ids = getActiveJobIds();
   if (ids.length === 0) {
     console.log("[Worker] SIGTERM cleanup: no active jobs");
@@ -87,10 +89,11 @@ export async function cancelAllActiveJobs(): Promise<void> {
   for (const id of ids) {
     cancelActiveTranscode(id);
   }
-  // Give a short grace period for the transcoder's catch handler to perform S3 cleanup and CANCELLED callback.
-  // The per-job cleanup (S3 delete + callback) is handled inside processVideoJob's catch block after abort.
-  // We wait a bit to allow those async cleanups to start; actual exit is orchestrated by the SIGTERM handler in index.ts.
-  await new Promise((r) => setTimeout(r, 500));
+  // Wait for all in-flight transcode cleanups (S3 deletes + CANCELLED callbacks) to finish
+  const donePromises = entries.map((e) => e.done);
+  const timeoutPromise = new Promise((resolve) => setTimeout(resolve, timeoutMs));
+  await Promise.race([Promise.allSettled(donePromises), timeoutPromise]);
+  console.log("[Worker] SIGTERM cleanup: finished waiting for active jobs cleanup");
 }
 
 export const DEFAULT_RESOLUTION_LADDER: RenditionConfig[] = [
@@ -263,8 +266,13 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   await reporter.report(0, "PROCESSING", true);
 
   // Register the job for cancellation support (store payload/reporter for SIGTERM cleanup)
+  let resolveJobDone!: () => void;
+  const jobDone = new Promise<void>((resolve) => {
+    resolveJobDone = resolve;
+  });
+
   const controller = new AbortController();
-  const activeEntry: ActiveJobEntry = { controller, command: null, payload, reporter };
+  const activeEntry: ActiveJobEntry = { controller, command: null, payload, reporter, done: jobDone };
   activeJobs.set(videoId, activeEntry);
 
   const isCancelled = () => controller.signal.aborted;
@@ -276,6 +284,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   fs.mkdirSync(tempDir, { recursive: true });
 
   const inputPath = path.join(tempDir, "original.mp4").replace(/\\/g, "/");
+  let s3ThumbKey: string | null = null;
 
   try {
     assertNotCancelled();
@@ -320,7 +329,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
       filterParts.push(
-        `${inputLabel}scale=${rend.width}:${rend.height}:flags=lanczos,setdar=${darNum}/${darDen}:max=1000000[o${i}]`
+        `${inputLabel}scale=${rend.width}:${rend.height}:flags=bicubic,setdar=${darNum}/${darDen}:max=1000000[o${i}]`
       );
     });
     const filterComplex = filterParts.join(";");
@@ -364,8 +373,14 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     await new Promise<void>((resolve, reject) => {
       const stderrLines: string[] = [];
       const encodeCommand = ffmpeg(inputPath)
+        .inputOptions([
+          `-threads ${threadCount}`,
+        ])
         .outputOptions([
           `-threads ${threadCount}`,
+          `-preset veryfast`,
+          `-crf 24`,
+          `-pix_fmt yuv420p`,
           `-filter_complex ${filterComplex}`,
           ...targetRenditions.map((_, i) => `-map [o${i}]`),
           `-map 0:a?`,
@@ -438,6 +453,28 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
       fs.writeFileSync(masterManifestPath, masterManifest);
     }
 
+    // Clean up any absolute local directory prefixes in master.m3u8 if present
+    const masterM3u8Path = path.join(dashOutputDir, "master.m3u8");
+    if (fs.existsSync(masterM3u8Path)) {
+      let masterM3u8 = fs.readFileSync(masterM3u8Path, "utf-8");
+      const dashOutputDirForward = dashOutputDir.replace(/\\/g, "/");
+      const dashOutputDirBack = dashOutputDir.replace(/\//g, "\\");
+      masterM3u8 = masterM3u8
+        .split(`${dashOutputDir}${path.sep}`)
+        .join("")
+        .split(`${dashOutputDir}/`)
+        .join("")
+        .split(`${dashOutputDirForward}/`)
+        .join("")
+        .split(`${dashOutputDirBack}\\`)
+        .join("")
+        .split(`${dashOutputDirForward}`)
+        .join("")
+        .split(`${dashOutputDirBack}`)
+        .join("");
+      fs.writeFileSync(masterM3u8Path, masterM3u8);
+    }
+
     // 6. Generate Thumbnail (thumbnail-{unique}.webp) if not skipped
     const shouldGenerateThumbnail =
       payload.skipThumbnail === true || payload.generateThumbnail === false
@@ -446,7 +483,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
 
     const orgId = organizationId || "default";
     const s3DashPrefix = `${orgId}/${videoId}/dash`;
-    let s3ThumbKey: string | null = null;
+    s3ThumbKey = null;
 
     if (shouldGenerateThumbnail) {
       const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
@@ -459,8 +496,9 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
           .frames(1)
           .outputOptions([
             "-threads", String(threadCount),
-            "-vf", "scale='min(1280,iw)':-2",
+            "-vf", "scale='min(1280,iw)':-2:flags=bicubic",
             "-c:v", "libwebp",
+            "-compression_level", "4",
             "-quality", "82",
           ])
           .output(thumbnailPath)
@@ -586,7 +624,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
       isCancelled();
     if (isCancelledError) {
       console.log(`[Worker] Transcode job for video ${videoId} was cancelled — cleaning up S3 and reporting CANCELLED`);
-      // Delete any partially uploaded dash data (best-effort)
+      // Delete any partially uploaded dash data and thumbnail (best-effort)
       const orgIdForCleanup = payload.organizationId || organizationId || "default";
       const dashPrefix = `${orgIdForCleanup}/${videoId}/dash`;
       try {
@@ -594,6 +632,14 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
         console.log(`[Worker] Cleaned up S3 dash prefix for cancelled video ${videoId}`);
       } catch (cleanupErr: any) {
         console.error(`[Worker] Failed to cleanup S3 prefix for cancelled video ${videoId}:`, cleanupErr?.message || cleanupErr);
+      }
+      if (s3ThumbKey) {
+        try {
+          await deleteS3Object(s3ThumbKey, payload.s3);
+          console.log(`[Worker] Cleaned up S3 thumbnail object for cancelled video ${videoId}`);
+        } catch (thumbCleanupErr: any) {
+          console.error(`[Worker] Failed to cleanup S3 thumbnail for cancelled video ${videoId}:`, thumbCleanupErr?.message || thumbCleanupErr);
+        }
       }
       // Notify webapp that processing was cancelled (so UI can show retry)
       try {
@@ -625,6 +671,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     throw err;
   } finally {
     activeJobs.delete(videoId);
+    resolveJobDone();
     try {
       fs.rmSync(tempDir, { recursive: true, force: true });
     } catch {}

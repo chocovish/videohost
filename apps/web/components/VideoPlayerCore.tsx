@@ -22,8 +22,9 @@ export default function VideoPlayerCore({
   autoplay = false,
   className = "",
 }: VideoPlayerProps) {
-  const isDash = src ? src.includes(".mpd") : false;
-  const isHls = src ? !isDash && src.includes(".m3u8") : false;
+  const isBunnyEmbed = src ? src.includes("iframe.mediadelivery.net") : false;
+  const isDash = src ? !isBunnyEmbed && src.includes(".mpd") : false;
+  const isHls = src ? !isBunnyEmbed && !isDash && src.includes(".m3u8") : false;
 
   const resolvedSrc = useMemo(() => {
     if (!src) return "";
@@ -49,6 +50,26 @@ export default function VideoPlayerCore({
     playsInline: true,
     className: "w-full h-full object-contain",
   };
+
+  // Bunny Stream embed – render secure iframe
+  if (isBunnyEmbed) {
+    return (
+      <div
+        className={`relative h-full w-full overflow-hidden group select-none bg-black ${className}`}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <iframe
+          src={src}
+          className="w-full h-full border-0"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="strict-origin-when-cross-origin"
+          title="Bunny Stream Video Player"
+        />
+      </div>
+    );
+  }
 
   return (
     <div

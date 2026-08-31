@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Alert } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDuration } from "@/lib/video-utils";
+import VideoThumbnail from "@/components/VideoThumbnail";
 
 export interface SelectedVideoPayload {
   id: string;
@@ -285,17 +286,14 @@ export default function VideoPickerModal({
                       >
                         {/* Thumbnail Container */}
                         <div className="w-full aspect-video bg-black/40 rounded-xl overflow-hidden relative shrink-0">
-                          {video.thumbnailUrl ? (
-                            <img
-                              src={video.thumbnailUrl}
-                              alt={video.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
-                              <Film className="w-8 h-8" />
-                            </div>
-                          )}
+                          <VideoThumbnail
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            status={video.status}
+                            storageType={(video as any).storageType}
+                            compact={true}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
 
                           {/* Duration Badge */}
                           {video.durationSeconds !== undefined && video.durationSeconds !== null && (

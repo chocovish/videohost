@@ -220,28 +220,39 @@ export async function uploadDirectoryToS3(
   }
 
   const totalFiles = filePaths.length;
+  if (totalFiles === 0) return;
+
   let uploadedCount = 0;
+  const concurrency = Math.min(5, totalFiles);
+  let currentIndex = 0;
 
-  for (const fullPath of filePaths) {
-    if (signal?.aborted) throw new Error("JOB_CANCELLED");
-    const relativePath = path.relative(dirPath, fullPath).replace(/\\/g, "/");
-    const s3Key = `${keyPrefix}/${relativePath}`;
+  async function worker(): Promise<void> {
+    while (currentIndex < filePaths.length) {
+      if (signal?.aborted) throw new Error("JOB_CANCELLED");
+      const index = currentIndex++;
+      const fullPath = filePaths[index];
+      const relativePath = path.relative(dirPath, fullPath).replace(/\\/g, "/");
+      const s3Key = `${keyPrefix}/${relativePath}`;
 
-    let contentType = "application/octet-stream";
-    if (relativePath.endsWith(".m3u8")) contentType = "application/x-mpegURL";
-    else if (relativePath.endsWith(".mpd")) contentType = "application/dash+xml";
-    else if (relativePath.endsWith(".ts")) contentType = "video/MP2T";
-    else if (relativePath.endsWith(".m4s") || relativePath.endsWith(".mp4")) contentType = "video/mp4";
-    else if (relativePath.endsWith(".jpg") || relativePath.endsWith(".jpeg")) contentType = "image/jpeg";
-    else if (relativePath.endsWith(".webp")) contentType = "image/webp";
-    else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
+      let contentType = "application/octet-stream";
+      if (relativePath.endsWith(".m3u8")) contentType = "application/x-mpegURL";
+      else if (relativePath.endsWith(".mpd")) contentType = "application/dash+xml";
+      else if (relativePath.endsWith(".ts")) contentType = "video/MP2T";
+      else if (relativePath.endsWith(".m4s") || relativePath.endsWith(".mp4")) contentType = "video/mp4";
+      else if (relativePath.endsWith(".jpg") || relativePath.endsWith(".jpeg")) contentType = "image/jpeg";
+      else if (relativePath.endsWith(".webp")) contentType = "image/webp";
+      else if (relativePath.endsWith(".vtt")) contentType = "text/vtt";
 
-    await uploadFileToS3(fullPath, s3Key, contentType, config, signal);
-    uploadedCount++;
-    if (onProgress && totalFiles > 0) {
-      onProgress(uploadedCount / totalFiles);
+      await uploadFileToS3(fullPath, s3Key, contentType, config, signal);
+      uploadedCount++;
+      if (onProgress && totalFiles > 0) {
+        onProgress(uploadedCount / totalFiles);
+      }
     }
   }
+
+  const workers = Array.from({ length: concurrency }, () => worker());
+  await Promise.all(workers);
 }
 
 export async function deleteS3Prefix(
@@ -296,4 +307,18 @@ export async function deleteS3Prefix(
     continuationToken = listRes.NextContinuationToken;
   } while (continuationToken);
   console.log(`[S3 Delete Prefix] Deleted ${totalDeleted} object(s) under prefix "${normalizedPrefix}"`);
+}
+
+export async function deleteS3Object(
+  key: string,
+  config: S3ConfigContext
+): Promise<void> {
+  if (!key) return;
+  try {
+    const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+    console.log(`[S3 Delete Object] Deleted object "${key}"`);
+  } catch (err: any) {
+    console.error(`[S3 Delete Object] Failed to delete object "${key}":`, err?.message || err);
+  }
 }

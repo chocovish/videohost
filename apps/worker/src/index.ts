@@ -107,7 +107,7 @@ const server = http.createServer(async (req, res) => {
 
         // Process video job through the queue asynchronously
         setImmediate(() => {
-          enqueueJob(videoId, () => processVideoJob(payload))
+          enqueueJob(videoId, () => processVideoJob(payload), payload)
             .then(() => {
               console.log(`[Worker HTTP] Container finished job for videoId: ${videoId}`);
             })
@@ -194,7 +194,7 @@ server.listen(PORT, () => {
 });
 
 // Graceful SIGTERM/SIGINT handling: stop accepting new jobs, abort active encodes/uploads,
-// delete any partially uploaded dash folders (handled per-job), and report CANCELLED.
+// delete any partially uploaded dash folders/thumbnails (handled per-job), and report CANCELLED.
 async function handleShutdownSignal(signal: string) {
   if (isShuttingDown) return;
   isShuttingDown = true;
@@ -212,12 +212,10 @@ async function handleShutdownSignal(signal: string) {
   (forceExit as any).unref?.();
 
   try {
-    // Discard queued jobs that haven't started (no S3 data yet)
-    shutdownQueue();
-    // Cancel all active transcodes; per-job catch will delete S3 prefix and report CANCELLED
-    await cancelAllActiveJobs();
-    // Give in-flight cleanups a brief window to finish S3 deletes + callbacks
-    await new Promise((r) => setTimeout(r, 3000));
+    // 1. Discard queued jobs and report CANCELLED callback
+    await shutdownQueue();
+    // 2. Cancel all active transcodes, delete partially uploaded S3 files, and report CANCELLED
+    await cancelAllActiveJobs(8000);
   } catch (e: any) {
     console.error("[Worker Service] Error during SIGTERM cleanup:", e?.message || e);
   } finally {

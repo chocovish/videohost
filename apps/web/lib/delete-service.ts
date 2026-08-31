@@ -1,6 +1,7 @@
 import { db } from "@videohost/db";
 import { deleteVideoFromS3 } from "@/lib/s3";
 import { cancelTranscodeJob } from "@/lib/queue";
+import { deleteVideoStorage } from "@/lib/storage";
 
 export interface BatchDeleteOptions {
   organizationId: string;
@@ -57,7 +58,10 @@ export async function executeDeleteService({
   }
 
   // 2. Find all videos to delete (both directly selected and nested inside any of the folders)
-  const videoMap = new Map<string, { id: string; originalKey: string; title: string; status: string }>();
+  const videoMap = new Map<
+    string,
+    { id: string; originalKey: string; title: string; status: string; storageType?: string | null; bunnyVideoId?: string | null }
+  >();
 
   // Videos inside folders
   if (allFolderIdsToDelete.size > 0) {
@@ -71,10 +75,12 @@ export async function executeDeleteService({
         originalKey: true,
         title: true,
         status: true,
-      },
+        storageType: true as any,
+        bunnyVideoId: true as any,
+      } as any,
     });
 
-    for (const v of folderVideos) {
+    for (const v of folderVideos as any) {
       videoMap.set(v.id, v);
     }
   }
@@ -91,51 +97,64 @@ export async function executeDeleteService({
         originalKey: true,
         title: true,
         status: true,
-      },
+        storageType: true as any,
+        bunnyVideoId: true as any,
+      } as any,
     });
 
-    for (const v of directVideos) {
+    for (const v of directVideos as any) {
       videoMap.set(v.id, v);
     }
   }
 
   const allVideosToDelete = Array.from(videoMap.values());
 
-  // 3. Stop any queued/in-progress transcode jobs so we don't orphan running
-  // encodes or have the worker re-create assets after deletion
+  // 3. Stop any queued/in-progress transcode jobs — S3 ONLY
+  // Bunny Stream encodes server-side outside our worker; no local FFmpeg
+  // job to cancel, so we skip this entirely for storageType=bunny.
   const inFlightVideos = allVideosToDelete.filter(
-    (v) => v.status === "QUEUED" || v.status === "PROCESSING"
+    (v) => (v.status === "QUEUED" || v.status === "PROCESSING") && (v as any).storageType !== "bunny"
   );
 
   if (inFlightVideos.length > 0) {
     console.log(
-      `[Delete Service] Cancelling ${inFlightVideos.length} in-flight transcode job(s) before deletion...`
+      `[Delete Service] Cancelling ${inFlightVideos.length} S3 in-flight transcode job(s) before deletion (bunny videos skipped)...`
     );
 
-    // Mark CANCELLED first so any in-flight worker callback is ignored
-    await db.video.updateMany({
-      where: {
-        id: { in: inFlightVideos.map((v) => v.id) },
-        status: { in: ["QUEUED", "PROCESSING"] },
-      },
-      data: { status: "CANCELLED" },
-    });
+    // Mark CANCELLED first so any in-flight worker callback is ignored — only S3 videos
+    const s3Ids = inFlightVideos.filter((v) => (v as any).storageType !== "bunny").map((v) => v.id);
+    if (s3Ids.length > 0) {
+      await db.video.updateMany({
+        where: {
+          id: { in: s3Ids },
+          status: { in: ["QUEUED", "PROCESSING"] },
+        },
+        data: { status: "CANCELLED" },
+      });
+    }
 
-    // Then stop the job on the worker / remove it from the queue
+    // Then stop the job on the worker / remove it from the queue — S3 only
     await Promise.allSettled(inFlightVideos.map((v) => cancelTranscodeJob(v.id)));
+  } else if (allVideosToDelete.some((v) => (v as any).storageType === "bunny" && (v.status === "QUEUED" || v.status === "PROCESSING"))) {
+    console.log(`[Delete Service] Bunny video(s) in QUEUED/PROCESSING — skipping local transcode cancel (handled by Bunny)`);
   }
 
-  // 4. Delete all files from S3 for all videos
+  // 4. Delete all files (S3 or Bunny) for all videos – storage-aware
   if (allVideosToDelete.length > 0) {
     console.log(
-      `[Delete Service] Deleting S3 assets for ${allVideosToDelete.length} video(s) in org ${organizationId}...`
+      `[Delete Service] Deleting storage assets for ${allVideosToDelete.length} video(s) in org ${organizationId}...`
     );
 
-    // Delete in parallel with allSettled
     await Promise.allSettled(
       allVideosToDelete.map((v) =>
-        deleteVideoFromS3(organizationId, v.id, v.originalKey).catch((err) => {
-          console.error(`[Delete Service Error] Failed to delete S3 assets for video ${v.id}:`, err);
+        deleteVideoStorage({
+          organizationId,
+          id: v.id,
+          originalKey: v.originalKey,
+          storageType: (v as any).storageType || "s3",
+          bunnyVideoId: (v as any).bunnyVideoId,
+        }).catch((err) => {
+          console.error(`[Delete Service Error] Failed to delete storage for video ${v.id}:`, err);
         })
       )
     );

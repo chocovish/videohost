@@ -1,7 +1,11 @@
+import { ProgressReporter } from "./progress";
+import { TranscodeJobPayload } from "./transcoder";
+
 type JobRunner = () => Promise<void>;
 
 interface QueueEntry {
   videoId: string;
+  payload?: TranscodeJobPayload;
   run: JobRunner;
   resolve: () => void;
   reject: (err: unknown) => void;
@@ -45,13 +49,32 @@ export function getQueueStats(): { active: number; queued: number; maxConcurrent
   };
 }
 
-export function shutdownQueue(): void {
+export async function shutdownQueue(): Promise<void> {
   if (pending.length > 0) {
     console.log(`[Job Queue] SIGTERM shutdown: discarding ${pending.length} pending job(s)`);
-    for (const entry of pending) {
+    const entries = [...pending];
+    pending.length = 0;
+    for (const entry of entries) {
+      if (entry.payload?.callbackUrl) {
+        try {
+          const reporter = new ProgressReporter(
+            entry.videoId,
+            entry.payload.organizationId || "default",
+            entry.payload.callbackUrl
+          );
+          await reporter.report(0, "CANCELLED", true, {
+            videoId: entry.videoId,
+            organizationId: entry.payload.organizationId || "default",
+            status: "CANCELLED",
+            progress: 0,
+            error: "Transcoding cancelled (worker shutdown before processing started)",
+          });
+        } catch (e: any) {
+          console.error(`[Job Queue] Failed to send CANCELLED callback for queued video ${entry.videoId}:`, e?.message || e);
+        }
+      }
       try { entry.resolve(); } catch {}
     }
-    pending.length = 0;
   }
 }
 
@@ -59,14 +82,14 @@ export function shutdownQueue(): void {
  * Enqueues a job and resolves/rejects only once the job finishes running.
  * At most WORKER_MAX_CONCURRENT_JOBS jobs run at the same time.
  */
-export function enqueueJob(videoId: string, run: JobRunner): Promise<void> {
+export function enqueueJob(videoId: string, run: JobRunner, payload?: TranscodeJobPayload): Promise<void> {
   const stats = getQueueStats();
   console.log(
     `[Job Queue] Queued video ${videoId} (position ${stats.queued + 1}, ${stats.active}/${stats.maxConcurrent} active)`
   );
 
   return new Promise<void>((resolve, reject) => {
-    pending.push({ videoId, run, resolve, reject });
+    pending.push({ videoId, payload, run, resolve, reject });
     drain();
   });
 }

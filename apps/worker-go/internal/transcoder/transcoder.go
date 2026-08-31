@@ -66,6 +66,7 @@ type ActiveJobEntry struct {
 	mu       sync.Mutex
 	payload  TranscodeJobPayload
 	reporter *progress.ProgressReporter
+	done     chan struct{}
 }
 
 var activeJobs sync.Map
@@ -105,18 +106,41 @@ func GetActiveJobIds() []string {
 	return ids
 }
 
-func CancelAllActiveJobs() {
-	ids := GetActiveJobIds()
+func CancelAllActiveJobs(timeout time.Duration) {
+	var doneChannels []chan struct{}
+	var ids []string
+
+	activeJobs.Range(func(k, v any) bool {
+		ids = append(ids, k.(string))
+		entry := v.(*ActiveJobEntry)
+		doneChannels = append(doneChannels, entry.done)
+		return true
+	})
+
 	if len(ids) == 0 {
 		fmt.Println("[Worker] SIGTERM cleanup: no active jobs")
 		return
 	}
+
 	fmt.Printf("[Worker] SIGTERM cleanup: cancelling %d active job(s): %s\n", len(ids), strings.Join(ids, ", "))
 	for _, id := range ids {
 		CancelActiveTranscode(id)
 	}
-	// Brief grace to let per-job catch handlers perform S3 cleanup + CANCELLED callbacks
-	time.Sleep(500 * time.Millisecond)
+
+	allDone := make(chan struct{})
+	go func() {
+		for _, ch := range doneChannels {
+			<-ch
+		}
+		close(allDone)
+	}()
+
+	select {
+	case <-allDone:
+		fmt.Println("[Worker] SIGTERM cleanup: all active jobs finished cleanup")
+	case <-time.After(timeout):
+		fmt.Println("[Worker] SIGTERM cleanup: timeout waiting for active jobs cleanup")
+	}
 }
 
 type RenditionResult struct {
@@ -180,14 +204,19 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	jobCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	doneChan := make(chan struct{})
 	activeEntry := &ActiveJobEntry{
 		cancel:   cancel,
 		cmd:      nil,
 		payload:  payload,
 		reporter: reporter,
+		done:     doneChan,
 	}
 	activeJobs.Store(videoId, activeEntry)
-	defer activeJobs.Delete(videoId)
+	defer func() {
+		activeJobs.Delete(videoId)
+		close(doneChan)
+	}()
 
 	isCancelled := func() bool {
 		select {
@@ -205,19 +234,18 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		return nil
 	}
 
-	tempDir := filepath.Join("temp", videoId)
-	_ = os.MkdirAll(tempDir, 0755)
+	absTempDir, err := filepath.Abs(filepath.Join("temp", videoId))
 	defer func() {
 		_ = os.RemoveAll(tempDir)
 	}()
 
-	inputPath := filepath.Join(tempDir, "original.mp4")
-
+	inputPath := filepath.ToSlash(filepath.Join(tempDir, "original.mp4"))
+	var s3ThumbKey string
 	// Helper for reporting failure on error
 	handleError := func(err error) error {
 		if errors.Is(err, ErrJobCancelled) || isCancelled() {
 			fmt.Printf("[Worker] Transcode job for video %s was cancelled — cleaning up S3 and reporting CANCELLED\n", videoId)
-			// Best-effort delete any partially uploaded dash data
+			// Best-effort delete any partially uploaded dash data and thumbnail
 			dashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
 			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cleanupCancel()
@@ -225,6 +253,13 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 				fmt.Printf("[Worker] Failed to cleanup S3 prefix for cancelled video %s: %v\n", videoId, delErr)
 			} else {
 				fmt.Printf("[Worker] Cleaned up S3 dash prefix for cancelled video %s\n", videoId)
+			}
+			if s3ThumbKey != "" {
+				if delErr := s3.DeleteS3Object(cleanupCtx, s3ThumbKey, payload.S3); delErr != nil {
+					fmt.Printf("[Worker] Failed to cleanup S3 thumbnail for cancelled video %s: %v\n", videoId, delErr)
+				} else {
+					fmt.Printf("[Worker] Cleaned up S3 thumbnail object for cancelled video %s\n", videoId)
+				}
 			}
 			// Notify webapp that processing was cancelled (so UI can show retry)
 			cancelledPayload := map[string]any{
@@ -287,10 +322,9 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	dashOutputDir := filepath.Join(tempDir, "dash")
 	_ = os.MkdirAll(dashOutputDir, 0755)
 
-	masterManifestPath := filepath.Join(dashOutputDir, "master.mpd")
+	masterManifestPath := filepath.ToSlash(filepath.Join(dashOutputDir, "master.mpd"))
 	totalRenditions := len(targetRenditions)
 
-	// 4. Compute Aspect Ratio & Build Filter Complex
 	dar := ComputeTargetDAR(meta.Width, meta.Height, meta.SAR)
 
 	var filterParts []string
@@ -307,7 +341,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		if totalRenditions > 1 {
 			inputLabel = fmt.Sprintf("[v%d]", i)
 		}
-		filterParts = append(filterParts, fmt.Sprintf("%sscale=%d:%d:flags=lanczos,setdar=%d/%d:max=1000000[o%d]",
+		filterParts = append(filterParts, fmt.Sprintf("%sscale=%d:%d:flags=bicubic,setdar=%d/%d:max=1000000[o%d]",
 			inputLabel, rend.Width, rend.Height, dar.DarNum, dar.DarDen, i))
 	}
 	filterComplex := strings.Join(filterParts, ";")
@@ -358,6 +392,9 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		"-y",
 		"-threads", strconv.Itoa(threadCount),
 		"-i", inputPath,
+		"-preset", "veryfast",
+		"-crf", "24",
+		"-pix_fmt", "yuv420p",
 		"-filter_complex", filterComplex,
 	}
 
@@ -398,9 +435,9 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	fmt.Printf("[Worker FFmpeg] Executing: ffmpeg %s\n", strings.Join(ffmpegArgs, " "))
 
 	encodeCmd := exec.CommandContext(jobCtx, "ffmpeg", ffmpegArgs...)
+	encodeCmd.Dir = dashOutputDir
 	stderrPipe, err := encodeCmd.StderrPipe()
 	if err != nil {
-		return nil, handleError(fmt.Errorf("failed to open ffmpeg stderr: %w", err))
 	}
 
 	activeEntry.mu.Lock()
@@ -466,9 +503,9 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		_ = os.WriteFile(masterManifestPath, []byte(manifestStr), 0644)
 	}
 
-	// 6. Generate Thumbnail (WebP) if not skipped
-	shouldGenerateThumbnail := true
-	if payload.SkipThumbnail != nil && *payload.SkipThumbnail {
+	masterM3u8Path := filepath.Join(dashOutputDir, "master.m3u8")
+	if m3u8Bytes, err := os.ReadFile(masterM3u8Path); err == nil {
+		m3u8Str := string(m3u8Bytes)
 		shouldGenerateThumbnail = false
 	}
 	if payload.GenerateThumbnail != nil && !*payload.GenerateThumbnail {
@@ -476,16 +513,14 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	}
 
 	s3DashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
-	var s3ThumbKey string
 
 	if shouldGenerateThumbnail {
 		unique := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(6))
 		thumbFileName := fmt.Sprintf("thumbnail-%s.webp", unique)
-		thumbnailPath := filepath.Join(tempDir, thumbFileName)
+		thumbnailPath := filepath.ToSlash(filepath.Join(tempDir, thumbFileName))
 
 		seekTime := 0.0
 		if meta.Duration > 0 {
-			seekTime = math.Min(1.0, float64(meta.Duration)/2.0)
 		}
 
 		thumbCmd := exec.CommandContext(jobCtx, "ffmpeg",
@@ -494,8 +529,9 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 			"-ss", fmt.Sprintf("%.2f", seekTime),
 			"-i", inputPath,
 			"-frames:v", "1",
-			"-vf", "scale='min(1280,iw)':-2",
+			"-vf", "scale='min(1280,iw)':-2:flags=bicubic",
 			"-c:v", "libwebp",
+			"-compression_level", "4",
 			"-quality", "82",
 			thumbnailPath,
 		)

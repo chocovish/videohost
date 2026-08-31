@@ -51,6 +51,7 @@ import {
   Tv,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import { formatDuration } from "@/lib/video-utils";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import {
@@ -2474,17 +2475,14 @@ export default function SharedContentClient({
 
                               {/* Thumbnail */}
                               <div className="relative w-16 aspect-video rounded-lg overflow-hidden bg-slate-950 shrink-0">
-                                {video.thumbnailUrl ? (
-                                  <img
-                                    src={video.thumbnailUrl}
-                                    alt={video.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-slate-700">
-                                    <Film className="w-3 h-3" />
-                                  </div>
-                                )}
+                                <VideoThumbnail
+                                  src={video.thumbnailUrl}
+                                  alt={video.title}
+                                  status={(video as any).status}
+                                  storageType={(video as any).storageType}
+                                  compact={true}
+                                  className="w-full h-full object-cover"
+                                />
                                 {video.durationSeconds && (
                                   <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 bg-black/80 text-[8px] font-bold text-slate-200 rounded">
                                     {formatDuration(video.durationSeconds)}
@@ -2600,15 +2598,13 @@ export default function SharedContentClient({
                     >
                       {/* Thumbnail Box */}
                       <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">
-                        {vid.thumbnailUrl ? (
-                          <img
-                            src={vid.thumbnailUrl}
-                            alt={vid.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                          />
-                        ) : (
-                          <Film className="w-10 h-10 text-slate-700" />
-                        )}
+                        <VideoThumbnail
+                          src={vid.thumbnailUrl}
+                          alt={vid.title}
+                          status={(vid as any).status}
+                          storageType={(vid as any).storageType}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                        />
 
                         <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
                           <div

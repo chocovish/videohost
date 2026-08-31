@@ -89,6 +89,8 @@ model Organization {
   billingCycle         String   @default("MONTHLY")  // "MONTHLY" | "YEARLY"
   subscriptionId       String?
   subscriptionStatus   String   @default("INACTIVE") // "ACTIVE" | "CANCELLED" | "HALTED" | "EXPIRED" | "INACTIVE"
+  bunnyCollectionId    String?  @unique
+  bunnyCollectionName  String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -232,10 +234,15 @@ model Video {
   sizeBytes        BigInt?
   sourceWidth      Int?
   sourceHeight     Int?
-  originalKey      String      // R2 object key
+  originalKey      String      // R2 object key (or bunny GUID when storageType=bunny)
   thumbnailKey     String?
   spriteUrl        String?
   requireHls       Boolean     @default(false)
+  storageType      String      @default("s3") // "s3" | "bunny"
+  bunnyVideoId     String?     @unique
+  bunnyLibraryId   String?
+  bunnyCollectionId String?
+  storageMeta      Json?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 

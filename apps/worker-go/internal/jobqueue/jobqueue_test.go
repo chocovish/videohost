@@ -29,9 +29,9 @@ func TestJobQueueConcurrency(t *testing.T) {
 		return nil
 	}
 
-	d1 := q.EnqueueJob("v1", runFn)
-	d2 := q.EnqueueJob("v2", runFn)
-	d3 := q.EnqueueJob("v3", runFn)
+	d1 := q.EnqueueJob("v1", "org1", "", runFn)
+	d2 := q.EnqueueJob("v2", "org1", "", runFn)
+	d3 := q.EnqueueJob("v3", "org1", "", runFn)
 
 	<-d1
 	<-d2
@@ -53,7 +53,7 @@ func TestCancelQueuedJob(t *testing.T) {
 	started := make(chan struct{})
 	blocker := make(chan struct{})
 
-	_ = q.EnqueueJob("v1", func() error {
+	_ = q.EnqueueJob("v1", "org1", "", func() error {
 		close(started)
 		<-blocker
 		return nil
@@ -61,7 +61,7 @@ func TestCancelQueuedJob(t *testing.T) {
 
 	<-started
 
-	_ = q.EnqueueJob("v2", func() error {
+	_ = q.EnqueueJob("v2", "org1", "", func() error {
 		return nil
 	})
 

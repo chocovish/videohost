@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ShareModal from "@/components/ShareModal";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import {
   ShareAccessMode,
   CountryPriceItem,
@@ -735,13 +736,14 @@ export default function PlaylistDetailPage() {
                     onClick={() => setPreviewVideo(item)}
                     className="relative w-28 sm:w-32 aspect-video bg-black rounded-xl overflow-hidden shrink-0 cursor-pointer group/thumb shadow-2xs"
                   >
-                    {item.thumbnailUrl ? (
-                      <img src={item.thumbnailUrl} alt={item.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-black text-muted-foreground">
-                        <Film className="w-6 h-6" />
-                      </div>
-                    )}
+                    <VideoThumbnail
+                      src={item.thumbnailUrl}
+                      alt={item.title}
+                      status={(item as any).status}
+                      storageType={(item as any).storageType}
+                      compact={true}
+                      className="w-full h-full object-cover"
+                    />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center transition-opacity">
                       <Play className="w-6 h-6 text-white fill-white" />
                     </div>
@@ -1003,13 +1005,14 @@ export default function PlaylistDetailPage() {
                       >
                         {/* Thumbnail */}
                         <div className="relative w-20 aspect-video bg-black rounded-lg overflow-hidden shrink-0">
-                          {video.thumbnailUrl ? (
-                            <img src={video.thumbnailUrl} alt={video.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                              <Film className="w-4 h-4" />
-                            </div>
-                          )}
+                          <VideoThumbnail
+                            src={video.thumbnailUrl}
+                            alt={video.title}
+                            status={video.status}
+                            storageType={(video as any).storageType}
+                            compact={true}
+                            className="w-full h-full object-cover"
+                          />
                           {video.durationSeconds && (
                             <span className="absolute bottom-0.5 right-0.5 px-1 bg-black/80 text-xs font-bold text-white rounded">
                               {formatDuration(video.durationSeconds)}

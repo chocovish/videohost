@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPlaybackUrl, getPresignedPlaybackUrl, getRenditionPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
+import { getPlaybackUrl, getRenditionPlaybackUrl, getThumbnailPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -16,8 +16,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
   const computedSizeBytes = video.sizeBytes !== null ? Number(video.sizeBytes) : null;
-  const playbackUrl = await getPlaybackUrl(video);
-  const thumbnailUrl = video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null;
+  const playbackUrl = await getPlaybackUrl(video as any);
+  const thumbnailUrl = await getThumbnailPlaybackUrl(video as any);
 
   return NextResponse.json({
     id: video.id,
@@ -36,6 +36,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     countryPricing: video.countryPricing || [],
     playbackUrl,
     thumbnailUrl,
+    storageType: (video as any).storageType || "s3",
+    bunnyVideoId: (video as any).bunnyVideoId || null,
     renditions: video.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
@@ -99,8 +101,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   });
 
   const computedSizeBytes = updated.sizeBytes !== null ? Number(updated.sizeBytes) : null;
-  const playbackUrl = await getPlaybackUrl(updated);
-  const thumbnailUrl = updated.thumbnailKey ? await getPresignedPlaybackUrl(updated.thumbnailKey) : null;
+  const playbackUrl = await getPlaybackUrl(updated as any);
+  const thumbnailUrl = await getThumbnailPlaybackUrl(updated as any);
 
   return NextResponse.json({
     id: updated.id,
@@ -119,6 +121,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     countryPricing: updated.countryPricing || [],
     playbackUrl,
     thumbnailUrl,
+    storageType: (updated as any).storageType || "s3",
+    bunnyVideoId: (updated as any).bunnyVideoId || null,
     renditions: updated.renditions.map((r) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,

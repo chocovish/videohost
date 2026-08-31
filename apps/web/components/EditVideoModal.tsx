@@ -32,6 +32,7 @@ import {
   CountryPriceItem,
   ShareAccessModeSelector,
 } from "@/components/share";
+import VideoThumbnail from "@/components/VideoThumbnail";
 
 export interface EditVideoData {
   id: string;
@@ -324,17 +325,22 @@ export default function EditVideoModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
                 {/* Thumbnail Preview Window */}
                 <div className="aspect-video w-full bg-muted/60 rounded-lg overflow-hidden border border-border relative flex items-center justify-center group shadow-xs">
-                  {previewUrl ? (
+                  {selectedFile ? (
                     <img
-                      src={previewUrl}
+                      src={previewUrl!}
                       alt="Thumbnail preview"
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-1.5 p-3 text-center">
-                      <ImageIcon className="w-6 h-6 opacity-60" />
-                      <span className="text-xs">No thumbnail</span>
-                    </div>
+                    <VideoThumbnail
+                      src={previewUrl}
+                      alt="Thumbnail preview"
+                      status={(video as any)?.status}
+                      storageType={(video as any)?.storageType}
+                      progress={(video as any)?.progress}
+                      compact={true}
+                      className="w-full h-full object-cover"
+                    />
                   )}
 
                   {selectedFile && (

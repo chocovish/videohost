@@ -1,16 +1,21 @@
 package jobqueue
 
 import (
+	"context"
 	"fmt"
 	"sync"
+
+	"videohost-worker-go/internal/progress"
 )
 
 type JobRunner func() error
 
 type QueueEntry struct {
-	VideoId string
-	Run     JobRunner
-	Done    chan error
+	VideoId     string
+	OrgId       string
+	CallbackUrl string
+	Run         JobRunner
+	Done        chan error
 }
 
 type QueueStats struct {
@@ -92,27 +97,42 @@ func (q *JobQueue) GetQueueStats() QueueStats {
 	}
 }
 
-// Shutdown clears pending queue on SIGTERM and prevents new jobs from starting.
-func (q *JobQueue) Shutdown() {
+// Shutdown clears pending queue on SIGTERM, dispatches CANCELLED webhooks, and prevents new jobs from starting.
+func (q *JobQueue) Shutdown(ctx context.Context) {
 	q.mu.Lock()
-	defer q.mu.Unlock()
-	if len(q.pending) > 0 {
-		fmt.Printf("[Job Queue] SIGTERM shutdown: discarding %d pending job(s)\n", len(q.pending))
-		for _, e := range q.pending {
+	pendingList := q.pending
+	q.pending = make([]*QueueEntry, 0)
+	q.mu.Unlock()
+
+	if len(pendingList) > 0 {
+		fmt.Printf("[Job Queue] SIGTERM shutdown: discarding %d pending job(s)\n", len(pendingList))
+		for _, e := range pendingList {
+			if e.CallbackUrl != "" {
+				reporter := progress.NewProgressReporter(e.VideoId, e.OrgId, e.CallbackUrl)
+				cancelledPayload := map[string]any{
+					"videoId":        e.VideoId,
+					"organizationId": e.OrgId,
+					"status":         "CANCELLED",
+					"progress":       0,
+					"error":          "Transcoding cancelled (worker shutdown before processing started)",
+				}
+				_ = reporter.Report(ctx, 0, "CANCELLED", true, cancelledPayload)
+			}
 			close(e.Done)
 		}
-		q.pending = make([]*QueueEntry, 0)
 	}
 }
 
 // EnqueueJob queues a video transcoding job. Returns a channel that closes with any error when the job finishes.
-func (q *JobQueue) EnqueueJob(videoId string, run JobRunner) <-chan error {
+func (q *JobQueue) EnqueueJob(videoId, orgId, callbackUrl string, run JobRunner) <-chan error {
 	q.mu.Lock()
 	done := make(chan error, 1)
 	entry := &QueueEntry{
-		VideoId: videoId,
-		Run:     run,
-		Done:    done,
+		VideoId:     videoId,
+		OrgId:       orgId,
+		CallbackUrl: callbackUrl,
+		Run:         run,
+		Done:        done,
 	}
 
 	stats := QueueStats{

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Copy,
   Check,
+  CheckCircle2,
   Trash2,
   Code,
   Clock,
@@ -64,8 +65,43 @@ interface VideoDetail {
   countryPricing?: any;
   playbackUrl?: string;
   thumbnailUrl?: string;
+  storageType?: string | null;
+  bunnyVideoId?: string | null;
   renditions: { resolution: string; bitrateKbps: number; playlistUrl: string; sizeBytes?: number }[];
   createdAt: string;
+}
+
+interface BunnyRenditionsData {
+  guid: string;
+  title: string;
+  status: number;
+  encodeProgress: number;
+  isPublic: boolean;
+  storageSize: number;
+  length: number;
+  width: number;
+  height: number;
+  framerate: number;
+  views: number;
+  dateUploaded: string;
+  thumbnailCount: number;
+  thumbnailFileName?: string | null;
+  collectionId?: string | null;
+  availableResolutionsRaw: string | null;
+  availableResolutions: string[];
+  local: {
+    id: string;
+    title: string;
+    status: string;
+    progress?: number | null;
+    sizeBytes: number | null;
+    durationSeconds?: number | null;
+    sourceResolution: string | null;
+    bunnyVideoId: string | null;
+    bunnyLibraryId: string | null;
+    storageType: string | null;
+  };
+  synced?: boolean;
 }
 
 export default function VideoDetailPage() {
@@ -93,6 +129,11 @@ export default function VideoDetailPage() {
     shareAccessMode?: string;
   } | null>(null);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
+
+  // Bunny renditions state – lazy fetched when renditions tab is opened
+  const [bunnyData, setBunnyData] = useState<BunnyRenditionsData | null>(null);
+  const [bunnyLoading, setBunnyLoading] = useState(false);
+  const [bunnyError, setBunnyError] = useState<string | null>(null);
 
   const backUrl = video?.folderId ? `/dashboard/uploaded-videos?folderId=${video.folderId}` : "/dashboard/uploaded-videos";
 
@@ -127,9 +168,70 @@ export default function VideoDetailPage() {
     }
   };
 
+  const isBunnyVideo = Boolean(
+    video && (((video.storageType || "").toLowerCase() === "bunny") || Boolean(video.bunnyVideoId))
+  );
+
+  const fetchBunnyRenditions = async (force = false) => {
+    if (!id) return;
+    if (!isBunnyVideo && !force) return;
+    if (bunnyLoading) return;
+    setBunnyLoading(true);
+    setBunnyError(null);
+    try {
+      const res = await fetch(`/api/v1/videos/${id}/bunny`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || data?.details || `Failed to load renditions data (${res.status})`);
+      }
+      setBunnyData(data as BunnyRenditionsData);
+
+      // Sync DB progress/status polled from Bunny Stream into main video state
+      if (data?.local) {
+        setVideo((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: data.local.status ?? prev.status,
+                progress: typeof data.local.progress === "number" ? data.local.progress : prev.progress,
+                durationSeconds: data.local.durationSeconds ?? prev.durationSeconds,
+                sourceResolution: data.local.sourceResolution ?? prev.sourceResolution,
+                sizeBytes: data.local.sizeBytes ?? prev.sizeBytes,
+              }
+            : prev
+        );
+      }
+    } catch (e: any) {
+      console.error("Failed to load renditions:", e);
+      setBunnyError(e?.message || "Failed to fetch renditions");
+      setBunnyData(null);
+    } finally {
+      setBunnyLoading(false);
+    }
+  };
+
+  // Reset bunny state when switching videos
+  useEffect(() => {
+    setBunnyData(null);
+    setBunnyError(null);
+    setBunnyLoading(false);
+  }, [id]);
+
+  // Auto-fetch bunny data when renditions tab is opened for bunny videos
+  useEffect(() => {
+    if (activeTab === "renditions" && isBunnyVideo && !bunnyData && !bunnyLoading && !bunnyError) {
+      fetchBunnyRenditions();
+    }
+  }, [activeTab, isBunnyVideo, bunnyData, bunnyLoading, bunnyError, id]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([fetchVideoDetail(true), fetchVideoPurchases()]);
+    if (isBunnyVideo) {
+      await fetchBunnyRenditions(true);
+      await Promise.all([fetchVideoDetail(true), fetchVideoPurchases()]);
+    } else {
+      await Promise.all([fetchVideoDetail(true), fetchVideoPurchases()]);
+    }
     setIsRefreshing(false);
   };
 
@@ -161,6 +263,23 @@ export default function VideoDetailPage() {
     fetchVideoDetail();
     fetchVideoPurchases();
   }, [id]);
+
+  // Auto-poll video progress if video is still processing / queued / uploading
+  const isVideoProcessing = Boolean(
+    video && (video.status === "PROCESSING" || video.status === "QUEUED" || video.status === "UPLOADING")
+  );
+
+  useEffect(() => {
+    if (!isVideoProcessing) return;
+    const interval = setInterval(() => {
+      fetchVideoDetail(true);
+      if (isBunnyVideo) {
+        fetchBunnyRenditions(true);
+      }
+    }, 40000);
+
+    return () => clearInterval(interval);
+  }, [isVideoProcessing, isBunnyVideo, id]);
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -381,7 +500,18 @@ export default function VideoDetailPage() {
                   <p className="text-sm font-semibold text-foreground">Video Transcoding in Progress</p>
                   <p className="text-xs text-muted-foreground font-medium">Progress: {video.progress || 0}%</p>
                   <Progress value={Math.min(100, Math.max(0, video.progress || 0))} className="w-full" />
+                  <p className="text-xs text-muted-foreground">Check back in 10 mins</p>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="mt-2 gap-2 text-xs bg-card/80 hover:bg-card border-border/80 text-foreground"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
+                  <span>{isRefreshing ? "Checking Progress..." : "Refresh Progress"}</span>
+                </Button>
               </div>
             )}
           </div>
@@ -408,10 +538,34 @@ export default function VideoDetailPage() {
               <Button
                 variant={activeTab === "renditions" ? "default" : "ghost"}
                 size="sm"
-                onClick={() => setActiveTab("renditions")}
+                onClick={() => {
+                  setActiveTab("renditions");
+                  // trigger bunny fetch eagerly on click if not yet loaded
+                  if (
+                    ((video.storageType || "").toLowerCase() === "bunny" || Boolean(video.bunnyVideoId)) &&
+                    !bunnyData &&
+                    !bunnyLoading &&
+                    !bunnyError
+                  ) {
+                    // schedule after state update; use microtask
+                    setTimeout(() => fetchBunnyRenditions(), 0);
+                  }
+                }}
                 className="gap-2"
               >
-                <Layers className="w-4 h-4" /> Renditions ({video.renditions?.length > 0 ? video.renditions.length : video.requireHls && video.status !== "FAILED" ? "Processing" : 0})
+                <Layers className="w-4 h-4" /> Renditions (
+                {isBunnyVideo
+                  ? bunnyLoading
+                    ? "…"
+                    : bunnyData
+                      ? bunnyData.availableResolutions.length
+                      : "…"
+                  : video.renditions?.length > 0
+                    ? video.renditions.length
+                    : video.requireHls && video.status !== "FAILED"
+                      ? "Processing"
+                      : 0}
+                )
               </Button>
               <Button
                 variant={activeTab === "purchases" ? "default" : "ghost"}
@@ -502,7 +656,72 @@ export default function VideoDetailPage() {
             {/* Tab 3: Transcoded Renditions Ladder */}
             {activeTab === "renditions" && (
               <div className="space-y-4">
-                {video.renditions?.length > 0 ? (
+                {isBunnyVideo ? (
+                  // ——— Bunny.net Stream storage branch ———
+                  bunnyLoading && !bunnyData ? (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+                      <span>Fetching renditions data…</span>
+                    </div>
+                  ) : bunnyError ? (
+                    <Alert variant="destructive" className="text-xs">
+                      <AlertTriangle className="w-4 h-4" />
+                      <AlertTitle className="text-xs font-semibold">Failed to fetch Bunny renditions</AlertTitle>
+                      <AlertDescription className="text-xs flex items-center justify-between gap-2">
+                        <span>{bunnyError}</span>
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => fetchBunnyRenditions(true)}
+                          disabled={bunnyLoading}
+                          className="gap-1.5 shrink-0"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${bunnyLoading ? "animate-spin" : ""}`} />
+                          Retry
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  ) : bunnyData ? (
+                    bunnyData.availableResolutions && bunnyData.availableResolutions.length > 0 ? (
+                      <div className="space-y-3 py-1">
+                        <p className="text-sm font-medium text-foreground">
+                          Encoded in <span className="font-bold text-primary">{bunnyData.availableResolutions.length}</span> resolution{bunnyData.availableResolutions.length !== 1 ? "s" : ""}:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {bunnyData.availableResolutions.map((res) => (
+                            <Badge
+                              key={res}
+                              variant="outline"
+                              className="gap-1.5 border-primary/20 bg-primary/10 text-primary font-mono text-xs py-1 px-2.5"
+                            >
+                              <VideoIcon className="w-3.5 h-3.5" />
+                              {res}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground py-2">
+                        {bunnyData.encodeProgress < 100
+                          ? `Transcoding in progress (${bunnyData.encodeProgress}%). No resolutions encoded yet.`
+                          : "No encoded resolutions available."}
+                      </p>
+                    )
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                      <span>No renditions data available.</span>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        onClick={() => fetchBunnyRenditions(true)}
+                        disabled={bunnyLoading}
+                        className="gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${bunnyLoading ? "animate-spin" : ""}`} /> Fetch
+                      </Button>
+                    </div>
+                  )
+                ) : video.renditions?.length > 0 ? (
                   <>
                     <p className="text-xs text-muted-foreground">
                       Adaptive bitrate stream representations packaged into fMP4 / HLS streams:
@@ -581,6 +800,7 @@ export default function VideoDetailPage() {
                       </AlertTitle>
                       <AlertDescription className="text-xs space-y-3">
                         <Progress value={Math.min(100, Math.max(0, video.progress || 0))} className="w-full" />
+                        <p className="text-[11px] text-muted-foreground">Check back in 10 mins</p>
                         <p className="leading-relaxed">
                           HLS transcoding is currently in progress for this video ({video.status === "QUEUED" ? "Queued" : video.status === "UPLOADING" ? "Uploading" : `Processing ${video.progress || 0}%`}). Adaptive bitrate renditions will be available here once completed. Use the Refresh button above to check latest status.
                         </p>
