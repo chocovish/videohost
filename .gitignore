@@ -11,7 +11,9 @@ dist/
 build/
 *.tsbuildinfo
 *.exe
-worker
+/worker
+/apps/worker-go/worker
+/apps/worker-go/worker-go
 
 # Turborepo cache
 .turbo/
