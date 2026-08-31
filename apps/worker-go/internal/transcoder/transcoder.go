@@ -235,6 +235,11 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	}
 
 	absTempDir, err := filepath.Abs(filepath.Join("temp", videoId))
+	if err != nil {
+		absTempDir = filepath.Join("temp", videoId)
+	}
+	tempDir := absTempDir
+	_ = os.MkdirAll(tempDir, 0755)
 	defer func() {
 		_ = os.RemoveAll(tempDir)
 	}()
@@ -438,6 +443,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	encodeCmd.Dir = dashOutputDir
 	stderrPipe, err := encodeCmd.StderrPipe()
 	if err != nil {
+		return nil, handleError(fmt.Errorf("failed to open ffmpeg stderr: %w", err))
 	}
 
 	activeEntry.mu.Lock()
@@ -506,6 +512,22 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	masterM3u8Path := filepath.Join(dashOutputDir, "master.m3u8")
 	if m3u8Bytes, err := os.ReadFile(masterM3u8Path); err == nil {
 		m3u8Str := string(m3u8Bytes)
+		dashOutputDirForward := filepath.ToSlash(dashOutputDir)
+		dashOutputDirBack := strings.ReplaceAll(dashOutputDir, "/", "\\")
+
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDir+string(filepath.Separator), "")
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDir+"/", "")
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDirForward+"/", "")
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDirBack+"\\", "")
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDirForward, "")
+		m3u8Str = strings.ReplaceAll(m3u8Str, dashOutputDirBack, "")
+
+		_ = os.WriteFile(masterM3u8Path, []byte(m3u8Str), 0644)
+	}
+
+	// 6. Generate Thumbnail (WebP) if not skipped
+	shouldGenerateThumbnail := true
+	if payload.SkipThumbnail != nil && *payload.SkipThumbnail {
 		shouldGenerateThumbnail = false
 	}
 	if payload.GenerateThumbnail != nil && !*payload.GenerateThumbnail {
@@ -521,6 +543,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 
 		seekTime := 0.0
 		if meta.Duration > 0 {
+			seekTime = math.Min(1.0, float64(meta.Duration)/2.0)
 		}
 
 		thumbCmd := exec.CommandContext(jobCtx, "ffmpeg",
