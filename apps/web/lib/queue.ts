@@ -4,9 +4,7 @@ import { parseRenditionResolutions } from "./renditions";
 import { getBaseUrl } from "./utils";
 import { getVideoOriginalS3Key } from "./s3";
 
-const redisHost = process.env.REDIS_HOST;
-const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10);
-const redisPassword = process.env.REDIS_PASSWORD || undefined;
+const redisConnectionUrl = (process.env.REDIS_CONNECTION_URL || "").replace(/^["']|["']$/g, "").trim();
 
 declare global {
   // eslint-disable-next-line no-var
@@ -14,15 +12,13 @@ declare global {
 }
 
 export const transcodeQueue =
-  redisHost
+  redisConnectionUrl
     ? globalThis.transcodeQueue ||
-    new Queue("video-transcode", {
-      connection: {
-        host: redisHost,
-        port: redisPort,
-        password: redisPassword,
-      },
-    })
+      new Queue("video-transcode", {
+        connection: {
+          url: redisConnectionUrl,
+        },
+      })
     : undefined;
 
 if (process.env.NODE_ENV !== "production" && transcodeQueue) {

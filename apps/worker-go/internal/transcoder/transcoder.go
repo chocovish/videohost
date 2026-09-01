@@ -243,7 +243,11 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	tempDir := absTempDir
 	_ = os.MkdirAll(tempDir, 0755)
 	defer func() {
-		_ = os.RemoveAll(tempDir)
+		if rmErr := os.RemoveAll(tempDir); rmErr != nil {
+			fmt.Printf("[Worker] Warning: Failed to remove temp directory %s: %v\n", tempDir, rmErr)
+		} else {
+			fmt.Printf("[Worker] Cleaned up all local files in temp directory: %s\n", tempDir)
+		}
 	}()
 
 	inputPath := filepath.ToSlash(filepath.Join(tempDir, "original.mp4"))
@@ -588,7 +592,17 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		return nil, handleError(err)
 	}
 
-	// 7. Upload DASH structure to S3/R2
+	// 7. Clean up previous encoding attempt DASH files in S3 and upload new DASH structure
+	fmt.Printf("[Worker] Cleaning up previous DASH files from S3 under %s...\n", s3DashPrefix)
+	cleanupCtx, cleanupCancel := context.WithTimeout(jobCtx, 30*time.Second)
+	_ = s3.DeleteS3Prefix(cleanupCtx, s3DashPrefix, payload.S3)
+	_ = s3.DeleteS3Prefix(cleanupCtx, fmt.Sprintf("%s/%s/dash", orgId, videoId), payload.S3)
+	cleanupCancel()
+
+	if err := assertNotCancelled(); err != nil {
+		return nil, handleError(err)
+	}
+
 	fmt.Printf("[Worker] Uploading DASH renditions to S3/R2 under %s...\n", s3DashPrefix)
 	err = s3.UploadDirectoryToS3(jobCtx, dashOutputDir, s3DashPrefix, payload.S3, func(uploadRatio float64) {
 		uploadProgress := progress.CalculateUploadProgress(uploadRatio * 0.9)

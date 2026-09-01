@@ -523,7 +523,17 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
       console.log(`[Worker] Skipping thumbnail generation for videoId: ${videoId} (thumbnail already set)`);
     }
 
-    // 7. Upload DASH structure to R2 (20% of total progress)
+    // 7. Clean up previous encoding attempt DASH files in S3 and upload new DASH structure
+    console.log(`[Worker] Cleaning up previous DASH files from S3 under ${s3DashPrefix}...`);
+    try {
+      await deleteS3Prefix(s3DashPrefix, payload.s3);
+      await deleteS3Prefix(`${orgId}/${videoId}/dash`, payload.s3);
+    } catch (cleanErr: any) {
+      console.warn(`[Worker] Notice: Error cleaning previous S3 DASH prefix for ${videoId}:`, cleanErr?.message || cleanErr);
+    }
+
+    assertNotCancelled();
+
     console.log(`[Worker] Uploading DASH renditions to R2 under ${s3DashPrefix}...`);
     await uploadDirectoryToS3(dashOutputDir, s3DashPrefix, payload.s3, (uploadRatio) => {
       const uploadProgress = calculateUploadProgress(uploadRatio * 0.9);
@@ -680,7 +690,12 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
     activeJobs.delete(videoId);
     resolveJobDone();
     try {
-      fs.rmSync(tempDir, { recursive: true, force: true });
-    } catch {}
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+        console.log(`[Worker] Cleaned up all local files in temp directory: ${tempDir}`);
+      }
+    } catch (cleanupErr: any) {
+      console.error(`[Worker] Warning: Failed to clean up temp dir ${tempDir}:`, cleanupErr?.message || cleanupErr);
+    }
   }
 }

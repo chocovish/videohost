@@ -183,13 +183,12 @@ R2_ACCESS_KEY_ID="minioadmin"
 R2_SECRET_ACCESS_KEY="passpass"
 R2_BUCKET_NAME="videohost"
 
-# Job Queue Redis Connection
-REDIS_HOST="127.0.0.1"
-REDIS_PORT="6379"
+# Job Queue Redis Connection (optional)
+REDIS_CONNECTION_URL="redis://127.0.0.1:6379"
 
 # Worker Settings
 WORKER_CONCURRENCY="2"
-  WORKER_MAX_CONCURRENT_JOBS="2"
+WORKER_MAX_CONCURRENT_JOBS="2"
 RENDITION_RESOLUTIONS="480,720,1080,2160"
 PORT="8080"
 ```
@@ -197,8 +196,6 @@ PORT="8080"
 ---
 
 ### Step 3: Database Setup
-
-Generate the Prisma Client, push the database schema to PostgreSQL, and optionally seed initial data:
 
 ```bash
 # Push schema to database

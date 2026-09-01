@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Port              int
-	WorkerSecretToken string
-	MaxConcurrentJobs int
+	Port               int
+	WorkerSecretToken  string
+	MaxConcurrentJobs  int
+	RedisConnectionURL string
 }
 
 func CleanEnv(val string, fallback string) string {
@@ -37,18 +38,23 @@ func CleanEnvInt(val string, fallback int) int {
 func LoadConfig() *Config {
 	port := CleanEnvInt(os.Getenv("WORKER_PORT"), 8080)
 	secret := CleanEnv(os.Getenv("WORKER_SECRET_TOKEN"), "")
+	redisURL := CleanEnv(os.Getenv("REDIS_CONNECTION_URL"), "")
 
 	maxJobs := CleanEnvInt(os.Getenv("WORKER_MAX_CONCURRENT_JOBS"), 0)
 	if maxJobs <= 0 {
-		maxJobs = CleanEnvInt(os.Getenv("MAX_CONCURRENT_JOBS"), 2)
+		maxJobs = CleanEnvInt(os.Getenv("MAX_CONCURRENT_JOBS"), 0)
+	}
+	if maxJobs <= 0 {
+		maxJobs = CleanEnvInt(os.Getenv("WORKER_CONCURRENCY"), 2)
 	}
 	if maxJobs <= 0 {
 		maxJobs = 2
 	}
 
 	return &Config{
-		Port:              port,
-		WorkerSecretToken: secret,
-		MaxConcurrentJobs: maxJobs,
+		Port:               port,
+		WorkerSecretToken:  secret,
+		MaxConcurrentJobs:  maxJobs,
+		RedisConnectionURL: redisURL,
 	}
 }

@@ -1,4 +1,5 @@
 import http from "http";
+import { Worker } from "bullmq";
 import { cancelActiveTranscode, cancelAllActiveJobs, processVideoJob } from "./transcoder";
 import { cancelQueuedJob, enqueueJob, getQueueStats, isJobQueuedOrActive, shutdownQueue } from "./jobQueue";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
@@ -16,9 +17,17 @@ function getEnvInt(val: string | undefined, fallback: number): number {
   return isNaN(parsed) ? fallback : parsed;
 }
 
+function getMaxConcurrentJobs(): number {
+  const raw = process.env.WORKER_MAX_CONCURRENT_JOBS ?? process.env.WORKER_CONCURRENCY ?? process.env.MAX_CONCURRENT_JOBS;
+  const parsed = parseInt((raw || "").replace(/["'\r\n]/g, "").trim(), 10);
+  return isNaN(parsed) || parsed < 1 ? 2 : parsed;
+}
+
 const PORT = getEnvInt(process.env.WORKER_PORT, 8080);
 const WORKER_SECRET_TOKEN = getEnvString(process.env.WORKER_SECRET_TOKEN);
+const REDIS_CONNECTION_URL = getEnvString(process.env.REDIS_CONNECTION_URL);
 let isShuttingDown = false;
+let bullWorker: Worker | null = null;
 
 // Helper to write JSON response with localhost conversion
 function sendJsonResponse(res: http.ServerResponse, statusCode: number, data: any) {
@@ -193,6 +202,51 @@ server.listen(PORT, () => {
   console.log(`[Worker Service] Container HTTP Server listening on port ${PORT}`);
 });
 
+// Initialize BullMQ worker if REDIS_CONNECTION_URL is configured
+if (REDIS_CONNECTION_URL) {
+  const maxConcurrency = getMaxConcurrentJobs();
+  console.log(`[Worker Service] REDIS_CONNECTION_URL configured. Initializing BullMQ worker...`);
+  try {
+    bullWorker = new Worker(
+      "video-transcode",
+      async (job) => {
+        const videoId = job.data?.videoId;
+        console.log(`[Worker BullMQ] Started processing job ${job.id} for videoId: ${videoId}`);
+        return await processVideoJob(job.data);
+      },
+      {
+        connection: {
+          url: REDIS_CONNECTION_URL,
+          maxRetriesPerRequest: null,
+        },
+        concurrency: maxConcurrency,
+      }
+    );
+
+    bullWorker.on("completed", (job) => {
+      console.log(`[Worker BullMQ] Job ${job.id} (videoId: ${job.data?.videoId}) completed successfully`);
+    });
+
+    bullWorker.on("failed", (job, err) => {
+      console.error(`[Worker BullMQ] Job ${job?.id} (videoId: ${job?.data?.videoId}) failed:`, err?.message || err);
+    });
+
+    bullWorker.on("error", (err) => {
+      console.error("[Worker BullMQ] Worker error:", err?.message || err);
+    });
+
+    bullWorker.on("stalled", (jobId) => {
+      console.warn(`[Worker BullMQ] Job ${jobId} was reported stalled`);
+    });
+
+    console.log(`[Worker Service] BullMQ worker listening on queue "video-transcode" with concurrency ${maxConcurrency}`);
+  } catch (err: any) {
+    console.error("[Worker Service] Failed to initialize BullMQ worker:", err?.message || err);
+  }
+} else {
+  console.log("[Worker Service] REDIS_CONNECTION_URL not set — running in standalone HTTP mode");
+}
+
 // Graceful SIGTERM/SIGINT handling: stop accepting new jobs, abort active encodes/uploads,
 // delete any partially uploaded dash folders/thumbnails (handled per-job), and report CANCELLED.
 async function handleShutdownSignal(signal: string) {
@@ -200,7 +254,18 @@ async function handleShutdownSignal(signal: string) {
   isShuttingDown = true;
   console.log(`[Worker Service] Received ${signal} — shutting down gracefully...`);
 
-  // Stop accepting new connections
+  // 1. Close BullMQ worker if active
+  if (bullWorker) {
+    try {
+      console.log("[Worker Service] Closing BullMQ worker...");
+      await bullWorker.close();
+      console.log("[Worker Service] BullMQ worker closed");
+    } catch (err: any) {
+      console.error("[Worker Service] Error closing BullMQ worker:", err?.message || err);
+    }
+  }
+
+  // 2. Stop accepting new HTTP connections
   server.close(() => {
     console.log("[Worker Service] HTTP server closed to new connections");
   });
@@ -212,9 +277,9 @@ async function handleShutdownSignal(signal: string) {
   (forceExit as any).unref?.();
 
   try {
-    // 1. Discard queued jobs and report CANCELLED callback
+    // 3. Discard queued jobs and report CANCELLED callback
     await shutdownQueue();
-    // 2. Cancel all active transcodes, delete partially uploaded S3 files, and report CANCELLED
+    // 4. Cancel all active transcodes, delete partially uploaded S3 files, and report CANCELLED
     await cancelAllActiveJobs(8000);
   } catch (e: any) {
     console.error("[Worker Service] Error during SIGTERM cleanup:", e?.message || e);
