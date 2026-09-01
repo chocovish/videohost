@@ -44,12 +44,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
-    // Video was cancelled or is being deleted — ignore any further updates
-    if (video.status === "CANCELLED") {
-      console.log(`[Transcode Callback] Ignoring callback for cancelled video ${videoId} (status: ${status})`);
-      return NextResponse.json({ success: true, status: "CANCELLED", ignored: true, videoId });
-    }
-
     const orgId = organizationId || video.organizationId;
 
     if (status === "PROCESSING") {
