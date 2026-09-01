@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"videohost-worker-go/internal/config"
@@ -16,9 +17,10 @@ import (
 )
 
 type Server struct {
-	cfg   *config.Config
-	queue *jobqueue.JobQueue
-	httpSrv *http.Server
+	cfg            *config.Config
+	queue          *jobqueue.JobQueue
+	httpSrv        *http.Server
+	isShuttingDown atomic.Bool
 }
 
 func NewServer(cfg *config.Config, queue *jobqueue.JobQueue) *Server {
@@ -46,6 +48,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.isShuttingDown.Store(true)
 	return s.httpSrv.Shutdown(ctx)
 }
 
@@ -99,6 +102,12 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 	// POST /transcode, /api/transcode, /process
 	if method == http.MethodPost && (urlPath == "/transcode" || urlPath == "/api/transcode" || urlPath == "/process") {
+		if s.isShuttingDown.Load() {
+			s.sendJSONResponse(w, http.StatusServiceUnavailable, map[string]any{
+				"error": "Worker is shutting down",
+			})
+			return
+		}
 		if !s.checkAuth(r) {
 			fmt.Printf("[Worker HTTP] Unauthorized trigger attempt from %s\n", r.RemoteAddr)
 			s.sendJSONResponse(w, http.StatusUnauthorized, map[string]any{

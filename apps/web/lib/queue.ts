@@ -123,6 +123,23 @@ export async function addTranscodeJob(
   // Fallback or dual-dispatch to BullMQ queue if Redis is configured and container wasn't triggered or Redis force enabled
   if (transcodeQueue && (!triggeredViaContainer || process.env.FORCE_QUEUE_DUAL_DISPATCH === "true")) {
     console.log(`[Queue Dispatch] Enqueuing job to BullMQ Redis queue for videoId: ${videoId}`);
+
+    try {
+      const existingJob = await transcodeQueue.getJob(videoId);
+      if (existingJob) {
+        const state = await existingJob.getState();
+        if (state === "active" || state === "waiting" || state === "delayed" || state === "prioritized") {
+          console.log(`[Queue Dispatch] Job for videoId ${videoId} is already ${state}. Skipping duplicate enqueue.`);
+          return existingJob;
+        }
+        // If the job is in completed, failed, or unknown state, remove the stale job so a fresh attempt can be queued
+        console.log(`[Queue Dispatch] Removing existing ${state} job for videoId ${videoId} before re-queuing.`);
+        await existingJob.remove().catch(() => {});
+      }
+    } catch (e: any) {
+      console.warn(`[Queue Dispatch] Warning checking existing BullMQ job for videoId ${videoId}:`, e?.message || e);
+    }
+
     return await transcodeQueue.add(
       "transcode",
       {
@@ -130,6 +147,7 @@ export async function addTranscodeJob(
         orgId,
       },
       {
+        jobId: videoId,
         attempts: 3,
         backoff: {
           type: "exponential",

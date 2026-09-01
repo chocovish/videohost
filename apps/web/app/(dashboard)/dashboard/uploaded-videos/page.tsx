@@ -253,7 +253,6 @@ function UploadedVideosContent() {
     setDeleteConfirm({ type: "video", id: videoId, name: title });
   };
 
-  const [cancellingVideoIds, setCancellingVideoIds] = useState<Set<string>>(new Set());
   const [retryingVideoIds, setRetryingVideoIds] = useState<Set<string>>(new Set());
 
   const handleRetryTranscode = async (e: React.MouseEvent, videoId: string) => {
@@ -273,31 +272,6 @@ function UploadedVideosContent() {
       alert("An error occurred while retrying transcoding");
     } finally {
       setRetryingVideoIds((prev) => {
-        const next = new Set(prev);
-        next.delete(videoId);
-        return next;
-      });
-    }
-  };
-
-  const handleCancelTranscode = async (e: React.MouseEvent, videoId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    setCancellingVideoIds((prev) => new Set(prev).add(videoId));
-    try {
-      const res = await fetch(`/api/v1/videos/${videoId}/cancel`, { method: "POST" });
-      if (res.ok) {
-        await refreshAll();
-      } else {
-        const data = await res.json().catch(() => null);
-        alert(data?.error || "Failed to cancel transcoding");
-      }
-    } catch (err) {
-      console.error("Error cancelling transcode:", err);
-      alert("An error occurred while cancelling transcoding");
-    } finally {
-      setCancellingVideoIds((prev) => {
         const next = new Set(prev);
         next.delete(videoId);
         return next;
@@ -999,16 +973,6 @@ function UploadedVideosContent() {
                               <Share2 className="w-4 h-4 text-muted-foreground" />
                               Share Video
                             </DropdownMenuItem>
-                            {(video.status === "QUEUED" || video.status === "PROCESSING") && (
-                              <DropdownMenuItem
-                                onClick={(e) => handleCancelTranscode(e, video.id)}
-                                disabled={cancellingVideoIds.has(video.id)}
-                                className="gap-2 font-medium text-destructive focus:text-destructive cursor-pointer"
-                              >
-                                <Ban className="w-4 h-4" />
-                                {cancellingVideoIds.has(video.id) ? "Cancelling..." : "Cancel Transcoding"}
-                              </DropdownMenuItem>
-                            )}
                             {(video.status === "FAILED" || video.status === "CANCELLED") && (
                               <DropdownMenuItem
                                 onClick={(e) => handleRetryTranscode(e, video.id)}
