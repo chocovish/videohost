@@ -2,6 +2,7 @@ import { Queue } from "bullmq";
 import { db } from "@videohost/db";
 import { parseRenditionResolutions } from "./renditions";
 import { getBaseUrl } from "./utils";
+import { getVideoOriginalS3Key } from "./s3";
 
 const redisHost = process.env.REDIS_HOST;
 const redisPort = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -43,7 +44,9 @@ export async function addTranscodeJob(
   let triggeredViaContainer = false;
 
   const video = await db.video.findUnique({ where: { id: videoId } });
-  const originalKey = video?.originalKey || `videos/${orgId}/${videoId}/original.mp4`;
+  const originalKey = video?.originalKey
+    ? getVideoOriginalS3Key(orgId, videoId, video.originalKey)
+    : `videos/${orgId}/${videoId}/original.mp4`;
   const callbackUrl = `${baseUrl}/api/v1/videos/transcode-callback`;
 
   const skipThumbnail =

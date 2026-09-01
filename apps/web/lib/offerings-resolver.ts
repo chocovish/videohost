@@ -1,5 +1,6 @@
 import { db } from "@videohost/db";
 import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveThumbnailUrl } from "@/lib/storage";
 import { formatDuration } from "@/lib/video-utils";
 import { formatCurrencyPrice } from "@/lib/utils";
 
@@ -99,9 +100,9 @@ export async function resolveOfferingItem(
 
       // Resolve cover photo from playlist videos
       for (const it of playlist.items) {
-        if (it.video?.thumbnailKey) {
+        if (it.video) {
           try {
-            coverImageUrl = await getPresignedPlaybackUrl(it.video.thumbnailKey);
+            coverImageUrl = await resolveThumbnailUrl(it.video as any);
             if (coverImageUrl) break;
           } catch (e) {}
         }
@@ -175,11 +176,9 @@ export async function resolveOfferingItem(
       deliveryFormat = "Self-paced HD Video";
       shareAccessMode = (video.shareAccessMode as any) || "PUBLIC";
 
-      if (video.thumbnailKey) {
-        try {
-          coverImageUrl = await getPresignedPlaybackUrl(video.thumbnailKey);
-        } catch (e) {}
-      }
+      try {
+        coverImageUrl = await resolveThumbnailUrl(video as any);
+      } catch (e) {}
 
       // Resolve Access & Price with accurate Currency formatting
       if (video.shareAccessMode === "PURCHASABLE") {
@@ -269,11 +268,12 @@ export async function resolveOfferingItem(
         deliveryFormat = "Interactive Live Meeting";
       }
 
-      if (meeting.recordedVideo?.thumbnailKey) {
+      if (meeting.recordedVideo) {
         try {
-          coverImageUrl = await getPresignedPlaybackUrl(meeting.recordedVideo.thumbnailKey);
+          coverImageUrl = await resolveThumbnailUrl(meeting.recordedVideo as any);
         } catch (e) {}
-      } else if (item.coverImageKey) {
+      }
+      if (!coverImageUrl && item.coverImageKey) {
         try {
           coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
         } catch (e) {}

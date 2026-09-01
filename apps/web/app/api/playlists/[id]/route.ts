@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveThumbnailUrl } from "@/lib/storage";
 import { db } from "@videohost/db";
 import { getBaseUrl } from "@/lib/utils";
 
@@ -49,7 +50,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
           totalDurationSeconds += v.durationSeconds;
         }
 
-        const thumbnailUrl = v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null;
+        const thumbnailUrl = await resolveThumbnailUrl(v as any);
         const playbackUrl = await getPlaybackUrl(v);
 
         return {

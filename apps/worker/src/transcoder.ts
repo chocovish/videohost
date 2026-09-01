@@ -245,7 +245,12 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   // Transform incoming payload URLs with localhost to host.docker.internal for worker container network calls
   const payload = useDockerHostForLocalhost(payloadInput);
 
-  const { videoId, organizationId, originalKey, callbackUrl } = payload;
+  const { videoId, organizationId, originalKey: rawOriginalKey, callbackUrl } = payload;
+  const orgId = organizationId || "default";
+  const originalKey =
+    !rawOriginalKey || !rawOriginalKey.includes("/")
+      ? `videos/${orgId}/${videoId}/${rawOriginalKey || "original.mp4"}`
+      : rawOriginalKey;
   const rawThreads =
     typeof payload.threads === "number"
       ? payload.threads

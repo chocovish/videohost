@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { getPresignedUploadUrl, uploadBufferToS3 } from "@/lib/s3";
+import { getPresignedUploadUrl, uploadBufferToS3, getVideoOriginalS3Key } from "@/lib/s3";
 
 async function getOrCreateFolder(
   organizationId: string,
@@ -117,12 +117,13 @@ export async function POST(
         },
       });
 
-      const originalKey = `videos/${orgId}/${video.id}/original.${ext}`;
-      await uploadBufferToS3(originalKey, buffer, mime);
+      const originalFileName = `original.${ext}`;
+      const originalS3Key = getVideoOriginalS3Key(orgId, video.id, originalFileName);
+      await uploadBufferToS3(originalS3Key, buffer, mime);
 
       await db.video.update({
         where: { id: video.id },
-        data: { originalKey },
+        data: { originalKey: originalFileName },
       });
 
       await db.meeting.update({
@@ -173,12 +174,13 @@ export async function POST(
         },
       });
 
-      const originalKey = `videos/${orgId}/${newVideo.id}/original.mp4`;
-      const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
+      const originalFileName = "original.mp4";
+      const originalS3Key = getVideoOriginalS3Key(orgId, newVideo.id, originalFileName);
+      const uploadUrl = await getPresignedUploadUrl(originalS3Key, "video/mp4");
 
       await db.video.update({
         where: { id: newVideo.id },
-        data: { originalKey },
+        data: { originalKey: originalFileName },
       });
 
       await db.meeting.update({
@@ -194,7 +196,7 @@ export async function POST(
         success: true,
         videoId: newVideo.id,
         uploadUrl,
-        originalKey,
+        originalKey: originalFileName,
       });
     }
   } catch (err: any) {

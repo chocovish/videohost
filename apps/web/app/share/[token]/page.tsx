@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveThumbnailUrl } from "@/lib/storage";
 import SharedContentClient from "./shared-content-client";
 
 export async function generateMetadata({
@@ -21,7 +21,7 @@ export async function generateMetadata({
       const description =
         video.description ||
         `Watch "${video.title}" shared by ${video.organization.name} on Taped.`;
-      const imageUrl = video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : "/og-image.png";
+      const imageUrl = (await resolveThumbnailUrl(video as any)) || "/og-image.png";
 
       return {
         title,
@@ -103,8 +103,8 @@ export async function generateMetadata({
       const description =
         playlist.description ||
         `Watch playlist "${playlist.title}" from ${playlist.organization.name} on Taped.`;
-      const firstThumb = playlist.items[0]?.video?.thumbnailKey;
-      const imageUrl = firstThumb ? await getPresignedPlaybackUrl(firstThumb) : "/og-image.png";
+      const firstVideo = playlist.items[0]?.video;
+      const imageUrl = (firstVideo ? await resolveThumbnailUrl(firstVideo as any) : null) || "/og-image.png";
 
       return {
         title,

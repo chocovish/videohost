@@ -69,6 +69,8 @@ export async function resolvePlaybackUrl(video: {
 }
 
 export async function resolveThumbnailUrl(video: {
+  id?: string;
+  organizationId?: string;
   storageType?: string | null;
   bunnyVideoId?: string | null;
   thumbnailKey?: string | null;
@@ -81,15 +83,15 @@ export async function resolveThumbnailUrl(video: {
     const bunnyThumb = getBunnyThumbnailUrl(video.bunnyVideoId);
     if (bunnyThumb) return bunnyThumb;
     if (video.thumbnailKey) {
-      const { getPresignedPlaybackUrl } = await import("./s3");
-      return getPresignedPlaybackUrl(video.thumbnailKey);
+      const { getThumbnailPlaybackUrl } = await import("./s3");
+      return getThumbnailPlaybackUrl(video);
     }
     return null;
   }
 
   if (video.thumbnailKey) {
-    const { getPresignedPlaybackUrl } = await import("./s3");
-    return getPresignedPlaybackUrl(video.thumbnailKey);
+    const { getThumbnailPlaybackUrl } = await import("./s3");
+    return getThumbnailPlaybackUrl(video);
   }
 
   return null;
@@ -139,7 +141,11 @@ export async function deleteVideoStorage(
   await deleteVideoFromS3(video.organizationId, video.id, video.originalKey || undefined);
 }
 
-export async function deleteThumbnailStorage(key: string | null | undefined, storageType?: string | null): Promise<void> {
+export async function deleteThumbnailStorage(
+  key: string | null | undefined,
+  storageType?: string | null,
+  context?: { organizationId?: string; videoId?: string }
+): Promise<void> {
   if (!key) return;
   // Thumbnails for bunny live inside Bunny, not S3, unless we stored them separately.
   // If storageType is bunny we assume thumbnail is on Bunny (or not needed).
@@ -148,6 +154,10 @@ export async function deleteThumbnailStorage(key: string | null | undefined, sto
     console.log(`[Storage] Bunny thumbnail delete skipped (managed by Bunny) – key=${key}`);
     return;
   }
-  const { deleteFileFromS3 } = await import("./s3");
-  await deleteFileFromS3(key);
+  const { deleteFileFromS3, getVideoThumbnailS3Key } = await import("./s3");
+  const fullKey =
+    context?.organizationId && context?.videoId
+      ? getVideoThumbnailS3Key(context.organizationId, context.videoId, key)
+      : key;
+  await deleteFileFromS3(fullKey);
 }

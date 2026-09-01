@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl, getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getPlaybackUrl, getPresignedPlaybackUrl, getVideoOriginalS3Key, getVideoThumbnailS3Key } from "@/lib/s3";
 import { getStorageType } from "@/lib/storage";
 import { db } from "@videohost/db";
 
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
         const bunnyVideoId = bunnyVideo.guid;
 
         const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-        const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
+        const thumbnailFileName = `thumbnail-${unique}.webp`;
 
         await db.video.update({
           where: { id: video.id },
@@ -114,7 +114,7 @@ export async function POST(req: Request) {
             bunnyVideoId,
             bunnyLibraryId: cfg.libraryId,
             bunnyCollectionId: collectionId,
-            thumbnailKey, // keep for S3 thumbnail fallback; Bunny thumb uploaded via proxy
+            thumbnailKey: thumbnailFileName, // keep for S3 thumbnail fallback; Bunny thumb uploaded via proxy
             storageMeta: {
               provider: "bunny",
               libraryId: cfg.libraryId,
@@ -182,18 +182,20 @@ export async function POST(req: Request) {
 
     const resolvedContentType = contentType || (ext === "mkv" ? "video/x-matroska" : "video/mp4");
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const originalKey = `videos/${orgId}/${video.id}/original.${ext}`;
-    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const originalFileName = `original.${ext}`;
+    const thumbnailFileName = `thumbnail-${unique}.webp`;
+    const originalS3Key = getVideoOriginalS3Key(orgId, video.id, originalFileName);
+    const thumbnailS3Key = getVideoThumbnailS3Key(orgId, video.id, thumbnailFileName);
 
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey, thumbnailKey, storageType: "s3" },
+      data: { originalKey: originalFileName, thumbnailKey: thumbnailFileName, storageType: "s3" },
     });
 
-    const uploadUrl = await getPresignedUploadUrl(originalKey, resolvedContentType);
-    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
+    const uploadUrl = await getPresignedUploadUrl(originalS3Key, resolvedContentType);
+    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailS3Key, "image/webp");
 
-    console.log(`[Upload Init S3] video ${video.id} → key ${originalKey}`);
+    console.log(`[Upload Init S3] video ${video.id} → key ${originalS3Key}`);
 
     return NextResponse.json({
       id: video.id,
@@ -204,7 +206,7 @@ export async function POST(req: Request) {
       storageType: "s3",
       uploadUrl,
       thumbnailUploadUrl,
-      originalKey,
+      originalKey: originalFileName,
       createdAt: video.createdAt,
     });
   } catch (err) {

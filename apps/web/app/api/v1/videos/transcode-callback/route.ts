@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl, deleteFileFromS3 } from "@/lib/s3";
+import { getPresignedPlaybackUrl, deleteFileFromS3, getVideoThumbnailS3Key, extractFileName } from "@/lib/s3";
 
 export async function POST(req: Request) {
   try {
@@ -91,32 +91,9 @@ export async function POST(req: Request) {
           ? BigInt(payload.combinedSizeBytes)
           : BigInt(Number(payload.originalSizeBytes || 0) + totalRenditionsSizeBytes);
 
-      let thumbnailKey: string | null = null;
-      if (incomingThumb) {
-        if (incomingThumb.includes("/o/")) {
-          thumbnailKey = incomingThumb.split("/o/")[1];
-        } else if (incomingThumb.includes("/videohost/")) {
-          thumbnailKey = incomingThumb.split("/videohost/")[1];
-        } else if (incomingThumb.startsWith("http://") || incomingThumb.startsWith("https://")) {
-          const parts = incomingThumb.split("/");
-          thumbnailKey = parts.slice(-3).join("/");
-          try {
-            const parsedUrl = new URL(incomingThumb);
-            const pathParts = parsedUrl.pathname.replace(/^\/+/, "").split("/");
-            if (pathParts[0] === "videohost" || (process.env.R2_BUCKET_NAME && pathParts[0] === process.env.R2_BUCKET_NAME)) {
-              pathParts.shift();
-            }
-            thumbnailKey = pathParts.join("/");
-          } catch {
-            thumbnailKey = incomingThumb;
-          }
-        } else {
-          thumbnailKey = incomingThumb;
-        }
-      }
-
+      const incomingThumbFileName = incomingThumb ? extractFileName(incomingThumb) : null;
       const oldThumbKey = video.thumbnailKey;
-      const finalThumbKey = thumbnailKey || oldThumbKey;
+      const finalThumbFileName = incomingThumbFileName || oldThumbKey;
 
       await db.video.update({
         where: { id: videoId },
@@ -127,24 +104,26 @@ export async function POST(req: Request) {
           durationSeconds: durationSeconds || 0,
           sourceWidth: sourceWidth || 1280,
           sourceHeight: sourceHeight || 720,
-          thumbnailKey: finalThumbKey,
+          thumbnailKey: finalThumbFileName,
         },
       });
 
-      if (oldThumbKey && thumbnailKey && oldThumbKey !== thumbnailKey) {
-        deleteFileFromS3(oldThumbKey).catch((err) =>
+      if (oldThumbKey && incomingThumbFileName && oldThumbKey !== incomingThumbFileName) {
+        const oldThumbS3Key = getVideoThumbnailS3Key(orgId, videoId, oldThumbKey);
+        deleteFileFromS3(oldThumbS3Key).catch((err) =>
           console.error("[Transcode Callback] Failed to delete old thumbnail from S3:", err)
         );
       }
 
-      console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes (thumbnail: ${finalThumbKey || "none"})`);
+      console.log(`[Transcode Callback] Video ${videoId} marked READY with total size: ${combinedSizeBytes} bytes (thumbnail: ${finalThumbFileName || "none"})`);
 
       // Dispatch Webhooks
+      const finalThumbS3Key = finalThumbFileName ? getVideoThumbnailS3Key(orgId, videoId, finalThumbFileName) : null;
       triggerWebhooks(orgId, "video.ready", {
         videoId,
         title: video.title,
         durationSeconds,
-        thumbnailUrl: thumbnailKey ? await getPresignedPlaybackUrl(thumbnailKey) : null,
+        thumbnailUrl: finalThumbS3Key ? await getPresignedPlaybackUrl(finalThumbS3Key) : null,
       });
 
       return NextResponse.json({ success: true, status: "READY", videoId });

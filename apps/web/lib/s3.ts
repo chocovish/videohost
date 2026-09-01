@@ -137,6 +137,68 @@ export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeco
   return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 }
 
+/**
+ * Constructs the canonical S3 object key for a video file or rendition.
+ * If the provided key/filename is already a full key (starts with 'videos/' or contains a slash),
+ * it is normalized; otherwise, it is prefixed with `videos/${organizationId}/${videoId}/${cleanFileName}`.
+ */
+export function getVideoS3Key(organizationId: string, videoId: string, fileNameOrKey?: string | null): string {
+  if (!fileNameOrKey) return "";
+  const trimmed = fileNameOrKey.trim();
+  if (!trimmed) return "";
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("data:") ||
+    trimmed.startsWith("//")
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("videos/")) {
+    return trimmed;
+  }
+  if (trimmed.includes("/") && !trimmed.startsWith("/")) {
+    return `videos/${trimmed}`;
+  }
+  const cleanFileName = trimmed.replace(/^\/+/, "");
+  return `videos/${organizationId}/${videoId}/${cleanFileName}`;
+}
+
+export function getVideoOriginalS3Key(organizationId: string, videoId: string, originalKey?: string | null): string {
+  const fileName = originalKey?.trim() || "original.mp4";
+  return getVideoS3Key(organizationId, videoId, fileName);
+}
+
+export function getVideoThumbnailS3Key(organizationId: string, videoId: string, thumbnailKey?: string | null): string {
+  if (!thumbnailKey) return "";
+  return getVideoS3Key(organizationId, videoId, thumbnailKey);
+}
+
+/**
+ * Extracts just the filename from a full S3 key, relative key, or URL.
+ * e.g. "videos/org123/vid456/original.mp4" -> "original.mp4"
+ *      "videos/org123/vid456/thumbnail-123.webp" -> "thumbnail-123.webp"
+ *      "original.mp4" -> "original.mp4"
+ */
+export function extractFileName(keyOrUrl?: string | null): string {
+  if (!keyOrUrl) return "";
+  const trimmed = keyOrUrl.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      const url = new URL(trimmed);
+      const pathname = url.pathname.replace(/^\/+/, "");
+      const segments = pathname.split("/");
+      return segments[segments.length - 1] || "";
+    } catch {
+      const segments = trimmed.split("/");
+      return segments[segments.length - 1] || "";
+    }
+  }
+  const segments = trimmed.replace(/^\/+/, "").split("/");
+  return segments[segments.length - 1] || "";
+}
+
 export function getRenditionPlaybackUrl(storageKey: string): string {
   if (!storageKey) return "";
   if (storageKey.startsWith("http://") || storageKey.startsWith("https://")) {
@@ -198,10 +260,13 @@ export async function getPlaybackUrl(video: {
     }
     return getDashPlaybackUrl(video.organizationId, video.id);
   }
-  return await getPresignedPlaybackUrl(video.originalKey);
+  const fullOriginalKey = getVideoOriginalS3Key(video.organizationId, video.id, video.originalKey);
+  return await getPresignedPlaybackUrl(fullOriginalKey);
 }
 
 export async function getThumbnailPlaybackUrl(video: {
+  id?: string;
+  organizationId?: string;
   thumbnailKey?: string | null;
   storageType?: string | null;
   bunnyVideoId?: string | null;
@@ -214,7 +279,13 @@ export async function getThumbnailPlaybackUrl(video: {
       if (thumb) return thumb;
     } catch {}
   }
-  if (video.thumbnailKey) return getPresignedPlaybackUrl(video.thumbnailKey);
+  if (video.thumbnailKey) {
+    const fullThumbnailKey =
+      video.organizationId && video.id
+        ? getVideoThumbnailS3Key(video.organizationId, video.id, video.thumbnailKey)
+        : video.thumbnailKey;
+    return getPresignedPlaybackUrl(fullThumbnailKey);
+  }
   return null;
 }
 
@@ -303,14 +374,17 @@ export async function deleteVideoFromS3(
     } while (continuationToken);
   }
 
-  if (originalKey && !prefixes.some((p) => originalKey.startsWith(p))) {
-    console.log(`[S3 Delete] Deleting standalone originalKey: "${originalKey}"...`);
-    try {
-      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: originalKey }));
-      totalDeleted++;
-      console.log(`[S3 Delete] Successfully deleted standalone originalKey: "${originalKey}"`);
-    } catch (err) {
-      console.error(`[S3 Delete Error] Failed to delete originalKey "${originalKey}" from S3:`, err);
+  if (originalKey) {
+    const resolvedKey = getVideoOriginalS3Key(organizationId, videoId, originalKey);
+    if (resolvedKey && !prefixes.some((p) => resolvedKey.startsWith(p))) {
+      console.log(`[S3 Delete] Deleting standalone originalKey: "${resolvedKey}"...`);
+      try {
+        await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: resolvedKey }));
+        totalDeleted++;
+        console.log(`[S3 Delete] Successfully deleted standalone originalKey: "${resolvedKey}"`);
+      } catch (err) {
+        console.error(`[S3 Delete Error] Failed to delete originalKey "${resolvedKey}" from S3:`, err);
+      }
     }
   }
 

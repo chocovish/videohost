@@ -234,8 +234,8 @@ model Video {
   sizeBytes        BigInt?
   sourceWidth      Int?
   sourceHeight     Int?
-  originalKey      String      // R2 object key (or bunny GUID when storageType=bunny)
-  thumbnailKey     String?
+  originalKey      String      // S3 object filename e.g. "original.mp4" (or bunny GUID when storageType=bunny)
+  thumbnailKey     String?     // S3 thumbnail filename e.g. "thumbnail-xxx.webp"
   spriteUrl        String?
   requireHls       Boolean     @default(false)
   storageType      String      @default("s3") // "s3" | "bunny"

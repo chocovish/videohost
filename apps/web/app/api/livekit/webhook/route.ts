@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { WebhookReceiver, EgressStatus } from "livekit-server-sdk";
 import { db } from "@videohost/db";
 import { getLiveKitCredentials, getRoomServiceClient, getEgressClient } from "@/lib/livekit";
+import { extractFileName } from "@/lib/s3";
 
 const BOT_IDENTITIES = ["egress-recorder-bot"];
 
@@ -188,9 +189,13 @@ export async function POST(req: NextRequest) {
 
       // Fallback lookup video by originalKey
       if (!existingVideo && s3Key) {
+        const s3FileName = extractFileName(s3Key);
         existingVideo = await db.video.findFirst({
           where: {
-            originalKey: s3Key,
+            OR: [
+              { originalKey: s3Key },
+              ...(s3FileName ? [{ originalKey: s3FileName }] : []),
+            ],
           },
         });
       }
@@ -222,6 +227,7 @@ export async function POST(req: NextRequest) {
 
       if (existingVideo) {
         if (isSuccessfulStatus) {
+          const originalFileName = s3Key ? (extractFileName(s3Key) || "original.mp4") : undefined;
           // Update existing Video entry to READY with file size & duration
           await db.video.update({
             where: { id: existingVideo.id },
@@ -230,7 +236,7 @@ export async function POST(req: NextRequest) {
               progress: 100,
               durationSeconds: durationSeconds ?? existingVideo.durationSeconds,
               sizeBytes: sizeBytes ?? existingVideo.sizeBytes,
-              ...(s3Key ? { originalKey: s3Key } : {}),
+              ...(originalFileName ? { originalKey: originalFileName } : {}),
             },
           });
 
@@ -281,6 +287,7 @@ export async function POST(req: NextRequest) {
             ? `${meeting.title} (Part ${existingCount + 1})`
             : `${meeting.title}`;
 
+        const originalFileName = extractFileName(s3Key) || "original.mp4";
         const createdVideo = await db.video.create({
           data: {
             organizationId: meeting.organizationId,
@@ -293,7 +300,7 @@ export async function POST(req: NextRequest) {
             }).format(new Date())}).`,
             status: "READY",
             progress: 100,
-            originalKey: s3Key,
+            originalKey: originalFileName,
             requireHls: false,
             durationSeconds,
             sizeBytes,

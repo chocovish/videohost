@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
 import { getEgressClient } from "@/lib/livekit";
+import { getVideoOriginalS3Key } from "@/lib/s3";
 import { EncodedFileOutput, EncodedFileType, S3Upload, EncodingOptionsPreset, EgressStatus } from "livekit-server-sdk";
 
 /**
@@ -180,12 +181,13 @@ export async function POST(
 
           createdVideoId = video.id;
 
-          // 5. Canonical storage path identical to normal uploaded videos: videos/{organizationId}/{videoId}/original.mp4
-          const storageKey = `videos/${meeting.organizationId}/${video.id}/original.mp4`;
+          // 5. Canonical storage path: videos/{organizationId}/{videoId}/original.mp4
+          const originalFileName = "original.mp4";
+          const storageKey = getVideoOriginalS3Key(meeting.organizationId, video.id, originalFileName);
 
           await db.video.update({
             where: { id: video.id },
-            data: { originalKey: storageKey },
+            data: { originalKey: originalFileName },
           });
 
           let fileOutput: EncodedFileOutput;

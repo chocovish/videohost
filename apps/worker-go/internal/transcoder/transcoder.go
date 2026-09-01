@@ -178,6 +178,8 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 
 	if payload.OriginalKey == "" {
 		payload.OriginalKey = fmt.Sprintf("videos/%s/%s/original.mp4", orgId, videoId)
+	} else if !strings.Contains(payload.OriginalKey, "/") {
+		payload.OriginalKey = fmt.Sprintf("videos/%s/%s/%s", orgId, videoId, payload.OriginalKey)
 	}
 
 	threadCount := payload.Threads

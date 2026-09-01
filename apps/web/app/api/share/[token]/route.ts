@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@videohost/db";
 import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveThumbnailUrl } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { verifySharePassJwt, SHARE_OTP_COOKIE_NAME } from "@/lib/share-otp";
 
@@ -371,11 +372,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           });
         }
 
-        const firstThumbnailKey = isVideo
-          ? video?.thumbnailKey
-          : playlist?.items[0]?.video?.thumbnailKey;
-        const previewThumbnailUrl = firstThumbnailKey
-          ? await getPresignedPlaybackUrl(firstThumbnailKey)
+        const previewThumbnailUrl = isVideo && video
+          ? await resolveThumbnailUrl(video as any)
+          : playlist?.items[0]?.video
+          ? await resolveThumbnailUrl(playlist.items[0].video as any)
           : null;
 
         return NextResponse.json({
@@ -453,7 +453,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           description: video.description,
           status: video.status,
           durationSeconds: video.durationSeconds,
-          thumbnailUrl: video.thumbnailKey ? await getPresignedPlaybackUrl(video.thumbnailKey) : null,
+          thumbnailUrl: await resolveThumbnailUrl(video as any),
           playbackUrl: await getPlaybackUrl(video),
           createdAt: video.createdAt,
         },
@@ -477,7 +477,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
             description: v.description,
             status: v.status,
             durationSeconds: v.durationSeconds,
-            thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+            thumbnailUrl: await resolveThumbnailUrl(v as any),
             playbackUrl: await getPlaybackUrl(v),
             createdAt: v.createdAt,
           };
@@ -534,7 +534,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         description: v.description,
         status: v.status,
         durationSeconds: v.durationSeconds,
-        thumbnailUrl: v.thumbnailKey ? await getPresignedPlaybackUrl(v.thumbnailKey) : null,
+        thumbnailUrl: await resolveThumbnailUrl(v as any),
         playbackUrl: await getPlaybackUrl(v),
         createdAt: v.createdAt,
       })));

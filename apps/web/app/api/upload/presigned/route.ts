@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { getOrganizationUsage } from "@/lib/usage";
-import { getPresignedUploadUrl } from "@/lib/s3";
+import { getPresignedUploadUrl, getVideoOriginalS3Key, getVideoThumbnailS3Key } from "@/lib/s3";
 import { getStorageType } from "@/lib/storage";
 import { db } from "@videohost/db";
 
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         const bunnyVideo = await createBunnyVideo({ title, collectionId });
         const bunnyVideoId = bunnyVideo.guid;
         const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-        const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
+        const thumbnailFileName = `thumbnail-${unique}.webp`;
 
         await db.video.update({
           where: { id: video.id },
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
             bunnyVideoId,
             bunnyLibraryId: cfg.libraryId,
             bunnyCollectionId: collectionId,
-            thumbnailKey,
+            thumbnailKey: thumbnailFileName,
             storageMeta: { provider: "bunny", libraryId: cfg.libraryId, collectionId, collectionName, bunnyGuid: bunnyVideoId } as any,
           },
         });
@@ -140,24 +140,26 @@ export async function POST(req: Request) {
 
     // --------- S3 PATH (default) ---------
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const originalKey = `videos/${orgId}/${video.id}/original.mp4`;
-    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const originalFileName = "original.mp4";
+    const thumbnailFileName = `thumbnail-${unique}.webp`;
+    const originalS3Key = getVideoOriginalS3Key(orgId, video.id, originalFileName);
+    const thumbnailS3Key = getVideoThumbnailS3Key(orgId, video.id, thumbnailFileName);
 
     await db.video.update({
       where: { id: video.id },
-      data: { originalKey, thumbnailKey, storageType: "s3" },
+      data: { originalKey: originalFileName, thumbnailKey: thumbnailFileName, storageType: "s3" },
     });
 
-    const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
-    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
+    const uploadUrl = await getPresignedUploadUrl(originalS3Key, "video/mp4");
+    const thumbnailUploadUrl = await getPresignedUploadUrl(thumbnailS3Key, "image/webp");
 
-    console.log(`[Presigned S3] video ${video.id} → key ${originalKey}`);
+    console.log(`[Presigned S3] video ${video.id} → key ${originalS3Key}`);
 
     return NextResponse.json({
       videoId: video.id,
       uploadUrl,
       thumbnailUploadUrl,
-      key: originalKey,
+      key: originalS3Key,
       storageType: "s3",
     });
   } catch (error: any) {

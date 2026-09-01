@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPresignedUploadUrl, getPresignedPlaybackUrl, deleteFileFromS3 } from "@/lib/s3";
+import { getPresignedUploadUrl, getPresignedPlaybackUrl, deleteFileFromS3, getVideoThumbnailS3Key } from "@/lib/s3";
 import { db } from "@videohost/db";
 
 export async function POST(req: Request) {
@@ -33,35 +33,38 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Bunny video GUID missing" }, { status: 500 });
       }
       const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
-      await db.video.update({ where: { id: videoId }, data: { thumbnailKey } });
+      const thumbnailFileName = `thumbnail-${unique}.webp`;
+      await db.video.update({ where: { id: videoId }, data: { thumbnailKey: thumbnailFileName } });
 
       // For Bunny, client should PUT to the bunny thumbnail proxy
       const proxyUrl = `/api/bunny/thumbnail/${video.id}`;
       console.log(`[Thumbnail Bunny] video ${videoId} guid=${bunnyVideoId} → proxy ${proxyUrl}`);
       // Also provide presigned S3 fallback thumbnailUrl for UI preview (not used for Bunny)
-      const thumbnailUrl = await getPresignedPlaybackUrl(thumbnailKey);
+      const thumbnailS3Key = getVideoThumbnailS3Key(orgId, video.id, thumbnailFileName);
+      const thumbnailUrl = await getPresignedPlaybackUrl(thumbnailS3Key);
       return NextResponse.json({ uploadUrl: proxyUrl, thumbnailUrl, storageType: "bunny", proxyUrl });
     }
 
     const oldThumbnailKey = video.thumbnailKey;
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const thumbnailFileName = `thumbnail-${unique}.webp`;
+    const thumbnailS3Key = getVideoThumbnailS3Key(orgId, video.id, thumbnailFileName);
 
     await db.video.update({
       where: { id: videoId },
-      data: { thumbnailKey },
+      data: { thumbnailKey: thumbnailFileName },
     });
 
     // Delete previous thumbnail from S3 to prevent orphaned files
-    if (oldThumbnailKey && oldThumbnailKey !== thumbnailKey) {
-      deleteFileFromS3(oldThumbnailKey).catch((err) =>
+    if (oldThumbnailKey && oldThumbnailKey !== thumbnailFileName) {
+      const oldS3Key = getVideoThumbnailS3Key(orgId, video.id, oldThumbnailKey);
+      deleteFileFromS3(oldS3Key).catch((err) =>
         console.error("Failed to delete old thumbnail from S3:", err)
       );
     }
 
-    const uploadUrl = await getPresignedUploadUrl(thumbnailKey, "image/webp");
-    const thumbnailUrl = await getPresignedPlaybackUrl(thumbnailKey);
+    const uploadUrl = await getPresignedUploadUrl(thumbnailS3Key, "image/webp");
+    const thumbnailUrl = await getPresignedPlaybackUrl(thumbnailS3Key);
 
     return NextResponse.json({ uploadUrl, thumbnailUrl, storageType: "s3" });
   } catch (error: any) {
