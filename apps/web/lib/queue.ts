@@ -4,7 +4,7 @@ import { parseRenditionResolutions } from "./renditions";
 import { getBaseUrl } from "./utils";
 import { getVideoOriginalS3Key } from "./s3";
 
-const redisConnectionUrl = (process.env.REDIS_CONNECTION_URL || "").replace(/^["']|["']$/g, "").trim();
+const redisConnectionUrl = (process.env.REDIS_URL || "").replace(/^["']|["']$/g, "").trim();
 
 declare global {
   // eslint-disable-next-line no-var

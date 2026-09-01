@@ -184,7 +184,7 @@ R2_SECRET_ACCESS_KEY="passpass"
 R2_BUCKET_NAME="videohost"
 
 # Job Queue Redis Connection (optional)
-REDIS_CONNECTION_URL="redis://127.0.0.1:6379"
+REDIS_URL="redis://127.0.0.1:6379"
 
 # Worker Settings
 WORKER_CONCURRENCY="2"

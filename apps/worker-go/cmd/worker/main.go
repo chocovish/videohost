@@ -43,10 +43,10 @@ func main() {
 	var workerCancel context.CancelFunc
 
 	if cfg.RedisConnectionURL != "" {
-		fmt.Println("[Worker Service] REDIS_CONNECTION_URL is set. Initializing gobullmq worker...")
+		fmt.Println("[Worker Service] REDIS_URL is set. Initializing gobullmq worker...")
 		opts, err := redis.ParseURL(cfg.RedisConnectionURL)
 		if err != nil {
-			fmt.Printf("[Worker BullMQ] Failed to parse REDIS_CONNECTION_URL: %v\n", err)
+			fmt.Printf("[Worker BullMQ] Failed to parse REDIS_URL: %v\n", err)
 		} else {
 			redisClient = redis.NewClient(opts)
 			pingCtx, pingCancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -113,7 +113,7 @@ func main() {
 			}
 		}
 	} else {
-		fmt.Println("[Worker Service] REDIS_CONNECTION_URL not set — running in standalone HTTP mode")
+		fmt.Println("[Worker Service] REDIS_URL not set — running in standalone HTTP mode")
 	}
 
 	<-stopChan

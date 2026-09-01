@@ -38,7 +38,7 @@ func CleanEnvInt(val string, fallback int) int {
 func LoadConfig() *Config {
 	port := CleanEnvInt(os.Getenv("WORKER_PORT"), 8080)
 	secret := CleanEnv(os.Getenv("WORKER_SECRET_TOKEN"), "")
-	redisURL := CleanEnv(os.Getenv("REDIS_CONNECTION_URL"), "")
+	redisURL := CleanEnv(os.Getenv("REDIS_URL"), "")
 
 	maxJobs := CleanEnvInt(os.Getenv("WORKER_MAX_CONCURRENT_JOBS"), 0)
 	if maxJobs <= 0 {

@@ -25,7 +25,7 @@ function getMaxConcurrentJobs(): number {
 
 const PORT = getEnvInt(process.env.WORKER_PORT, 8080);
 const WORKER_SECRET_TOKEN = getEnvString(process.env.WORKER_SECRET_TOKEN);
-const REDIS_CONNECTION_URL = getEnvString(process.env.REDIS_CONNECTION_URL);
+const REDIS_URL = getEnvString(process.env.REDIS_URL);
 let isShuttingDown = false;
 let bullWorker: Worker | null = null;
 
@@ -202,10 +202,10 @@ server.listen(PORT, () => {
   console.log(`[Worker Service] Container HTTP Server listening on port ${PORT}`);
 });
 
-// Initialize BullMQ worker if REDIS_CONNECTION_URL is configured
-if (REDIS_CONNECTION_URL) {
+// Initialize BullMQ worker if REDIS_URL is configured
+if (REDIS_URL) {
   const maxConcurrency = getMaxConcurrentJobs();
-  console.log(`[Worker Service] REDIS_CONNECTION_URL configured. Initializing BullMQ worker...`);
+  console.log(`[Worker Service] REDIS_URL configured. Initializing BullMQ worker...`);
   try {
     bullWorker = new Worker(
       "video-transcode",
@@ -216,7 +216,7 @@ if (REDIS_CONNECTION_URL) {
       },
       {
         connection: {
-          url: REDIS_CONNECTION_URL,
+          url: REDIS_URL,
           maxRetriesPerRequest: null,
         },
         concurrency: maxConcurrency,
@@ -244,7 +244,7 @@ if (REDIS_CONNECTION_URL) {
     console.error("[Worker Service] Failed to initialize BullMQ worker:", err?.message || err);
   }
 } else {
-  console.log("[Worker Service] REDIS_CONNECTION_URL not set — running in standalone HTTP mode");
+  console.log("[Worker Service] REDIS_URL not set — running in standalone HTTP mode");
 }
 
 // Graceful SIGTERM/SIGINT handling: stop accepting new jobs, abort active encodes/uploads,
