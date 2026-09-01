@@ -117,7 +117,7 @@ export async function POST(
         },
       });
 
-      const originalKey = `${orgId}/${video.id}/original.${ext}`;
+      const originalKey = `videos/${orgId}/${video.id}/original.${ext}`;
       await uploadBufferToS3(originalKey, buffer, mime);
 
       await db.video.update({
@@ -173,7 +173,7 @@ export async function POST(
         },
       });
 
-      const originalKey = `${orgId}/${newVideo.id}/original.mp4`;
+      const originalKey = `videos/${orgId}/${newVideo.id}/original.mp4`;
       const uploadUrl = await getPresignedUploadUrl(originalKey, "video/mp4");
 
       await db.video.update({

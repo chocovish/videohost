@@ -104,7 +104,7 @@ export async function POST(req: Request) {
         const bunnyVideoId = bunnyVideo.guid;
 
         const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-        const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+        const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
         await db.video.update({
           where: { id: video.id },
@@ -182,8 +182,8 @@ export async function POST(req: Request) {
 
     const resolvedContentType = contentType || (ext === "mkv" ? "video/x-matroska" : "video/mp4");
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const originalKey = `${orgId}/${video.id}/original.${ext}`;
-    const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const originalKey = `videos/${orgId}/${video.id}/original.${ext}`;
+    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
     await db.video.update({
       where: { id: video.id },

@@ -20,7 +20,6 @@ export interface S3ConfigContext {
   secretAccessKey: string;
   bucket: string;
   region?: string;
-  cdnHost?: string;
 }
 
 function getRegionFromEndpoint(endpoint: string, overrideRegion?: string): string {
@@ -47,7 +46,6 @@ export function getS3ClientAndBucket(config: S3ConfigContext) {
   const secretAccessKey = config.secretAccessKey || "passpass";
   const bucket = config.bucket || "videohost";
   const region = getRegionFromEndpoint(rawEndpoint, config.region);
-  const cdnHost = config.cdnHost || `${rawEndpoint}/${bucket}`;
 
   const client = new S3Client({
     region,
@@ -58,7 +56,7 @@ export function getS3ClientAndBucket(config: S3ConfigContext) {
     responseChecksumValidation: "WHEN_REQUIRED",
   });
 
-  return { client, bucket, cdnHost };
+  return { client, bucket };
 }
 
 export async function ensureBucketExists(config: S3ConfigContext): Promise<void> {
@@ -145,7 +143,7 @@ export async function uploadStreamToS3(
 ): Promise<string> {
   if (signal?.aborted) throw new Error("JOB_CANCELLED");
   await ensureBucketExists(config);
-  const { client: s3, bucket: BUCKET_NAME, cdnHost } = getS3ClientAndBucket(config);
+  const { client: s3, bucket: BUCKET_NAME } = getS3ClientAndBucket(config);
 
   const upload = new Upload({
     client: s3,
@@ -173,7 +171,7 @@ export async function uploadStreamToS3(
   } else {
     await upload.done();
   }
-  return `${cdnHost.replace(/\/$/, "")}/${key}`;
+  return key;
 }
 
 export async function uploadFileToS3(

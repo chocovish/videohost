@@ -18,6 +18,7 @@
     "db:generate": "npm run --prefix packages/db generate",
     "db:push": "npm run --prefix packages/db push",
     "db:seed": "npm run --prefix packages/db seed",
+    "db:migrate-keys": "node scripts/migrate-video-s3-keys.js",
     "test:worker": "node scripts/test-worker.js",
     "test:worker-go": "go test -C apps/worker-go -v ./...",
     "livekit:up": "docker compose -f docker-compose.livekit.yml up -d",

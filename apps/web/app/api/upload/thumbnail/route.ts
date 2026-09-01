@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Bunny video GUID missing" }, { status: 500 });
       }
       const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+      const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
       await db.video.update({ where: { id: videoId }, data: { thumbnailKey } });
 
       // For Bunny, client should PUT to the bunny thumbnail proxy
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
     const oldThumbnailKey = video.thumbnailKey;
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
     await db.video.update({
       where: { id: videoId },

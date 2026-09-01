@@ -180,8 +180,8 @@ export async function POST(
 
           createdVideoId = video.id;
 
-          // 5. Canonical storage path identical to normal uploaded videos: {organizationId}/{videoId}/original.mp4
-          const storageKey = `${meeting.organizationId}/${video.id}/original.mp4`;
+          // 5. Canonical storage path identical to normal uploaded videos: videos/{organizationId}/{videoId}/original.mp4
+          const storageKey = `videos/${meeting.organizationId}/${video.id}/original.mp4`;
 
           await db.video.update({
             where: { id: video.id },

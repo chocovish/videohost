@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         const bunnyVideo = await createBunnyVideo({ title, collectionId });
         const bunnyVideoId = bunnyVideo.guid;
         const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-        const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+        const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
         await db.video.update({
           where: { id: video.id },
@@ -140,8 +140,8 @@ export async function POST(req: Request) {
 
     // --------- S3 PATH (default) ---------
     const unique = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-    const originalKey = `${orgId}/${video.id}/original.mp4`;
-    const thumbnailKey = `${orgId}/${video.id}/thumbnail-${unique}.webp`;
+    const originalKey = `videos/${orgId}/${video.id}/original.mp4`;
+    const thumbnailKey = `videos/${orgId}/${video.id}/thumbnail-${unique}.webp`;
 
     await db.video.update({
       where: { id: video.id },

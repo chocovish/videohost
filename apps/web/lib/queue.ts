@@ -37,13 +37,13 @@ export async function addTranscodeJob(
   const workerSecret = process.env.WORKER_SECRET_TOKEN;
 
   const baseUrl = getBaseUrl();
-  const r2Endpoint = process.env.R2_ENDPOINT || "http://localhost:9000";
-  const cdnHost = `${r2Endpoint}/${process.env.R2_BUCKET_NAME}`;
+  const r2Endpoint = (process.env.R2_ENDPOINT || "http://localhost:9000").replace(/^["']|["']$/g, "").trim();
+  const bucketName = (process.env.R2_BUCKET_NAME || "videohost").replace(/^["']|["']$/g, "").trim();
 
   let triggeredViaContainer = false;
 
   const video = await db.video.findUnique({ where: { id: videoId } });
-  const originalKey = video?.originalKey || `${orgId}/${videoId}/original.mp4`;
+  const originalKey = video?.originalKey || `videos/${orgId}/${videoId}/original.mp4`;
   const callbackUrl = `${baseUrl}/api/v1/videos/transcode-callback`;
 
   const skipThumbnail =
@@ -60,9 +60,8 @@ export async function addTranscodeJob(
     endpoint: r2Endpoint,
     accessKeyId: (process.env.R2_ACCESS_KEY_ID || "minioadmin").replace(/^["']|["']$/g, "").trim(),
     secretAccessKey: (process.env.R2_SECRET_ACCESS_KEY || "passpass").replace(/^["']|["']$/g, "").trim(),
-    bucket: (process.env.R2_BUCKET_NAME || "videohost").replace(/^["']|["']$/g, "").trim(),
+    bucket: bucketName,
     region,
-    cdnHost,
   };
 
   const renditions = parseRenditionResolutions();

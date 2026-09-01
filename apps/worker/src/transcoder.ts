@@ -482,7 +482,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
         : true;
 
     const orgId = organizationId || "default";
-    const s3DashPrefix = `${orgId}/${videoId}/dash`;
+    const s3DashPrefix = `videos/${orgId}/${videoId}/dash`;
     s3ThumbKey = null;
 
     if (shouldGenerateThumbnail) {
@@ -511,7 +511,7 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
 
       assertNotCancelled();
 
-      s3ThumbKey = `${orgId}/${videoId}/${thumbFileName}`;
+      s3ThumbKey = `videos/${orgId}/${videoId}/${thumbFileName}`;
       console.log(`[Worker] Uploading thumbnail (${thumbFileName}) to R2...`);
       await uploadFileToS3(thumbnailPath, s3ThumbKey, "image/webp", payload.s3, controller.signal);
     } else {
@@ -626,9 +626,11 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
       console.log(`[Worker] Transcode job for video ${videoId} was cancelled — cleaning up S3 and reporting CANCELLED`);
       // Delete any partially uploaded dash data and thumbnail (best-effort)
       const orgIdForCleanup = payload.organizationId || organizationId || "default";
-      const dashPrefix = `${orgIdForCleanup}/${videoId}/dash`;
+      const dashPrefix = `videos/${orgIdForCleanup}/${videoId}/dash`;
+      const legacyDashPrefix = `${orgIdForCleanup}/${videoId}/dash`;
       try {
         await deleteS3Prefix(dashPrefix, payload.s3);
+        await deleteS3Prefix(legacyDashPrefix, payload.s3);
         console.log(`[Worker] Cleaned up S3 dash prefix for cancelled video ${videoId}`);
       } catch (cleanupErr: any) {
         console.error(`[Worker] Failed to cleanup S3 prefix for cancelled video ${videoId}:`, cleanupErr?.message || cleanupErr);

@@ -79,7 +79,7 @@ export async function POST(req: Request) {
               videoId,
               resolution: rend.resolution,
               bitrateKbps: rend.bitrateKbps,
-              storageKey: genericStorageKey || `${orgId}/${videoId}/dash`,
+              storageKey: genericStorageKey || `videos/${orgId}/${videoId}/dash`,
               sizeBytes: BigInt(rSize),
             },
           });
@@ -100,6 +100,16 @@ export async function POST(req: Request) {
         } else if (incomingThumb.startsWith("http://") || incomingThumb.startsWith("https://")) {
           const parts = incomingThumb.split("/");
           thumbnailKey = parts.slice(-3).join("/");
+          try {
+            const parsedUrl = new URL(incomingThumb);
+            const pathParts = parsedUrl.pathname.replace(/^\/+/, "").split("/");
+            if (pathParts[0] === "videohost" || (process.env.R2_BUCKET_NAME && pathParts[0] === process.env.R2_BUCKET_NAME)) {
+              pathParts.shift();
+            }
+            thumbnailKey = pathParts.join("/");
+          } catch {
+            thumbnailKey = incomingThumb;
+          }
         } else {
           thumbnailKey = incomingThumb;
         }
@@ -147,6 +157,7 @@ export async function POST(req: Request) {
       // Best-effort cleanup: delete any residual dash folder that may contain partial uploads
       try {
         const { deleteS3Prefix } = await import("@/lib/s3");
+        await deleteS3Prefix(`videos/${orgId}/${videoId}/dash`);
         await deleteS3Prefix(`${orgId}/${videoId}/dash`);
       } catch (e) {
         console.warn(`[Transcode Callback] Failed to cleanup dash prefix for cancelled ${videoId}:`, e);

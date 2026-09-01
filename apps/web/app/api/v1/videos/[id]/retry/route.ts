@@ -16,10 +16,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
   // Best-effort cleanup: delete any residual dash folder before re-encoding (e.g. partial uploads after SIGTERM/cancellation/failure)
-  const dashPrefix = `${authCtx.orgId}/${id}/dash`;
+  const dashPrefix = `videos/${authCtx.orgId}/${id}/dash`;
+  const legacyDashPrefix = `${authCtx.orgId}/${id}/dash`;
   try {
     console.log(`[Retry] Cleaning up residual S3 prefix before requeue: ${dashPrefix}`);
     await deleteS3Prefix(dashPrefix);
+    await deleteS3Prefix(legacyDashPrefix);
   } catch (e: any) {
     console.warn(`[Retry] Failed to cleanup S3 prefix ${dashPrefix}:`, e?.message || e);
     // Non-fatal: proceed to requeue even if cleanup fails

@@ -177,7 +177,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 	payload.OrganizationId = orgId
 
 	if payload.OriginalKey == "" {
-		payload.OriginalKey = fmt.Sprintf("%s/%s/original.mp4", orgId, videoId)
+		payload.OriginalKey = fmt.Sprintf("videos/%s/%s/original.mp4", orgId, videoId)
 	}
 
 	threadCount := payload.Threads
@@ -251,7 +251,8 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		if errors.Is(err, ErrJobCancelled) || isCancelled() {
 			fmt.Printf("[Worker] Transcode job for video %s was cancelled — cleaning up S3 and reporting CANCELLED\n", videoId)
 			// Best-effort delete any partially uploaded dash data and thumbnail
-			dashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
+			dashPrefix := fmt.Sprintf("videos/%s/%s/dash", orgId, videoId)
+			legacyDashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
 			cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cleanupCancel()
 			if delErr := s3.DeleteS3Prefix(cleanupCtx, dashPrefix, payload.S3); delErr != nil {
@@ -259,6 +260,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 			} else {
 				fmt.Printf("[Worker] Cleaned up S3 dash prefix for cancelled video %s\n", videoId)
 			}
+			_ = s3.DeleteS3Prefix(cleanupCtx, legacyDashPrefix, payload.S3)
 			if s3ThumbKey != "" {
 				if delErr := s3.DeleteS3Object(cleanupCtx, s3ThumbKey, payload.S3); delErr != nil {
 					fmt.Printf("[Worker] Failed to cleanup S3 thumbnail for cancelled video %s: %v\n", videoId, delErr)
@@ -534,7 +536,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		shouldGenerateThumbnail = false
 	}
 
-	s3DashPrefix := fmt.Sprintf("%s/%s/dash", orgId, videoId)
+	s3DashPrefix := fmt.Sprintf("videos/%s/%s/dash", orgId, videoId)
 
 	if shouldGenerateThumbnail {
 		unique := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), randomString(6))
@@ -571,7 +573,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 			return nil, handleError(err)
 		}
 
-		s3ThumbKey = fmt.Sprintf("%s/%s/%s", orgId, videoId, thumbFileName)
+		s3ThumbKey = fmt.Sprintf("videos/%s/%s/%s", orgId, videoId, thumbFileName)
 		fmt.Printf("[Worker] Uploading thumbnail (%s) to S3/R2...\n", thumbFileName)
 		if _, err := s3.UploadFileToS3(jobCtx, thumbnailPath, s3ThumbKey, "image/webp", payload.S3); err != nil {
 			return nil, handleError(fmt.Errorf("failed uploading thumbnail: %w", err))

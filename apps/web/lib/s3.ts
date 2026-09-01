@@ -96,11 +96,34 @@ export async function getPresignedUploadUrl(key: string, contentType: string = "
   return await getSignedUrl(s3, command, { expiresIn: 3600 });
 }
 
+export function getCdnUrl(): string {
+  return (process.env.CDN_URL || process.env.NEXT_PUBLIC_CDN_URL || "")
+    .replace(/^["']|["']$/g, "")
+    .trim()
+    .replace(/\/+$/, "");
+}
+
+export function getPublicCdnUrl(key: string): string {
+  const cdn = getCdnUrl();
+  const cleanKey = key.replace(/^\/+/, "");
+  if (!cdn) return cleanKey;
+  const cdnWithBucket = cdn.endsWith(`/${BUCKET_NAME}`) ? cdn : `${cdn}/${BUCKET_NAME}`;
+  return `${cdnWithBucket}/${cleanKey}`;
+}
+
 export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeconds: number = 10000): Promise<string> {
   if (!key) return "";
   if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:") || key.startsWith("/")) {
     return key;
   }
+
+  const cdn = getCdnUrl();
+  if (cdn) {
+    const cleanKey = key.replace(/^\/+/, "");
+    const cdnWithBucket = cdn.endsWith(`/${BUCKET_NAME}`) ? cdn : `${cdn}/${BUCKET_NAME}`;
+    return `${cdnWithBucket}/${cleanKey}`;
+  }
+
   const command = new GetObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
@@ -188,11 +211,11 @@ export async function getThumbnailPlaybackUrl(video: {
 }
 
 export function getDashPlaybackUrl(organizationId: string, videoId: string): string {
-  return `/api/hls/${organizationId}/${videoId}/dash/master.mpd`;
+  return `/api/hls/videos/${organizationId}/${videoId}/dash/master.mpd`;
 }
 
 export function getHlsPlaybackUrl(organizationId: string, videoId: string): string {
-  return `/api/hls/${organizationId}/${videoId}/dash/master.m3u8`;
+  return `/api/hls/videos/${organizationId}/${videoId}/dash/master.m3u8`;
 }
 
 export async function deleteVideoFromS3(
@@ -200,76 +223,79 @@ export async function deleteVideoFromS3(
   videoId: string,
   originalKey?: string | null
 ): Promise<void> {
-  const prefix = `${organizationId}/${videoId}/`;
-  let continuationToken: string | undefined = undefined;
-
-  console.log(`[S3 Delete] Starting S3 deletion for video ${videoId} (org: ${organizationId}, prefix: "${prefix}")...`);
+  const prefixes = [
+    `videos/${organizationId}/${videoId}/`,
+    `${organizationId}/${videoId}/`,
+  ];
   let totalDeleted = 0;
 
-  do {
-    const listCommand: ListObjectsV2Command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: prefix,
-      ContinuationToken: continuationToken,
-    });
+  for (const prefix of prefixes) {
+    let continuationToken: string | undefined = undefined;
+    console.log(`[S3 Delete] Checking S3 prefix "${prefix}" for video ${videoId}...`);
 
-    const listResponse = await s3.send(listCommand);
-    const objects = listResponse.Contents || [];
+    do {
+      const listCommand: ListObjectsV2Command = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
 
-    if (objects.length > 0) {
-      console.log(`[S3 Delete] Found ${objects.length} object(s) in S3 under prefix "${prefix}"`);
-      const keysToDelete = objects.filter((o) => o.Key).map((obj) => ({ Key: obj.Key! }));
+      const listResponse = await s3.send(listCommand);
+      const objects = listResponse.Contents || [];
 
-      try {
-        const deleteCommand = new DeleteObjectsCommand({
-          Bucket: BUCKET_NAME,
-          Delete: {
-            Objects: keysToDelete,
-            Quiet: false,
-          },
-          ChecksumAlgorithm: "SHA256",
-        });
-        const deleteRes = await s3.send(deleteCommand);
+      if (objects.length > 0) {
+        console.log(`[S3 Delete] Found ${objects.length} object(s) in S3 under prefix "${prefix}"`);
+        const keysToDelete = objects.filter((o) => o.Key).map((obj) => ({ Key: obj.Key! }));
 
-        if (deleteRes.Deleted && deleteRes.Deleted.length > 0) {
-          totalDeleted += deleteRes.Deleted.length;
-          console.log(`[S3 Delete] Successfully deleted batch of ${deleteRes.Deleted.length} object(s) from S3.`);
-        }
+        try {
+          const deleteCommand = new DeleteObjectsCommand({
+            Bucket: BUCKET_NAME,
+            Delete: {
+              Objects: keysToDelete,
+              Quiet: false,
+            },
+            ChecksumAlgorithm: "SHA256",
+          });
+          const deleteRes = await s3.send(deleteCommand);
 
-        if (deleteRes.Errors && deleteRes.Errors.length > 0) {
-          console.error(`[S3 Delete Error] ${deleteRes.Errors.length} object(s) failed batch delete:`, deleteRes.Errors);
-          for (const errObj of deleteRes.Errors) {
-            if (errObj.Key) {
-              try {
-                await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: errObj.Key }));
-                totalDeleted++;
-                console.log(`[S3 Delete Fallback] Successfully deleted key: ${errObj.Key}`);
-              } catch (singleErr) {
-                console.error(`[S3 Delete Fallback Error] Failed to delete key ${errObj.Key}:`, singleErr);
+          if (deleteRes.Deleted && deleteRes.Deleted.length > 0) {
+            totalDeleted += deleteRes.Deleted.length;
+            console.log(`[S3 Delete] Successfully deleted batch of ${deleteRes.Deleted.length} object(s) from S3.`);
+          }
+
+          if (deleteRes.Errors && deleteRes.Errors.length > 0) {
+            console.error(`[S3 Delete Error] ${deleteRes.Errors.length} object(s) failed batch delete:`, deleteRes.Errors);
+            for (const errObj of deleteRes.Errors) {
+              if (errObj.Key) {
+                try {
+                  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: errObj.Key }));
+                  totalDeleted++;
+                  console.log(`[S3 Delete Fallback] Successfully deleted key: ${errObj.Key}`);
+                } catch (singleErr) {
+                  console.error(`[S3 Delete Fallback Error] Failed to delete key ${errObj.Key}:`, singleErr);
+                }
               }
             }
           }
-        }
-      } catch (batchErr) {
-        console.warn(`[S3 Delete Warning] Batch delete failed, falling back to individual DeleteObjectCommand calls:`, batchErr);
-        for (const obj of keysToDelete) {
-          try {
-            await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: obj.Key }));
-            totalDeleted++;
-            console.log(`[S3 Delete Fallback] Successfully deleted key: ${obj.Key}`);
-          } catch (singleErr) {
-            console.error(`[S3 Delete Fallback Error] Failed to delete key ${obj.Key}:`, singleErr);
+        } catch (batchErr) {
+          console.warn(`[S3 Delete Warning] Batch delete failed, falling back to individual DeleteObjectCommand calls:`, batchErr);
+          for (const obj of keysToDelete) {
+            try {
+              await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: obj.Key }));
+              totalDeleted++;
+              console.log(`[S3 Delete Fallback] Successfully deleted key: ${obj.Key}`);
+            } catch (singleErr) {
+              console.error(`[S3 Delete Fallback Error] Failed to delete key ${obj.Key}:`, singleErr);
+            }
           }
         }
       }
-    } else {
-      console.log(`[S3 Delete] No objects found in S3 under prefix "${prefix}"`);
-    }
 
-    continuationToken = listResponse.NextContinuationToken;
-  } while (continuationToken);
+      continuationToken = listResponse.NextContinuationToken;
+    } while (continuationToken);
+  }
 
-  if (originalKey && !originalKey.startsWith(prefix)) {
+  if (originalKey && !prefixes.some((p) => originalKey.startsWith(p))) {
     console.log(`[S3 Delete] Deleting standalone originalKey: "${originalKey}"...`);
     try {
       await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: originalKey }));

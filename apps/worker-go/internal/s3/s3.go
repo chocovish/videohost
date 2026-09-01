@@ -28,7 +28,6 @@ type S3ConfigContext struct {
 	SecretAccessKey string `json:"secretAccessKey"`
 	Bucket          string `json:"bucket"`
 	Region          string `json:"region,omitempty"`
-	CdnHost         string `json:"cdnHost,omitempty"`
 }
 
 var (
@@ -50,9 +49,8 @@ func GetRegionFromEndpoint(endpoint string, overrideRegion string) string {
 }
 
 type S3ClientInfo struct {
-	Client  *s3client.Client
-	Bucket  string
-	CdnHost string
+	Client *s3client.Client
+	Bucket string
 }
 
 func GetS3ClientAndBucket(ctx context.Context, cfg *S3ConfigContext) (*S3ClientInfo, error) {
@@ -84,11 +82,6 @@ func GetS3ClientAndBucket(ctx context.Context, cfg *S3ConfigContext) (*S3ClientI
 		clientRegion = "us-east-1"
 	}
 
-	cdnHost := cfg.CdnHost
-	if cdnHost == "" {
-		cdnHost = fmt.Sprintf("%s/%s", strings.TrimRight(rawEndpoint, "/"), bucket)
-	}
-
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx,
 		awsconfig.WithRegion(clientRegion),
 		awsconfig.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(accessKeyId, secretAccessKey, "")),
@@ -106,9 +99,8 @@ func GetS3ClientAndBucket(ctx context.Context, cfg *S3ConfigContext) (*S3ClientI
 	})
 
 	return &S3ClientInfo{
-		Client:  client,
-		Bucket:  bucket,
-		CdnHost: cdnHost,
+		Client: client,
+		Bucket: bucket,
 	}, nil
 }
 
@@ -215,7 +207,7 @@ func UploadFileToS3(ctx context.Context, filePath, key, contentType string, cfg 
 		return "", fmt.Errorf("failed uploading %s to S3: %w", key, err)
 	}
 
-	return fmt.Sprintf("%s/%s", strings.TrimRight(info.CdnHost, "/"), strings.TrimLeft(key, "/")), nil
+	return key, nil
 }
 
 func DetectContentType(fileName string) string {
