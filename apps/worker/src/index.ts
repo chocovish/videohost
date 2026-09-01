@@ -16,7 +16,7 @@ function getEnvInt(val: string | undefined, fallback: number): number {
   return isNaN(parsed) ? fallback : parsed;
 }
 
-const PORT = getEnvInt(process.env.PORT, 8080);
+const PORT = getEnvInt(process.env.WORKER_PORT, 8080);
 const WORKER_SECRET_TOKEN = getEnvString(process.env.WORKER_SECRET_TOKEN);
 let isShuttingDown = false;
 
