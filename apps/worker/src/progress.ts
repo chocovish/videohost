@@ -8,20 +8,29 @@ export interface ProgressReportPayload {
   [key: string]: any;
 }
 
+export type ProgressCallback = (progress: number) => Promise<void> | void;
+
 export class ProgressReporter {
   private videoId: string;
   private organizationId: string;
   private callbackUrl?: string;
+  private onProgress?: ProgressCallback;
   private lastReportedProgress: number = -1;
   private lastReportedTime: number = 0;
   private minProgressDelta: number = 5;
   private minTimeDeltaMs: number = 5 * 60 * 1000; // 5 minutes
   private isSending: boolean = false;
 
-  constructor(videoId: string, organizationId: string = "default", callbackUrl?: string) {
+  constructor(
+    videoId: string,
+    organizationId: string = "default",
+    callbackUrl?: string,
+    onProgress?: ProgressCallback
+  ) {
     this.videoId = videoId;
     this.organizationId = organizationId;
     this.callbackUrl = callbackUrl;
+    this.onProgress = onProgress;
   }
 
   /**
@@ -52,6 +61,15 @@ export class ProgressReporter {
 
     this.lastReportedProgress = progress;
     this.lastReportedTime = now;
+
+    // Report progress to BullMQ / custom callback if provided
+    if (this.onProgress) {
+      try {
+        await this.onProgress(progress);
+      } catch (err: any) {
+        console.error(`[ProgressReporter Error] Progress callback error for video ${this.videoId}:`, err?.message || err);
+      }
+    }
 
     if (!this.callbackUrl) {
       console.log(`[ProgressReporter] videoId: ${this.videoId} progress: ${progress}% (No callbackUrl)`);

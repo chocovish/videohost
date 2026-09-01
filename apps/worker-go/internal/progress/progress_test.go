@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"context"
 	"math"
 	"testing"
 )
@@ -54,6 +55,46 @@ func TestProgressCalculations(t *testing.T) {
 	up100 := CalculateUploadProgress(1.0)
 	if math.Abs(up100-100.0) > 0.001 {
 		t.Errorf("CalculateUploadProgress(1.0) = %v; want 100", up100)
+	}
+}
+
+func TestProgressReporterCallback(t *testing.T) {
+	var reportedProgress []int
+	cb := func(ctx context.Context, p int) error {
+		reportedProgress = append(reportedProgress, p)
+		return nil
+	}
+
+	reporter := NewProgressReporter("test-vid-1", "test-org", "", cb)
+
+	// 1. Initial 0% forced report
+	if err := reporter.Report(context.Background(), 0, "PROCESSING", true, nil); err != nil {
+		t.Fatalf("unexpected error reporting initial progress: %v", err)
+	}
+
+	// 2. Incremental 2% progress (below minProgressDelta of 5%) -> should not report
+	if err := reporter.Report(context.Background(), 2, "PROCESSING", false, nil); err != nil {
+		t.Fatalf("unexpected error reporting progress: %v", err)
+	}
+
+	// 3. Incremental 50% progress (above delta) -> should report
+	if err := reporter.Report(context.Background(), 50, "PROCESSING", false, nil); err != nil {
+		t.Fatalf("unexpected error reporting progress: %v", err)
+	}
+
+	// 4. Final 100% READY progress (forced) -> should report
+	if err := reporter.Report(context.Background(), 100, "READY", true, nil); err != nil {
+		t.Fatalf("unexpected error reporting final progress: %v", err)
+	}
+
+	expected := []int{0, 50, 100}
+	if len(reportedProgress) != len(expected) {
+		t.Fatalf("expected %d progress reports, got %d: %+v", len(expected), len(reportedProgress), reportedProgress)
+	}
+	for i, v := range expected {
+		if reportedProgress[i] != v {
+			t.Errorf("reportedProgress[%d] = %d; want %d", i, reportedProgress[i], v)
+		}
 	}
 }
 

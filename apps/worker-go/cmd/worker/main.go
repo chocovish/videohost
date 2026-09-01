@@ -67,7 +67,9 @@ func main() {
 				}
 
 				fmt.Printf("[Worker BullMQ] Received transcode job %s for videoId: %s\n", job.ID(), payload.VideoId)
-				res, err := transcoder.ProcessVideoJob(ctx, payload)
+				res, err := transcoder.ProcessVideoJob(ctx, payload, func(progressCtx context.Context, p int) error {
+					return job.UpdateProgress(progressCtx, p)
+				})
 				if err != nil {
 					fmt.Printf("[Worker BullMQ] Job %s (videoId: %s) failed: %v\n", job.ID(), payload.VideoId, err)
 					return nil, err

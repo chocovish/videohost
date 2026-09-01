@@ -164,7 +164,7 @@ var (
 	chunkFileRegex    = regexp.MustCompile(`^(?:init|chunk)-stream(\d+)`)
 )
 
-func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[string]any, error) {
+func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgress ...progress.ProgressCallback) (map[string]any, error) {
 	videoId := payload.VideoId
 	if videoId == "" {
 		return nil, errors.New("videoId is required")
@@ -200,7 +200,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload) (map[stri
 		fmt.Printf("[Worker Stateless] Using %d thread(s) for transcoding\n", threadCount)
 	}
 
-	reporter := progress.NewProgressReporter(videoId, orgId, payload.CallbackUrl)
+	reporter := progress.NewProgressReporter(videoId, orgId, payload.CallbackUrl, onProgress...)
 	_ = reporter.Report(ctx, 0, "PROCESSING", true, nil)
 
 	jobCtx, cancel := context.WithCancel(ctx)

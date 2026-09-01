@@ -24,10 +24,13 @@ type ProgressReportPayload struct {
 	Extra          map[string]any `json:"-"`
 }
 
+type ProgressCallback func(ctx context.Context, progress int) error
+
 type ProgressReporter struct {
 	videoId              string
-	organizationId        string
+	organizationId       string
 	callbackUrl          string
+	onProgress           ProgressCallback
 	lastReportedProgress int
 	lastReportedTime     time.Time
 	minProgressDelta     int
@@ -37,14 +40,19 @@ type ProgressReporter struct {
 	httpClient           *http.Client
 }
 
-func NewProgressReporter(videoId, organizationId, callbackUrl string) *ProgressReporter {
+func NewProgressReporter(videoId, organizationId, callbackUrl string, onProgress ...ProgressCallback) *ProgressReporter {
 	if organizationId == "" {
 		organizationId = "default"
 	}
+	var cb ProgressCallback
+	if len(onProgress) > 0 {
+		cb = onProgress[0]
+	}
 	return &ProgressReporter{
 		videoId:              videoId,
-		organizationId:        organizationId,
+		organizationId:       organizationId,
 		callbackUrl:          callbackUrl,
+		onProgress:           cb,
 		lastReportedProgress: -1,
 		lastReportedTime:     time.Time{},
 		minProgressDelta:     5,
@@ -94,6 +102,7 @@ func (r *ProgressReporter) Report(ctx context.Context, currentProgress float64, 
 	r.lastReportedProgress = progress
 	r.lastReportedTime = now
 	r.isSending = true
+	cb := r.onProgress
 	r.mu.Unlock()
 
 	defer func() {
@@ -101,6 +110,13 @@ func (r *ProgressReporter) Report(ctx context.Context, currentProgress float64, 
 		r.isSending = false
 		r.mu.Unlock()
 	}()
+
+	// Report progress to BullMQ / custom callback if provided
+	if cb != nil {
+		if err := cb(ctx, progress); err != nil {
+			fmt.Printf("[ProgressReporter Error] BullMQ progress callback error for video %s: %v\n", r.videoId, err)
+		}
+	}
 
 	if r.callbackUrl == "" {
 		fmt.Printf("[ProgressReporter] videoId: %s progress: %d%% (No callbackUrl)\n", r.videoId, progress)

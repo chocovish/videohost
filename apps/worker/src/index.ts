@@ -212,7 +212,7 @@ if (REDIS_URL) {
       async (job) => {
         const videoId = job.data?.videoId;
         console.log(`[Worker BullMQ] Started processing job ${job.id} for videoId: ${videoId}`);
-        return await processVideoJob(job.data);
+        return await processVideoJob(job.data, job);
       },
       {
         connection: {

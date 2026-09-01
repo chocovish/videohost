@@ -1,9 +1,11 @@
 import ffmpeg from "fluent-ffmpeg";
 import fs from "fs";
 import path from "path";
+import { Job } from "bullmq";
 import { S3ConfigContext, deleteS3Object, deleteS3Prefix, downloadFileFromS3, uploadDirectoryToS3, uploadFileToS3 } from "./s3";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
 import {
+  ProgressCallback,
   ProgressReporter,
   calculateTranscodeProgress,
   calculateUploadProgress,
@@ -241,7 +243,10 @@ export async function probeVideo(filePath: string): Promise<{
   });
 }
 
-export async function processVideoJob(payloadInput: TranscodeJobPayload): Promise<any> {
+export async function processVideoJob(
+  payloadInput: TranscodeJobPayload,
+  jobOrProgressCallback?: Job | ProgressCallback | { onProgress?: ProgressCallback; job?: Job }
+): Promise<any> {
   // Transform incoming payload URLs with localhost to host.docker.internal for worker container network calls
   const payload = useDockerHostForLocalhost(payloadInput);
 
@@ -267,7 +272,34 @@ export async function processVideoJob(payloadInput: TranscodeJobPayload): Promis
   );
   console.log(`[Worker Stateless] Received job payload:`, JSON.stringify(payload, null, 2));
 
-  const reporter = new ProgressReporter(videoId, organizationId || "default", callbackUrl);
+  let onProgressCallback: ProgressCallback | undefined;
+  if (typeof jobOrProgressCallback === "function") {
+    onProgressCallback = jobOrProgressCallback;
+  } else if (jobOrProgressCallback && typeof (jobOrProgressCallback as any).updateProgress === "function") {
+    const bullJob = jobOrProgressCallback as Job;
+    onProgressCallback = async (progress: number) => {
+      try {
+        await bullJob.updateProgress(progress);
+      } catch (err: any) {
+        console.error(`[Worker BullMQ] Error updating job ${bullJob.id} progress (${progress}%):`, err?.message || err);
+      }
+    };
+  } else if (jobOrProgressCallback && typeof jobOrProgressCallback === "object") {
+    const opts = jobOrProgressCallback as { onProgress?: ProgressCallback; job?: Job };
+    if (opts.onProgress) {
+      onProgressCallback = opts.onProgress;
+    } else if (opts.job && typeof opts.job.updateProgress === "function") {
+      onProgressCallback = async (progress: number) => {
+        try {
+          await opts.job!.updateProgress(progress);
+        } catch (err: any) {
+          console.error(`[Worker BullMQ] Error updating job ${opts.job!.id} progress (${progress}%):`, err?.message || err);
+        }
+      };
+    }
+  }
+
+  const reporter = new ProgressReporter(videoId, organizationId || "default", callbackUrl, onProgressCallback);
   await reporter.report(0, "PROCESSING", true);
 
   // Register the job for cancellation support (store payload/reporter for SIGTERM cleanup)
