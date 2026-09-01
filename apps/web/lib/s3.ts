@@ -104,11 +104,18 @@ export function getCdnUrl(): string {
 }
 
 export function getPublicCdnUrl(key: string): string {
+  if (!key) return "";
+  if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:") || key.startsWith("/")) {
+    return key;
+  }
   const cdn = getCdnUrl();
   const cleanKey = key.replace(/^\/+/, "");
-  if (!cdn) return cleanKey;
-  const cdnWithBucket = cdn.endsWith(`/${BUCKET_NAME}`) ? cdn : `${cdn}/${BUCKET_NAME}`;
-  return `${cdnWithBucket}/${cleanKey}`;
+  if (cdn) {
+    const cdnWithBucket = cdn.endsWith(`/${BUCKET_NAME}`) ? cdn : `${cdn}/${BUCKET_NAME}`;
+    return `${cdnWithBucket}/${cleanKey}`;
+  }
+  const endpoint = r2Endpoint.replace(/\/+$/, "");
+  return `${endpoint}/${BUCKET_NAME}/${cleanKey}`;
 }
 
 export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeconds: number = 10000): Promise<string> {
@@ -119,9 +126,7 @@ export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeco
 
   const cdn = getCdnUrl();
   if (cdn) {
-    const cleanKey = key.replace(/^\/+/, "");
-    const cdnWithBucket = cdn.endsWith(`/${BUCKET_NAME}`) ? cdn : `${cdn}/${BUCKET_NAME}`;
-    return `${cdnWithBucket}/${cleanKey}`;
+    return getPublicCdnUrl(key);
   }
 
   const command = new GetObjectCommand({
@@ -132,8 +137,11 @@ export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeco
   return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
 }
 
-
 export function getRenditionPlaybackUrl(storageKey: string): string {
+  if (!storageKey) return "";
+  if (storageKey.startsWith("http://") || storageKey.startsWith("https://")) {
+    return storageKey;
+  }
   const mode = (
     process.env.STREAMING_PROTOCOL ||
     process.env.NEXT_PUBLIC_STREAMING_PROTOCOL ||
@@ -141,9 +149,9 @@ export function getRenditionPlaybackUrl(storageKey: string): string {
   ).toLowerCase().trim();
 
   // Strip any specific manifest filename if present to get the generic base key
-  const cleanKey = storageKey.replace(/\/(?:master\.(?:mpd|m3u8)|manifest\.mpd)?$/, "");
+  const cleanKey = storageKey.replace(/\/(?:master\.(?:mpd|m3u8)|manifest\.mpd)?$/, "").replace(/^\/+/, "");
   const manifest = mode === "hls" ? "master.m3u8" : "master.mpd";
-  return `/api/hls/${cleanKey}/${manifest}`;
+  return getPublicCdnUrl(`${cleanKey}/${manifest}`);
 }
 
 export async function getPlaybackUrl(video: {
@@ -211,11 +219,11 @@ export async function getThumbnailPlaybackUrl(video: {
 }
 
 export function getDashPlaybackUrl(organizationId: string, videoId: string): string {
-  return `/api/hls/videos/${organizationId}/${videoId}/dash/master.mpd`;
+  return getPublicCdnUrl(`videos/${organizationId}/${videoId}/dash/master.mpd`);
 }
 
 export function getHlsPlaybackUrl(organizationId: string, videoId: string): string {
-  return `/api/hls/videos/${organizationId}/${videoId}/dash/master.m3u8`;
+  return getPublicCdnUrl(`videos/${organizationId}/${videoId}/dash/master.m3u8`);
 }
 
 export async function deleteVideoFromS3(
