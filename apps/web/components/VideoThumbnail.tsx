@@ -35,12 +35,46 @@ export function VideoThumbnail({
 }: VideoThumbnailProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
 
-  // Reset state when src changes
+  // Reset or detect cached state when src changes
   useEffect(() => {
-    setImageLoaded(false);
-    setImageError(false);
+    if (!src) {
+      setImageLoaded(false);
+      setImageError(false);
+      return;
+    }
+
+    if (imgRef.current && imgRef.current.complete) {
+      if (imgRef.current.naturalWidth > 0) {
+        setImageLoaded(true);
+        setImageError(false);
+        onLoad?.();
+      } else {
+        setImageError(true);
+        onError?.();
+      }
+    } else {
+      setImageLoaded(false);
+      setImageError(false);
+    }
   }, [src]);
+
+  const handleImageRef = (node: HTMLImageElement | null) => {
+    imgRef.current = node;
+    if (node && node.complete) {
+      if (node.naturalWidth > 0) {
+        if (!imageLoaded) {
+          setImageLoaded(true);
+          setImageError(false);
+          onLoad?.();
+        }
+      } else if (!imageError) {
+        setImageError(true);
+        onError?.();
+      }
+    }
+  };
 
   const isBunny = (storageType || "").toLowerCase() === "bunny";
   const isStatusProcessing =
@@ -245,10 +279,12 @@ export function VideoThumbnail({
         </div>
       )}
       <img
+        ref={handleImageRef}
         src={src}
         alt={alt}
         onLoad={() => {
           setImageLoaded(true);
+          setImageError(false);
           onLoad?.();
         }}
         onError={() => {

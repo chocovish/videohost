@@ -197,11 +197,17 @@ func UploadFileToS3(ctx context.Context, filePath, key, contentType string, cfg 
 		u.Concurrency = 4
 	})
 
+	cacheControl := "public, max-age=31536000, immutable"
+	if strings.HasSuffix(key, ".m3u8") || strings.HasSuffix(key, ".mpd") {
+		cacheControl = "public, max-age=86400"
+	}
+
 	_, err = uploader.Upload(ctx, &s3client.PutObjectInput{
-		Bucket:      aws.String(info.Bucket),
-		Key:         aws.String(key),
-		Body:        file,
-		ContentType: aws.String(contentType),
+		Bucket:       aws.String(info.Bucket),
+		Key:          aws.String(key),
+		Body:         file,
+		ContentType:  aws.String(contentType),
+		CacheControl: aws.String(cacheControl),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed uploading %s to S3: %w", key, err)
@@ -312,11 +318,17 @@ func UploadDirectoryToS3(ctx context.Context, dirPath, keyPrefix string, cfg *S3
 					return
 				}
 
+				cacheControl := "public, max-age=31536000, immutable"
+				if strings.HasSuffix(s3Key, ".m3u8") || strings.HasSuffix(s3Key, ".mpd") {
+					cacheControl = "public, max-age=86400"
+				}
+
 				_, upErr := uploader.Upload(uploadCtx, &s3client.PutObjectInput{
-					Bucket:      aws.String(info.Bucket),
-					Key:         aws.String(s3Key),
-					Body:        file,
-					ContentType: aws.String(contentType),
+					Bucket:       aws.String(info.Bucket),
+					Key:          aws.String(s3Key),
+					Body:         file,
+					ContentType:  aws.String(contentType),
+					CacheControl: aws.String(cacheControl),
 				})
 				file.Close()
 

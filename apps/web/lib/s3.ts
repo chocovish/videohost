@@ -91,6 +91,7 @@ export async function getPresignedUploadUrl(key: string, contentType: string = "
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
   });
 
   return await getSignedUrl(s3, command, { expiresIn: 3600 });
@@ -459,6 +460,7 @@ export async function uploadBufferToS3(key: string, body: Buffer, contentType: s
     Key: key,
     Body: body,
     ContentType: contentType,
+    CacheControl: "public, max-age=31536000, immutable",
   });
   await s3.send(command);
 }
