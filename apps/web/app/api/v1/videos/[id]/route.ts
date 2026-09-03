@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { getPlaybackUrl, getRenditionPlaybackUrl, getThumbnailPlaybackUrl, deleteVideoFromS3 } from "@/lib/s3";
+import { getVideoSubtitleTracksSafe } from "@/lib/subtitles";
 import { db } from "@videohost/db";
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const authCtx = await authenticateRequest(req);
-  if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const video = await db.video.findFirst({
-    where: { id, organizationId: authCtx.orgId },
-    include: { renditions: true },
-  });
-
-  if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
-
+async function buildVideoResponse(video: any) {
   const computedSizeBytes = video.sizeBytes !== null ? Number(video.sizeBytes) : null;
   const playbackUrl = await getPlaybackUrl(video as any);
   const thumbnailUrl = await getThumbnailPlaybackUrl(video as any);
+  // Subtitles are additive – never let a subtitle failure break the detail payload.
+  const subtitles = await getVideoSubtitleTracksSafe(video.id);
 
-  return NextResponse.json({
+  return {
     id: video.id,
     title: video.title,
     description: video.description,
@@ -38,14 +30,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     thumbnailUrl,
     storageType: (video as any).storageType || "s3",
     bunnyVideoId: (video as any).bunnyVideoId || null,
-    renditions: video.renditions.map((r) => ({
+    subtitles,
+    renditions: video.renditions.map((r: any) => ({
       resolution: r.resolution,
       bitrateKbps: r.bitrateKbps,
       playlistUrl: getRenditionPlaybackUrl(r.storageKey),
       sizeBytes: Number(r.sizeBytes || 0),
     })),
     createdAt: video.createdAt,
+  };
+}
+
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const authCtx = await authenticateRequest(req);
+  if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const video = await db.video.findFirst({
+    where: { id, organizationId: authCtx.orgId },
+    include: { renditions: true },
   });
+
+  if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
+
+  return NextResponse.json(await buildVideoResponse(video));
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -100,37 +108,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     include: { renditions: true },
   });
 
-  const computedSizeBytes = updated.sizeBytes !== null ? Number(updated.sizeBytes) : null;
-  const playbackUrl = await getPlaybackUrl(updated as any);
-  const thumbnailUrl = await getThumbnailPlaybackUrl(updated as any);
-
-  return NextResponse.json({
-    id: updated.id,
-    title: updated.title,
-    description: updated.description,
-    folderId: updated.folderId,
-    status: updated.status,
-    progress: updated.progress || 0,
-    requireHls: updated.requireHls,
-    durationSeconds: updated.durationSeconds,
-    sizeBytes: computedSizeBytes,
-    sourceResolution: updated.sourceWidth ? `${updated.sourceWidth}x${updated.sourceHeight}` : null,
-    shareAccessMode: updated.shareAccessMode,
-    price: updated.price,
-    currency: updated.currency || "USD",
-    countryPricing: updated.countryPricing || [],
-    playbackUrl,
-    thumbnailUrl,
-    storageType: (updated as any).storageType || "s3",
-    bunnyVideoId: (updated as any).bunnyVideoId || null,
-    renditions: updated.renditions.map((r) => ({
-      resolution: r.resolution,
-      bitrateKbps: r.bitrateKbps,
-      playlistUrl: getRenditionPlaybackUrl(r.storageKey),
-      sizeBytes: Number(r.sizeBytes || 0),
-    })),
-    createdAt: updated.createdAt,
-  });
+  return NextResponse.json(await buildVideoResponse(updated));
 }
 
 import { executeDeleteService } from "@/lib/delete-service";

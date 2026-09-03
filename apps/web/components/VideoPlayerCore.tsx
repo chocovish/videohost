@@ -6,11 +6,20 @@ import { HlsJsVideo } from "@videojs/react/media/hlsjs-video";
 import { DashVideo } from "@videojs/react/media/dash-video";
 import "@videojs/react/video/skin.css";
 
+export interface SubtitleTrack {
+  id: string;
+  label: string;
+  language: string;
+  src: string;
+  isDefault?: boolean;
+}
+
 export interface VideoPlayerProps {
   src: string;
   poster?: string;
   controls?: boolean;
   autoplay?: boolean;
+  subtitles?: SubtitleTrack[];
   onReady?: (player: any) => void;
   className?: string;
 }
@@ -20,6 +29,7 @@ export default function VideoPlayerCore({
   poster,
   controls = false,
   autoplay = false,
+  subtitles = [],
   className = "",
 }: VideoPlayerProps) {
   const isBunnyEmbed = src ? src.includes("iframe.mediadelivery.net") : false;
@@ -48,8 +58,29 @@ export default function VideoPlayerCore({
     autoPlay: autoplay,
     controls,
     playsInline: true,
+    crossOrigin: "anonymous" as const,
     className: "w-full h-full object-contain",
   };
+
+  // Video.js v10 renders <track> children and wires them into the built-in
+  // captions menu (CaptionsButton auto-hides when there are no tracks, and
+  // offers change / Off selection when tracks exist).
+  const trackElements = useMemo(
+    () =>
+      (subtitles || [])
+        .filter((t) => Boolean(t?.src))
+        .map((t) => (
+          <track
+            key={t.id}
+            kind="subtitles"
+            src={t.src}
+            srcLang={t.language}
+            label={t.label}
+            default={Boolean(t.isDefault)}
+          />
+        )),
+    [subtitles]
+  );
 
   // Bunny Stream embed – render secure iframe
   if (isBunnyEmbed) {
@@ -79,11 +110,11 @@ export default function VideoPlayerCore({
       <VjsPlayer poster={poster}>
         <VideoSkin className="w-full h-full">
           {isDash ? (
-            <DashVideo {...mediaProps} />
+            <DashVideo {...mediaProps}>{trackElements}</DashVideo>
           ) : isHls ? (
-            <HlsJsVideo {...mediaProps} />
+            <HlsJsVideo {...mediaProps}>{trackElements}</HlsJsVideo>
           ) : (
-            <Video {...mediaProps} />
+            <Video {...mediaProps}>{trackElements}</Video>
           )}
         </VideoSkin>
       </VjsPlayer>

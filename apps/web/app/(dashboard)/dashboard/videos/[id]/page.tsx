@@ -23,9 +23,11 @@ import {
   Receipt,
   ShoppingBag,
   Volume2,
+  Captions,
   Video as VideoIcon,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoSubtitlesManager from "@/components/VideoSubtitlesManager";
 import ShareModal from "@/components/ShareModal";
 import MoveItemModal from "@/components/MoveItemModal";
 import EditVideoModal from "@/components/EditVideoModal";
@@ -67,6 +69,7 @@ interface VideoDetail {
   thumbnailUrl?: string;
   storageType?: string | null;
   bunnyVideoId?: string | null;
+  subtitles: { id: string; label: string; language: string; src: string; isDefault: boolean }[];
   renditions: { resolution: string; bitrateKbps: number; playlistUrl: string; sizeBytes?: number }[];
   createdAt: string;
 }
@@ -114,7 +117,7 @@ export default function VideoDetailPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"details" | "embed" | "renditions" | "purchases">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "embed" | "renditions" | "subtitles" | "purchases">("details");
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isMoveOpen, setIsMoveOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -468,7 +471,12 @@ export default function VideoDetailPage() {
           {/* Video Player */}
           <div className="aspect-video w-full rounded-lg overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
             {video.playbackUrl ? (
-              <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-lg" />
+              <VideoPlayer
+                src={video.playbackUrl}
+                poster={video.thumbnailUrl}
+                subtitles={video.subtitles || []}
+                className="w-full h-full rounded-lg"
+              />
             ) : video.status === "FAILED" || video.status === "CANCELLED" ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-md mx-auto">
                 <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">
@@ -526,6 +534,14 @@ export default function VideoDetailPage() {
                 className="gap-2"
               >
                 <FileText className="w-4 h-4" /> Video Details
+              </Button>
+              <Button
+                variant={activeTab === "subtitles" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("subtitles")}
+                className="gap-2"
+              >
+                <Captions className="w-4 h-4" /> Subtitles ({video.subtitles?.length || 0})
               </Button>
               <Button
                 variant={activeTab === "embed" ? "default" : "ghost"}
@@ -610,6 +626,17 @@ export default function VideoDetailPage() {
                   </p>
                 )}
               </div>
+            )}
+
+            {/* Tab: Subtitles */}
+            {activeTab === "subtitles" && (
+              <VideoSubtitlesManager
+                videoId={video.id}
+                isBunnyEmbed={Boolean(video.playbackUrl?.includes("iframe.mediadelivery.net"))}
+                onChange={(subs) => {
+                  setVideo((prev) => (prev ? { ...prev, subtitles: subs } : prev));
+                }}
+              />
             )}
 
             {/* Tab 2: Embed Code */}

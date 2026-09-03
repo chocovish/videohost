@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@videohost/db";
 import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { getVideoSubtitleTracksSafe } from "@/lib/subtitles";
 import { resolveImageUrl } from "@/lib/branding-image";
 import { resolveThumbnailUrl } from "@/lib/storage";
 import { auth } from "@/lib/auth";
@@ -452,6 +453,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
           durationSeconds: video.durationSeconds,
           thumbnailUrl: await resolveThumbnailUrl(video as any),
           playbackUrl: await getPlaybackUrl(video),
+          subtitles: await getVideoSubtitleTracksSafe(video.id),
           createdAt: video.createdAt,
         },
       });
@@ -476,6 +478,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
             durationSeconds: v.durationSeconds,
             thumbnailUrl: await resolveThumbnailUrl(v as any),
             playbackUrl: await getPlaybackUrl(v),
+            subtitles: await getVideoSubtitleTracksSafe(v.id),
             createdAt: v.createdAt,
           };
         })
@@ -533,6 +536,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         durationSeconds: v.durationSeconds,
         thumbnailUrl: await resolveThumbnailUrl(v as any),
         playbackUrl: await getPlaybackUrl(v),
+        subtitles: await getVideoSubtitleTracksSafe(v.id),
         createdAt: v.createdAt,
       })));
 

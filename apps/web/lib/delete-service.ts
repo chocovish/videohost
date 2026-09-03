@@ -145,6 +145,28 @@ export async function executeDeleteService({
       `[Delete Service] Deleting storage assets for ${allVideosToDelete.length} video(s) in org ${organizationId}...`
     );
 
+    // Subtitle .vtt files for Bunny videos live in our S3 (not on Bunny),
+    // so clean them explicitly – for S3 videos the whole prefix delete below
+    // already covers them, making this a harmless best-effort second pass.
+    try {
+      const subs = await db.videoSubtitle.findMany({
+        where: { videoId: { in: allVideosToDelete.map((v) => v.id) } },
+        select: { storageKey: true },
+      });
+      if (subs.length > 0) {
+        const { deleteFileFromS3 } = await import("@/lib/s3");
+        await Promise.allSettled(
+          subs.map((s) =>
+            deleteFileFromS3(s.storageKey).catch((err) => {
+              console.error(`[Delete Service Error] Failed to delete subtitle ${s.storageKey}:`, err);
+            })
+          )
+        );
+      }
+    } catch (subErr) {
+      console.warn("[Delete Service Warning] Subtitle cleanup lookup failed:", subErr);
+    }
+
     await Promise.allSettled(
       allVideosToDelete.map((v) =>
         deleteVideoStorage({

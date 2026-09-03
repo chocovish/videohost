@@ -136,6 +136,7 @@ export interface SharedData {
     durationSeconds?: number;
     thumbnailUrl?: string;
     playbackUrl?: string;
+    subtitles?: Array<{ id: string; label: string; language: string; src: string; isDefault: boolean }>;
     createdAt: string;
   };
   playlist?: {
@@ -166,6 +167,7 @@ export interface SharedData {
     durationSeconds?: number;
     thumbnailUrl?: string;
     playbackUrl?: string;
+    subtitles?: Array<{ id: string; label: string; language: string; src: string; isDefault: boolean }>;
     createdAt: string;
   }>;
   subfolders?: Array<{
@@ -1755,7 +1757,7 @@ export default function SharedContentClient({
             {/* Video Player or Purchasable Paywall */}
             <div className={data.video.playbackUrl ? `aspect-video w-full overflow-hidden border ${dividerBorder} ${roundnessClass}` : `w-full min-h-[320px] sm:aspect-video overflow-hidden border relative ${dividerBorder} ${roundnessClass}`}>
               {data.video.playbackUrl ? (
-                <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-lg" />
+                <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} subtitles={data.video.subtitles || []} className="w-full h-full rounded-lg" />
               ) : data.accessMode === "PURCHASABLE" ? (
                 <div className="relative w-full h-full min-h-[440px] sm:min-h-0 bg-slate-950 flex flex-col items-center justify-center text-center p-5 sm:p-8 overflow-hidden border border-slate-800">
                   {/* Poster Backdrop with Blur */}
@@ -2127,6 +2129,7 @@ export default function SharedContentClient({
                               key={currentVideo.id}
                               src={currentVideo.playbackUrl}
                               poster={currentVideo.thumbnailUrl}
+                              subtitles={currentVideo.subtitles || []}
                               autoplay={activePlaylistIndex > 0 || config.autoPlayMuted}
                               className="w-full h-full"
                             />
