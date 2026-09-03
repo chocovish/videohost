@@ -753,39 +753,66 @@ export default function VideoDetailPage() {
                     <p className="text-xs text-muted-foreground">
                       Adaptive bitrate stream representations packaged into fMP4 / HLS streams:
                     </p>
-                    <div className="divide-y divide-border">
-                      {video.renditions.map((rend) => {
-                        const isAudio = rend.resolution.toLowerCase().includes("audio");
-                        return (
-                          <div
-                            key={rend.resolution}
-                            className="py-3 flex items-center justify-between gap-2 text-sm"
-                          >
+                    {(() => {
+                      const totalRenditionsBytes = video.renditions.reduce(
+                        (sum, r) => sum + (Number(r.sizeBytes) || 0),
+                        0
+                      );
+                      const originalBytes =
+                        video.sizeBytes !== null && video.sizeBytes !== undefined
+                          ? Math.max(0, Number(video.sizeBytes) - totalRenditionsBytes)
+                          : null;
+                      return (
+                        <div className="divide-y divide-border">
+                          <div className="py-3 flex items-center justify-between gap-2 text-sm">
                             <div className="flex items-center gap-3">
                               <Badge
                                 variant="outline"
-                                className={`gap-1.5 ${
-                                  isAudio
-                                    ? "bg-muted text-muted-foreground"
-                                    : "border-primary/20 bg-primary/10 text-primary"
-                                }`}
+                                className="gap-1.5 border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                               >
-                                {isAudio ? (
-                                  <Volume2 className="w-3.5 h-3.5" />
-                                ) : (
-                                  <VideoIcon className="w-3.5 h-3.5" />
-                                )}
-                                {rend.resolution}
+                                <VideoIcon className="w-3.5 h-3.5" />
+                                Original
+                                {video.sourceResolution ? ` (${video.sourceResolution})` : ""}
                               </Badge>
                               <span className="text-xs text-muted-foreground font-mono">
-                                {rend.bitrateKbps} kbps bitrate
-                                {rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
+                                source file ({formatBytes(originalBytes)})
                               </span>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                          {video.renditions.map((rend) => {
+                            const isAudio = rend.resolution.toLowerCase().includes("audio");
+                            return (
+                              <div
+                                key={rend.resolution}
+                                className="py-3 flex items-center justify-between gap-2 text-sm"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Badge
+                                    variant="outline"
+                                    className={`gap-1.5 ${
+                                      isAudio
+                                        ? "bg-muted text-muted-foreground"
+                                        : "border-primary/20 bg-primary/10 text-primary"
+                                    }`}
+                                  >
+                                    {isAudio ? (
+                                      <Volume2 className="w-3.5 h-3.5" />
+                                    ) : (
+                                      <VideoIcon className="w-3.5 h-3.5" />
+                                    )}
+                                    {rend.resolution}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground font-mono">
+                                    {rend.bitrateKbps} kbps bitrate
+                                    {rend.sizeBytes ? ` (${formatBytes(rend.sizeBytes)})` : ""}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : video.requireHls ? (
                   video.status === "FAILED" || video.status === "CANCELLED" ? (
