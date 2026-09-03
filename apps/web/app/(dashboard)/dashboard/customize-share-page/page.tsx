@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Paintbrush,
-  Sparkles,
   Save,
   RotateCcw,
   Check,
@@ -18,6 +17,11 @@ import {
   Building2,
   Image as ImageIcon,
   ArrowRight,
+  Upload,
+  Trash2,
+  Crop,
+  LayoutTemplate,
+  Link2,
 } from "lucide-react";
 import SharedContentClient, { SharePageConfigData, SharedData } from "@/app/share/[token]/shared-content-client";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -26,6 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import ImageCropperModal from "@/components/ImageCropperModal";
+import { normalizeBannerLink } from "@/lib/image-webp";
 
 const THEME_PRESETS = [
   { id: "obsidian", name: "Obsidian Dark", primary: "#84cc16", bg: "#030712", card: "#0f172a" },
@@ -46,6 +52,7 @@ const DEFAULT_CONFIG: SharePageConfigData = {
   cardRoundness: "3xl",
   customTitle: "",
   welcomeTagline: "",
+  welcomeBannerLink: "",
   showLogo: true,
   showCta: false,
   ctaText: "Book a Demo",
@@ -68,14 +75,22 @@ export default function CustomizeSharePage() {
   const [orgData, setOrgData] = useState<{
     name: string;
     logoUrl?: string | null;
-    coverUrl?: string | null;
     slug: string;
   }>({
     name: "My Organization",
     logoUrl: null,
-    coverUrl: null,
     slug: "my-org",
   });
+
+  // Banner Header image state (stored as SharePageConfig.welcomeBannerKey).
+  // Uses the shared branding-image helper on the API side so replaced/removed
+  // banners are always deleted from storage.
+  const [newBannerData, setNewBannerData] = useState<string | null>(null);
+  const [removeBanner, setRemoveBanner] = useState(false);
+  const [isBannerCropperOpen, setIsBannerCropperOpen] = useState(false);
+  const [rawBannerImage, setRawBannerImage] = useState<string | null>(null);
+  const [bannerError, setBannerError] = useState("");
+  const bannerFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetchConfig();
@@ -97,6 +112,8 @@ export default function CustomizeSharePage() {
             ...data.config,
           }));
         }
+        setNewBannerData(null);
+        setRemoveBanner(false);
       }
 
       if (resOrg.ok) {
@@ -105,7 +122,6 @@ export default function CustomizeSharePage() {
           setOrgData({
             name: orgJson.organization.name || "My Organization",
             logoUrl: orgJson.organization.logoUrl || null,
-            coverUrl: orgJson.organization.coverUrl || null,
             slug: orgJson.organization.slug || "my-org",
           });
         }
@@ -117,15 +133,76 @@ export default function CustomizeSharePage() {
     }
   };
 
+  const handleBannerFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setBannerError("Please select a valid image file (PNG, JPG, WebP)");
+      setTimeout(() => setBannerError(""), 4000);
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setBannerError("Banner image size must be under 10MB");
+      setTimeout(() => setBannerError(""), 4000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setRawBannerImage(event.target.result as string);
+        setIsBannerCropperOpen(true);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    if (bannerFileInputRef.current) {
+      bannerFileInputRef.current.value = "";
+    }
+  };
+
+  const handleBannerCropComplete = (croppedBase64: string) => {
+    setNewBannerData(croppedBase64);
+    setRemoveBanner(false);
+    setBannerError("");
+    // Sync into config so the live preview updates instantly.
+    setConfig((prev) => ({ ...prev, welcomeBannerUrl: croppedBase64 }));
+    setIsBannerCropperOpen(false);
+  };
+
+  const handleRemoveBanner = () => {
+    setNewBannerData(null);
+    setRemoveBanner(true);
+    setConfig((prev) => ({ ...prev, welcomeBannerUrl: null }));
+  };
+
   const handleSave = async () => {
+    // Validate the optional banner link before touching the network.
+    const rawLink = (config.welcomeBannerLink || "").trim();
+    if (rawLink && !normalizeBannerLink(rawLink)) {
+      setBannerError("Please enter a valid banner link URL (e.g. https://example.com/sale).");
+      return;
+    }
+    setBannerError("");
     try {
       setSaving(true);
       setSavedSuccess(false);
 
+      // Strip resolved URLs (may hold local data-URL previews) — the API
+      // only needs theme fields plus banner mutation flags. This avoids
+      // sending the cropped base64 twice.
+      const { welcomeBannerUrl, customLogoUrl, ...restConfig } = config;
+
       const res = await fetch("/api/organization/share-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          ...restConfig,
+          newWelcomeBannerData: newBannerData,
+          removeWelcomeBanner: removeBanner,
+        }),
       });
 
       if (res.ok) {
@@ -136,6 +213,8 @@ export default function CustomizeSharePage() {
             ...data.config,
           }));
         }
+        setNewBannerData(null);
+        setRemoveBanner(false);
 
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
@@ -165,6 +244,8 @@ export default function CustomizeSharePage() {
 
       if (res.ok) {
         setConfig(DEFAULT_CONFIG);
+        setNewBannerData(null);
+        setRemoveBanner(false);
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
         setIsResetConfirmOpen(false);
@@ -185,7 +266,6 @@ export default function CustomizeSharePage() {
     organization: {
       name: orgData.name,
       logoUrl: orgData.logoUrl,
-      coverUrl: orgData.coverUrl,
       slug: orgData.slug,
     },
     video: {
@@ -223,7 +303,7 @@ export default function CustomizeSharePage() {
             </h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Personalize the look, custom logo, welcome banner, call-to-action, and interactive elements of your shared video pages.
+            Personalize the look, custom logo, banner header, call-to-action, and interactive elements of your shared video pages.
           </p>
         </div>
 
@@ -394,11 +474,11 @@ export default function CustomizeSharePage() {
                     <SelectValue placeholder="Select background style" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mesh-gradient">Mesh Gradient (Animated Glow Bulbs)</SelectItem>
-                    <SelectItem value="obsidian-aura">Obsidian Spotlight Aura</SelectItem>
-                    <SelectItem value="neon-grid">Neon Dot Grid Overlay</SelectItem>
-                    <SelectItem value="glassmorphism">Glassmorphism Frosted Backdrop</SelectItem>
-                    <SelectItem value="minimal-solid">Minimalist Clean Solid</SelectItem>
+                    <SelectItem value="mesh-gradient">Soft Gradient Wash (Subtle)</SelectItem>
+                    <SelectItem value="obsidian-aura">Spotlight Wash (Subtle)</SelectItem>
+                    <SelectItem value="neon-grid">Dot Grid Overlay</SelectItem>
+                    <SelectItem value="glassmorphism">Soft Top Wash</SelectItem>
+                    <SelectItem value="minimal-solid">Clean Solid (No Effects)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -447,7 +527,7 @@ export default function CustomizeSharePage() {
                 />
               </div>
 
-              {/* Organization Level Unified Branding Card */}
+              {/* Organization Level Unified Branding Card (logo only) */}
               <div className="space-y-3 pt-3 border-t border-border">
                 <div className="flex items-center justify-between">
                   <div>
@@ -468,53 +548,31 @@ export default function CustomizeSharePage() {
                 </div>
 
                 <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-4">
-                  {/* Current Active Assets Preview Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                    {/* Logo (1:1) */}
-                    <div className="sm:col-span-4 flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-border">
-                      <div className="w-10 h-10 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                        {orgData.logoUrl ? (
-                          <img
-                            src={orgData.logoUrl}
-                            alt="Org Logo"
-                            
-                          />
-                        ) : (
-                          <span className="font-extrabold text-xs text-primary">
-                            {orgData.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-foreground block truncate">Logo</span>
-                        <span className="text-xs text-muted-foreground">1:1 Square</span>
-                      </div>
+                  {/* Current Active Logo Preview */}
+                  <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-border">
+                    <div className="w-10 h-10 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center shrink-0">
+                      {orgData.logoUrl ? (
+                        <img
+                          src={orgData.logoUrl}
+                          alt="Org Logo"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="font-extrabold text-xs text-primary">
+                          {orgData.name.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
-
-                    {/* Cover Banner (3:1) */}
-                    <div className="sm:col-span-8 flex items-center gap-2.5 p-2.5 rounded-xl bg-card border border-border">
-                      <div className="w-20 h-10 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center shrink-0">
-                        {orgData.coverUrl ? (
-                          <img
-                            src={orgData.coverUrl}
-                            alt="Org Cover"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <ImageIcon className="w-4 h-4 text-muted-foreground opacity-50" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-foreground block truncate">Cover Photo</span>
-                        <span className="text-xs text-muted-foreground">Header Banner</span>
-                      </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-foreground block truncate">Logo</span>
+                      <span className="text-xs text-muted-foreground">1:1 Square</span>
                     </div>
                   </div>
 
                   <div className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
                     <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
                     <span>
-                      Logo and cover banner uploads have been centralized to <strong>Organization Settings</strong> to ensure consistent branding across your share links, video embeds, and offerings catalog.
+                      Logo uploads have been centralized to <strong>Organization Settings</strong> to ensure consistent branding across your share links, video embeds, and offerings catalog.
                     </span>
                   </div>
 
@@ -522,9 +580,126 @@ export default function CustomizeSharePage() {
                     href="/dashboard/settings"
                     className={buttonVariants({ variant: "outline", size: "sm" }) + " w-full font-bold cursor-pointer"}
                   >
-                    <span>Upload or Change Logo & Cover in Org Settings</span>
+                    <span>Upload or Change Logo in Org Settings</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
+                </div>
+              </div>
+
+              {/* Banner Header — custom share-page banner (reuses ImageCropperModal 5:1 flow) */}
+              <div className="space-y-3 pt-3 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                      <LayoutTemplate className="w-4 h-4 text-primary" /> Banner Header
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Custom banner shown at the top of your share pages
+                    </p>
+                  </div>
+                  <span className="text-xs font-mono text-muted-foreground font-semibold">
+                    5:1 Banner
+                  </span>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-muted/40 border border-border space-y-3">
+                  <div className="flex flex-col items-center justify-center p-3 bg-card border border-border rounded-2xl space-y-3">
+                    <div className="relative group w-full aspect-[5/1] rounded-2xl border border-border bg-muted shadow-xs overflow-hidden flex items-center justify-center">
+                      {config.welcomeBannerUrl ? (
+                        <img
+                          src={config.welcomeBannerUrl}
+                          alt="Share page banner header"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-muted/50 text-muted-foreground space-y-2 p-4 text-center">
+                          <ImageIcon className="w-8 h-8 opacity-40 text-primary" />
+                          <span className="text-xs font-semibold text-muted-foreground">
+                            No banner header uploaded yet (Optional)
+                          </span>
+                        </div>
+                      )}
+
+                      <div
+                        onClick={() => bannerFileInputRef.current?.click()}
+                        className="absolute inset-0 bg-background/80 text-foreground flex flex-col items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer backdrop-blur-xs"
+                        title="Click to upload or crop banner header"
+                      >
+                        <Crop className="w-6 h-6 text-primary" />
+                        <span className="text-xs font-bold">Change & Crop Banner Header</span>
+                      </div>
+                    </div>
+
+                    <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-1">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="xs"
+                          onClick={() => bannerFileInputRef.current?.click()}
+                          className="rounded-xl text-primary border-primary/30 hover:bg-primary hover:text-primary-foreground cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          {config.welcomeBannerUrl ? "Change Banner" : "Upload Banner"}
+                        </Button>
+
+                        {config.welcomeBannerUrl && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="xs"
+                            onClick={handleRemoveBanner}
+                            className="rounded-xl cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </Button>
+                        )}
+                      </div>
+
+                      <span className="text-xs font-mono text-muted-foreground">
+                        Recommended: 2000×400px (5:1)
+                      </span>
+                    </div>
+
+                    <input
+                      type="file"
+                      ref={bannerFileInputRef}
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      onChange={handleBannerFileSelect}
+                      className="hidden"
+                    />
+                  </div>
+
+                  {/* Optional click-through link — opens in a new tab */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Link2 className="w-3.5 h-3.5 text-primary" /> Banner Link (Optional)
+                    </label>
+                    <Input
+                      type="url"
+                      value={config.welcomeBannerLink || ""}
+                      onChange={(e) => {
+                        setBannerError("");
+                        setConfig((prev) => ({ ...prev, welcomeBannerLink: e.target.value }));
+                      }}
+                      placeholder="e.g. https://example.com/sale (opens in a new tab when the banner is clicked)"
+                    />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      When set, clicking the banner on your share pages opens this link in a new tab.
+                    </p>
+                  </div>
+
+                  {bannerError && (
+                    <p className="text-xs font-semibold text-destructive">{bannerError}</p>
+                  )}
+
+                  <div className="text-xs text-muted-foreground flex items-start gap-1.5 leading-relaxed">
+                    <Info className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                    <span>
+                      This banner header is displayed on your shared video pages instead of the organization cover photo. Replacing or removing it deletes the previous file from storage. Remember to <strong>Save Customization</strong> to apply changes.
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -721,6 +896,17 @@ export default function CustomizeSharePage() {
         cancelText="Cancel"
         isLoading={saving}
         onConfirm={handleExecuteReset}
+      />
+
+      {/* Banner Header Cropper (5:1) — reused from Organization Settings */}
+      <ImageCropperModal
+        isOpen={isBannerCropperOpen}
+        onClose={() => setIsBannerCropperOpen(false)}
+        imageSrc={rawBannerImage}
+        onCropComplete={handleBannerCropComplete}
+        aspectRatio="5:1"
+        title="Crop Banner Header (5:1 Banner)"
+        description="Position and zoom your share-page banner header (Recommended: 2000×400px 5:1 ratio)."
       />
     </div>
   );

@@ -1,25 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl, uploadBufferToS3, deleteFileFromS3 } from "@/lib/s3";
+import {
+  parseBase64Image,
+  deleteOldImage,
+  uploadBase64Image,
+  resolveImageUrl,
+} from "@/lib/branding-image";
 import { DEFAULT_OFFERINGS_CONFIG } from "@/lib/offerings-defaults";
-
-function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
-  const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
-  if (!matches || matches.length !== 3) return null;
-
-  const contentType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, "base64");
-
-  let extension = "png";
-  if (contentType.includes("jpeg") || contentType.includes("jpg")) extension = "jpg";
-  else if (contentType.includes("svg")) extension = "svg";
-  else if (contentType.includes("webp")) extension = "webp";
-  else if (contentType.includes("gif")) extension = "gif";
-
-  return { buffer, contentType, extension };
-}
 
 export async function GET() {
   try {
@@ -48,14 +36,7 @@ export async function GET() {
       where: { organizationId },
     });
 
-    let signedOrgLogoUrl: string | null = null;
-    if (org.logoUrl) {
-      try {
-        signedOrgLogoUrl = await getPresignedPlaybackUrl(org.logoUrl);
-      } catch (e) {
-        console.error("Error signing org logo URL:", e);
-      }
-    }
+    const signedOrgLogoUrl = await resolveImageUrl(org.logoUrl);
 
     if (!config) {
       return NextResponse.json({
@@ -75,23 +56,8 @@ export async function GET() {
       });
     }
 
-    let avatarUrl: string | null = null;
-    if (config.avatarKey) {
-      try {
-        avatarUrl = await getPresignedPlaybackUrl(config.avatarKey);
-      } catch (e) {
-        console.error("Error signing avatar URL:", e);
-      }
-    }
-
-    let bannerUrl: string | null = null;
-    if (config.bannerKey) {
-      try {
-        bannerUrl = await getPresignedPlaybackUrl(config.bannerKey);
-      } catch (e) {
-        console.error("Error signing banner URL:", e);
-      }
-    }
+    const avatarUrl = await resolveImageUrl(config.avatarKey);
+    const bannerUrl = await resolveImageUrl(config.bannerKey);
 
     return NextResponse.json({
       config: {
@@ -140,12 +106,8 @@ export async function PUT(req: Request) {
 
     // Reset Defaults if requested
     if (body.resetDefaults) {
-      if (existingConfig?.avatarKey) {
-        await deleteFileFromS3(existingConfig.avatarKey);
-      }
-      if (existingConfig?.bannerKey) {
-        await deleteFileFromS3(existingConfig.bannerKey);
-      }
+      await deleteOldImage(existingConfig?.avatarKey);
+      await deleteOldImage(existingConfig?.bannerKey);
 
       await db.offeringsPageConfig.deleteMany({
         where: { organizationId },
@@ -163,39 +125,39 @@ export async function PUT(req: Request) {
     let newAvatarKey = existingConfig?.avatarKey || null;
     let newBannerKey = existingConfig?.bannerKey || null;
 
-    // Handle Avatar Upload / Removal
+    // Handle Avatar Upload / Removal (old file always deleted first)
     if (body.removeAvatar || body.newAvatarData) {
-      if (existingConfig?.avatarKey) {
-        await deleteFileFromS3(existingConfig.avatarKey);
-        newAvatarKey = null;
-      }
+      await deleteOldImage(existingConfig?.avatarKey);
+      newAvatarKey = null;
     }
 
     if (body.newAvatarData) {
-      const parsed = parseBase64Data(body.newAvatarData);
-      if (parsed) {
-        const timestamp = Date.now();
-        const key = `offerings-customisation/${organizationId}/avatar-${timestamp}.${parsed.extension}`;
-        await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-        newAvatarKey = key;
+      if (parseBase64Image(body.newAvatarData)) {
+        newAvatarKey = await uploadBase64Image({
+          organizationId,
+          base64Data: body.newAvatarData,
+          folder: "offerings-customisation",
+          filenamePrefix: "avatar",
+          preset: "avatar",
+        });
       }
     }
 
-    // Handle Banner Upload / Removal
+    // Handle Banner Upload / Removal (old file always deleted first)
     if (body.removeBanner || body.newBannerData) {
-      if (existingConfig?.bannerKey) {
-        await deleteFileFromS3(existingConfig.bannerKey);
-        newBannerKey = null;
-      }
+      await deleteOldImage(existingConfig?.bannerKey);
+      newBannerKey = null;
     }
 
     if (body.newBannerData) {
-      const parsed = parseBase64Data(body.newBannerData);
-      if (parsed) {
-        const timestamp = Date.now();
-        const key = `offerings-customisation/${organizationId}/banner-${timestamp}.${parsed.extension}`;
-        await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-        newBannerKey = key;
+      if (parseBase64Image(body.newBannerData)) {
+        newBannerKey = await uploadBase64Image({
+          organizationId,
+          base64Data: body.newBannerData,
+          folder: "offerings-customisation",
+          filenamePrefix: "banner",
+          preset: "offerings-banner",
+        });
       }
     }
 
@@ -254,15 +216,8 @@ export async function PUT(req: Request) {
       },
     });
 
-    let avatarUrl: string | null = null;
-    if (updatedConfig.avatarKey) {
-      avatarUrl = await getPresignedPlaybackUrl(updatedConfig.avatarKey);
-    }
-
-    let bannerUrl: string | null = null;
-    if (updatedConfig.bannerKey) {
-      bannerUrl = await getPresignedPlaybackUrl(updatedConfig.bannerKey);
-    }
+    const avatarUrl = await resolveImageUrl(updatedConfig.avatarKey);
+    const bannerUrl = await resolveImageUrl(updatedConfig.bannerKey);
 
     return NextResponse.json({
       success: true,
@@ -292,12 +247,8 @@ export async function DELETE() {
     });
 
     if (existingConfig) {
-      if (existingConfig.avatarKey) {
-        await deleteFileFromS3(existingConfig.avatarKey);
-      }
-      if (existingConfig.bannerKey) {
-        await deleteFileFromS3(existingConfig.bannerKey);
-      }
+      await deleteOldImage(existingConfig.avatarKey);
+      await deleteOldImage(existingConfig.bannerKey);
 
       await db.offeringsPageConfig.delete({
         where: { organizationId },

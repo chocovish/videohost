@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl, uploadBufferToS3, deleteFileFromS3 } from "@/lib/s3";
+import {
+  parseBase64Image,
+  deleteOldImage,
+  uploadBase64Image,
+  resolveImageUrl,
+} from "@/lib/branding-image";
+import { normalizeBannerLink } from "@/lib/image-webp";
 
 const DEFAULT_CONFIG = {
   themePreset: "obsidian",
@@ -16,6 +22,7 @@ const DEFAULT_CONFIG = {
   customLogoUrl: null,
   welcomeBannerKey: null,
   welcomeBannerUrl: null,
+  welcomeBannerLink: "",
   showCta: false,
   ctaText: "Schedule a Call",
   ctaUrl: "https://example.com",
@@ -27,22 +34,7 @@ const DEFAULT_CONFIG = {
   footerText: "",
 };
 
-function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
-  const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
-  if (!matches || matches.length !== 3) return null;
 
-  const contentType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, "base64");
-  
-  let extension = "png";
-  if (contentType.includes("jpeg") || contentType.includes("jpg")) extension = "jpg";
-  else if (contentType.includes("svg")) extension = "svg";
-  else if (contentType.includes("webp")) extension = "webp";
-  else if (contentType.includes("gif")) extension = "gif";
-
-  return { buffer, contentType, extension };
-}
 
 export async function GET() {
   try {
@@ -66,23 +58,8 @@ export async function GET() {
       });
     }
 
-    let customLogoUrl: string | null = null;
-    if (config.customLogoKey) {
-      try {
-        customLogoUrl = await getPresignedPlaybackUrl(config.customLogoKey);
-      } catch (e) {
-        console.error("Error signing custom logo URL:", e);
-      }
-    }
-
-    let welcomeBannerUrl: string | null = null;
-    if (config.welcomeBannerKey) {
-      try {
-        welcomeBannerUrl = await getPresignedPlaybackUrl(config.welcomeBannerKey);
-      } catch (e) {
-        console.error("Error signing welcome banner URL:", e);
-      }
-    }
+    const customLogoUrl = await resolveImageUrl(config.customLogoKey);
+    const welcomeBannerUrl = await resolveImageUrl(config.welcomeBannerKey);
 
     return NextResponse.json({
       config: {
@@ -113,12 +90,8 @@ export async function PUT(req: Request) {
 
     // Reset Defaults via PUT request if requested
     if (body.resetDefaults) {
-      if (existingConfig?.customLogoKey) {
-        await deleteFileFromS3(existingConfig.customLogoKey);
-      }
-      if (existingConfig?.welcomeBannerKey) {
-        await deleteFileFromS3(existingConfig.welcomeBannerKey);
-      }
+      await deleteOldImage(existingConfig?.customLogoKey);
+      await deleteOldImage(existingConfig?.welcomeBannerKey);
 
       await db.sharePageConfig.delete({
         where: { organizationId },
@@ -136,41 +109,44 @@ export async function PUT(req: Request) {
     let newCustomLogoKey = existingConfig?.customLogoKey || null;
     let newWelcomeBannerKey = existingConfig?.welcomeBannerKey || null;
 
-    // Handle Custom Logo Upload / Removal
+    // Handle Custom Logo Upload / Removal (old file always deleted first)
     if (body.removeCustomLogo || body.newCustomLogoData) {
-      if (existingConfig?.customLogoKey) {
-        await deleteFileFromS3(existingConfig.customLogoKey);
-        newCustomLogoKey = null;
-      }
+      await deleteOldImage(existingConfig?.customLogoKey);
+      newCustomLogoKey = null;
     }
 
     if (body.newCustomLogoData) {
-      const parsed = parseBase64Data(body.newCustomLogoData);
-      if (parsed) {
-        const timestamp = Date.now();
-        const key = `share-page-customisation/${organizationId}/logo-${timestamp}.${parsed.extension}`;
-        await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-        newCustomLogoKey = key;
+      if (parseBase64Image(body.newCustomLogoData)) {
+        newCustomLogoKey = await uploadBase64Image({
+          organizationId,
+          base64Data: body.newCustomLogoData,
+          folder: "share-page-customisation",
+          filenamePrefix: "logo",
+          preset: "logo",
+        });
       }
     }
 
-    // Handle Welcome Banner Upload / Removal
+    // Handle Welcome Banner Upload / Removal (old file always deleted first)
     if (body.removeWelcomeBanner || body.newWelcomeBannerData) {
-      if (existingConfig?.welcomeBannerKey) {
-        await deleteFileFromS3(existingConfig.welcomeBannerKey);
-        newWelcomeBannerKey = null;
-      }
+      await deleteOldImage(existingConfig?.welcomeBannerKey);
+      newWelcomeBannerKey = null;
     }
 
     if (body.newWelcomeBannerData) {
-      const parsed = parseBase64Data(body.newWelcomeBannerData);
-      if (parsed) {
-        const timestamp = Date.now();
-        const key = `share-page-customisation/${organizationId}/welcome-banner-${timestamp}.${parsed.extension}`;
-        await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-        newWelcomeBannerKey = key;
+      if (parseBase64Image(body.newWelcomeBannerData)) {
+        newWelcomeBannerKey = await uploadBase64Image({
+          organizationId,
+          base64Data: body.newWelcomeBannerData,
+          folder: "share-page-customisation",
+          filenamePrefix: "welcome-banner",
+          preset: "banner-header",
+        });
       }
     }
+
+    // Optional click-through link (sanitized via the shared validator).
+    const newWelcomeBannerLink = normalizeBannerLink(body.welcomeBannerLink);
 
     const updatedConfig = await db.sharePageConfig.upsert({
       where: { organizationId },
@@ -186,6 +162,7 @@ export async function PUT(req: Request) {
         showLogo: body.showLogo ?? true,
         customLogoKey: newCustomLogoKey,
         welcomeBannerKey: newWelcomeBannerKey,
+        welcomeBannerLink: newWelcomeBannerLink,
         showCta: body.showCta ?? false,
         ctaText: body.ctaText || null,
         ctaUrl: body.ctaUrl || null,
@@ -207,6 +184,7 @@ export async function PUT(req: Request) {
         showLogo: body.showLogo ?? true,
         customLogoKey: newCustomLogoKey,
         welcomeBannerKey: newWelcomeBannerKey,
+        welcomeBannerLink: newWelcomeBannerLink,
         showCta: body.showCta ?? false,
         ctaText: body.ctaText || null,
         ctaUrl: body.ctaUrl || null,
@@ -219,15 +197,8 @@ export async function PUT(req: Request) {
       },
     });
 
-    let customLogoUrl: string | null = null;
-    if (updatedConfig.customLogoKey) {
-      customLogoUrl = await getPresignedPlaybackUrl(updatedConfig.customLogoKey);
-    }
-
-    let welcomeBannerUrl: string | null = null;
-    if (updatedConfig.welcomeBannerKey) {
-      welcomeBannerUrl = await getPresignedPlaybackUrl(updatedConfig.welcomeBannerKey);
-    }
+    const customLogoUrl = await resolveImageUrl(updatedConfig.customLogoKey);
+    const welcomeBannerUrl = await resolveImageUrl(updatedConfig.welcomeBannerKey);
 
     return NextResponse.json({
       success: true,
@@ -257,12 +228,8 @@ export async function DELETE() {
     });
 
     if (existingConfig) {
-      if (existingConfig.customLogoKey) {
-        await deleteFileFromS3(existingConfig.customLogoKey);
-      }
-      if (existingConfig.welcomeBannerKey) {
-        await deleteFileFromS3(existingConfig.welcomeBannerKey);
-      }
+      await deleteOldImage(existingConfig.customLogoKey);
+      await deleteOldImage(existingConfig.welcomeBannerKey);
 
       await db.sharePageConfig.delete({
         where: { organizationId },

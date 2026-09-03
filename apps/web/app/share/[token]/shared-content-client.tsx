@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { normalizeBannerLink } from "@/lib/image-webp";
 
 export interface SharePageConfigData {
   themePreset?: string;
@@ -76,6 +77,7 @@ export interface SharePageConfigData {
   showLogo?: boolean;
   customLogoUrl?: string | null;
   welcomeBannerUrl?: string | null;
+  welcomeBannerLink?: string | null;
   showCta?: boolean;
   ctaText?: string | null;
   ctaUrl?: string | null;
@@ -101,6 +103,7 @@ export interface SharedData {
   organization: {
     name: string;
     logoUrl?: string | null;
+    /** @deprecated No longer rendered on share pages — banner header (welcomeBannerUrl) is used instead. Kept for API backwards-compat. */
     coverUrl?: string | null;
     slug: string;
   };
@@ -179,9 +182,11 @@ interface SharedContentClientProps {
 function MeetingCountdown({
   scheduledStart,
   accentHex,
+  isLight,
 }: {
   scheduledStart: string;
   accentHex: string;
+  isLight?: boolean;
 }) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
@@ -215,45 +220,43 @@ function MeetingCountdown({
     return () => clearInterval(interval);
   }, [scheduledStart]);
 
+  const light = isLight ?? false;
   if (timeLeft.isPast) {
     return (
-      <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3 text-emerald-400 text-xs font-bold shadow-inner">
+      <div className={`px-4 py-3 rounded-xl border flex items-center justify-between gap-3 text-[13px] font-medium ${light ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/[0.07] border-emerald-500/20"}`}>
         <div className="flex items-center gap-2.5">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-          </span>
-          <span>Meeting room is open and ready for attendees to join!</span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+          <span className={light ? "text-emerald-700" : "text-emerald-400"}>Meeting room is open — you can join now.</span>
         </div>
-        <span className="hidden sm:inline-block uppercase tracking-wider text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/40 font-mono">
-          Ready
+        <span className={`hidden sm:inline-block uppercase tracking-wider text-[10px] font-semibold ${light ? "text-emerald-700" : "text-emerald-400"}`}>
+          Live
         </span>
       </div>
     );
   }
 
   return (
-    <div className="p-5 rounded-2xl bg-slate-950/70 border border-slate-800/80 space-y-3 backdrop-blur-md">
-      <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+    <div className={`px-5 py-4 rounded-xl border space-y-3 ${light ? "border-slate-200 bg-slate-50" : "border-white/10 bg-white/[0.02]"}`}>
+      <div className={`flex items-center justify-between text-xs font-medium ${light ? "text-slate-500" : "text-zinc-400"}`}>
         <span className="flex items-center gap-1.5">
           <Clock className="w-3.5 h-3.5" style={{ color: accentHex }} />
-          <span>Countdown to Session Start</span>
+          <span>Starts in</span>
         </span>
-        <span className="text-[11px] text-slate-400 font-mono">Live Timer</span>
+        <span className="text-[11px] tabular-nums">Live countdown</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
+      <div className="grid grid-cols-4 gap-2 text-center">
         {[
           { label: "Days", val: timeLeft.days },
           { label: "Hours", val: timeLeft.hours },
           { label: "Mins", val: timeLeft.minutes },
           { label: "Secs", val: timeLeft.seconds },
         ].map((item, idx) => (
-          <div key={idx} className="p-3 rounded-xl bg-slate-900/90 border border-slate-800 shadow-xs">
-            <p className="text-xl sm:text-2xl font-black font-mono text-white tracking-tight">
+          <div key={idx} className={`py-2.5 rounded-lg border ${light ? "bg-white border-slate-200" : "bg-white/[0.03] border-white/10"}`}>
+            <p className={`text-lg sm:text-xl font-semibold tabular-nums tracking-tight ${light ? "text-slate-900" : "text-white"}`}>
               {String(item.val).padStart(2, "0")}
             </p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-0.5">
+            <p className={`text-[10px] font-medium uppercase tracking-wider mt-0.5 ${light ? "text-slate-500" : "text-zinc-500"}`}>
               {item.label}
             </p>
           </div>
@@ -847,13 +850,10 @@ export default function SharedContentClient({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-6 selection:bg-lime-500 selection:text-black">
-        <div className="flex flex-col items-center gap-4 p-8 bg-slate-900/50 border border-white/5 rounded-3xl backdrop-blur-2xl shadow-2xl">
-          <div className="relative flex items-center justify-center">
-            <div className="w-14 h-14 border-4 border-lime-500/20 border-t-lime-500 rounded-full animate-spin" />
-            <Sparkles className="w-5 h-5 text-lime-400 absolute animate-pulse" />
-          </div>
-          <p className="text-sm font-bold text-slate-300 tracking-wide">Loading shared portal...</p>
+      <div className="min-h-screen bg-white dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-[3px] border-slate-200 dark:border-white/10 border-t-slate-900 dark:border-t-white rounded-full animate-spin" />
+          <p className="text-sm font-medium text-slate-500">Loading…</p>
         </div>
       </div>
     );
@@ -862,41 +862,37 @@ export default function SharedContentClient({
   // 1. PRIVATE CONTENT ACCESS BLOCKED
   if (errorState?.code === "PRIVATE_CONTENT") {
     return (
-      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black relative overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-500/10 blur-[120px] rounded-full pointer-events-none" />
-        <div className="max-w-md w-full p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl shadow-black/80 space-y-6 text-center backdrop-blur-2xl relative z-10">
-          <div className="p-4 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 shadow-lg inline-flex mx-auto">
-            <ShieldAlert className="w-8 h-8" />
+      <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl space-y-6 text-center">
+          <div className="mx-auto w-11 h-11 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <ShieldAlert className="w-5 h-5" />
           </div>
 
           {errorState.organizationName && (
-            <span className="inline-block text-xs font-extrabold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-3.5 py-1 rounded-full border border-amber-500/20">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               {errorState.organizationName}
-            </span>
+            </p>
           )}
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-black text-slate-100 tracking-tight">Private Access</h1>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              The owner of <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this item"}"</span> has set access to Private. Link sharing is currently disabled.
+            <h1 className="text-xl font-semibold tracking-tight">Private link</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              The owner of <span className="font-medium text-slate-900 dark:text-slate-100">“{errorState.itemTitle || "this item"}”</span> has set access to Private. Link sharing is currently disabled.
             </p>
           </div>
 
           {errorState.itemDescription && (
-            <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                About this content
-              </span>
+            <div className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 text-left">
               <RichTextViewer
                 content={errorState.itemDescription}
-                className="text-xs text-slate-300 leading-relaxed [&_a]:text-amber-400"
+                className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed"
               />
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-4 border-t border-slate-800/80">
-            <ShieldCheck className="w-4 h-4 text-amber-400" />
-            <span>Taped Protected Portal</span>
+          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-4 border-t border-slate-200 dark:border-white/10">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Protected by Taped</span>
           </div>
         </div>
       </div>
@@ -907,66 +903,62 @@ export default function SharedContentClient({
   if (errorState?.code === "LOGIN_REQUIRED") {
     const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
     return (
-      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black relative overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-lime-500/10 blur-[140px] rounded-full pointer-events-none" />
-        <div className="max-w-md w-full p-6 sm:p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl shadow-black/80 space-y-6 backdrop-blur-2xl relative z-10">
+      <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full p-6 sm:p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl space-y-6">
           {authViewMode === "options" ? (
             <>
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className="p-4 bg-lime-500/10 text-lime-400 rounded-2xl border border-lime-500/20 shadow-lg shadow-lime-500/10">
-                  <Lock className="w-8 h-8" />
+                <div className="w-11 h-11 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center">
+                  <Lock className="w-5 h-5" />
                 </div>
 
                 {errorState.organizationName && (
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3.5 py-1 rounded-full border border-lime-500/20">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     {errorState.organizationName}
-                  </span>
+                  </p>
                 )}
 
-                <h1 className="text-2xl font-black text-slate-100 tracking-tight">
-                  Authentication Required
+                <h1 className="text-xl font-semibold tracking-tight">
+                  Sign in required
                 </h1>
 
-                <p className="text-sm text-slate-400 leading-relaxed">
-                  Access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this content"}"</span> is restricted. Choose how you would like to view this content:
+                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <span className="font-medium text-slate-900 dark:text-slate-100">“{errorState.itemTitle || "This content"}”</span> is restricted. Sign in or use a one-time code to continue.
                 </p>
 
                 {errorState.itemDescription && (
-                  <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                      About this content
-                    </span>
+                  <div className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 text-left">
                     <RichTextViewer
                       content={errorState.itemDescription}
-                      className="text-xs text-slate-300 leading-relaxed [&_a]:text-lime-400"
+                      className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed"
                     />
                   </div>
                 )}
               </div>
 
-              <div className="space-y-3 pt-2">
+              <div className="space-y-2.5 pt-1">
                 <button
                   onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-                  className="w-full py-3.5 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm active:scale-98 cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                 >
                   <LogIn className="w-4 h-4" />
-                  Sign In to Access
+                  Sign in to access
                 </button>
 
                 <button
                   onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-                  className="w-full py-3.5 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-sm active:scale-98 cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-transparent hover:bg-slate-100 dark:hover:bg-white/5 text-slate-900 dark:text-slate-100 font-medium rounded-xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-2 text-sm cursor-pointer"
                 >
-                  <UserPlus className="w-4 h-4 text-lime-400" />
-                  Create Free Viewer Account
+                  <UserPlus className="w-4 h-4" />
+                  Create free account
                 </button>
 
                 <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-800" />
+                    <div className="w-full border-t border-slate-200 dark:border-white/10" />
                   </div>
-                  <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                    <span className="bg-slate-900 px-2">or temporary access</span>
+                  <div className="relative flex justify-center text-[11px] font-medium text-slate-400">
+                    <span className="bg-white dark:bg-[#111114] px-2">or</span>
                   </div>
                 </div>
 
@@ -976,16 +968,15 @@ export default function SharedContentClient({
                     setOtpError("");
                     setOtpSuccess("");
                   }}
-                  className="w-full py-3 px-4 bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white font-semibold rounded-xl border border-slate-800 hover:border-lime-500/40 transition-all flex items-center justify-center gap-2 text-xs active:scale-98 cursor-pointer group"
+                  className="w-full py-2.5 px-4 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white font-medium rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-white/10 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all flex items-center justify-center gap-2 text-[13px] cursor-pointer"
                 >
-                  <KeyRound className="w-3.5 h-3.5 text-lime-400 group-hover:scale-110 transition-transform" />
-                  <span>Access with One-Time Email Code (24h Pass)</span>
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Continue with email code</span>
                 </button>
               </div>
             </>
           ) : (
             <div className="space-y-5">
-              {/* Back to auth choices button */}
               <div className="flex items-center justify-between">
                 <button
                   type="button"
@@ -994,71 +985,46 @@ export default function SharedContentClient({
                     setOtpError("");
                     setOtpSuccess("");
                   }}
-                  className="text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center gap-1 transition-colors cursor-pointer"
+                  className="text-[13px] font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center gap-1 transition-colors cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  Back to Sign In options
+                  Back
                 </button>
 
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-2.5 py-0.5 rounded-full border border-lime-500/20">
-                  24h Viewer Pass
+                <span className="text-[11px] font-medium text-slate-500">
+                  24h pass
                 </span>
               </div>
 
               <div className="text-left space-y-1.5">
-                <h2 className="text-xl font-black text-slate-100 tracking-tight flex items-center gap-2">
-                  <KeyRound className="w-5 h-5 text-lime-400" />
-                  One-Time Code Access
+                <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+                  <KeyRound className="w-4 h-4" />
+                  Email code
                 </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Enter your invited email address to receive a 6-digit access code for 24-hour viewer access in this browser.
+                <p className="text-[13px] text-slate-500 leading-relaxed">
+                  We’ll send a 6-digit code for 24-hour access in this browser.
                 </p>
-              </div>
-
-              {/* Professional Guidance Notice */}
-              <div className="p-3.5 rounded-xl bg-lime-950/30 border border-lime-500/25 space-y-1.5 text-left">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-lime-400">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Recommended: Create an Account</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  Signing in saves all videos shared with you directly into your dashboard. You won't need to request or verify OTP codes again to watch your content.
-                </p>
-                <div className="pt-1 flex items-center gap-3">
-                  <button
-                    onClick={() => router.push(`/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-                    className="text-xs font-bold text-lime-400 hover:underline cursor-pointer"
-                  >
-                    Sign In &rarr;
-                  </button>
-                  <button
-                    onClick={() => router.push(`/auth/register?mode=viewer&callbackUrl=${encodeURIComponent(callbackUrl)}`)}
-                    className="text-xs font-bold text-slate-300 hover:text-white hover:underline cursor-pointer"
-                  >
-                    Create Free Account &rarr;
-                  </button>
-                </div>
               </div>
 
               {otpError && (
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-start gap-2 text-left">
+                <div className="p-3 rounded-xl bg-red-500/[0.06] border border-red-500/20 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-start gap-2 text-left">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{otpError}</span>
                 </div>
               )}
 
               {otpSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium flex items-start gap-2 text-left">
+                <div className="p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[13px] font-medium flex items-start gap-2 text-left">
                   <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{otpSuccess}</span>
                 </div>
               )}
 
               {otpStep === "request" ? (
-                <form onSubmit={handleSendOtp} className="space-y-3.5 text-left">
+                <form onSubmit={handleSendOtp} className="space-y-3 text-left">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                      Your Invited Email Address
+                    <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                      Email address
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1068,7 +1034,7 @@ export default function SharedContentClient({
                         value={otpEmail}
                         onChange={(e) => setOtpEmail(e.target.value)}
                         placeholder="you@company.com"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-lime-400 text-sm text-slate-100 placeholder:text-slate-500 transition-all"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] focus:outline-none focus:ring-2 focus:ring-slate-900/10 dark:focus:ring-white/20 text-sm placeholder:text-slate-400 transition-all"
                       />
                     </div>
                   </div>
@@ -1076,25 +1042,25 @@ export default function SharedContentClient({
                   <button
                     type="submit"
                     disabled={otpLoading}
-                    className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer active:scale-98"
+                    className="w-full py-2.5 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
                   >
                     {otpLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Sending Access Code...</span>
+                        <span>Sending…</span>
                       </>
                     ) : (
                       <>
-                        <span>Send 6-Digit Code</span>
+                        <span>Send code</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-3.5 text-left">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Code sent to <span className="text-slate-200 font-semibold">{otpEmail}</span></span>
+                <form onSubmit={handleVerifyOtp} className="space-y-3 text-left">
+                  <div className="flex items-center justify-between text-[13px] text-slate-500">
+                    <span>Sent to <span className="text-slate-900 dark:text-slate-100 font-medium">{otpEmail}</span></span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1103,15 +1069,15 @@ export default function SharedContentClient({
                         setOtpError("");
                         setOtpSuccess("");
                       }}
-                      className="text-lime-400 hover:underline font-bold cursor-pointer"
+                      className="font-medium hover:underline cursor-pointer"
                     >
                       Change
                     </button>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                      6-Digit Access Code
+                    <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                      6-digit code
                     </label>
                     <input
                       type="text"
@@ -1121,24 +1087,24 @@ export default function SharedContentClient({
                       value={otpCode}
                       onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
                       placeholder="123456"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-700 bg-slate-800/80 focus:outline-hidden focus:ring-2 focus:ring-lime-400 text-center font-mono text-xl font-bold tracking-[6px] text-slate-100 placeholder:text-slate-600 transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/[0.02] focus:outline-none focus:ring-2 focus:ring-slate-900/10 text-center font-mono text-xl font-semibold tracking-[6px] placeholder:text-slate-300 transition-all"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={otpLoading || otpCode.length < 6}
-                    className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/25 transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer active:scale-98"
+                    className="w-full py-2.5 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
                   >
                     {otpLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Verifying Pass...</span>
+                        <span>Verifying…</span>
                       </>
                     ) : (
                       <>
                         <Check className="w-4 h-4" />
-                        <span>Verify & Unlock Content</span>
+                        <span>Verify & continue</span>
                       </>
                     )}
                   </button>
@@ -1148,9 +1114,9 @@ export default function SharedContentClient({
                       type="button"
                       onClick={handleSendOtp}
                       disabled={otpLoading}
-                      className="text-xs text-slate-400 hover:text-slate-200 font-semibold hover:underline cursor-pointer disabled:opacity-50"
+                      className="text-[13px] text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium hover:underline cursor-pointer disabled:opacity-50"
                     >
-                      Didn't receive the code? Resend
+                      Resend code
                     </button>
                   </div>
                 </form>
@@ -1158,9 +1124,9 @@ export default function SharedContentClient({
             </div>
           )}
 
-          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-3 border-t border-slate-800/80">
-            <ShieldCheck className="w-4 h-4 text-lime-400" />
-            <span>Secure Taped Sharing Portal</span>
+          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 pt-3 border-t border-slate-200 dark:border-white/10">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Secured sharing</span>
           </div>
         </div>
       </div>
@@ -1171,53 +1137,42 @@ export default function SharedContentClient({
   if (errorState?.code === "ACCESS_DENIED") {
     const callbackUrl = `/share/${token}${subfolderId ? `?subfolderId=${subfolderId}` : ""}`;
     return (
-      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-lime-500 selection:text-black relative overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 bg-red-500/10 blur-[140px] rounded-full pointer-events-none" />
-        <div className="max-w-md w-full p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl shadow-black/80 space-y-6 text-center backdrop-blur-2xl relative z-10">
-          <div className="p-4 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 shadow-lg inline-flex mx-auto">
-            <UserX className="w-8 h-8" />
+      <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl space-y-6 text-center">
+          <div className="mx-auto w-11 h-11 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+            <UserX className="w-5 h-5" />
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-black text-slate-100 tracking-tight">Access Denied</h1>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Signed in as <span className="font-bold text-slate-200">{errorState.userEmail}</span>, but this email address has not been granted access to <span className="font-semibold text-slate-200">"{errorState.itemTitle || "this item"}"</span>.
+            <h1 className="text-xl font-semibold tracking-tight">No access</h1>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Signed in as <span className="font-medium text-slate-900 dark:text-slate-100">{errorState.userEmail}</span>, but this account doesn’t have access to <span className="font-medium text-slate-900 dark:text-slate-100">“{errorState.itemTitle || "this item"}”</span>.
             </p>
           </div>
 
           {errorState.itemDescription && (
-            <div className="w-full p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 text-left space-y-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                About this content
-              </span>
+            <div className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 text-left">
               <RichTextViewer
                 content={errorState.itemDescription}
-                className="text-xs text-slate-300 leading-relaxed [&_a]:text-lime-400"
+                className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed"
               />
             </div>
           )}
-          {/* Request Access Action Box */}
-          <div className="p-4 rounded-2xl bg-slate-800/50 border border-slate-700/60 space-y-3 text-left">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-200">Need Access to this Content?</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-lime-400 bg-lime-500/10 px-2 py-0.5 rounded-full border border-lime-500/20">
-                Restricted
-              </span>
-            </div>
-
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              You can send an access request to the content creator. Once approved, you'll be granted permission to view and stream this content.
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 space-y-3 text-left">
+            <p className="text-[13px] font-medium">Need access?</p>
+            <p className="text-[13px] text-slate-500 leading-relaxed">
+              Send a request to the creator. You’ll be notified once approved.
             </p>
 
             {requestAccessSuccess ? (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                <span>{requestAccessMessage || "Access request submitted! The creator has been notified."}</span>
+              <div className="p-3 rounded-xl bg-emerald-500/[0.07] border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[13px] font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{requestAccessMessage || "Request sent."}</span>
               </div>
             ) : (
               <div className="space-y-2 pt-1">
                 {requestAccessError && (
-                  <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-1.5">
+                  <div className="p-2.5 rounded-xl bg-red-500/[0.06] border border-red-500/20 text-red-600 dark:text-red-400 text-[13px] font-medium flex items-center gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{requestAccessError}</span>
                   </div>
@@ -1226,17 +1181,17 @@ export default function SharedContentClient({
                   type="button"
                   onClick={handleRequestAccess}
                   disabled={requestAccessLoading}
-                  className="w-full py-3 px-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-black rounded-xl shadow-lg shadow-lime-500/20 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer active:scale-98 disabled:opacity-50"
+                  className="w-full py-2.5 px-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 font-medium rounded-xl transition-all flex items-center justify-center gap-2 text-[13px] cursor-pointer disabled:opacity-50"
                 >
                   {requestAccessLoading ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Sending Request...</span>
+                      <span>Sending…</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-3.5 h-3.5" />
-                      <span>Request Access from Creator</span>
+                      <span>Request access</span>
                     </>
                   )}
                 </button>
@@ -1247,10 +1202,10 @@ export default function SharedContentClient({
           <div className="pt-1">
             <button
               onClick={() => signOut({ callbackUrl: `/auth/login?callbackUrl=${encodeURIComponent(callbackUrl)}` })}
-              className="w-full py-3 px-4 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-xl border border-slate-700/80 transition-all flex items-center justify-center gap-2 text-xs active:scale-98 cursor-pointer"
+              className="w-full py-2.5 px-4 text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/[0.03] transition-all flex items-center justify-center gap-2 text-[13px] cursor-pointer"
             >
-              <LogIn className="w-3.5 h-3.5 text-slate-400" />
-              <span>Sign In with a Different Account</span>
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Use a different account</span>
             </button>
           </div>
         </div>
@@ -1261,13 +1216,13 @@ export default function SharedContentClient({
   // 4. UNHANDLED ERROR / LINK NOT FOUND
   if (errorState || !data) {
     return (
-      <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col items-center justify-center p-6 selection:bg-lime-500 selection:text-black">
-        <div className="max-w-md w-full p-8 bg-slate-900/80 border border-white/10 rounded-3xl shadow-2xl text-center space-y-4 backdrop-blur-2xl">
-          <div className="inline-flex p-4 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20">
-            <AlertTriangle className="w-8 h-8" />
+      <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-6">
+        <div className="max-w-md w-full p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl text-center space-y-4">
+          <div className="mx-auto w-11 h-11 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5" />
           </div>
-          <h1 className="text-xl font-black text-slate-100">Unable to load shared content</h1>
-          <p className="text-sm text-slate-400">{errorState?.message || "This share link is invalid or expired."}</p>
+          <h1 className="text-lg font-semibold">Link unavailable</h1>
+          <p className="text-sm text-slate-500">{errorState?.message || "This share link is invalid or expired."}</p>
         </div>
       </div>
     );
@@ -1279,51 +1234,72 @@ export default function SharedContentClient({
   const isFolder = data.type === "folder";
   const isMeeting = data.type === "meeting";
 
-  // Dynamic Theme Preset Class & Style Mapping
+  // Dynamic Theme Preset — clean, flat, modern (no glow / no pulse)
+  // Presets drive the page explicitly (not system dark mode), so dark presets
+  // always render dark and minimal-light always renders light.
   const preset = config.themePreset || "obsidian";
+  const isLight = preset === "minimal-light";
 
-  let bgClass = "bg-[#030712] text-slate-100";
-  let cardBgClass = "bg-slate-900/80 border-white/10 shadow-2xl";
-  let headerBgClass = "bg-[#030712]/75 border-white/8";
-  let accentHex = config.accentColor || "#84cc16";
+  let bgClass = "bg-[#0a0a0b] text-zinc-100";
+  let cardBgClass =
+    "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+  let headerBgClass = "bg-[#0a0a0b]/80 border-white/10";
+  let accentHex = config.accentColor || "#e4e4e7";
 
-  if (preset === "cyberpunk") {
-    bgClass = "bg-[#070312] text-slate-100";
-    cardBgClass = "bg-[#0f0724]/90 border-cyan-500/30 shadow-[0_0_40px_rgba(6,182,212,0.15)]";
-    headerBgClass = "bg-[#070312]/80 border-cyan-500/20";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#06b6d4";
+  if (preset === "obsidian") {
+    bgClass = "bg-[#0a0a0b] text-zinc-100";
+    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#0a0a0b]/80 border-white/10";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#e4e4e7";
+  } else if (preset === "cyberpunk") {
+    bgClass = "bg-[#08060f] text-slate-100";
+    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#08060f]/80 border-white/10";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#22d3ee";
   } else if (preset === "vaporwave") {
-    bgClass = "bg-[#0f041c] text-purple-100";
-    cardBgClass = "bg-[#1d0836]/90 border-pink-500/30 shadow-[0_0_40px_rgba(236,72,153,0.15)]";
-    headerBgClass = "bg-[#0f041c]/80 border-pink-500/20";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#ec4899";
+    bgClass = "bg-[#12061f] text-purple-50";
+    cardBgClass = "bg-white/[0.04] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#12061f]/80 border-white/10";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#f472b6";
   } else if (preset === "gold") {
     bgClass = "bg-[#0c0a09] text-stone-100";
-    cardBgClass = "bg-[#1c1917]/90 border-amber-500/30 shadow-[0_0_40px_rgba(245,158,11,0.15)]";
-    headerBgClass = "bg-[#0c0a09]/80 border-amber-500/20";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#eab308";
+    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#0c0a09]/80 border-white/10";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#fbbf24";
   } else if (preset === "ocean") {
-    bgClass = "bg-[#021124] text-sky-100";
-    cardBgClass = "bg-[#072449]/90 border-sky-400/30 shadow-[0_0_40px_rgba(56,189,248,0.15)]";
-    headerBgClass = "bg-[#021124]/80 border-sky-400/20";
+    bgClass = "bg-[#04121f] text-sky-50";
+    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#04121f]/80 border-white/10";
     if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#38bdf8";
   } else if (preset === "sunset") {
-    bgClass = "bg-[#17050b] text-rose-50";
-    cardBgClass = "bg-[#2d0d17]/90 border-orange-500/30 shadow-[0_0_40px_rgba(249,115,22,0.15)]";
-    headerBgClass = "bg-[#17050b]/80 border-orange-500/20";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#f97316";
+    bgClass = "bg-[#160609] text-rose-50";
+    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
+    headerBgClass = "bg-[#160609]/80 border-white/10";
+    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#fb923c";
   } else if (preset === "minimal-light") {
-    bgClass = "bg-slate-50 text-slate-900";
-    cardBgClass = "bg-white border-slate-200/90 shadow-xl shadow-slate-200/50";
+    bgClass = "bg-[#fafafa] text-slate-900";
+    cardBgClass = "bg-white border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
     headerBgClass = "bg-white/80 border-slate-200";
     if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#2563eb";
   }
+  // Respect an explicit custom accent color as-is
+  if (config.accentColor && config.accentColor !== "#84cc16") accentHex = config.accentColor;
 
-  // Card roundness
-  let roundnessClass = "rounded-3xl";
+  // Small helpers so inner blocks stay readable on both dark presets and light preset
+  const mutedText = isLight ? "text-slate-500" : "text-zinc-400";
+  const faintText = isLight ? "text-slate-400" : "text-zinc-500";
+  const strongText = isLight ? "text-slate-900" : "text-white";
+  const dividerBorder = isLight ? "border-slate-200" : "border-white/10";
+  const softSurface = isLight
+    ? "bg-slate-50 border-slate-200"
+    : "bg-white/[0.02] border-white/10";
+
+  // Card roundness — softer modern scale
+  let roundnessClass = "rounded-2xl";
   if (config.cardRoundness === "xl") roundnessClass = "rounded-xl";
-  if (config.cardRoundness === "pill") roundnessClass = "rounded-[2.5rem]";
-  if (config.cardRoundness === "square") roundnessClass = "rounded-none";
+  if (config.cardRoundness === "pill") roundnessClass = "rounded-[1.75rem]";
+  if (config.cardRoundness === "square") roundnessClass = "rounded-lg";
+  if ((config.cardRoundness || "3xl") === "3xl") roundnessClass = "rounded-2xl";
 
   // Display logo URL
   const logoUrlToDisplay = config.customLogoUrl || organization.logoUrl;
@@ -1342,95 +1318,85 @@ export default function SharedContentClient({
 
   return (
     <div
-      className={`min-h-screen flex flex-col selection:bg-lime-500 selection:text-black font-sans antialiased transition-colors duration-500 relative ${bgClass}`}
+      className={`min-h-screen flex flex-col font-sans antialiased relative ${bgClass}`}
     >
-      {/* Background Aura Effects */}
-      {config.backgroundStyle === "mesh-gradient" && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+      {/* Subtle static background washes — no animation, no pulsing */}
+      {(config.backgroundStyle === "mesh-gradient" || config.backgroundStyle === "obsidian-aura" || config.backgroundStyle === "glassmorphism") && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[320px] z-0" aria-hidden="true">
           <div
-            className="absolute -top-32 left-1/4 w-[500px] h-[500px] rounded-full blur-[140px] opacity-25 animate-pulse"
-            style={{ backgroundColor: accentHex }}
-          />
-          <div
-            className="absolute top-1/3 -right-20 w-[450px] h-[450px] rounded-full blur-[160px] opacity-20"
-            style={{ backgroundColor: accentHex }}
-          />
-        </div>
-      )}
-
-      {config.backgroundStyle === "obsidian-aura" && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full blur-[180px] opacity-20"
-            style={{ backgroundColor: accentHex }}
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to bottom, ${accentHex}14, transparent 70%)`,
+            }}
           />
         </div>
       )}
 
       {config.backgroundStyle === "neon-grid" && (
         <div
-          className="fixed inset-0 pointer-events-none z-0 opacity-15"
+          className="pointer-events-none absolute inset-0 z-0 opacity-[0.05]"
+          aria-hidden="true"
           style={{
             backgroundImage: `radial-gradient(${accentHex} 1px, transparent 1px)`,
-            backgroundSize: "24px 24px",
+            backgroundSize: "22px 22px",
           }}
         />
       )}
 
-      {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-2xl border-b shadow-lg transition-all ${headerBgClass}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {logoUrlToDisplay ? (
-              <img
-                src={logoUrlToDisplay}
-                alt={displayTitle}
-                className="w-10 h-10 rounded-xl object-cover border border-white/10 shadow-md"
-              />
-            ) : (
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-950 font-black text-lg shadow-lg ring-1 ring-white/20"
-                style={{ backgroundColor: accentHex }}
-              >
-                {displayTitle.substring(0, 2).toUpperCase()}
-              </div>
+      {/* Header — slim, clean */}
+      <header className={`sticky top-0 z-50 backdrop-blur-xl border-b ${headerBgClass}`}>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {config.showLogo !== false && (
+              logoUrlToDisplay ? (
+                <img
+                  src={logoUrlToDisplay}
+                  alt={displayTitle}
+                  className={`w-8 h-8 rounded-lg object-cover border shrink-0 ${dividerBorder}`}
+                />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0"
+                  style={{ backgroundColor: accentHex, color: isLight ? "#fff" : "#09090b" }}
+                >
+                  {displayTitle.substring(0, 1).toUpperCase()}
+                </div>
+              )
             )}
 
-            <div className="flex flex-col justify-center">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-black tracking-tight flex items-center gap-1.5">
-                  {displayTitle}
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-semibold tracking-tight truncate">
+                {displayTitle}
+              </span>
+              {isFolder && data.currentFolder && (
+                <span className={`hidden sm:inline-block text-xs truncate ${mutedText}`}>
+                  / {data.currentFolder.name}
                 </span>
-                {isFolder && data.currentFolder && (
-                  <span className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
-                    {data.currentFolder.name}
-                  </span>
-                )}
-                {isPlaylist && data.playlist && (
-                  <span className="hidden sm:inline-block text-xs font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
-                    {data.playlist.title}
-                  </span>
-                )}
-              </div>
+              )}
+              {isPlaylist && data.playlist && (
+                <span className={`hidden sm:inline-block text-xs truncate ${mutedText}`}>
+                  / {data.playlist.title}
+                </span>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             {config.showShareButton && (
               <button
                 onClick={handleCopyLink}
-                className="px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800 border border-white/10 text-xs font-bold text-slate-200 transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                className={`h-8 px-3 rounded-lg text-[13px] font-medium transition-all flex items-center gap-1.5 cursor-pointer border border-transparent ${isLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-200" : "text-zinc-400 hover:text-white hover:bg-white/5 hover:border-white/10"}`}
                 title="Copy link to clipboard"
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5" style={{ color: accentHex }} />
-                    <span style={{ color: accentHex }}>Copied</span>
+                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Copy Link</span>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Copy link</span>
                   </>
                 )}
               </button>
@@ -1440,45 +1406,62 @@ export default function SharedContentClient({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
-        {/* Welcome Banner Image & Subtitle Banner */}
-        {((config.welcomeBannerUrl || organization.coverUrl) || config.welcomeTagline) && (
-          <div className="max-w-4xl mx-auto space-y-4 text-center">
-            {(config.welcomeBannerUrl || organization.coverUrl) && (
-              <div className={`w-full overflow-hidden border border-white/10 shadow-2xl max-h-72 bg-slate-900 ${roundnessClass}`}>
-                <img
-                  src={config.welcomeBannerUrl || organization.coverUrl || ""}
-                  alt="Welcome Banner"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 relative z-10">
+        {/* Banner Header Image & Tagline — custom share-page banner (5:1, no org cover fallback) */}
+        {(config.welcomeBannerUrl || config.welcomeTagline) && (
+          <div className="max-w-3xl mx-auto space-y-5 text-center">
+            {config.welcomeBannerUrl && (
+              (() => {
+                const bannerImg = (
+                  <img
+                    src={config.welcomeBannerUrl}
+                    alt="Banner header"
+                    className="w-full h-full object-cover"
+                  />
+                );
+                const bannerBoxClass = `w-full overflow-hidden border aspect-[5/1] ${cardBgClass} ${roundnessClass}`;
+                // Optional click-through link opens in a new tab.
+                const bannerLink = normalizeBannerLink(config.welcomeBannerLink);
+                if (bannerLink) {
+                  return (
+                    <a
+                      href={bannerLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`${bannerBoxClass} block cursor-pointer transition-opacity hover:opacity-95`}
+                      title="Open banner link in a new tab"
+                    >
+                      {bannerImg}
+                    </a>
+                  );
+                }
+                return <div className={bannerBoxClass}>{bannerImg}</div>;
+              })()
             )}
             {config.welcomeTagline && (
-              <div className="py-2">
+              <div>
                 {(() => {
                   const val = config.welcomeTaglineFontSize || "24";
-                  let fontSizePx = "24px";
-                  let weightClass = "font-black";
+                  let fontSizePx = "22px";
+                  let weightClass = "font-semibold";
 
-                  if (val === "sm") { fontSizePx = "14px"; weightClass = "font-semibold"; }
-                  else if (val === "md") { fontSizePx = "16px"; weightClass = "font-bold"; }
-                  else if (val === "lg") { fontSizePx = "18px"; weightClass = "font-extrabold"; }
-                  else if (val === "xl") { fontSizePx = "24px"; weightClass = "font-black"; }
-                  else if (val === "2xl") { fontSizePx = "36px"; weightClass = "font-black"; }
+                  if (val === "sm") { fontSizePx = "14px"; weightClass = "font-medium"; }
+                  else if (val === "md") { fontSizePx = "16px"; weightClass = "font-medium"; }
+                  else if (val === "lg") { fontSizePx = "18px"; weightClass = "font-semibold"; }
+                  else if (val === "xl") { fontSizePx = "22px"; weightClass = "font-semibold"; }
+                  else if (val === "2xl") { fontSizePx = "30px"; weightClass = "font-semibold"; }
                   else {
                     const parsed = parseInt(val, 10);
                     if (!isNaN(parsed) && parsed > 0) {
-                      fontSizePx = `${parsed}px`;
-                      if (parsed <= 14) weightClass = "font-semibold";
-                      else if (parsed <= 18) weightClass = "font-bold";
-                      else if (parsed >= 28) weightClass = "font-black";
-                      else weightClass = "font-extrabold";
+                      const clamped = Math.min(40, Math.max(13, parsed));
+                      fontSizePx = `${clamped}px`;
+                      weightClass = clamped >= 24 ? "font-semibold" : "font-medium";
                     }
                   }
 
                   return (
                     <h2
-                      className={`tracking-tight ${weightClass}`}
+                      className={`tracking-tight text-balance ${weightClass}`}
                       style={{ fontSize: fontSizePx }}
                     >
                       {config.welcomeTagline}
@@ -1492,23 +1475,14 @@ export default function SharedContentClient({
 
         {/* MEETING SHARE & ENTRY PASS VIEW */}
         {isMeeting && data.meeting && (
-          <div className="relative group max-w-4xl mx-auto space-y-6">
-            {/* Ambient Glow */}
-            <div
-              className="absolute -inset-1 rounded-3xl blur-3xl opacity-35 group-hover:opacity-70 transition-opacity duration-1000 -z-10 pointer-events-none"
-              style={{ backgroundColor: accentHex }}
-            />
-
+          <div className="max-w-3xl mx-auto space-y-5">
             {/* Hero Conference Card */}
-            <div className={`overflow-hidden border backdrop-blur-2xl shadow-2xl ${cardBgClass} ${roundnessClass}`}>
+            <div className={`overflow-hidden border ${cardBgClass} ${roundnessClass}`}>
               {/* Top Banner / Status Strip */}
-              <div className="px-6 py-4 border-b border-slate-800/80 bg-slate-950/60 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-                  </div>
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+              <div className="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300">
                     {data.meeting.status === "ACTIVE"
                       ? "Live Meeting In Progress"
                       : data.meeting.status === "COMPLETED"
@@ -1535,22 +1509,22 @@ export default function SharedContentClient({
                 </div>
               </div>
 
-              <div className="p-6 sm:p-10 space-y-8">
+              <div className="p-6 sm:p-8 space-y-6">
                 {/* Main Title & Host Section */}
-                <div className="space-y-4">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+                <div className="space-y-3">
+                  <h1 className={`text-2xl sm:text-3xl font-semibold tracking-tight leading-tight ${strongText}`}>
                     {data.meeting.title}
                   </h1>
 
                   {data.meeting.description && (
-                    <div className="text-base text-slate-300 leading-relaxed max-w-3xl">
-                      <RichTextViewer content={data.meeting.description} className="text-slate-300 [&_a]:text-primary" />
+                    <div className={`text-[15px] leading-relaxed max-w-3xl ${mutedText}`}>
+                      <RichTextViewer content={data.meeting.description} className={`${mutedText} [&_a]:underline`} />
                     </div>
                   )}
                 </div>
 
                 {/* Host Profile & Organization Card */}
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 backdrop-blur-md">
+                <div className={`flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border ${softSurface}`}>
                   <div className="flex items-center gap-3.5">
                     {data.meeting.createdBy?.image ? (
                       <img
@@ -1568,7 +1542,7 @@ export default function SharedContentClient({
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-extrabold text-slate-100">
+                        <p className="text-sm font-semibold text-slate-100">
                           {data.meeting.createdBy?.name || "Meeting Host"}
                         </p>
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
@@ -1597,7 +1571,7 @@ export default function SharedContentClient({
 
                 {/* Live Countdown & Event Room Readiness */}
                 {data.meeting.scheduledStart && (
-                  <MeetingCountdown scheduledStart={data.meeting.scheduledStart} accentHex={accentHex} />
+                  <MeetingCountdown scheduledStart={data.meeting.scheduledStart} accentHex={accentHex} isLight={isLight} />
                 )}
 
                 {/* TICKET STUB / PASS PURCHASE OR JOIN ACTION SECTION */}
@@ -1608,11 +1582,11 @@ export default function SharedContentClient({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Ticket className="w-5 h-5 text-amber-400" />
-                          <span className="text-xs font-extrabold uppercase tracking-widest text-amber-400">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-amber-400">
                             Official Entry Pass Required
                           </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black text-white">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-white">
                           Buy Entry Ticket for this Meeting
                         </h2>
                         <p className="text-xs text-slate-400">
@@ -1623,7 +1597,7 @@ export default function SharedContentClient({
                       {/* Price & Currency Display */}
                       <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-center sm:text-right shrink-0">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pass Price</p>
-                        <p className="text-3xl font-black mt-0.5" style={{ color: accentHex }}>
+                        <p className="text-3xl font-semibold mt-0.5" style={{ color: accentHex }}>
                           {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                         </p>
                       </div>
@@ -1658,7 +1632,7 @@ export default function SharedContentClient({
                             const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                             router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                           }}
-                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
                           style={{ backgroundColor: accentHex }}
                         >
                           <LogIn className="w-4 h-4" />
@@ -1672,7 +1646,7 @@ export default function SharedContentClient({
                         <button
                           onClick={handleExecuteCheckout}
                           disabled={isCheckingOut}
-                          className="w-full py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer"
+                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer"
                           style={{ backgroundColor: accentHex }}
                         >
                           {isCheckingOut ? (
@@ -1706,11 +1680,11 @@ export default function SharedContentClient({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                          <span className="text-xs font-black uppercase tracking-widest text-emerald-400">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
                             Attendee Pass Confirmed
                           </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-black text-white">
+                        <h2 className="text-xl sm:text-2xl font-semibold text-white">
                           You Have Access to this Meeting
                         </h2>
                         <p className="text-xs text-slate-400">
@@ -1727,7 +1701,7 @@ export default function SharedContentClient({
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <button
                         onClick={() => router.push(`/meet/${data.meeting?.id || token}`)}
-                        className="w-full sm:flex-1 py-4 px-8 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-2xl transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                        className="w-full sm:flex-1 py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
                         style={{ backgroundColor: accentHex }}
                       >
                         <Video className="w-5 h-5" />
@@ -1752,48 +1726,36 @@ export default function SharedContentClient({
 
         {/* SINGLE VIDEO SHARE VIEW */}
         {isVideo && data.video && (
-          <div className="relative group max-w-5xl mx-auto space-y-6">
-            {/* Ambient Backlight */}
-            <div
-              className="absolute -inset-1 rounded-3xl blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-1000 -z-10 pointer-events-none"
-              style={{ backgroundColor: accentHex }}
-            />
-
+          <div className="max-w-4xl mx-auto space-y-5">
             {/* Back to Folder Navigation */}
             {data.parentFolder && (
-              <div className={`flex items-center justify-between gap-3 text-xs sm:text-sm backdrop-blur-xl px-4 py-3 border transition-all ${cardBgClass} ${roundnessClass}`}>
+              <div className={`flex items-center justify-between gap-3 text-[13px] px-4 py-2.5 border ${cardBgClass} ${roundnessClass}`}>
                 <button
                   onClick={handleBackToFolder}
-                  className="font-bold flex items-center gap-2 transition-all group cursor-pointer hover:opacity-90 active:scale-98 text-slate-200"
+                  className={`font-medium flex items-center gap-2 transition-colors cursor-pointer ${isLight ? "text-slate-600 hover:text-slate-900" : "text-zinc-400 hover:text-white"}`}
                 >
-                  <div
-                    className="p-1.5 rounded-lg group-hover:scale-110 transition-transform flex items-center justify-center shadow-xs"
-                    style={{
-                      backgroundColor: `${accentHex}15`,
-                      color: accentHex,
-                    }}
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                  </div>
+                  <span className={`w-6 h-6 rounded-md border flex items-center justify-center ${dividerBorder} ${isLight ? "bg-slate-100" : "bg-white/5"}`}>
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="text-slate-400 font-medium">Back to</span>
-                    <span className="font-extrabold" style={{ color: accentHex }}>
+                    <span>Back to</span>
+                    <span className={`font-semibold ${strongText}`}>
                       {data.parentFolder.name}
                     </span>
                   </span>
                 </button>
 
-                <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 font-semibold bg-slate-800/50 px-2.5 py-1 rounded-lg border border-slate-700/40">
-                  <Folder className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Folder Collection</span>
+                <div className={`hidden sm:flex items-center gap-1.5 text-xs ${mutedText}`}>
+                  <Folder className="w-3.5 h-3.5" />
+                  <span>Folder</span>
                 </div>
               </div>
             )}
 
             {/* Video Player or Purchasable Paywall */}
-            <div className={data.video.playbackUrl ? "aspect-video w-full rounded-xl overflow-hidden shadow-2xl" : "w-full min-h-[440px] sm:min-h-[480px] sm:aspect-video rounded-2xl overflow-hidden shadow-2xl relative"}>
+            <div className={data.video.playbackUrl ? `aspect-video w-full overflow-hidden border ${dividerBorder} ${roundnessClass}` : `w-full min-h-[320px] sm:aspect-video overflow-hidden border relative ${dividerBorder} ${roundnessClass}`}>
               {data.video.playbackUrl ? (
-                <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-xl" />
+                <VideoPlayer src={data.video.playbackUrl} poster={data.video.thumbnailUrl} className="w-full h-full rounded-lg" />
               ) : data.accessMode === "PURCHASABLE" ? (
                 <div className="relative w-full h-full min-h-[440px] sm:min-h-0 bg-slate-950 flex flex-col items-center justify-center text-center p-5 sm:p-8 overflow-hidden border border-slate-800">
                   {/* Poster Backdrop with Blur */}
@@ -1818,10 +1780,10 @@ export default function SharedContentClient({
                     </div>
 
                     <div className="space-y-1">
-                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                         Purchasable Video
                       </span>
-                      <h3 className="text-lg sm:text-2xl font-black text-white leading-snug">
+                      <h3 className="text-lg sm:text-2xl font-semibold text-white leading-snug">
                         {data.video.title}
                       </h3>
                     </div>
@@ -1829,7 +1791,7 @@ export default function SharedContentClient({
                     {/* Listed price based on current country */}
                     <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[180px] sm:min-w-[200px] shadow-sm">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</p>
-                      <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
+                      <p className="text-2xl sm:text-3xl font-semibold tracking-tight mt-0.5" style={{ color: accentHex }}>
                         {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                       </p>
                     </div>
@@ -1872,7 +1834,7 @@ export default function SharedContentClient({
                       <button
                         onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                         disabled={isCheckingOut}
-                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                         style={{ backgroundColor: accentHex }}
                       >
                         {isCheckingOut ? (
@@ -1908,28 +1870,28 @@ export default function SharedContentClient({
             </div>
 
             {/* Video Detail & Controls Card */}
-            <div className={`p-6 sm:p-8 space-y-6 backdrop-blur-2xl ${cardBgClass} ${roundnessClass}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
-                <div className="space-y-2">
+            <div className={`p-6 sm:p-7 space-y-6 ${cardBgClass} ${roundnessClass}`}>
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 ${dividerBorder}`}>
+                <div className="space-y-2.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
-                      className="px-3 py-1 text-xs font-extrabold rounded-full flex items-center gap-1.5 border"
+                      className="px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1.5 border"
                       style={{
-                        backgroundColor: `${accentHex}15`,
+                        backgroundColor: `${accentHex}12`,
                         borderColor: `${accentHex}30`,
                         color: accentHex,
                       }}
                     >
-                      <Film className="w-3.5 h-3.5" /> Shared Video
+                      <Film className="w-3.5 h-3.5" /> Video
                     </span>
                     {config.showDuration && data.video.durationSeconds && (
-                      <span className="px-3 py-1 bg-slate-800/80 border border-slate-700/60 text-slate-300 text-xs font-semibold rounded-full flex items-center gap-1.5">
+                      <span className={`px-2.5 py-1 border text-xs font-medium rounded-full flex items-center gap-1.5 ${isLight ? "bg-slate-100 border-slate-200 text-slate-600" : "bg-white/5 border-white/10 text-zinc-400"}`}>
                         <Clock className="w-3.5 h-3.5" style={{ color: accentHex }} />
                         {formatDuration(data.video.durationSeconds)}
                       </span>
                     )}
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
+                  <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug">
                     {data.video.title}
                   </h1>
                 </div>
@@ -1937,17 +1899,17 @@ export default function SharedContentClient({
                 {config.showShareButton && (
                   <button
                     onClick={handleCopyLink}
-                    className="self-start sm:self-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold rounded-xl border border-slate-700/80 transition-all flex items-center gap-2 text-xs shadow-md active:scale-95 shrink-0 cursor-pointer"
+                    className={`self-start sm:self-auto h-9 px-3.5 text-[13px] font-medium rounded-lg border transition-all flex items-center gap-2 shrink-0 cursor-pointer ${isLight ? "bg-slate-900 text-white hover:opacity-90 border-slate-900" : "bg-white text-slate-900 hover:opacity-90 border-white"}`}
                   >
                     {copied ? (
                       <>
-                        <Check className="w-4 h-4" style={{ color: accentHex }} />
-                        <span>Link Copied</span>
+                        <Check className="w-4 h-4" />
+                        <span>Copied</span>
                       </>
                     ) : (
                       <>
-                        <Share2 className="w-4 h-4" style={{ color: accentHex }} />
-                        <span>Share Video</span>
+                        <Share2 className="w-4 h-4" />
+                        <span>Share</span>
                       </>
                     )}
                   </button>
@@ -1956,17 +1918,17 @@ export default function SharedContentClient({
 
               {/* Purchasable Video Quick Action Banner */}
               {data.accessMode === "PURCHASABLE" && !data.isPurchased && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                <div className={`p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${softSurface}`}>
                   <div className="flex items-center gap-3 text-left w-full sm:w-auto">
                     <div
-                      className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${accentHex}20`, color: accentHex }}
+                      className="p-2.5 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${accentHex}15`, color: accentHex }}
                     >
-                      <Lock className="w-5 h-5" />
+                      <Lock className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-white">Full Video Access Required</h4>
-                      <p className="text-xs text-slate-400">One-time purchase unlocks instant permanent playback</p>
+                      <h4 className="text-sm font-semibold">Full access required</h4>
+                      <p className={`text-xs ${mutedText}`}>One-time purchase unlocks permanent playback</p>
                     </div>
                   </div>
                   <button
@@ -1986,58 +1948,58 @@ export default function SharedContentClient({
 
               {data.video.description && (
                 <div className="space-y-1.5">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Description</h3>
-                  <RichTextViewer content={data.video.description} className="text-sm text-slate-300 leading-relaxed [&_a]:text-primary" />
+                  <h3 className={`text-xs font-medium uppercase tracking-wider ${mutedText}`}>Description</h3>
+                  <RichTextViewer content={data.video.description} className={`text-sm leading-relaxed ${isLight ? "text-slate-600" : "text-zinc-400"} [&_a]:underline`} />
                 </div>
               )}
 
-              {/* Call-to-Action (CTA) Card (if enabled) */}
+              {/* Call-to-Action (CTA) Card (if enabled) — respects customize-share-page */}
               {config.showCta && config.ctaUrl && (
                 <div
-                  className="p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 transition-all shadow-lg"
+                  className={`p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${roundnessClass}`}
                   style={{
-                    backgroundColor: `${accentHex}10`,
-                    borderColor: `${accentHex}40`,
+                    backgroundColor: `${accentHex}0d`,
+                    borderColor: `${accentHex}30`,
                   }}
                 >
-                  <div className="space-y-1 text-center sm:text-left">
-                    <h4 className="font-extrabold text-base tracking-tight">Interested in learning more?</h4>
-                    <p className="text-xs text-slate-300">Click below to take the next step with {displayTitle}.</p>
+                  <div className="space-y-0.5 text-center sm:text-left">
+                    <h4 className="font-semibold text-[15px] tracking-tight">Interested in learning more?</h4>
+                    <p className={`text-[13px] ${mutedText}`}>Take the next step with {displayTitle}.</p>
                   </div>
                   <a
                     href={config.ctaUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 rounded-xl text-slate-950 font-black text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
-                    style={{ backgroundColor: accentHex }}
+                    className="h-9 px-5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shrink-0 hover:opacity-90"
+                    style={{ backgroundColor: accentHex, color: isLight ? "#fff" : "#09090b" }}
                   >
                     <span>{config.ctaText || "Learn More"}</span>
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 </div>
               )}
 
               {/* Social Sharing Bar */}
               {config.showSocialBar && (
-                <div className="space-y-2 pt-2 border-t border-slate-800/60">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Share video to</span>
+                <div className={`space-y-2.5 pt-4 border-t ${dividerBorder}`}>
+                  <span className={`text-xs font-medium block ${mutedText}`}>Share</span>
                   <div className="flex flex-wrap items-center gap-2">
                     <a
                       href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareTitle)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                      className={`h-8 px-3 border text-[13px] font-medium rounded-lg transition-all flex items-center gap-1.5 ${isLight ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}
                     >
                       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                       </svg>
-                      Twitter / X
+                      X
                     </a>
                     <a
                       href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                      className={`h-8 px-3 border text-[13px] font-medium rounded-lg transition-all flex items-center gap-1.5 ${isLight ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}
                     >
                       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                         <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
@@ -2048,7 +2010,7 @@ export default function SharedContentClient({
                       href={`https://wa.me/?text=${encodeURIComponent(`${shareTitle} ${shareUrl}`)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 text-slate-200"
+                      className={`h-8 px-3 border text-[13px] font-medium rounded-lg transition-all flex items-center gap-1.5 ${isLight ? "border-slate-200 text-slate-600 hover:bg-slate-50" : "border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white"}`}
                     >
                       <Send className="w-3.5 h-3.5" /> WhatsApp
                     </a>
@@ -2057,16 +2019,16 @@ export default function SharedContentClient({
               )}
 
               {/* Portal Security Badge */}
-              <div className="pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+              <div className={`pt-4 border-t flex items-center justify-between text-xs ${dividerBorder} ${faintText}`}>
                 <div className="flex items-center gap-1.5">
                   <span>Hosted by</span>
-                  <span className="font-bold bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/40">
+                  <span className="font-medium">
                     {displayTitle}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <ShieldCheck className="w-4 h-4" style={{ color: accentHex }} />
-                  <span>Encrypted Link Access</span>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Secure link</span>
                 </div>
               </div>
             </div>
@@ -2090,7 +2052,7 @@ export default function SharedContentClient({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                       Shared Playlist
                     </span>
                     {data.playlist.totalDurationSeconds > 0 && (
@@ -2100,7 +2062,7 @@ export default function SharedContentClient({
                       </span>
                     )}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-100">
+                  <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-100">
                     {data.playlist.title}
                   </h1>
                   {data.playlist.description && (
@@ -2116,7 +2078,7 @@ export default function SharedContentClient({
 
               <div className="flex items-center gap-3">
                 <span
-                  className="px-3 py-1.5 rounded-full text-xs font-black border flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-1.5"
                   style={{
                     backgroundColor: `${accentHex}15`,
                     borderColor: `${accentHex}30`,
@@ -2158,7 +2120,7 @@ export default function SharedContentClient({
                     {/* Left Column (2 cols): Video Player & Info */}
                     <div className="lg:col-span-2 space-y-5">
                       {/* Video Player Box or Purchasable Paywall */}
-                      <div className="relative group/player rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800">
+                      <div className="relative group/player rounded-lg overflow-hidden shadow-sm bg-black border border-slate-800">
                         <div className={currentVideo?.playbackUrl ? "aspect-video w-full" : "w-full min-h-[440px] sm:min-h-[480px] sm:aspect-video"}>
                           {currentVideo?.playbackUrl ? (
                             <VideoPlayer
@@ -2191,10 +2153,10 @@ export default function SharedContentClient({
                                 </div>
 
                                 <div className="space-y-1">
-                                  <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">
                                     Purchasable Playlist &bull; {data.videos?.length || 0} Videos Included
                                   </span>
-                                  <h3 className="text-lg sm:text-2xl font-black text-white leading-snug">
+                                  <h3 className="text-lg sm:text-2xl font-semibold text-white leading-snug">
                                     {data.playlist.title}
                                   </h3>
                                 </div>
@@ -2202,7 +2164,7 @@ export default function SharedContentClient({
                                 {/* Listed price based on current country */}
                                 <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 backdrop-blur-md text-center min-w-[180px] sm:min-w-[200px] shadow-sm">
                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Playlist Price</p>
-                                  <p className="text-2xl sm:text-3xl font-black tracking-tight mt-0.5" style={{ color: accentHex }}>
+                                  <p className="text-2xl sm:text-3xl font-semibold tracking-tight mt-0.5" style={{ color: accentHex }}>
                                     {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                                   </p>
                                 </div>
@@ -2248,7 +2210,7 @@ export default function SharedContentClient({
                                   <button
                                     onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                                     disabled={isCheckingOut}
-                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
                                     style={{ backgroundColor: accentHex }}
                                   >
                                     {isCheckingOut ? (
@@ -2320,12 +2282,12 @@ export default function SharedContentClient({
                       </div>
 
                       {/* Video Details Card */}
-                      <div className={`p-6 space-y-4 backdrop-blur-2xl ${cardBgClass} ${roundnessClass}`}>
+                      <div className={`p-6 space-y-4 backdrop-blur ${cardBgClass} ${roundnessClass}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span
-                                className="px-2.5 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider"
+                                className="px-2.5 py-0.5 text-[10px] font-semibold rounded-md uppercase tracking-wider"
                                 style={{
                                   backgroundColor: `${accentHex}20`,
                                   color: accentHex,
@@ -2340,7 +2302,7 @@ export default function SharedContentClient({
                                 </span>
                               )}
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+                            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug">
                               {currentVideo?.title}
                             </h2>
                           </div>
@@ -2378,7 +2340,7 @@ export default function SharedContentClient({
 
                         {currentVideo?.description && (
                           <div className="space-y-1">
-                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                               About this video
                             </h3>
                             <RichTextViewer content={currentVideo.description} className="text-sm text-slate-300 leading-relaxed [&_a]:text-primary" />
@@ -2395,7 +2357,7 @@ export default function SharedContentClient({
                             }}
                           >
                             <div className="space-y-1 text-center sm:text-left">
-                              <h4 className="font-extrabold text-base tracking-tight">
+                              <h4 className="font-semibold text-base tracking-tight">
                                 Interested in learning more?
                               </h4>
                               <p className="text-xs text-slate-300">
@@ -2406,7 +2368,7 @@ export default function SharedContentClient({
                               href={config.ctaUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-6 py-3 rounded-xl text-slate-950 font-black text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
+                              className="px-6 py-3 rounded-xl text-slate-950 font-semibold text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
                               style={{ backgroundColor: accentHex }}
                             >
                               <span>{config.ctaText || "Learn More"}</span>
@@ -2418,7 +2380,7 @@ export default function SharedContentClient({
                     </div>
 
                     {/* Right Column (1 col): Playlist Tracklist Queue */}
-                    <div className={`p-4 space-y-3 backdrop-blur-2xl sticky top-24 ${cardBgClass} ${roundnessClass}`}>
+                    <div className={`p-4 space-y-3 backdrop-blur sticky top-24 ${cardBgClass} ${roundnessClass}`}>
                       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                         <div className="flex items-center gap-2">
                           <ListVideo className="w-4 h-4" style={{ color: accentHex }} />
@@ -2540,7 +2502,7 @@ export default function SharedContentClient({
               {subfolderId && (
                 <>
                   <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
-                  <span className="font-extrabold text-slate-100 bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/50">
+                  <span className="font-semibold text-slate-100 bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/50">
                     {data.currentFolder.name}
                   </span>
                 </>
@@ -2550,7 +2512,7 @@ export default function SharedContentClient({
             {/* Subfolders Section */}
             {data.subfolders && data.subfolders.length > 0 && (
               <div className="space-y-3">
-                <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Folders ({data.subfolders.length})
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -2578,7 +2540,7 @@ export default function SharedContentClient({
 
             {/* Videos Grid Section */}
             <div className="space-y-3">
-              <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Videos ({data.videos?.length || 0})
               </h2>
 
@@ -2616,7 +2578,7 @@ export default function SharedContentClient({
                         </div>
 
                         {config.showDuration && vid.durationSeconds && (
-                          <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-[11px] font-extrabold text-slate-200 rounded-md border border-slate-800/80 shadow-md">
+                          <span className="absolute bottom-2.5 right-2.5 px-2 py-0.5 bg-slate-950/80 backdrop-blur-md text-[11px] font-semibold text-slate-200 rounded-md border border-slate-800/80 shadow-md">
                             {formatDuration(vid.durationSeconds)}
                           </span>
                         )}
@@ -2648,8 +2610,8 @@ export default function SharedContentClient({
 
       {/* VISITOR CONTENT CHECKOUT MODAL */}
       <Dialog open={isCheckoutOpen} onOpenChange={(open) => !open && setIsCheckoutOpen(false)}>
-        <DialogContent className="max-w-md p-6 bg-slate-900 border border-slate-800 text-slate-100 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden">
-          <DialogHeader className="shrink-0 pb-3 border-b border-slate-800">
+        <DialogContent className={`max-w-md p-6 rounded-2xl max-h-[90vh] flex flex-col overflow-hidden ${isLight ? "bg-white border-slate-200 text-slate-900" : "bg-[#101013] border-white/10 text-zinc-100"}`}>
+          <DialogHeader className={`shrink-0 pb-3 border-b ${dividerBorder}`}>
             <div className="flex items-center gap-3">
               <div
                 className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
@@ -2662,7 +2624,7 @@ export default function SharedContentClient({
                 )}
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-white">
+                <DialogTitle className={`text-lg font-semibold ${strongText}`}>
                   {data?.type === "meeting"
                     ? "Purchase Meeting Entry Pass"
                     : data?.type === "playlist"
@@ -2697,7 +2659,7 @@ export default function SharedContentClient({
             <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                  <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                     {data?.type === "meeting"
                       ? "Live Meeting Pass"
                       : data?.type === "playlist"
@@ -2718,7 +2680,7 @@ export default function SharedContentClient({
 
                 <div className="text-right">
                   <span className="text-xs font-semibold text-slate-400">Total</span>
-                  <p className="text-lg font-black" style={{ color: accentHex }}>
+                  <p className="text-lg font-semibold" style={{ color: accentHex }}>
                     {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                   </p>
                 </div>
@@ -2801,8 +2763,8 @@ export default function SharedContentClient({
       </Dialog>
 
       {/* Footer Text */}
-      <footer className="py-6 border-t border-slate-800/40 text-center text-xs text-slate-400 relative z-10">
-        <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}. Powered by Taped.`}</p>
+      <footer className={`py-6 border-t text-center text-xs relative z-10 ${dividerBorder} ${faintText}`}>
+        <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}`}</p>
       </footer>
     </div>
   );

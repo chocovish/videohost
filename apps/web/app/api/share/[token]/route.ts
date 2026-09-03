@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@videohost/db";
 import { getPlaybackUrl, getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveImageUrl } from "@/lib/branding-image";
 import { resolveThumbnailUrl } from "@/lib/storage";
 import { auth } from "@/lib/auth";
 import { verifySharePassJwt, SHARE_OTP_COOKIE_NAME } from "@/lib/share-otp";
@@ -116,18 +117,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
     let sharePageConfig: any = rawShareConfig ? { ...rawShareConfig } : null;
     if (sharePageConfig) {
       if (sharePageConfig.customLogoKey) {
-        try {
-          sharePageConfig.customLogoUrl = await getPresignedPlaybackUrl(sharePageConfig.customLogoKey);
-        } catch (e) {
-          console.error("Error signing custom logo URL in share route:", e);
-        }
+        sharePageConfig.customLogoUrl = await resolveImageUrl(
+          sharePageConfig.customLogoKey
+        );
       }
       if (sharePageConfig.welcomeBannerKey) {
-        try {
-          sharePageConfig.welcomeBannerUrl = await getPresignedPlaybackUrl(sharePageConfig.welcomeBannerKey);
-        } catch (e) {
-          console.error("Error signing welcome banner URL in share route:", e);
-        }
+        sharePageConfig.welcomeBannerUrl = await resolveImageUrl(
+          sharePageConfig.welcomeBannerKey
+        );
       }
     }
 

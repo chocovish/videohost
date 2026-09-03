@@ -128,8 +128,9 @@ model SharePageConfig {
   welcomeTagline         String?
   welcomeTaglineFontSize String       @default("xl") // "sm" | "md" | "lg" | "xl" | "2xl"
   showLogo               Boolean      @default(true)
-  customLogoKey          String?      // S3 Key: share-page-customisation/{orgId}/logo-{timestamp}.png
-  welcomeBannerKey       String?      // S3 Key: share-page-customisation/{orgId}/welcome-banner-{timestamp}.png
+  customLogoKey          String?      // S3 Key: share-page-customisation/{orgId}/logo-{timestamp}.webp
+  welcomeBannerKey       String?      // S3 Key: share-page-customisation/{orgId}/welcome-banner-{timestamp}.webp
+  welcomeBannerLink      String?      // Optional link opened in a new tab when the banner header is clicked
 
   // Call To Action (CTA) Button
   showCta          Boolean      @default(false)

@@ -1,25 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl, uploadBufferToS3 } from "@/lib/s3";
+import { parseBase64Image, uploadBase64Image } from "@/lib/branding-image";
 import { resolveOfferingItem } from "@/lib/offerings-resolver";
-
-function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
-  const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
-  if (!matches || matches.length !== 3) return null;
-
-  const contentType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, "base64");
-
-  let extension = "png";
-  if (contentType.includes("jpeg") || contentType.includes("jpg")) extension = "jpg";
-  else if (contentType.includes("svg")) extension = "svg";
-  else if (contentType.includes("webp")) extension = "webp";
-  else if (contentType.includes("gif")) extension = "gif";
-
-  return { buffer, contentType, extension };
-}
 
 export async function GET() {
   try {
@@ -72,12 +55,14 @@ export async function POST(req: Request) {
     let coverImageKey: string | null = null;
     if (!isPlaylistOrVideo) {
       if (body.coverImageData) {
-        const parsed = parseBase64Data(body.coverImageData);
-        if (parsed) {
-          const timestamp = Date.now();
-          const key = `offerings-items/${organizationId}/cover-${timestamp}.${parsed.extension}`;
-          await uploadBufferToS3(key, parsed.buffer, parsed.contentType);
-          coverImageKey = key;
+        if (parseBase64Image(body.coverImageData)) {
+          coverImageKey = await uploadBase64Image({
+            organizationId,
+            base64Data: body.coverImageData,
+            folder: "offerings-items",
+            filenamePrefix: "cover",
+            preset: "offering-cover",
+          });
         }
       } else if (body.coverImageKey || body.coverImageUrl) {
         coverImageKey = body.coverImageKey || body.coverImageUrl;

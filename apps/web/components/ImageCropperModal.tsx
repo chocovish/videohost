@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { canvasToWebPDataUrl, WEBP_EXPORT_QUALITY } from "@/lib/image-webp";
 import {
   Crop,
   ZoomIn,
@@ -23,7 +24,7 @@ import {
   Maximize2,
 } from "lucide-react";
 
-export type AspectRatioOption = "1:1" | "16:9" | "3:1" | "4:3";
+export type AspectRatioOption = "1:1" | "16:9" | "3:1" | "4:1" | "5:1" | "4:3";
 
 export interface ImageCropperModalProps {
   isOpen: boolean;
@@ -56,6 +57,26 @@ const RATIO_CONFIGS: Record<AspectRatioOption, RatioConfig> = {
     targetH: 400,
     aspectRatioCSS: "aspect-[3/1]",
     hint: "Recommended for Page Banners & Hero Header Covers (1200×400px)",
+    maxDisplayW: 380,
+  },
+  "4:1": {
+    label: "4:1 Banner Header",
+    shortLabel: "4:1",
+    ratio: 4 / 1,
+    targetW: 1600,
+    targetH: 400,
+    aspectRatioCSS: "aspect-[4/1]",
+    hint: "Recommended for Page Banners & Hero Header Covers (1600×400px)",
+    maxDisplayW: 380,
+  },
+  "5:1": {
+    label: "5:1 Banner Header",
+    shortLabel: "5:1",
+    ratio: 5 / 1,
+    targetW: 2000,
+    targetH: 400,
+    aspectRatioCSS: "aspect-[5/1]",
+    hint: "Recommended for Page Banners & Hero Header Covers (2000×400px)",
     maxDisplayW: 380,
   },
   "16:9": {
@@ -262,7 +283,8 @@ export default function ImageCropperModal({
       try {
         const canvas = getCroppedCanvas(currentZoom, currentOffset, customImg);
         if (canvas) {
-          setPreviewDataUrl(canvas.toDataURL("image/png", 0.95));
+          // Shared WebP export keeps previews small and consistent with uploads.
+          setPreviewDataUrl(canvasToWebPDataUrl(canvas, WEBP_EXPORT_QUALITY));
         }
       } catch (err) {
         console.warn("Could not export preview canvas to data URL:", err);
@@ -394,7 +416,8 @@ export default function ImageCropperModal({
     try {
       const canvas = getCroppedCanvas(zoom, offset);
       if (canvas) {
-        const croppedBase64 = canvas.toDataURL("image/png", 0.95);
+        // Resize already happens via targetW/targetH canvas; compress + WebP here.
+        const croppedBase64 = canvasToWebPDataUrl(canvas, WEBP_EXPORT_QUALITY);
         onCropComplete(croppedBase64);
         onClose();
       }
@@ -486,7 +509,7 @@ export default function ImageCropperModal({
           {/* Aspect Ratio Selector Pills (if allowed) */}
           {allowRatioChange && (
             <div className="flex items-center gap-1.5 pt-1 overflow-x-auto py-0.5 scrollbar-none">
-              {(["3:1", "16:9", "1:1", "4:3"] as AspectRatioOption[]).map((r) => (
+              {(["5:1", "4:1", "3:1", "16:9", "1:1", "4:3"] as AspectRatioOption[]).map((r) => (
                 <Button
                   key={r}
                   type="button"
@@ -694,6 +717,10 @@ export default function ImageCropperModal({
                       className={`overflow-hidden rounded-xl border border-border shadow-md relative bg-black/40 ${
                         selectedRatio === "1:1"
                           ? "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl"
+                          : selectedRatio === "5:1"
+                          ? "w-full max-w-[280px] h-14 sm:h-16 rounded-xl"
+                          : selectedRatio === "4:1"
+                          ? "w-full max-w-[280px] h-16 sm:h-20 rounded-xl"
                           : selectedRatio === "3:1"
                           ? "w-full max-w-[280px] h-20 sm:h-24 rounded-xl"
                           : "w-full max-w-[280px] h-32 sm:h-36 rounded-xl"

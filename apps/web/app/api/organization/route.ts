@@ -1,24 +1,12 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { getPresignedPlaybackUrl, uploadBufferToS3, deleteFileFromS3 } from "@/lib/s3";
-
-function parseBase64Data(dataString: string): { buffer: Buffer; contentType: string; extension: string } | null {
-  const matches = dataString.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,(.+)$/);
-  if (!matches || matches.length !== 3) return null;
-
-  const contentType = matches[1];
-  const base64Data = matches[2];
-  const buffer = Buffer.from(base64Data, "base64");
-
-  let extension = "png";
-  if (contentType.includes("jpeg") || contentType.includes("jpg")) extension = "jpg";
-  else if (contentType.includes("svg")) extension = "svg";
-  else if (contentType.includes("webp")) extension = "webp";
-  else if (contentType.includes("gif")) extension = "gif";
-
-  return { buffer, contentType, extension };
-}
+import { getPresignedPlaybackUrl } from "@/lib/s3";
+import {
+  parseBase64Image,
+  deleteOldImage,
+  uploadBase64Image,
+} from "@/lib/branding-image";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -152,14 +140,11 @@ export async function PATCH(req: Request) {
 
     // 2. Handle Logo Upload or Removal (1:1 Ratio)
     if (body.removeLogo) {
-      if (existingOrg.logoUrl) {
-        await deleteFileFromS3(existingOrg.logoUrl);
-      }
+      await deleteOldImage(existingOrg.logoUrl);
       updateData.logoUrl = null;
     } else if (body.logoData || body.newLogoData) {
       const rawLogoData = body.logoData || body.newLogoData;
-      const parsed = parseBase64Data(rawLogoData);
-      if (!parsed) {
+      if (!parseBase64Image(rawLogoData)) {
         return NextResponse.json(
           { error: "Invalid logo image format. Please upload a valid PNG, JPG, WebP, or SVG." },
           { status: 400 }
@@ -167,26 +152,25 @@ export async function PATCH(req: Request) {
       }
 
       // Delete previous custom logo from S3 if present
-      if (existingOrg.logoUrl) {
-        await deleteFileFromS3(existingOrg.logoUrl);
-      }
+      await deleteOldImage(existingOrg.logoUrl);
 
-      const timestamp = Date.now();
-      const s3Key = `organization-logos/${authCtx.orgId}/logo-${timestamp}.${parsed.extension}`;
-      await uploadBufferToS3(s3Key, parsed.buffer, parsed.contentType);
+      const s3Key = await uploadBase64Image({
+        organizationId: authCtx.orgId,
+        base64Data: rawLogoData,
+        folder: "organization-logos",
+        filenamePrefix: "logo",
+        preset: "logo",
+      });
       updateData.logoUrl = s3Key;
     }
 
     // 3. Handle Cover Photo / Banner Upload or Removal (3:1 / 16:9 Banner)
     if (body.removeCover || body.removeCoverPhoto) {
-      if (existingOrg.coverUrl) {
-        await deleteFileFromS3(existingOrg.coverUrl);
-      }
+      await deleteOldImage(existingOrg.coverUrl);
       updateData.coverUrl = null;
     } else if (body.coverData || body.newCoverData || body.coverPhotoData) {
       const rawCoverData = body.coverData || body.newCoverData || body.coverPhotoData;
-      const parsed = parseBase64Data(rawCoverData);
-      if (!parsed) {
+      if (!parseBase64Image(rawCoverData)) {
         return NextResponse.json(
           { error: "Invalid cover photo format. Please upload a valid PNG, JPG, WebP, or SVG." },
           { status: 400 }
@@ -194,13 +178,15 @@ export async function PATCH(req: Request) {
       }
 
       // Delete previous cover photo from S3 if present
-      if (existingOrg.coverUrl) {
-        await deleteFileFromS3(existingOrg.coverUrl);
-      }
+      await deleteOldImage(existingOrg.coverUrl);
 
-      const timestamp = Date.now();
-      const s3Key = `organization-covers/${authCtx.orgId}/cover-${timestamp}.${parsed.extension}`;
-      await uploadBufferToS3(s3Key, parsed.buffer, parsed.contentType);
+      const s3Key = await uploadBase64Image({
+        organizationId: authCtx.orgId,
+        base64Data: rawCoverData,
+        folder: "organization-covers",
+        filenamePrefix: "cover",
+        preset: "organization-cover",
+      });
       updateData.coverUrl = s3Key;
     }
 

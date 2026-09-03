@@ -466,9 +466,9 @@ export default function VideoDetailPage() {
         {/* Left Col: Player and Tabs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player */}
-          <div className="aspect-video w-full rounded-2xl overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
+          <div className="aspect-video w-full rounded-lg overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
             {video.playbackUrl ? (
-              <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-2xl" />
+              <VideoPlayer src={video.playbackUrl} poster={video.thumbnailUrl} className="w-full h-full rounded-lg" />
             ) : video.status === "FAILED" || video.status === "CANCELLED" ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-md mx-auto">
                 <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">

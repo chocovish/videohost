@@ -122,11 +122,9 @@
  * ============================================================
  */
 
-video-player,
 .media-default-skin {
-  --media-color-primary: var(--primary);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
+  --media-accent-color: var(--primary);
+  --media-border-radius: 0.5rem;
 }
 
 /*
