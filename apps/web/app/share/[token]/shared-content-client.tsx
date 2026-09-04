@@ -65,10 +65,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { normalizeBannerLink } from "@/lib/image-webp";
+import { resolveShareTheme } from "@/lib/share-theme";
 
 export interface SharePageConfigData {
   themePreset?: string;
   accentColor?: string;
+  headingColor?: string | null;
+  bodyColor?: string | null;
+  mutedColor?: string | null;
+  iconColor?: string | null;
+  onAccentColor?: string | null;
   backgroundStyle?: string;
   cardRoundness?: string;
   customTitle?: string | null;
@@ -1236,65 +1242,37 @@ export default function SharedContentClient({
   const isFolder = data.type === "folder";
   const isMeeting = data.type === "meeting";
 
-  // Dynamic Theme Preset — clean, flat, modern (no glow / no pulse)
+  // Dynamic Theme — resolved from the saved palette's font/icon colours.
   // Presets drive the page explicitly (not system dark mode), so dark presets
-  // always render dark and minimal-light always renders light.
-  const preset = config.themePreset || "obsidian";
-  const isLight = preset === "minimal-light";
+  // always render dark and minimal-light always renders light. Saved
+  // headingColor/bodyColor/mutedColor/iconColor/onAccentColor always win over
+  // hard-coded fallbacks, which fixes white-on-white titles on light palettes.
+  const theme = resolveShareTheme(config);
+  const preset = theme.presetId;
+  const isLight = theme.isLight;
+  const bgClass = theme.bgClass;
+  const cardBgClass = theme.cardBgClass;
+  const headerBgClass = theme.headerBgClass;
+  const accentHex = theme.accentHex;
+  const onAccentHex = theme.onAccentHex;
+  const headingHex = theme.headingHex;
+  const bodyHex = theme.bodyHex;
+  const mutedHex = theme.mutedHex;
+  const faintHex = theme.faintHex;
+  const iconHex = theme.iconHex;
+  const surfaceHex = theme.surfaceHex;
+  const surfaceBorderHex = theme.surfaceBorderHex;
+  const surfaceTextHex = theme.surfaceTextHex;
+  const surfaceMutedHex = theme.surfaceMutedHex;
 
-  let bgClass = "bg-[#0a0a0b] text-zinc-100";
-  let cardBgClass =
-    "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-  let headerBgClass = "bg-[#0a0a0b]/80 border-white/10";
-  let accentHex = config.accentColor || "#e4e4e7";
-
-  if (preset === "obsidian") {
-    bgClass = "bg-[#0a0a0b] text-zinc-100";
-    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#0a0a0b]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#e4e4e7";
-  } else if (preset === "cyberpunk") {
-    bgClass = "bg-[#08060f] text-slate-100";
-    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#08060f]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#22d3ee";
-  } else if (preset === "vaporwave") {
-    bgClass = "bg-[#12061f] text-purple-50";
-    cardBgClass = "bg-white/[0.04] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#12061f]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#f472b6";
-  } else if (preset === "gold") {
-    bgClass = "bg-[#0c0a09] text-stone-100";
-    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#0c0a09]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#fbbf24";
-  } else if (preset === "ocean") {
-    bgClass = "bg-[#04121f] text-sky-50";
-    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#04121f]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#38bdf8";
-  } else if (preset === "sunset") {
-    bgClass = "bg-[#160609] text-rose-50";
-    cardBgClass = "bg-white/[0.03] border-white/10 shadow-[0_1px_2px_rgba(0,0,0,0.3)]";
-    headerBgClass = "bg-[#160609]/80 border-white/10";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#fb923c";
-  } else if (preset === "minimal-light") {
-    bgClass = "bg-[#fafafa] text-slate-900";
-    cardBgClass = "bg-white border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]";
-    headerBgClass = "bg-white/80 border-slate-200";
-    if (!config.accentColor || config.accentColor === "#84cc16") accentHex = "#2563eb";
-  }
-  // Respect an explicit custom accent color as-is
-  if (config.accentColor && config.accentColor !== "#84cc16") accentHex = config.accentColor;
-
-  // Small helpers so inner blocks stay readable on both dark presets and light preset
-  const mutedText = isLight ? "text-slate-500" : "text-zinc-400";
-  const faintText = isLight ? "text-slate-400" : "text-zinc-500";
-  const strongText = isLight ? "text-slate-900" : "text-white";
-  const dividerBorder = isLight ? "border-slate-200" : "border-white/10";
-  const softSurface = isLight
-    ? "bg-slate-50 border-slate-200"
-    : "bg-white/[0.02] border-white/10";
+  // Small helpers so inner blocks stay readable on both dark presets and light preset.
+  // These classes are kept for layout, but all meaningful text colours below also
+  // set explicit `style={{ color }}` from the palette so custom/light palettes win.
+  const mutedText = theme.mutedText;
+  const faintText = theme.faintText;
+  const strongText = theme.strongText;
+  const dividerBorder = theme.dividerBorder;
+  const softSurface = theme.softSurface;
 
   // Card roundness — softer modern scale
   let roundnessClass = "rounded-2xl";
@@ -1359,7 +1337,7 @@ export default function SharedContentClient({
               ) : (
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-semibold shrink-0"
-                  style={{ backgroundColor: accentHex, color: isLight ? "#fff" : "#09090b" }}
+                  style={{ backgroundColor: accentHex, color: onAccentHex }}
                 >
                   {displayTitle.substring(0, 1).toUpperCase()}
                 </div>
@@ -1367,16 +1345,25 @@ export default function SharedContentClient({
             )}
 
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-sm font-semibold tracking-tight truncate">
+              <span
+                className="text-sm font-semibold tracking-tight truncate"
+                style={{ color: headingHex }}
+              >
                 {displayTitle}
               </span>
               {isFolder && data.currentFolder && (
-                <span className={`hidden sm:inline-block text-xs truncate ${mutedText}`}>
+                <span
+                  className="hidden sm:inline-block text-xs truncate"
+                  style={{ color: mutedHex }}
+                >
                   / {data.currentFolder.name}
                 </span>
               )}
               {isPlaylist && data.playlist && (
-                <span className={`hidden sm:inline-block text-xs truncate ${mutedText}`}>
+                <span
+                  className="hidden sm:inline-block text-xs truncate"
+                  style={{ color: mutedHex }}
+                >
                   / {data.playlist.title}
                 </span>
               )}
@@ -1464,7 +1451,7 @@ export default function SharedContentClient({
                   return (
                     <h2
                       className={`tracking-tight text-balance ${weightClass}`}
-                      style={{ fontSize: fontSizePx }}
+                      style={{ fontSize: fontSizePx, color: headingHex }}
                     >
                       {config.welcomeTagline}
                     </h2>
@@ -1481,10 +1468,12 @@ export default function SharedContentClient({
             {/* Hero Conference Card */}
             <div className={`overflow-hidden border ${cardBgClass} ${roundnessClass}`}>
               {/* Top Banner / Status Strip */}
-              <div className="px-5 sm:px-6 py-3.5 border-b border-slate-200 dark:border-white/10 flex flex-wrap items-center justify-between gap-3">
+              <div
+                className={`px-5 sm:px-6 py-3.5 border-b flex flex-wrap items-center justify-between gap-3 ${dividerBorder}`}
+              >
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="text-[13px] font-medium text-slate-600 dark:text-slate-300">
+                  <span className="text-[13px] font-medium" style={{ color: bodyHex }}>
                     {data.meeting.status === "ACTIVE"
                       ? "Live Meeting In Progress"
                       : data.meeting.status === "COMPLETED"
@@ -1514,13 +1503,16 @@ export default function SharedContentClient({
               <div className="p-6 sm:p-8 space-y-6">
                 {/* Main Title & Host Section */}
                 <div className="space-y-3">
-                  <h1 className={`text-2xl sm:text-3xl font-semibold tracking-tight leading-tight ${strongText}`}>
+                  <h1
+                    className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight"
+                    style={{ color: headingHex }}
+                  >
                     {data.meeting.title}
                   </h1>
 
                   {data.meeting.description && (
-                    <div className={`text-[15px] leading-relaxed max-w-3xl ${mutedText}`}>
-                      <RichTextViewer content={data.meeting.description} className={`${mutedText} [&_a]:underline`} />
+                    <div className="text-[15px] leading-relaxed max-w-3xl" style={{ color: bodyHex }}>
+                      <RichTextViewer content={data.meeting.description} className="[&_a]:underline" />
                     </div>
                   )}
                 </div>
@@ -1532,26 +1524,34 @@ export default function SharedContentClient({
                       <img
                         src={data.meeting.createdBy.image}
                         alt={data.meeting.createdBy.name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-slate-700 shadow-md"
+                        className="w-12 h-12 rounded-full object-cover border-2 shadow-md"
+                        style={{ borderColor: surfaceBorderHex }}
                       />
                     ) : (
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base text-slate-950 shadow-md"
-                        style={{ backgroundColor: accentHex }}
+                        className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-base shadow-md"
+                        style={{ backgroundColor: accentHex, color: onAccentHex }}
                       >
                         {(data.meeting.createdBy?.name || "H").slice(0, 1).toUpperCase()}
                       </div>
                     )}
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-100">
+                        <p className="text-sm font-semibold" style={{ color: headingHex }}>
                           {data.meeting.createdBy?.name || "Meeting Host"}
                         </p>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        <span
+                          className="text-[10px] font-bold uppercase px-2 py-0.5 rounded border"
+                          style={{
+                            backgroundColor: `${accentHex}18`,
+                            color: isLight ? bodyHex : accentHex,
+                            borderColor: `${accentHex}40`,
+                          }}
+                        >
                           Host
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs" style={{ color: mutedHex }}>
                         Organized by {organization.name}
                       </p>
                     </div>
@@ -1559,11 +1559,14 @@ export default function SharedContentClient({
 
                   {/* Scheduled Date/Time Badge */}
                   {data.meeting.scheduledStart && (
-                    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <div
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl border"
+                      style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+                    >
                       <Calendar className="w-5 h-5" style={{ color: accentHex }} />
                       <div className="text-left">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Scheduled For</p>
-                        <p className="text-xs font-bold text-slate-200">
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: mutedHex }}>Scheduled For</p>
+                        <p className="text-xs font-bold" style={{ color: surfaceTextHex }}>
                           {formatMeetingTime(data.meeting.scheduledStart)}
                         </p>
                       </div>
@@ -1579,8 +1582,14 @@ export default function SharedContentClient({
                 {/* TICKET STUB / PASS PURCHASE OR JOIN ACTION SECTION */}
                 {data.accessMode === "PURCHASABLE" && !data.isPurchased ? (
                   /* UNPURCHASED PASS STATE */
-                  <div className="relative p-6 sm:p-8 rounded-2xl bg-linear-to-b from-slate-950 to-slate-900 border-2 border-dashed border-slate-700 space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+                  <div
+                    className="relative p-6 sm:p-8 rounded-2xl border-2 border-dashed space-y-6"
+                    style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+                  >
+                    <div
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6"
+                      style={{ borderColor: surfaceBorderHex }}
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Ticket className="w-5 h-5 text-amber-400" />
@@ -1588,17 +1597,20 @@ export default function SharedContentClient({
                             Official Entry Pass Required
                           </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-white">
+                        <h2 className="text-xl sm:text-2xl font-semibold" style={{ color: surfaceTextHex }}>
                           Buy Entry Ticket for this Meeting
                         </h2>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs" style={{ color: surfaceMutedHex }}>
                           One-time pass grants full attendee access when the meeting starts.
                         </p>
                       </div>
 
                       {/* Price & Currency Display */}
-                      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-center sm:text-right shrink-0">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Pass Price</p>
+                      <div
+                        className="p-4 rounded-2xl border text-center sm:text-right shrink-0"
+                        style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: surfaceMutedHex }}>Pass Price</p>
                         <p className="text-3xl font-semibold mt-0.5" style={{ color: accentHex }}>
                           {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                         </p>
@@ -1607,14 +1619,22 @@ export default function SharedContentClient({
 
                     {/* Country Selector for Dynamic Pricing */}
                     {data.countryPricing && data.countryPricing.length > 0 && (
-                      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                        <span className="text-xs font-semibold text-slate-300 flex items-center gap-2">
-                          <Globe className="w-3.5 h-3.5 text-slate-400" /> Billing Country:
+                      <div
+                        className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border"
+                        style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+                      >
+                        <span className="text-xs font-semibold flex items-center gap-2" style={{ color: surfaceTextHex }}>
+                          <Globe className="w-3.5 h-3.5" style={{ color: iconHex }} /> Billing Country:
                         </span>
                         <select
                           value={selectedBuyerCountry}
                           onChange={(e) => setSelectedBuyerCountry(e.target.value)}
-                          className="bg-slate-800 border border-slate-700 text-xs font-bold text-slate-200 rounded-lg px-3 py-1.5 focus:outline-hidden"
+                          className="border text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-hidden"
+                          style={{
+                            backgroundColor: isLight ? "#f1f5f9" : "#1e293b",
+                            borderColor: surfaceBorderHex,
+                            color: surfaceTextHex,
+                          }}
                         >
                           <option value="">Default International ({data.currency || "USD"})</option>
                           {data.countryPricing.map((cp) => (
@@ -1634,8 +1654,8 @@ export default function SharedContentClient({
                             const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                             router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                           }}
-                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
-                          style={{ backgroundColor: accentHex }}
+                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                          style={{ backgroundColor: accentHex, color: onAccentHex }}
                         >
                           <LogIn className="w-4 h-4" />
                           <span>
@@ -1648,8 +1668,8 @@ export default function SharedContentClient({
                         <button
                           onClick={handleExecuteCheckout}
                           disabled={isCheckingOut}
-                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer"
-                          style={{ backgroundColor: accentHex }}
+                          className="w-full py-4 px-8 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 disabled:opacity-50 cursor-pointer"
+                          style={{ backgroundColor: accentHex, color: onAccentHex }}
                         >
                           {isCheckingOut ? (
                             <>
@@ -1670,15 +1690,21 @@ export default function SharedContentClient({
                       )}
                     </div>
 
-                    <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400">
+                    <div className="flex items-center justify-center gap-2 text-[11px]" style={{ color: surfaceMutedHex }}>
                       <ShieldCheck className="w-4 h-4 text-emerald-400" />
                       <span>Instant Digital Pass • 256-bit Encrypted Checkout • Money-Back Guarantee</span>
                     </div>
                   </div>
                 ) : (
                   /* PURCHASED OR OPEN ACCESS STATE */
-                  <div className="p-6 sm:p-8 rounded-2xl bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 border-2 border-emerald-500/40 shadow-xl space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-6">
+                  <div
+                    className="p-6 sm:p-8 rounded-2xl border-2 border-emerald-500/40 shadow-xl space-y-6"
+                    style={{ backgroundColor: surfaceHex, borderColor: "rgba(16,185,129,0.4)" }}
+                  >
+                    <div
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6"
+                      style={{ borderColor: surfaceBorderHex }}
+                    >
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
@@ -1686,10 +1712,10 @@ export default function SharedContentClient({
                             Attendee Pass Confirmed
                           </span>
                         </div>
-                        <h2 className="text-xl sm:text-2xl font-semibold text-white">
+                        <h2 className="text-xl sm:text-2xl font-semibold" style={{ color: surfaceTextHex }}>
                           You Have Access to this Meeting
                         </h2>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs" style={{ color: surfaceMutedHex }}>
                           Your seat is reserved. Click below to enter the live conference room when ready.
                         </p>
                       </div>
@@ -1703,8 +1729,8 @@ export default function SharedContentClient({
                     <div className="flex flex-col sm:flex-row items-center gap-3">
                       <button
                         onClick={() => router.push(`/meet/${data.meeting?.id || token}`)}
-                        className="w-full sm:flex-1 py-4 px-8 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
-                        style={{ backgroundColor: accentHex }}
+                        className="w-full sm:flex-1 py-4 px-8 rounded-xl font-semibold text-sm flex items-center justify-center gap-2.5 shadow-sm transition-all hover:opacity-90 active:scale-98 cursor-pointer"
+                        style={{ backgroundColor: accentHex, color: onAccentHex }}
                       >
                         <Video className="w-5 h-5" />
                         <span>Join Meeting Room Now</span>
@@ -1713,7 +1739,12 @@ export default function SharedContentClient({
 
                       <button
                         onClick={handleCopyLink}
-                        className="w-full sm:w-auto px-5 py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all"
+                        className="w-full sm:w-auto px-5 py-4 font-bold text-xs rounded-xl border flex items-center justify-center gap-2 cursor-pointer transition-all hover:opacity-90"
+                        style={{
+                          backgroundColor: isLight ? "#f1f5f9" : "#1e293b",
+                          color: surfaceTextHex,
+                          borderColor: surfaceBorderHex,
+                        }}
                       >
                         {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         <span>{copied ? "Copied Link" : "Copy Invite"}</span>
@@ -1826,8 +1857,8 @@ export default function SharedContentClient({
                           const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                           router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                         }}
-                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
-                        style={{ backgroundColor: accentHex }}
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm   flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                        style={{ backgroundColor: accentHex, color: onAccentHex }}
                       >
                         <LogIn className="w-4 h-4" />
                         <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Sign in to Claim for Free" : `Sign in to Purchase • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
@@ -1836,8 +1867,8 @@ export default function SharedContentClient({
                       <button
                         onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                         disabled={isCheckingOut}
-                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
-                        style={{ backgroundColor: accentHex }}
+                        className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm   flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                        style={{ backgroundColor: accentHex, color: onAccentHex }}
                       >
                         {isCheckingOut ? (
                           <>
@@ -1893,7 +1924,10 @@ export default function SharedContentClient({
                       </span>
                     )}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug">
+                  <h1
+                    className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug"
+                    style={{ color: headingHex }}
+                  >
                     {data.video.title}
                   </h1>
                 </div>
@@ -1929,8 +1963,8 @@ export default function SharedContentClient({
                       <Lock className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold">Full access required</h4>
-                      <p className={`text-xs ${mutedText}`}>One-time purchase unlocks permanent playback</p>
+                      <h4 className="text-sm font-semibold" style={{ color: headingHex }}>Full access required</h4>
+                      <p className="text-xs" style={{ color: mutedHex }}>One-time purchase unlocks permanent playback</p>
                     </div>
                   </div>
                   <button
@@ -1939,8 +1973,8 @@ export default function SharedContentClient({
                       router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                     } : (getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true))}
                     disabled={isCheckingOut}
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
-                    style={{ backgroundColor: accentHex }}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs   flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                    style={{ backgroundColor: accentHex, color: onAccentHex }}
                   >
                     <ShoppingBag className="w-3.5 h-3.5" />
                     <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Claim for Free" : `Buy Now • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
@@ -1950,8 +1984,12 @@ export default function SharedContentClient({
 
               {data.video.description && (
                 <div className="space-y-1.5">
-                  <h3 className={`text-xs font-medium uppercase tracking-wider ${mutedText}`}>Description</h3>
-                  <RichTextViewer content={data.video.description} className={`text-sm leading-relaxed ${isLight ? "text-slate-600" : "text-zinc-400"} [&_a]:underline`} />
+                  <h3 className="text-xs font-medium uppercase tracking-wider" style={{ color: mutedHex }}>Description</h3>
+                  <RichTextViewer
+                    content={data.video.description}
+                    className="text-sm leading-relaxed [&_a]:underline"
+                    style={{ color: bodyHex }}
+                  />
                 </div>
               )}
 
@@ -1965,15 +2003,15 @@ export default function SharedContentClient({
                   }}
                 >
                   <div className="space-y-0.5 text-center sm:text-left">
-                    <h4 className="font-semibold text-[15px] tracking-tight">Interested in learning more?</h4>
-                    <p className={`text-[13px] ${mutedText}`}>Take the next step with {displayTitle}.</p>
+                    <h4 className="font-semibold text-[15px] tracking-tight" style={{ color: headingHex }}>Interested in learning more?</h4>
+                    <p className="text-[13px]" style={{ color: mutedHex }}>Take the next step with {displayTitle}.</p>
                   </div>
                   <a
                     href={config.ctaUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="h-9 px-5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 shrink-0 hover:opacity-90"
-                    style={{ backgroundColor: accentHex, color: isLight ? "#fff" : "#09090b" }}
+                    style={{ backgroundColor: accentHex, color: onAccentHex }}
                   >
                     <span>{config.ctaText || "Learn More"}</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -2054,24 +2092,38 @@ export default function SharedContentClient({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span
+                      className="text-[11px] font-semibold uppercase tracking-wider"
+                      style={{ color: mutedHex }}
+                    >
                       Shared Playlist
                     </span>
                     {data.playlist.totalDurationSeconds > 0 && (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/50 flex items-center gap-1">
+                      <span
+                        className="text-[11px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1"
+                        style={{
+                          backgroundColor: isLight ? "#f1f5f9" : "rgba(30,41,59,0.8)",
+                          color: isLight ? bodyHex : "#cbd5e1",
+                          borderColor: surfaceBorderHex,
+                        }}
+                      >
                         <Clock className="w-3 h-3" style={{ color: accentHex }} />
                         {formatDuration(data.playlist.totalDurationSeconds)}
                       </span>
                     )}
                   </div>
-                  <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-100">
+                  <h1
+                    className="text-xl sm:text-2xl font-semibold tracking-tight"
+                    style={{ color: headingHex }}
+                  >
                     {data.playlist.title}
                   </h1>
                   {data.playlist.description && (
                     <div className="mt-1.5 max-w-2xl">
                       <RichTextViewer
                         content={data.playlist.description}
-                        className="text-xs sm:text-sm text-slate-300 leading-relaxed [&_a]:text-primary"
+                        className="text-xs sm:text-sm leading-relaxed [&_a]:underline"
+                        style={{ color: bodyHex }}
                       />
                     </div>
                   )}
@@ -2094,9 +2146,14 @@ export default function SharedContentClient({
                 {config.showShareButton && (
                   <button
                     onClick={handleCopyLink}
-                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer border border-slate-700"
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer border hover:opacity-90"
+                    style={{
+                      backgroundColor: isLight ? headingHex : "#1e293b",
+                      color: isLight ? "#ffffff" : "#e2e8f0",
+                      borderColor: isLight ? headingHex : surfaceBorderHex,
+                    }}
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-lime-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
                     <span>{copied ? "Link Copied" : "Share"}</span>
                   </button>
                 )}
@@ -2106,9 +2163,9 @@ export default function SharedContentClient({
             {/* 2-Column Main View: Video Player + Playlist Tracklist Queue */}
             {!data.videos || data.videos.length === 0 ? (
               <div className={`py-16 text-center border backdrop-blur-md ${cardBgClass} ${roundnessClass}`}>
-                <ListVideo className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
-                <p className="text-sm font-bold text-slate-300">This playlist is currently empty</p>
-                <p className="text-xs text-slate-400 mt-1">Check back later for new videos.</p>
+                <ListVideo className="w-12 h-12 mx-auto mb-3 animate-pulse" style={{ color: iconHex }} />
+                <p className="text-sm font-bold" style={{ color: headingHex }}>This playlist is currently empty</p>
+                <p className="text-xs mt-1" style={{ color: mutedHex }}>Check back later for new videos.</p>
               </div>
             ) : (
               (() => {
@@ -2199,8 +2256,8 @@ export default function SharedContentClient({
                                       const callback = typeof window !== "undefined" ? window.location.href : `/share/${token}`;
                                       router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                                     }}
-                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
-                                    style={{ backgroundColor: accentHex }}
+                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm   flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 cursor-pointer"
+                                    style={{ backgroundColor: accentHex, color: onAccentHex }}
                                   >
                                     <LogIn className="w-4 h-4" />
                                     <span>
@@ -2213,8 +2270,8 @@ export default function SharedContentClient({
                                   <button
                                     onClick={getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true)}
                                     disabled={isCheckingOut}
-                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm text-slate-950 flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
-                                    style={{ backgroundColor: accentHex }}
+                                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-sm   flex items-center justify-center gap-2 transition-all shadow-xl hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+                                    style={{ backgroundColor: accentHex, color: onAccentHex }}
                                   >
                                     {isCheckingOut ? (
                                       <>
@@ -2274,7 +2331,8 @@ export default function SharedContentClient({
                             style={{
                               backgroundColor:
                                 activePlaylistIndex < data.videos.length - 1 ? accentHex : "rgba(30,41,59,0.8)",
-                              color: activePlaylistIndex < data.videos.length - 1 ? "#020617" : "#94a3b8",
+                              color:
+                                activePlaylistIndex < data.videos.length - 1 ? onAccentHex : "#94a3b8",
                               opacity: activePlaylistIndex >= data.videos.length - 1 ? 0.3 : 1,
                             }}
                           >
@@ -2286,7 +2344,7 @@ export default function SharedContentClient({
 
                       {/* Video Details Card */}
                       <div className={`p-6 space-y-4 backdrop-blur ${cardBgClass} ${roundnessClass}`}>
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 ${dividerBorder}`}>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
                               <span
@@ -2299,13 +2357,23 @@ export default function SharedContentClient({
                                 Now Playing #{activePlaylistIndex + 1}
                               </span>
                               {config.showDuration && currentVideo?.durationSeconds && (
-                                <span className="px-2.5 py-0.5 bg-slate-800/80 border border-slate-700/60 text-slate-300 text-[11px] font-semibold rounded-md flex items-center gap-1">
+                                <span
+                                  className="px-2.5 py-0.5 border text-[11px] font-semibold rounded-md flex items-center gap-1"
+                                  style={{
+                                    backgroundColor: isLight ? "#f1f5f9" : "rgba(30,41,59,0.8)",
+                                    borderColor: surfaceBorderHex,
+                                    color: isLight ? bodyHex : "#cbd5e1",
+                                  }}
+                                >
                                   <Clock className="w-3 h-3" style={{ color: accentHex }} />
                                   {formatDuration(currentVideo.durationSeconds)}
                                 </span>
                               )}
                             </div>
-                            <h2 className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug">
+                            <h2
+                              className="text-xl sm:text-2xl font-semibold tracking-tight leading-snug"
+                              style={{ color: headingHex }}
+                            >
                               {currentVideo?.title}
                             </h2>
                           </div>
@@ -2313,7 +2381,10 @@ export default function SharedContentClient({
 
                         {/* Purchasable Playlist Quick Action Banner */}
                         {data.accessMode === "PURCHASABLE" && !data.isPurchased && (
-                          <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                          <div
+                            className="p-4 sm:p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg"
+                            style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+                          >
                             <div className="flex items-center gap-3 text-left w-full sm:w-auto">
                               <div
                                 className="p-2.5 rounded-xl flex items-center justify-center shrink-0"
@@ -2322,8 +2393,8 @@ export default function SharedContentClient({
                                 <Lock className="w-5 h-5" />
                               </div>
                               <div>
-                                <h4 className="text-sm font-bold text-white">Full Playlist Access Required</h4>
-                                <p className="text-xs text-slate-400">Unlocks all {data.videos?.length || 0} videos in this collection</p>
+                                <h4 className="text-sm font-bold" style={{ color: surfaceTextHex }}>Full Playlist Access Required</h4>
+                                <p className="text-xs" style={{ color: surfaceMutedHex }}>Unlocks all {data.videos?.length || 0} videos in this collection</p>
                               </div>
                             </div>
                             <button
@@ -2332,8 +2403,8 @@ export default function SharedContentClient({
                                 router.push(`/auth/login?callbackUrl=${encodeURIComponent(callback)}`);
                               } : (getCalculatedPrice(data, selectedBuyerCountry).isFree ? handleExecuteCheckout : () => setIsCheckoutOpen(true))}
                               disabled={isCheckingOut}
-                              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
-                              style={{ backgroundColor: accentHex }}
+                              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs   flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+                              style={{ backgroundColor: accentHex, color: onAccentHex }}
                             >
                               <ShoppingBag className="w-3.5 h-3.5" />
                               <span>{getCalculatedPrice(data, selectedBuyerCountry).isFree ? "Claim for Free" : `Unlock Playlist • ${getCalculatedPrice(data, selectedBuyerCountry).formatted}`}</span>
@@ -2343,10 +2414,17 @@ export default function SharedContentClient({
 
                         {currentVideo?.description && (
                           <div className="space-y-1">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            <h3
+                              className="text-xs font-semibold uppercase tracking-wider"
+                              style={{ color: mutedHex }}
+                            >
                               About this video
                             </h3>
-                            <RichTextViewer content={currentVideo.description} className="text-sm text-slate-300 leading-relaxed [&_a]:text-primary" />
+                            <RichTextViewer
+                              content={currentVideo.description}
+                              className="text-sm leading-relaxed [&_a]:underline"
+                              style={{ color: bodyHex }}
+                            />
                           </div>
                         )}
 
@@ -2360,10 +2438,13 @@ export default function SharedContentClient({
                             }}
                           >
                             <div className="space-y-1 text-center sm:text-left">
-                              <h4 className="font-semibold text-base tracking-tight">
+                              <h4
+                                className="font-semibold text-base tracking-tight"
+                                style={{ color: headingHex }}
+                              >
                                 Interested in learning more?
                               </h4>
-                              <p className="text-xs text-slate-300">
+                              <p className="text-xs" style={{ color: bodyHex }}>
                                 Click below to take the next step with {displayTitle}.
                               </p>
                             </div>
@@ -2371,8 +2452,8 @@ export default function SharedContentClient({
                               href={config.ctaUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-6 py-3 rounded-xl text-slate-950 font-semibold text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
-                              style={{ backgroundColor: accentHex }}
+                              className="px-6 py-3 rounded-xl   font-semibold text-sm transition-all flex items-center gap-2 shadow-xl hover:scale-105 active:scale-95 shrink-0"
+                              style={{ backgroundColor: accentHex, color: onAccentHex }}
                             >
                               <span>{config.ctaText || "Learn More"}</span>
                               <ExternalLink className="w-4 h-4" />
@@ -2384,12 +2465,12 @@ export default function SharedContentClient({
 
                     {/* Right Column (1 col): Playlist Tracklist Queue */}
                     <div className={`p-4 space-y-3 backdrop-blur sticky top-24 ${cardBgClass} ${roundnessClass}`}>
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className={`flex items-center justify-between border-b pb-3 ${dividerBorder}`}>
                         <div className="flex items-center gap-2">
                           <ListVideo className="w-4 h-4" style={{ color: accentHex }} />
-                          <h3 className="font-bold text-sm text-slate-100">Playlist Queue</h3>
+                          <h3 className="font-bold text-sm" style={{ color: headingHex }}>Playlist Queue</h3>
                         </div>
-                        <span className="text-xs font-mono font-bold text-slate-400">
+                        <span className="text-xs font-mono font-bold" style={{ color: mutedHex }}>
                           {activePlaylistIndex + 1}/{data.videos.length}
                         </span>
                       </div>
@@ -2397,13 +2478,18 @@ export default function SharedContentClient({
                       {/* Search Filter for Playlist Tracks */}
                       {data.videos.length > 3 && (
                         <div className="relative">
-                          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5" style={{ color: iconHex }} />
                           <input
                             type="text"
                             placeholder="Filter queue..."
                             value={playlistSearchQuery}
                             onChange={(e) => setPlaylistSearchQuery(e.target.value)}
-                            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-950/60 border border-slate-800 rounded-xl outline-hidden focus:ring-1 focus:ring-lime-400 text-slate-200"
+                            className="w-full pl-9 pr-3 py-1.5 text-xs border rounded-xl outline-hidden focus:ring-1"
+                            style={{
+                              backgroundColor: isLight ? "#f8fafc" : "rgba(2,6,23,0.6)",
+                              borderColor: surfaceBorderHex,
+                              color: headingHex,
+                            }}
                           />
                         </div>
                       )}
@@ -2420,11 +2506,15 @@ export default function SharedContentClient({
                               onClick={() => setActivePlaylistIndex(originalIdx)}
                               className={`p-2 rounded-xl border flex items-center gap-3 transition-all cursor-pointer group ${isActive
                                 ? "border-2 shadow-lg"
-                                : "border-slate-800/80 hover:border-slate-700 bg-slate-950/40 hover:bg-slate-950/80"
+                                : ""
                                 }`}
                               style={{
-                                borderColor: isActive ? accentHex : undefined,
-                                backgroundColor: isActive ? `${accentHex}15` : undefined,
+                                borderColor: isActive ? accentHex : surfaceBorderHex,
+                                backgroundColor: isActive
+                                  ? `${accentHex}15`
+                                  : isLight
+                                    ? "#f8fafc"
+                                    : "rgba(2,6,23,0.4)",
                               }}
                             >
                               {/* Track Number / Play Indicator */}
@@ -2432,14 +2522,14 @@ export default function SharedContentClient({
                                 {isActive ? (
                                   <Play className="w-3.5 h-3.5 fill-current" style={{ color: accentHex }} />
                                 ) : (
-                                  <span className="text-slate-500 group-hover:text-slate-300 font-mono text-[11px]">
+                                  <span className="font-mono text-[11px]" style={{ color: mutedHex }}>
                                     {originalIdx + 1}
                                   </span>
                                 )}
                               </div>
 
                               {/* Thumbnail */}
-                              <div className="relative w-16 aspect-video rounded-lg overflow-hidden bg-slate-950 shrink-0">
+                              <div className="relative w-16 aspect-video rounded-lg overflow-hidden bg-black shrink-0">
                                 <VideoThumbnail
                                   src={video.thumbnailUrl}
                                   alt={video.title}
@@ -2449,7 +2539,7 @@ export default function SharedContentClient({
                                   className="w-full h-full object-cover"
                                 />
                                 {video.durationSeconds && (
-                                  <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 bg-black/80 text-[8px] font-bold text-slate-200 rounded">
+                                  <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 bg-black/80 text-[8px] font-bold text-white rounded">
                                     {formatDuration(video.durationSeconds)}
                                   </span>
                                 )}
@@ -2459,12 +2549,15 @@ export default function SharedContentClient({
                               <div className="flex-1 min-w-0">
                                 <p
                                   className="text-xs font-bold truncate transition-colors"
-                                  style={{ color: isActive ? accentHex : "#f1f5f9" }}
+                                  style={{ color: isActive ? accentHex : headingHex }}
                                 >
                                   {video.title}
                                 </p>
                                 {video.durationSeconds && (
-                                  <span className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                  <span
+                                    className="text-[10px] flex items-center gap-1 mt-0.5"
+                                    style={{ color: mutedHex }}
+                                  >
                                     <Clock className="w-2.5 h-2.5" />
                                     {formatDuration(video.durationSeconds)}
                                   </span>
@@ -2486,10 +2579,14 @@ export default function SharedContentClient({
         {!isVideo && data.currentFolder && (
           <div className="space-y-6">
             {/* Floating Breadcrumb Bar */}
-            <div className={`flex items-center gap-2 text-xs sm:text-sm text-slate-400 backdrop-blur-xl px-4 py-3 border ${cardBgClass} ${roundnessClass}`}>
+            <div
+              className={`flex items-center gap-2 text-xs sm:text-sm backdrop-blur-xl px-4 py-3 border ${cardBgClass} ${roundnessClass}`}
+              style={{ color: mutedHex }}
+            >
               <button
                 onClick={handleBackToRoot}
-                className="hover:text-lime-400 font-bold flex items-center gap-2 transition-colors group cursor-pointer"
+                className="font-bold flex items-center gap-2 transition-colors group cursor-pointer hover:opacity-80"
+                style={{ color: headingHex }}
               >
                 <div
                   className="p-1.5 rounded-lg group-hover:scale-110 transition-transform"
@@ -2504,8 +2601,15 @@ export default function SharedContentClient({
               </button>
               {subfolderId && (
                 <>
-                  <ChevronRight className="w-4 h-4 text-slate-600 shrink-0" />
-                  <span className="font-semibold text-slate-100 bg-slate-800/60 px-3 py-1 rounded-lg border border-slate-700/50">
+                  <ChevronRight className="w-4 h-4 shrink-0" style={{ color: iconHex }} />
+                  <span
+                    className="font-semibold px-3 py-1 rounded-lg border"
+                    style={{
+                      color: headingHex,
+                      backgroundColor: isLight ? "#f1f5f9" : "rgba(30,41,59,0.6)",
+                      borderColor: surfaceBorderHex,
+                    }}
+                  >
                     {data.currentFolder.name}
                   </span>
                 </>
@@ -2515,7 +2619,10 @@ export default function SharedContentClient({
             {/* Subfolders Section */}
             {data.subfolders && data.subfolders.length > 0 && (
               <div className="space-y-3">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <h2
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: mutedHex }}
+                >
                   Folders ({data.subfolders.length})
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -2529,12 +2636,15 @@ export default function SharedContentClient({
                         <Folder className="w-5 h-5 fill-amber-500/30" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold group-hover:text-lime-400 transition-colors truncate">
+                        <p
+                          className="text-sm font-bold transition-colors truncate"
+                          style={{ color: headingHex }}
+                        >
                           {sf.name}
                         </p>
-                        <p className="text-[11px] text-slate-400 font-semibold">Folder</p>
+                        <p className="text-[11px] font-semibold" style={{ color: mutedHex }}>Folder</p>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:translate-x-0.5 transition-all" />
+                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-all" style={{ color: iconHex }} />
                     </button>
                   ))}
                 </div>
@@ -2543,15 +2653,18 @@ export default function SharedContentClient({
 
             {/* Videos Grid Section */}
             <div className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <h2
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: mutedHex }}
+              >
                 Videos ({data.videos?.length || 0})
               </h2>
 
               {!data.videos || data.videos.length === 0 ? (
                 <div className={`py-16 text-center border backdrop-blur-md ${cardBgClass} ${roundnessClass}`}>
-                  <Film className="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse" />
-                  <p className="text-sm font-bold text-slate-300">No videos in this folder</p>
-                  <p className="text-xs text-slate-400 mt-1">Check back later for new updates.</p>
+                  <Film className="w-12 h-12 mx-auto mb-3 animate-pulse" style={{ color: iconHex }} />
+                  <p className="text-sm font-bold" style={{ color: headingHex }}>No videos in this folder</p>
+                  <p className="text-xs mt-1" style={{ color: mutedHex }}>Check back later for new updates.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -2573,10 +2686,10 @@ export default function SharedContentClient({
 
                         <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 backdrop-blur-[2px]">
                           <div
-                            className="p-3.5 text-slate-950 rounded-full shadow-xl scale-90 group-hover:scale-100 transition-transform duration-300"
-                            style={{ backgroundColor: accentHex }}
+                            className="p-3.5   rounded-full shadow-xl scale-90 group-hover:scale-100 transition-transform duration-300"
+                            style={{ backgroundColor: accentHex, color: onAccentHex }}
                           >
-                            <Play className="w-5 h-5 fill-slate-950 ml-0.5" />
+                            <Play className="w-5 h-5 fill-current ml-0.5" />
                           </div>
                         </div>
 
@@ -2589,17 +2702,21 @@ export default function SharedContentClient({
 
                       {/* Content Info */}
                       <div className="p-4 space-y-1.5">
-                        <h3 className="text-sm font-bold group-hover:opacity-90 transition-colors line-clamp-1">
+                        <h3
+                          className="text-sm font-bold group-hover:opacity-90 transition-colors line-clamp-1"
+                          style={{ color: headingHex }}
+                        >
                           {vid.title}
                         </h3>
                         {vid.description ? (
                           <RichTextViewer
                             content={vid.description}
                             clamp={2}
-                            className="text-xs text-slate-400 line-clamp-2 leading-relaxed"
+                            className="text-xs line-clamp-2 leading-relaxed"
+                            style={{ color: bodyHex }}
                           />
                         ) : (
-                          <p className="text-xs text-slate-400 italic">No description</p>
+                          <p className="text-xs italic" style={{ color: mutedHex }}>No description</p>
                         )}
                       </div>
                     </div>
@@ -2627,14 +2744,14 @@ export default function SharedContentClient({
                 )}
               </div>
               <div>
-                <DialogTitle className={`text-lg font-semibold ${strongText}`}>
+                <DialogTitle className="text-lg font-semibold" style={{ color: headingHex }}>
                   {data?.type === "meeting"
                     ? "Purchase Meeting Entry Pass"
                     : data?.type === "playlist"
                       ? "Unlock Playlist"
                       : "Unlock Video"}
                 </DialogTitle>
-                <DialogDescription className="text-xs text-slate-400">
+                <DialogDescription className="text-xs" style={{ color: mutedHex }}>
                   {data?.type === "meeting"
                     ? "Confirmed digital entry ticket to join the live session"
                     : "Instant permanent access with lifetime streaming"}
@@ -2659,30 +2776,39 @@ export default function SharedContentClient({
             )}
 
             {/* Order Summary Box */}
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+            <div
+              className="p-4 rounded-xl border space-y-3"
+              style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+            >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                  <span
+                    className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded"
+                    style={{
+                      backgroundColor: isLight ? "#f1f5f9" : "#1e293b",
+                      color: surfaceMutedHex,
+                    }}
+                  >
                     {data?.type === "meeting"
                       ? "Live Meeting Pass"
                       : data?.type === "playlist"
                         ? "Playlist Collection"
                         : "Single Video"}
                   </span>
-                  <p className="font-bold text-sm text-slate-100 mt-1">
+                  <p className="font-bold text-sm mt-1" style={{ color: surfaceTextHex }}>
                     {data?.type === "meeting"
                       ? data?.meeting?.title
                       : data?.type === "playlist"
                         ? data?.playlist?.title
                         : data?.video?.title}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] mt-0.5" style={{ color: surfaceMutedHex }}>
                     Provided by {data?.organization?.name}
                   </p>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-xs font-semibold text-slate-400">Total</span>
+                  <span className="text-xs font-semibold" style={{ color: surfaceMutedHex }}>Total</span>
                   <p className="text-lg font-semibold" style={{ color: accentHex }}>
                     {getCalculatedPrice(data, selectedBuyerCountry).formatted}
                   </p>
@@ -2690,14 +2816,20 @@ export default function SharedContentClient({
               </div>
 
               {data?.type === "meeting" && data?.meeting?.scheduledStart && (
-                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
+                <div
+                  className="pt-2 border-t text-[11px] flex items-center gap-1.5"
+                  style={{ borderColor: surfaceBorderHex, color: surfaceMutedHex }}
+                >
                   <Calendar className="w-3.5 h-3.5" style={{ color: accentHex }} />
                   <span>Scheduled: {formatMeetingTime(data.meeting.scheduledStart)}</span>
                 </div>
               )}
 
               {data?.type === "playlist" && (
-                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-1.5">
+                <div
+                  className="pt-2 border-t text-[11px] flex items-center gap-1.5"
+                  style={{ borderColor: surfaceBorderHex, color: surfaceMutedHex }}
+                >
                   <Check className="w-3.5 h-3.5" style={{ color: accentHex }} />
                   <span>Unlocks all {data.videos?.length || 0} videos in this playlist</span>
                 </div>
@@ -2705,17 +2837,20 @@ export default function SharedContentClient({
             </div>
 
             {/* Payment Method Notice */}
-            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+            <div
+              className="p-3 rounded-xl border flex items-center justify-between text-xs"
+              style={{ backgroundColor: surfaceHex, borderColor: surfaceBorderHex }}
+            >
               <div className="flex items-center gap-2">
                 {getCalculatedPrice(data, selectedBuyerCountry).isFree ? (
                   <>
                     <Sparkles className="w-4 h-4" style={{ color: accentHex }} />
-                    <span className="font-semibold text-slate-200">Instant Free Access &bull; No Card Required</span>
+                    <span className="font-semibold" style={{ color: surfaceTextHex }}>Instant Free Access &bull; No Card Required</span>
                   </>
                 ) : (
                   <>
                     <Shield className="w-4 h-4" style={{ color: accentHex }} />
-                    <span className="font-semibold text-slate-200">Encrypted Payment Gateway</span>
+                    <span className="font-semibold" style={{ color: surfaceTextHex }}>Encrypted Payment Gateway</span>
                   </>
                 )}
               </div>
@@ -2730,12 +2865,16 @@ export default function SharedContentClient({
             </div>
           </div>
 
-          <DialogFooter className="pt-3 border-t border-slate-800 shrink-0 mt-auto flex flex-col sm:flex-row gap-2">
+          <DialogFooter
+            className="pt-3 border-t shrink-0 mt-auto flex flex-col sm:flex-row gap-2"
+            style={{ borderColor: surfaceBorderHex }}
+          >
             <button
               type="button"
               onClick={() => setIsCheckoutOpen(false)}
               disabled={isCheckingOut}
-              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-200 rounded-xl cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 text-xs font-bold rounded-xl cursor-pointer hover:opacity-80"
+              style={{ color: mutedHex }}
             >
               Cancel
             </button>
@@ -2743,8 +2882,8 @@ export default function SharedContentClient({
               type="button"
               onClick={handleExecuteCheckout}
               disabled={isCheckingOut}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-slate-950 flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
-              style={{ backgroundColor: accentHex }}
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs   flex items-center justify-center gap-2 shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 cursor-pointer"
+              style={{ backgroundColor: accentHex, color: onAccentHex }}
             >
               {isCheckingOut ? (
                 <>
@@ -2766,7 +2905,10 @@ export default function SharedContentClient({
       </Dialog>
 
       {/* Footer Text */}
-      <footer className={`py-6 border-t text-center text-xs relative z-10 ${dividerBorder} ${faintText}`}>
+      <footer
+        className={`py-6 border-t text-center text-xs relative z-10 ${dividerBorder}`}
+        style={{ color: faintHex }}
+      >
         <p>{config.footerText || `© ${new Date().getFullYear()} ${displayTitle}`}</p>
       </footer>
     </div>

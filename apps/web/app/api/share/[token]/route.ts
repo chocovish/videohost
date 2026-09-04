@@ -117,6 +117,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
 
     let sharePageConfig: any = rawShareConfig ? { ...rawShareConfig } : null;
     if (sharePageConfig) {
+      // Backfill palette-driven font/icon colours for configs saved before the
+      // new columns existed, so share pages never use clashing hard-coded text.
+      try {
+        const { SHARE_THEME_PRESETS } = await import("@/lib/share-theme");
+        const preset =
+          SHARE_THEME_PRESETS[sharePageConfig.themePreset || ""] ||
+          SHARE_THEME_PRESETS.obsidian;
+        if (!sharePageConfig.headingColor) sharePageConfig.headingColor = preset.heading;
+        if (!sharePageConfig.bodyColor) sharePageConfig.bodyColor = preset.body;
+        if (!sharePageConfig.mutedColor) sharePageConfig.mutedColor = preset.muted;
+        if (!sharePageConfig.iconColor) sharePageConfig.iconColor = preset.icon;
+        if (!sharePageConfig.onAccentColor) sharePageConfig.onAccentColor = preset.onAccent;
+      } catch {}
       if (sharePageConfig.customLogoKey) {
         sharePageConfig.customLogoUrl = await resolveImageUrl(
           sharePageConfig.customLogoKey
@@ -439,11 +452,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         }
       }
 
+      const headerCountryForVideo =
+        req.headers.get("cf-ipcountry") ||
+        req.headers.get("x-vercel-ip-country") ||
+        req.headers.get("x-country-code") ||
+        null;
+
       return NextResponse.json({
         type: "video",
         accessMode,
+        // When accessMode is PURCHASABLE we only reach here if the viewer is
+        // allowed (org member / completed purchase / cascade). The client gates
+        // the "Full access required" banner on `!data.isPurchased`, so we must
+        // explicitly send `isPurchased: true` — otherwise it is `undefined`
+        // and the banner never hides.
+        isPurchased: accessMode === "PURCHASABLE" ? true : undefined,
+        isLoggedIn: Boolean(session?.user?.id),
+        token,
         organization,
         sharePageConfig,
+        itemTitle: video.title,
+        price: (video as any).price ?? null,
+        currency: (video as any).currency || "USD",
+        countryPricing: (video as any).countryPricing || [],
+        detectedCountryCode: headerCountryForVideo ? headerCountryForVideo.toUpperCase() : undefined,
         parentFolder,
         video: {
           id: video.id,
@@ -484,11 +516,30 @@ export async function GET(req: Request, { params }: { params: Promise<{ token: s
         })
       );
 
+      const headerCountryForPlaylist =
+        req.headers.get("cf-ipcountry") ||
+        req.headers.get("x-vercel-ip-country") ||
+        req.headers.get("x-country-code") ||
+        null;
+
       return NextResponse.json({
         type: "playlist",
         accessMode,
+        // When accessMode is PURCHASABLE we only reach here if the viewer is
+        // allowed (org member / completed purchase). The client gates the
+        // "Full Playlist Access Required" banner on `!data.isPurchased`, so we
+        // must explicitly send `isPurchased: true` — otherwise it is
+        // `undefined` and the banner never hides.
+        isPurchased: accessMode === "PURCHASABLE" ? true : undefined,
+        isLoggedIn: Boolean(session?.user?.id),
+        token,
         organization,
         sharePageConfig,
+        itemTitle: playlist.title,
+        price: (playlist as any).price ?? null,
+        currency: (playlist as any).currency || "USD",
+        countryPricing: (playlist as any).countryPricing || [],
+        detectedCountryCode: headerCountryForPlaylist ? headerCountryForPlaylist.toUpperCase() : undefined,
         playlist: {
           id: playlist.id,
           title: playlist.title,

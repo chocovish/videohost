@@ -32,22 +32,32 @@ import { Slider } from "@/components/ui/slider";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { normalizeBannerLink } from "@/lib/image-webp";
+import {
+  SHARE_THEME_PRESETS,
+  getPresetFontColors,
+  getContrastTextColor,
+} from "@/lib/share-theme";
 
-const THEME_PRESETS = [
-  { id: "obsidian", name: "Obsidian Dark", primary: "#84cc16", bg: "#030712", card: "#0f172a" },
-  { id: "cyberpunk", name: "Neon Cyberpunk", primary: "#06b6d4", bg: "#070312", card: "#0f0724" },
-  { id: "vaporwave", name: "Vaporwave Glow", primary: "#ec4899", bg: "#0f041c", card: "#1d0836" },
-  { id: "gold", name: "Luxury Gold", primary: "#eab308", bg: "#0c0a09", card: "#1c1917" },
-  { id: "ocean", name: "Ocean Breeze", primary: "#38bdf8", bg: "#021124", card: "#072449" },
-  { id: "sunset", name: "Sunset Passion", primary: "#f97316", bg: "#17050b", card: "#2d0d17" },
-  { id: "minimal-light", name: "Minimal Light", primary: "#2563eb", bg: "#f8fafc", card: "#ffffff" },
-];
+const THEME_PRESETS = Object.values(SHARE_THEME_PRESETS).map((p) => ({
+  id: p.id,
+  name: p.name,
+  primary: p.primary,
+  bg: p.bg,
+  card: p.card,
+  heading: p.heading,
+  body: p.body,
+  muted: p.muted,
+  icon: p.icon,
+  onAccent: p.onAccent,
+}));
 
 const QUICK_ACCENTS = ["#84cc16", "#06b6d4", "#ec4899", "#eab308", "#38bdf8", "#f97316", "#a855f7", "#ef4444"];
 
+const DEFAULT_FONT_COLORS = getPresetFontColors("obsidian");
+
 const DEFAULT_CONFIG: SharePageConfigData = {
   themePreset: "obsidian",
-  accentColor: "#84cc16",
+  ...DEFAULT_FONT_COLORS,
   backgroundStyle: "mesh-gradient",
   cardRoundness: "3xl",
   customTitle: "",
@@ -64,6 +74,34 @@ const DEFAULT_CONFIG: SharePageConfigData = {
   autoPlayMuted: false,
   footerText: "",
 };
+
+const applyPalette = (
+  prev: SharePageConfigData,
+  presetId: string,
+  keepCustomAccent = false
+): SharePageConfigData => {
+  const fonts = getPresetFontColors(presetId);
+  return {
+    ...prev,
+    themePreset: presetId,
+    // Picking a palette always saves the font/icon colours that palette wants.
+    ...fonts,
+    // Reset accent to the palette default unless caller explicitly keeps it.
+    ...(keepCustomAccent ? {} : { accentColor: fonts.accentColor }),
+  };
+};
+
+const withCustomAccent = (
+  prev: SharePageConfigData,
+  accent: string
+): SharePageConfigData => ({
+  ...prev,
+  accentColor: accent,
+  // Keep button text readable for any custom accent via luminance contrast.
+  onAccentColor: /^#[0-9a-fA-F]{6}$/.test(accent.trim())
+    ? getContrastTextColor(accent.trim())
+    : prev.onAccentColor,
+});
 
 export default function CustomizeSharePage() {
   const [config, setConfig] = useState<SharePageConfigData>(DEFAULT_CONFIG);
@@ -107,9 +145,19 @@ export default function CustomizeSharePage() {
       if (resConfig.ok) {
         const data = await resConfig.json();
         if (data.config) {
+          const presetId = data.config.themePreset || "obsidian";
+          const paletteFallback = getPresetFontColors(presetId);
+          const withFallback = (v: unknown, fb: string) =>
+            typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v.trim()) ? v : fb;
           setConfig((prev) => ({
             ...prev,
             ...data.config,
+            accentColor: withFallback(data.config.accentColor, paletteFallback.accentColor),
+            headingColor: withFallback(data.config.headingColor, paletteFallback.headingColor),
+            bodyColor: withFallback(data.config.bodyColor, paletteFallback.bodyColor),
+            mutedColor: withFallback(data.config.mutedColor, paletteFallback.mutedColor),
+            iconColor: withFallback(data.config.iconColor, paletteFallback.iconColor),
+            onAccentColor: withFallback(data.config.onAccentColor, paletteFallback.onAccentColor),
           }));
         }
         setNewBannerData(null);
@@ -403,13 +451,7 @@ export default function CustomizeSharePage() {
                       key={t.id}
                       type="button"
                       variant="outline"
-                      onClick={() =>
-                        setConfig((prev) => ({
-                          ...prev,
-                          themePreset: t.id,
-                          accentColor: t.primary,
-                        }))
-                      }
+                      onClick={() => setConfig((prev) => applyPalette(prev, t.id))}
                       className={`h-auto w-full p-3 rounded-xl border text-left flex-col items-stretch gap-2 cursor-pointer ${
                         config.themePreset === t.id
                           ? "border-primary ring-2 ring-primary/30 bg-primary/5"
@@ -420,11 +462,23 @@ export default function CustomizeSharePage() {
                         <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.primary }} />
                         <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.card }} />
                         <span className="w-3 h-3 rounded-full shrink-0 border border-border" style={{ backgroundColor: t.bg }} />
+                        <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.heading }} title="Heading text" />
+                        <span className="w-3 h-3 rounded-full shrink-0 shadow-xs" style={{ backgroundColor: t.muted }} title="Muted text" />
                       </div>
                       <span className="text-xs font-bold text-foreground truncate">{t.name}</span>
+                      <span className="text-[10px] font-semibold text-muted-foreground truncate">
+                        Aa <span style={{ color: t.heading }}>Hd</span>{" "}
+                        <span style={{ color: t.body }}>Bd</span>{" "}
+                        <span style={{ color: t.muted }}>Mt</span>
+                      </span>
                     </Button>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Picking a palette saves its matching heading, body, muted, icon and
+                  button-text colours so titles like the playlist header and
+                  “Playlist Queue” stay readable on every background.
+                </p>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-border">
@@ -435,13 +489,13 @@ export default function CustomizeSharePage() {
                   <input
                     type="color"
                     value={config.accentColor || "#84cc16"}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, accentColor: e.target.value }))}
+                    onChange={(e) => setConfig((prev) => withCustomAccent(prev, e.target.value))}
                     className="w-10 h-10 rounded-xl cursor-pointer border border-border p-1 bg-transparent"
                   />
                   <Input
                     type="text"
                     value={config.accentColor || "#84cc16"}
-                    onChange={(e) => setConfig((prev) => ({ ...prev, accentColor: e.target.value }))}
+                    onChange={(e) => setConfig((prev) => withCustomAccent(prev, e.target.value))}
                     placeholder="#84cc16"
                     className="flex-1 font-mono font-bold text-xs"
                   />
@@ -452,13 +506,75 @@ export default function CustomizeSharePage() {
                       key={hex}
                       type="button"
                       size="icon-xs"
-                      onClick={() => setConfig((prev) => ({ ...prev, accentColor: hex }))}
+                      onClick={() => setConfig((prev) => withCustomAccent(prev, hex))}
                       className="rounded-full border-border/60 transition-transform hover:scale-110 cursor-pointer shadow-xs"
                       style={{ backgroundColor: hex }}
                       title={hex}
                     />
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
+                    Text & Icon Colours (Auto from Palette)
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={() => setConfig((prev) => applyPalette(prev, prev.themePreset || "obsidian", true))}
+                    className="text-xs font-bold cursor-pointer"
+                    title="Reset text colours to the selected palette defaults"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset to palette</span>
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: "headingColor", label: "Headings / Titles", fallback: "#0f172a" },
+                    { key: "bodyColor", label: "Body / Descriptions", fallback: "#475569" },
+                    { key: "mutedColor", label: "Muted labels / Queue meta", fallback: "#64748b" },
+                    { key: "iconColor", label: "Neutral icons", fallback: "#64748b" },
+                    { key: "onAccentColor", label: "Text on accent button", fallback: "#ffffff" },
+                  ].map((row) => (
+                    <div key={row.key} className="flex items-center gap-2.5 p-2.5 rounded-xl bg-muted/40 border border-border">
+                      <input
+                        type="color"
+                        value={(config as any)[row.key] || row.fallback}
+                        onChange={(e) =>
+                          setConfig((prev) => ({ ...prev, [row.key]: e.target.value }))
+                        }
+                        className="w-9 h-9 rounded-lg cursor-pointer border border-border p-0.5 bg-transparent shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-foreground truncate">{row.label}</p>
+                        <p className="text-[11px] font-mono text-muted-foreground truncate">
+                          {(config as any)[row.key] || row.fallback}
+                        </p>
+                      </div>
+                      <span
+                        className="text-sm font-black px-2 py-1 rounded-md border border-border shrink-0"
+                        style={{
+                          backgroundColor: row.key === "onAccentColor" ? config.accentColor : undefined,
+                          color:
+                            row.key === "onAccentColor"
+                              ? (config as any)[row.key] || row.fallback
+                              : (config as any)[row.key] || row.fallback,
+                        }}
+                        title="Preview"
+                      >
+                        Aa
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  These are saved with your palette and used instead of hard-coded
+                  colours on video, playlist and meeting-pass share pages.
+                </p>
               </div>
 
               {/* Shadcn Select for Background Visual Style */}

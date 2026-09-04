@@ -8,10 +8,31 @@ import {
   resolveImageUrl,
 } from "@/lib/branding-image";
 import { normalizeBannerLink } from "@/lib/image-webp";
+import { SHARE_THEME_PRESETS } from "@/lib/share-theme";
+
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+const sanitizeHex = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  const t = v.trim();
+  return HEX_RE.test(t) ? t : null;
+};
+
+const paletteFontDefaults = (presetId?: string | null) => {
+  const preset =
+    SHARE_THEME_PRESETS[presetId || ""] || SHARE_THEME_PRESETS.obsidian;
+  return {
+    headingColor: preset.heading,
+    bodyColor: preset.body,
+    mutedColor: preset.muted,
+    iconColor: preset.icon,
+    onAccentColor: preset.onAccent,
+  };
+};
 
 const DEFAULT_CONFIG = {
   themePreset: "obsidian",
   accentColor: "#84cc16",
+  ...paletteFontDefaults("obsidian"),
   backgroundStyle: "mesh-gradient",
   cardRoundness: "3xl",
   customTitle: "",
@@ -60,10 +81,17 @@ export async function GET() {
 
     const customLogoUrl = await resolveImageUrl(config.customLogoKey);
     const welcomeBannerUrl = await resolveImageUrl(config.welcomeBannerKey);
+    const backfill = paletteFontDefaults((config as any).themePreset);
 
     return NextResponse.json({
       config: {
         ...config,
+        // Never let a null/legacy empty value wipe the readable preset default.
+        headingColor: (config as any).headingColor || backfill.headingColor,
+        bodyColor: (config as any).bodyColor || backfill.bodyColor,
+        mutedColor: (config as any).mutedColor || backfill.mutedColor,
+        iconColor: (config as any).iconColor || backfill.iconColor,
+        onAccentColor: (config as any).onAccentColor || backfill.onAccentColor,
         customLogoUrl,
         welcomeBannerUrl,
       },
@@ -148,12 +176,40 @@ export async function PUT(req: Request) {
     // Optional click-through link (sanitized via the shared validator).
     const newWelcomeBannerLink = normalizeBannerLink(body.welcomeBannerLink);
 
+    // Palette-driven font / icon colours. When the client picks a palette it
+    // sends the palette's font colours explicitly; otherwise fall back to the
+    // selected preset's defaults so old configs stay readable. Invalid hex is
+    // stored as null (= use palette default at render time).
+    const requestedPreset: string = body.themePreset ?? existingConfig?.themePreset ?? "obsidian";
+    const presetDefaults = paletteFontDefaults(requestedPreset);
+    const pickFontColor = (key: "headingColor" | "bodyColor" | "mutedColor" | "iconColor" | "onAccentColor") => {
+      if (body[key] === null || body[key] === "") return null;
+      const sanitized = sanitizeHex(body[key]);
+      if (sanitized) return sanitized;
+      if (body[key] === undefined) {
+        const existing = (existingConfig as any)?.[key];
+        if (typeof existing === "string" && HEX_RE.test(existing)) return existing;
+        return presetDefaults[key];
+      }
+      return presetDefaults[key];
+    };
+    const headingColor = pickFontColor("headingColor");
+    const bodyColor = pickFontColor("bodyColor");
+    const mutedColor = pickFontColor("mutedColor");
+    const iconColor = pickFontColor("iconColor");
+    const onAccentColor = pickFontColor("onAccentColor");
+
     const updatedConfig = await db.sharePageConfig.upsert({
       where: { organizationId },
       create: {
         organizationId,
         themePreset: body.themePreset ?? "obsidian",
         accentColor: body.accentColor ?? "#84cc16",
+        headingColor,
+        bodyColor,
+        mutedColor,
+        iconColor,
+        onAccentColor,
         backgroundStyle: body.backgroundStyle ?? "mesh-gradient",
         cardRoundness: body.cardRoundness ?? "3xl",
         customTitle: body.customTitle || null,
@@ -176,6 +232,11 @@ export async function PUT(req: Request) {
       update: {
         themePreset: body.themePreset ?? "obsidian",
         accentColor: body.accentColor ?? "#84cc16",
+        headingColor,
+        bodyColor,
+        mutedColor,
+        iconColor,
+        onAccentColor,
         backgroundStyle: body.backgroundStyle ?? "mesh-gradient",
         cardRoundness: body.cardRoundness ?? "3xl",
         customTitle: body.customTitle || null,

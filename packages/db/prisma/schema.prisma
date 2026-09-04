@@ -123,6 +123,15 @@ model SharePageConfig {
   backgroundStyle  String       @default("mesh-gradient") // "mesh-gradient" | "obsidian-aura" | "neon-grid" | "glassmorphism" | "minimal-solid"
   cardRoundness    String       @default("3xl") // "xl" | "3xl" | "pill" | "square"
 
+  // Palette-driven font / icon colours (saved whenever a palette is picked so
+  // share pages never rely on hard-coded text colours that clash, e.g. white
+  // text on a white Minimal Light background). Null = fall back to palette default.
+  headingColor     String?
+  bodyColor        String?
+  mutedColor       String?
+  iconColor        String?
+  onAccentColor    String?
+
   // Header & Branding
   customTitle            String?
   welcomeTagline         String?
