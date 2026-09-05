@@ -17,6 +17,7 @@ import { CheckoutDialog } from "./_components/ui/CheckoutDialog";
 import { ShareLoadingState, PrivateContentError } from "./_components/errors/PrivateContentError";
 import { LoginRequiredError } from "./_components/errors/LoginRequiredError";
 import { AccessDeniedError } from "./_components/errors/AccessDeniedError";
+import { PlaylistLockedError } from "./_components/errors/PlaylistLockedError";
 import { ShareErrorFallback } from "./_components/errors/ShareErrorFallback";
 import { MeetingView } from "./_components/views/MeetingView";
 import { VideoView } from "./_components/views/VideoView";
@@ -49,6 +50,10 @@ export type {
 export default function SharedContentClient({
   overrideConfig,
   previewData,
+  initialData,
+  initialError,
+  initialPlaylistData,
+  initialQueryKey,
 }: SharedContentClientProps) {
   const {
     token,
@@ -61,7 +66,7 @@ export default function SharedContentClient({
     errorState,
     setErrorState,
     fetchSharedContent,
-  } = useSharedContent(previewData);
+  } = useSharedContent(previewData, initialData, initialError, initialQueryKey);
 
   const { copied, handleCopyLink } = useCopyLink();
   const { selectedBuyerCountry, setSelectedBuyerCountry } = useBuyerCountry(
@@ -90,9 +95,11 @@ export default function SharedContentClient({
 
   // Playlist queue for episode pages (`/share/:videoId?playlistId=`).
   // Hook is always called (rules of hooks); it no-ops without a param.
+  // SSR payload (when present) avoids a second loader for the queue.
   const { playlistData, loading: playlistLoading } = usePlaylistContext(
     playlistIdParam,
-    data
+    data,
+    initialPlaylistData
   );
 
   if (loading) {
@@ -124,6 +131,21 @@ export default function SharedContentClient({
     return <AccessDeniedError token={token} subfolderId={subfolderId} error={errorState} />;
   }
 
+  // 3.5 EPISODE WITHOUT PLAYLIST ACCESS — opened from a locked playlist
+  // (`?playlistId=`) the viewer can't access. Routes back to the playlist
+  // offer instead of the player; purchase happens on the playlist page.
+  if (errorState?.code === "PLAYLIST_LOCKED") {
+    return (
+      <PlaylistLockedError
+        error={errorState}
+        onBackToPlaylist={() =>
+          errorState.playlistId && navigation.goToPlaylist(errorState.playlistId)
+        }
+        onSignIn={() => navigation.goToLogin()}
+      />
+    );
+  }
+
   // 4. UNHANDLED ERROR / LINK NOT FOUND
   if (errorState || !data || !theme) {
     return <ShareErrorFallback error={errorState} />;
@@ -133,11 +155,13 @@ export default function SharedContentClient({
   const isPlaylist = data.type === "playlist";
   const isMeeting = data.type === "meeting";
 
-  // Dedicated episode page: video token + `?playlistId=` queue available.
+  // Dedicated episode page: video token + `?playlistId=` queue resolved.
   // Falls back to the plain single-video view when the playlist id is
   // missing, still loading, or failed to resolve (backwards compatible).
-  const isPlaylistEpisode =
-    isVideo && !!playlistIdParam && (!!playlistData || playlistLoading);
+  // NOTE: `playlistLoading` alone must NOT trigger the episode view —
+  // otherwise SSR paints VideoView and hydration immediately swaps to the
+  // episode skeleton while the queue fetches (content → loader → content).
+  const isPlaylistEpisode = isVideo && !!playlistIdParam && !!playlistData;
 
   const handleSignIn = () => navigation.goToLogin();
   const handleOpenCheckout = () => checkout.setIsCheckoutOpen(true);

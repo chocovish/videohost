@@ -141,6 +141,14 @@ export interface SharedData {
 export interface SharedContentClientProps {
   overrideConfig?: SharePageConfigData;
   previewData?: SharedData;
+  /** Server-rendered payload — when present the client skips the initial loader + fetch. */
+  initialData?: SharedData | null;
+  initialError?: ShareErrorState | null;
+  /** Server-rendered `?playlistId=` queue for episode pages. */
+  initialPlaylistData?: SharedData | null;
+  /** Token the SSR payload was fetched for — used to detect client-side navigation. */
+  initialToken?: string;
+  initialQueryKey?: string;
 }
 
 /** Error payload returned by `GET /api/share/[token]`. */
@@ -151,7 +159,13 @@ export interface ShareErrorState {
   organizationName?: string;
   itemTitle?: string;
   itemDescription?: string | null;
+  /** Public poster artwork — present on every gate except PRIVATE. */
+  thumbnailUrl?: string | null;
   type?: string;
+  /** `PLAYLIST_LOCKED` only: the playlist blocking this episode open. */
+  playlistId?: string | null;
+  playlistTitle?: string | null;
+  isLoggedIn?: boolean;
 }
 
 /** Normalised price for the visitor's billing country. */

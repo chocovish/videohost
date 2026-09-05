@@ -2,6 +2,7 @@
 
 import { AlertCircle, CheckCircle2, Loader2, LogIn, Send, UserX } from "lucide-react";
 import { signOut } from "next-auth/react";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import type { ShareErrorState } from "../types";
 import { useAccessRequest } from "../hooks/use-access-request";
@@ -27,6 +28,15 @@ export function AccessDeniedError({ token, subfolderId, error }: AccessDeniedErr
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl space-y-6 text-center">
+        {error.thumbnailUrl ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 aspect-video bg-black">
+            <VideoThumbnail
+              src={error.thumbnailUrl}
+              alt={error.itemTitle || "Shared content"}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : null}
         <div className="mx-auto w-11 h-11 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center">
           <UserX className="w-5 h-5" />
         </div>

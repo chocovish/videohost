@@ -15,6 +15,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import VideoThumbnail from "@/components/VideoThumbnail";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import type { ShareErrorState } from "../types";
 import { useOtpAuth } from "../hooks/use-otp-auth";
@@ -59,6 +60,15 @@ export function LoginRequiredError({
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full p-6 sm:p-8 bg-white dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 rounded-2xl space-y-6">
+        {error.thumbnailUrl ? (
+          <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 aspect-video bg-black">
+            <VideoThumbnail
+              src={error.thumbnailUrl}
+              alt={error.itemTitle || "Shared content"}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : null}
         {authViewMode === "options" ? (
           <>
             <div className="flex flex-col items-center text-center space-y-3">

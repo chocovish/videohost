@@ -1,7 +1,12 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { db } from "@videohost/db";
 import { resolveThumbnailUrl } from "@/lib/storage";
+import { getShareContent, toJsonSafe } from "@/lib/share-server";
+import type { SharedData, ShareErrorState } from "./_components/types";
 import SharedContentClient from "./shared-content-client";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -183,6 +188,89 @@ export async function generateMetadata({
   };
 }
 
-export default function SharedPage() {
-  return <SharedContentClient />;
+export default async function SharedPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { token } = await params;
+  const sp = await searchParams;
+  const first = (v: string | string[] | undefined) =>
+    Array.isArray(v) ? v[0] : v ?? null;
+
+  const subfolderId = first(sp.subfolderId);
+  const folderIdParam =
+    first(sp.folderId) || first(sp.fromFolder) || first(sp.fromFolderId);
+  const rootFolderIdParam = first(sp.rootFolderId);
+  const playlistIdParam = first(sp.playlistId) || first(sp.playlist);
+
+  // Server-render the share payload so first paint already has content
+  // instead of just `<ShareLoadingState />` + a client-side fetch.
+  // Auth (session cookie), OTP pass cookie, and country headers are read
+  // inside `getShareContent` via `auth()` / `cookies()` / `headers()`,
+  // exactly like the API route — so SSR sees the same data the client would.
+  let initialData: SharedData | null = null;
+  let initialError: ShareErrorState | null = null;
+  try {
+    const { body } = await getShareContent(token, {
+      subfolderId,
+      folderId: folderIdParam,
+      rootFolderId: rootFolderIdParam,
+      playlistId: playlistIdParam,
+    });
+    const safe = toJsonSafe<any>(body);
+    if (safe?.error) {
+      initialError = {
+        code: safe.error,
+        message: safe.message,
+        userEmail: safe.userEmail,
+        organizationName: safe.organization?.name,
+        itemTitle: safe.itemTitle,
+        itemDescription: safe.itemDescription,
+        thumbnailUrl: safe.thumbnailUrl ?? null,
+        type: safe.type,
+        playlistId: safe.playlistId ?? null,
+        playlistTitle: safe.playlistTitle ?? null,
+        isLoggedIn: safe.isLoggedIn,
+      };
+    } else {
+      initialData = safe as SharedData;
+    }
+  } catch (err) {
+    console.error("[Share SSR Error]:", err);
+    initialError = {
+      code: "FETCH_FAILED",
+      message: err instanceof Error ? err.message : "Failed to load shared content.",
+    };
+  }
+
+  // Episode pages (`/share/:videoId?playlistId=`) need the playlist queue too —
+  // fetch it on the server so the queue drawer doesn't show its own loader.
+  let initialPlaylistData: SharedData | null = null;
+  if (playlistIdParam && initialData?.type === "video") {
+    try {
+      const { body } = await getShareContent(playlistIdParam, {});
+      const safe = toJsonSafe<any>(body);
+      if (!safe?.error && safe?.type === "playlist") {
+        initialPlaylistData = safe as SharedData;
+      }
+    } catch {
+      initialPlaylistData = null;
+    }
+  }
+
+  const initialQueryKey = `${token}|${subfolderId || ""}|${folderIdParam || ""}|${rootFolderIdParam || ""}|${playlistIdParam || ""}`;
+
+  return (
+    <Suspense>
+      <SharedContentClient
+        initialData={initialData}
+        initialError={initialError}
+        initialPlaylistData={initialPlaylistData}
+        initialQueryKey={initialQueryKey}
+      />
+    </Suspense>
+  );
 }

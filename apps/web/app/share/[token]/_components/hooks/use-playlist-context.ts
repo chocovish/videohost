@@ -20,9 +20,12 @@ interface UsePlaylistContextResult {
  */
 export function usePlaylistContext(
   playlistId: string | null,
-  currentData: SharedData | null
+  currentData: SharedData | null,
+  initialPlaylistData?: SharedData | null
 ): UsePlaylistContextResult {
-  const [fetched, setFetched] = useState<SharedData | null>(null);
+  const [fetched, setFetched] = useState<SharedData | null>(
+    initialPlaylistData || null
+  );
   const [loading, setLoading] = useState(false);
 
   const isCurrentPlaylist =
@@ -30,9 +33,15 @@ export function usePlaylistContext(
     currentData?.type === "playlist" &&
     currentData.playlist?.id === playlistId;
 
+  const isInitialPlaylist =
+    !!playlistId &&
+    !!initialPlaylistData &&
+    initialPlaylistData.type === "playlist" &&
+    initialPlaylistData.playlist?.id === playlistId;
+
   useEffect(() => {
-    if (!playlistId || isCurrentPlaylist) {
-      setFetched(null);
+    if (!playlistId || isCurrentPlaylist || isInitialPlaylist) {
+      if (!isInitialPlaylist) setFetched(null);
       setLoading(false);
       return;
     }
@@ -58,11 +67,20 @@ export function usePlaylistContext(
     return () => {
       cancelled = true;
     };
-  }, [playlistId, isCurrentPlaylist]);
+  }, [playlistId, isCurrentPlaylist, isInitialPlaylist]);
 
   if (isCurrentPlaylist && currentData) {
     return { playlistData: currentData, loading: false };
   }
 
-  return { playlistData: fetched, loading };
+  if (isInitialPlaylist && initialPlaylistData) {
+    return { playlistData: initialPlaylistData, loading: false };
+  }
+
+  // Ignore stale SSR/cached queue when the param moved on (client navigation
+  // to a different episode) — return null + loading so the caller shows the
+  // episode skeleton instead of the previous playlist's queue.
+  const effectiveFetched =
+    fetched && fetched.playlist?.id === playlistId ? fetched : null;
+  return { playlistData: effectiveFetched, loading };
 }
