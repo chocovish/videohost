@@ -68,10 +68,7 @@ export function PlaylistQueueDrawer({
               {currentIndex + 1}/{videos.length}
             </Badge>
           </div>
-          <DrawerDescription>
-            Switch episodes without losing your place — the URL always points at the
-            video you’re watching.
-          </DrawerDescription>
+          
           {videos.length > 3 ? (
             <div className="relative pt-2">
               <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -86,7 +83,7 @@ export function PlaylistQueueDrawer({
           ) : null}
         </DrawerHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
           {filtered.length === 0 ? (
             <div className="py-8 text-center">
               <Search className="mx-auto mb-2 size-7 text-muted-foreground" />

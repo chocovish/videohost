@@ -741,15 +741,17 @@ function UploadedVideosContent() {
 
                       <div onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              aria-label="Folder actions"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                aria-label="Folder actions"
+                              />
+                            }
+                          >
+                            <MoreVertical className="w-4 h-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem
@@ -930,19 +932,21 @@ function UploadedVideosContent() {
                         </Link>
 
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                              aria-label="Video actions"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                aria-label="Video actions"
+                              />
+                            }
+                          >
+                            <MoreVertical className="w-4 h-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-44">
                             <DropdownMenuItem

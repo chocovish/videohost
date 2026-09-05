@@ -552,15 +552,17 @@ export default function ParticipantsPanel({
 
                           {/* More Options Dropdown */}
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="icon-xs"
-                                className="text-slate-400 hover:text-white"
-                                title="More participant options"
-                              >
-                                <MoreVertical className="w-3.5 h-3.5" />
-                              </Button>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  size="icon-xs"
+                                  className="text-slate-400 hover:text-white"
+                                  title="More participant options"
+                                />
+                              }
+                            >
+                              <MoreVertical className="w-3.5 h-3.5" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                               align="end"

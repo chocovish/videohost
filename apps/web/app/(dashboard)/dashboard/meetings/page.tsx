@@ -419,16 +419,18 @@ export default function MeetingsDashboardPage() {
 
                     {/* 3-Dot Options Dropdown */}
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
-                          title="More options"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                          <span className="sr-only">More options</span>
-                        </Button>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                            title="More options"
+                          />
+                        }
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                        <span className="sr-only">More options</span>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem
@@ -552,16 +554,18 @@ export default function MeetingsDashboardPage() {
 
                   {/* 3-Dot Options Dropdown */}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
-                        title="More options"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                        <span className="sr-only">More options</span>
-                      </Button>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg cursor-pointer"
+                          title="More options"
+                        />
+                      }
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                      <span className="sr-only">More options</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuItem

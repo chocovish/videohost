@@ -87,7 +87,6 @@ export default function RecordOptionsModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isStarting && onClose()}>
       <DialogContent
-        size="lg"
         className="border-slate-800/80 bg-slate-900/95 text-slate-100 p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-w-xl"
       >
         {/* Header */}

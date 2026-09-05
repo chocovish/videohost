@@ -430,7 +430,7 @@ export default function ScreenRecordDrawer({
   return (
     <>
       <Drawer open={isOpen} onOpenChange={(open) => !open && handleAttemptClose()}>
-        <DrawerContent className="w-full max-h-[96dvh] sm:max-h-[92dvh] flex flex-col p-0 overflow-hidden" hideCloseButton>
+        <DrawerContent className="w-full max-h-[96dvh] sm:max-h-[92dvh] flex flex-col p-0 overflow-hidden">
           <div className="max-w-7xl mx-auto w-full flex flex-col h-full max-h-[96dvh] sm:max-h-[92dvh] relative overflow-hidden">
             {/* Corner Close Button */}
             <Button

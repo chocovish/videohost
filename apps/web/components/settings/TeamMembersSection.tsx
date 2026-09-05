@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 
 export interface Member {
@@ -95,7 +95,7 @@ export function TeamMembersSection({
           <AlertDescription className="text-xs">
             Inviting team members to collaborate in your workspace is an Enterprise plan feature. Upgrade your workspace to invite team members and assign roles.
           </AlertDescription>
-          <AlertAction>
+          <div className="absolute top-2.5 right-3 flex items-center gap-2">
             <Button
               type="button"
               size="sm"
@@ -104,7 +104,7 @@ export function TeamMembersSection({
             >
               Upgrade to Enterprise
             </Button>
-          </AlertAction>
+          </div>
         </Alert>
       ) : (
         <form onSubmit={onInvite} className="flex flex-col sm:flex-row gap-3">

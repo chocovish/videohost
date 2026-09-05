@@ -863,19 +863,19 @@ export default function OfferingsDashboardPage() {
       {/* Main Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-          <TabsList className="bg-muted p-1 rounded-2xl">
-            <TabsTrigger value="catalog" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
+          <TabsList className="bg-muted p-1 rounded-2xl h-auto group-data-horizontal/tabs:h-auto">
+            <TabsTrigger value="catalog" className="rounded-xl text-xs font-bold px-4 py-2.5 h-auto flex items-center gap-2">
               <Package className="w-3.5 h-3.5" />
               <span>Offerings Catalog</span>
               <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
                 {items.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="customizer" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
+            <TabsTrigger value="customizer" className="rounded-xl text-xs font-bold px-4 py-2.5 h-auto flex items-center gap-2">
               <Palette className="w-3.5 h-3.5" />
               <span>Theme & Layout Customizer</span>
             </TabsTrigger>
-            <TabsTrigger value="inquiries" className="rounded-xl text-xs font-bold px-4 py-2 flex items-center gap-2">
+            <TabsTrigger value="inquiries" className="rounded-xl text-xs font-bold px-4 py-2.5 h-auto flex items-center gap-2">
               <MessageSquare className="w-3.5 h-3.5" />
               <span>Inquiries & Leads</span>
               {inquiries.filter((i) => i.status === "PENDING").length > 0 && (
@@ -888,13 +888,13 @@ export default function OfferingsDashboardPage() {
 
           {/* Contextual Action Buttons based on Active Tab */}
           {activeTab === "catalog" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={seeding}
                 onClick={handleSeedDefaults}
-                className="text-xs font-bold gap-1.5 cursor-pointer border-dashed"
+                className="h-9 px-4 text-xs font-bold gap-1.5 cursor-pointer border-dashed"
               >
                 {seeding ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -906,7 +906,7 @@ export default function OfferingsDashboardPage() {
               <Button
                 size="sm"
                 onClick={() => handleOpenItemModal()}
-                className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+                className="h-9 px-4 text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add New Offering</span>
@@ -915,12 +915,12 @@ export default function OfferingsDashboardPage() {
           )}
 
           {activeTab === "customizer" && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 size="sm"
                 onClick={handleSaveConfig}
                 disabled={saving}
-                className="text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
+                className="h-9 px-4 text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
               >
                 {saving ? (
                   <span className="flex items-center gap-1.5">

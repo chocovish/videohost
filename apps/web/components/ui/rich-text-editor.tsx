@@ -332,17 +332,19 @@ export const RichTextEditor = React.forwardRef<HTMLDivElement, RichTextEditorPro
             >
               {/* 1. Text Size / Headings Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onMouseDown={saveSelection}
-                    className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
-                  >
-                    <span>{currentHeadingLabel}</span>
-                    <ChevronDown className="size-3 opacity-60" />
-                  </Button>
+                <DropdownMenuTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onMouseDown={saveSelection}
+                      className="h-7 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+                    />
+                  }
+                >
+                  <span>{currentHeadingLabel}</span>
+                  <ChevronDown className="size-3 opacity-60" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="min-w-36">
                   <DropdownMenuItem
@@ -514,19 +516,21 @@ function ToolbarButton({
 }: ToolbarButtonProps) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          tabIndex={-1}
-          disabled={disabled}
-          onClick={onClick}
-          className={cn(
-            "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed shrink-0",
-            isActive && "bg-accent text-accent-foreground font-semibold shadow-2xs"
-          )}
-        >
-          {icon}
-        </button>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={disabled}
+            onClick={onClick}
+            className={cn(
+              "flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed shrink-0",
+              isActive && "bg-accent text-accent-foreground font-semibold shadow-2xs"
+            )}
+          />
+        }
+      >
+        {icon}
       </TooltipTrigger>
       <TooltipContent side="top" sideOffset={4} className="text-[11px] px-2 py-1">
         {tooltip}

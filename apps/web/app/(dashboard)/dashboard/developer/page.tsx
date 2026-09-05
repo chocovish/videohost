@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface ApiKeyItem {
   id: string;
@@ -160,7 +160,7 @@ export default function DeveloperPage() {
                   <AlertTitle className="flex items-center gap-1.5 text-xs uppercase tracking-wider">
                     <ShieldAlert className="w-4 h-4 shrink-0" /> Secret Key Created — Save It Now!
                   </AlertTitle>
-                  <AlertAction>
+                  <div className="absolute top-2.5 right-3 flex items-center gap-2">
                     <Button
                       size="sm"
                       variant="secondary"
@@ -170,7 +170,7 @@ export default function DeveloperPage() {
                       {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedKey ? "Copied" : "Copy Secret"}
                     </Button>
-                  </AlertAction>
+                  </div>
                   <pre className="bg-muted text-foreground border border-border p-3 rounded-lg text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
                     {createdRawKey}
                   </pre>

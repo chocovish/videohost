@@ -686,15 +686,17 @@ function RoomContent({
           {/* --- Mobile View 3-dot Menu (visible on mobile only, sm:hidden) --- */}
           <div className="sm:hidden flex items-center">
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="text-slate-300 hover:text-white"
-                  title="More meeting options"
-                >
-                  <MoreVertical className="w-4 h-4" />
-                </Button>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="text-slate-300 hover:text-white"
+                    title="More meeting options"
+                  />
+                }
+              >
+                <MoreVertical className="w-4 h-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"

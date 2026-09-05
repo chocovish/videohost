@@ -681,22 +681,20 @@ export default function RecordStudioView() {
                         {isMicDisabledMidRecording ? (
                           <TooltipProvider>
                             <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="w-full">
-                                  <button
-                                    type="button"
-                                    disabled
-                                    className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all bg-white/5 border-white/10 text-slate-500 opacity-50 cursor-not-allowed"
-                                  >
-                                    <div className="p-1.5 rounded-lg shrink-0 bg-white/5 text-slate-500">
-                                      <MicOff className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div className="min-w-0">
-                                      <p className="text-xs font-bold truncate">Mic Audio</p>
-                                      <p className="text-[10px] opacity-75 truncate">Disabled</p>
-                                    </div>
-                                  </button>
-                                </div>
+                              <TooltipTrigger render={<div className="w-full" />}>
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all bg-white/5 border-white/10 text-slate-500 opacity-50 cursor-not-allowed"
+                                >
+                                  <div className="p-1.5 rounded-lg shrink-0 bg-white/5 text-slate-500">
+                                    <MicOff className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-bold truncate">Mic Audio</p>
+                                    <p className="text-[10px] opacity-75 truncate">Disabled</p>
+                                  </div>
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="bg-slate-900 text-slate-100 border-white/15">
                                 Cannot enable microphone mid-recording because it was disabled when recording started.

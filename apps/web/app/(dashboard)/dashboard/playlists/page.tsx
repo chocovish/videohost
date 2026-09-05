@@ -404,10 +404,12 @@ export default function PlaylistsPage() {
                     </Link>
 
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" />
+                        }
+                      >
+                        <MoreVertical className="w-4 h-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem

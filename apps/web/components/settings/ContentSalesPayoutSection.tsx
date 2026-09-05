@@ -35,7 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription, AlertAction } from "@/components/ui/alert";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableHeader,
@@ -694,7 +694,7 @@ export function ContentSalesPayoutSection({
                 <AlertDescription className="text-xs">
                   Configure your direct deposit routing or IFSC details to initiate wire payouts.
                 </AlertDescription>
-                <AlertAction>
+                <div className="absolute top-2.5 right-3 flex items-center gap-2">
                   <Button
                     type="button"
                     size="sm"
@@ -703,7 +703,7 @@ export function ContentSalesPayoutSection({
                   >
                     Add Bank Account
                   </Button>
-                </AlertAction>
+                </div>
               </Alert>
             )}
 

@@ -650,7 +650,7 @@ export default function PurchasedItemsPage() {
           if (!open) setSelectedReceipt(null);
         }}
       >
-        <DialogContent size="lg" className="sm:max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-6 overflow-hidden">
           <DialogHeader className="shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">

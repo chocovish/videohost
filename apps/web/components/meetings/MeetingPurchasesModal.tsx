@@ -131,7 +131,7 @@ export default function MeetingPurchasesModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent size="2xl" className="max-w-4xl p-6 sm:p-7 max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-4xl p-6 sm:p-7 max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <DialogHeader className="space-y-2 pb-3 border-b border-border shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
