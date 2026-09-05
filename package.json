@@ -32,5 +32,8 @@
   "devDependencies": {
     "turbo": "^2.0.0",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "cn": "^0.2.5"
   }
 }

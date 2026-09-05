@@ -10,9 +10,7 @@
  *   node scripts/migrate-video-filenames.js            # Live migration
  *   node scripts/migrate-video-filenames.js --dry-run  # Preview changes without modifying DB
  * -------------------------------------------------------------------------------------
- */
-
-const path = require("path");
+ */const path = require("path");
 const dotenv = require("dotenv");
 
 // Load .env from workspace root or current directory
