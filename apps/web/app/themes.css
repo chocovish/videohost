@@ -312,19 +312,34 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-[data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled) {
+/* BUTTON VARIANT FILTERING
+   NOTE: Stock Shadcn `Button` (components/ui/button.tsx) destructures `variant`
+   and never forwards a `data-variant` attribute to the DOM, so
+   `[data-variant="..."]` selectors can never match it. Do NOT use them here —
+   keep this file stock-component-safe by targeting the `cva` utility classes
+   that ARE rendered in the DOM instead. Mapping to buttonVariants():
+     - not ghost/link  →  `.shadow-xs`
+       (only default/destructive/outline/secondary include `shadow-xs`;
+       ghost/link render no shadow utility at all)
+     - variant=default →  `.bg-primary`
+       (only the default variant renders the `bg-primary` token;
+       link's `text-primary` is a different token and does not collide)
+     - not secondary   →  `:not(.bg-secondary)`
+       (only the secondary variant renders the `bg-secondary` token) */
+
+[data-slot="button"].shadow-xs:not(:disabled) {
   box-shadow: var(--shadow-xs);
 }
 
-[data-slot="button"][data-variant="default"]:not(:disabled) {
+[data-slot="button"].bg-primary:not(:disabled) {
   box-shadow: var(--shadow-sm);
 }
 
-[data-slot="button"]:hover:not(:disabled):not([data-variant="ghost"]):not([data-variant="link"]):not([data-variant="secondary"]) {
+[data-slot="button"].shadow-xs:hover:not(:disabled):not(.bg-secondary) {
   transform: var(--theme-btn-transform, none);
 }
 
-[data-slot="button"]:active:not(:disabled):not([data-variant="ghost"]):not([data-variant="link"]):not([data-variant="secondary"]) {
+[data-slot="button"].shadow-xs:active:not(:disabled):not(.bg-secondary) {
   transform: var(--theme-active-transform, none);
   box-shadow: 0px 0px 0px 0px transparent !important;
 }
