@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
-import { getPresignedPlaybackUrl } from "@/lib/s3";
+import { resolveThumbnailUrl } from "@/lib/storage";
 import { db } from "@videohost/db";
 
 export async function GET(req: Request) {
@@ -21,10 +21,13 @@ export async function GET(req: Request) {
             video: {
               select: {
                 id: true,
+                organizationId: true,
                 title: true,
                 durationSeconds: true,
                 thumbnailKey: true,
                 status: true,
+                storageType: true,
+                bunnyVideoId: true,
               },
             },
           },
@@ -44,11 +47,11 @@ export async function GET(req: Request) {
           if (video.durationSeconds) {
             totalDurationSeconds += video.durationSeconds;
           }
-          if (!firstThumbnailUrl && video.thumbnailKey) {
+          if (!firstThumbnailUrl) {
             try {
-              firstThumbnailUrl = await getPresignedPlaybackUrl(video.thumbnailKey);
+              firstThumbnailUrl = await resolveThumbnailUrl(video as any);
             } catch (e) {
-              console.error("Error signing thumbnail URL for playlist:", e);
+              console.error("Error resolving thumbnail URL for playlist:", e);
             }
           }
         }

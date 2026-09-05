@@ -9,6 +9,8 @@ interface UseSharedContentResult {
   subfolderId: string | null;
   folderIdParam: string | null;
   rootFolderIdParam: string | null;
+  /** `?playlistId=` — present when a video is opened from a playlist. */
+  playlistIdParam: string | null;
   data: SharedData | null;
   setData: React.Dispatch<React.SetStateAction<SharedData | null>>;
   loading: boolean;
@@ -32,6 +34,8 @@ export function useSharedContent(previewData?: SharedData): UseSharedContentResu
     searchParams?.get("fromFolder") ||
     searchParams?.get("fromFolderId");
   const rootFolderIdParam = searchParams?.get("rootFolderId");
+  const playlistIdParam =
+    searchParams?.get("playlistId") || searchParams?.get("playlist");
 
   const [data, setData] = useState<SharedData | null>(previewData || null);
   const [loading, setLoading] = useState(!previewData);
@@ -89,6 +93,7 @@ export function useSharedContent(previewData?: SharedData): UseSharedContentResu
     subfolderId,
     folderIdParam,
     rootFolderIdParam,
+    playlistIdParam,
     data,
     setData,
     loading,

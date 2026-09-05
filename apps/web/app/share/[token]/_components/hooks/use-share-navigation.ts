@@ -82,6 +82,28 @@ export function useShareNavigation({
     router,
   ]);
 
+  /**
+   * Playlist overview → dedicated episode page.
+   * The playlist id stays in `?playlistId=` so a reload (or shared link)
+   * lands back on the same video with the queue available.
+   */
+  const openPlaylistVideo = useCallback(
+    (videoId: string, playlistId: string) => {
+      if (previewData) return;
+      router.push(`/share/${videoId}?playlistId=${encodeURIComponent(playlistId)}`);
+    },
+    [previewData, router]
+  );
+
+  /** Episode page → back to the playlist overview. */
+  const goToPlaylist = useCallback(
+    (playlistId: string) => {
+      if (previewData) return;
+      router.push(`/share/${encodeURIComponent(playlistId)}`);
+    },
+    [previewData, router]
+  );
+
   const handleJoinMeeting = useCallback(
     (meetingId: string) => {
       router.push(`/meet/${meetingId || token}`);
@@ -97,5 +119,7 @@ export function useShareNavigation({
     handleVideoClick,
     handleBackToFolder,
     handleJoinMeeting,
+    openPlaylistVideo,
+    goToPlaylist,
   };
 }

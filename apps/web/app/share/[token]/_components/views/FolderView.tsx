@@ -173,7 +173,7 @@ export function FolderView({
                 {/* Content Info */}
                 <div className="p-4 space-y-1.5">
                   <h3
-                    className="text-sm font-bold group-hover:opacity-90 transition-colors line-clamp-1"
+                    className="line-clamp-2 overflow-hidden text-sm font-bold text-ellipsis break-words group-hover:opacity-90 transition-colors"
                     style={{ color: headingHex }}
                   >
                     {vid.title}

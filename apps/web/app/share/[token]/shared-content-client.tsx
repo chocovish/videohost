@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { SharedContentClientProps } from "./_components/types";
 import { buildShareTheme } from "./_components/share-theme";
 import { useSharedContent } from "./_components/hooks/use-shared-content";
+import { usePlaylistContext } from "./_components/hooks/use-playlist-context";
 import { useCopyLink } from "./_components/hooks/use-copy-link";
 import { useShareNavigation } from "./_components/hooks/use-share-navigation";
 import { useBuyerCountry } from "./_components/hooks/use-buyer-country";
@@ -20,6 +21,7 @@ import { ShareErrorFallback } from "./_components/errors/ShareErrorFallback";
 import { MeetingView } from "./_components/views/MeetingView";
 import { VideoView } from "./_components/views/VideoView";
 import { PlaylistView } from "./_components/views/PlaylistView";
+import { PlaylistEpisodeView } from "./_components/views/PlaylistEpisodeView";
 import { FolderView } from "./_components/views/FolderView";
 
 // Preserve the previous public API: customize-share-page imports these types
@@ -53,6 +55,7 @@ export default function SharedContentClient({
     subfolderId,
     folderIdParam,
     rootFolderIdParam,
+    playlistIdParam,
     data,
     loading,
     errorState,
@@ -84,6 +87,13 @@ export default function SharedContentClient({
     accentHex: theme?.accentHex ?? "#84cc16",
     fetchSharedContent,
   });
+
+  // Playlist queue for episode pages (`/share/:videoId?playlistId=`).
+  // Hook is always called (rules of hooks); it no-ops without a param.
+  const { playlistData, loading: playlistLoading } = usePlaylistContext(
+    playlistIdParam,
+    data
+  );
 
   if (loading) {
     return <ShareLoadingState />;
@@ -123,6 +133,12 @@ export default function SharedContentClient({
   const isPlaylist = data.type === "playlist";
   const isMeeting = data.type === "meeting";
 
+  // Dedicated episode page: video token + `?playlistId=` queue available.
+  // Falls back to the plain single-video view when the playlist id is
+  // missing, still loading, or failed to resolve (backwards compatible).
+  const isPlaylistEpisode =
+    isVideo && !!playlistIdParam && (!!playlistData || playlistLoading);
+
   const handleSignIn = () => navigation.goToLogin();
   const handleOpenCheckout = () => checkout.setIsCheckoutOpen(true);
   const handleCloseCheckout = () => checkout.setIsCheckoutOpen(false);
@@ -133,7 +149,11 @@ export default function SharedContentClient({
       <ShareHeader data={data} theme={theme} copied={copied} onCopyLink={handleCopyLink} />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8 relative z-10">
+      <main
+        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8 relative z-10 ${
+          isPlaylist || isPlaylistEpisode ? "max-w-6xl" : "max-w-5xl"
+        }`}
+      >
         <BannerHeader theme={theme} />
 
         {/* MEETING SHARE & ENTRY PASS VIEW */}
@@ -153,8 +173,33 @@ export default function SharedContentClient({
           />
         )}
 
+        {/* PLAYLIST EPISODE VIEW — `/share/:videoId?playlistId=:playlistId` */}
+        {isPlaylistEpisode && data.video && (
+          <PlaylistEpisodeView
+            data={data}
+            playlistData={playlistData}
+            playlistLoading={playlistLoading}
+            theme={theme}
+            priceInfo={checkout.priceInfo}
+            copied={copied}
+            onCopyLink={handleCopyLink}
+            selectedCountry={selectedBuyerCountry}
+            onCountryChange={setSelectedBuyerCountry}
+            isCheckingOut={checkout.isCheckingOut}
+            onSignIn={handleSignIn}
+            onFreeClaim={checkout.handleExecuteCheckout}
+            onOpenCheckout={handleOpenCheckout}
+            onOpenVideo={(videoId) =>
+              playlistIdParam && navigation.openPlaylistVideo(videoId, playlistIdParam)
+            }
+            onBackToPlaylist={() =>
+              playlistIdParam && navigation.goToPlaylist(playlistIdParam)
+            }
+          />
+        )}
+
         {/* SINGLE VIDEO SHARE VIEW */}
-        {isVideo && data.video && (
+        {isVideo && data.video && !isPlaylistEpisode && (
           <VideoView
             data={data}
             theme={theme}
@@ -171,7 +216,7 @@ export default function SharedContentClient({
           />
         )}
 
-        {/* PLAYLIST SHARE VIEW */}
+        {/* PLAYLIST OVERVIEW — details + episode list, routes to episode pages */}
         {isPlaylist && data.playlist && (
           <PlaylistView
             data={data}
@@ -185,6 +230,9 @@ export default function SharedContentClient({
             onSignIn={handleSignIn}
             onFreeClaim={checkout.handleExecuteCheckout}
             onOpenCheckout={handleOpenCheckout}
+            onVideoClick={(videoId) =>
+              data.playlist && navigation.openPlaylistVideo(videoId, data.playlist.id)
+            }
           />
         )}
 

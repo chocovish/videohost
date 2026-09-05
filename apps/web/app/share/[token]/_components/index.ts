@@ -8,6 +8,7 @@ export * from "./types";
 export * from "./utils";
 export * from "./share-theme";
 export * from "./hooks/use-shared-content";
+export * from "./hooks/use-playlist-context";
 export * from "./hooks/use-copy-link";
 export * from "./hooks/use-share-navigation";
 export * from "./hooks/use-buyer-country";

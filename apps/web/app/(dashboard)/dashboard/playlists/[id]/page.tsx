@@ -36,8 +36,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
-import { RichTextViewer } from "@/components/ui/rich-text-viewer";
+import { ExpandableRichText } from "@/components/ui/expandable-rich-text";
 import {
   Dialog,
   DialogContent,
@@ -544,53 +551,25 @@ export default function PlaylistDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Top Header & Actions Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
+    <div className="space-y-4 max-w-7xl mx-auto pb-16">
+      {/* Top row: back arrow + "Playlist collection" label + actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
           <Link
             href="/dashboard/playlists"
-            className="mt-1 shrink-0"
+            className="shrink-0"
             title="Back to Playlists"
           >
             <Button variant="outline" size="icon">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div className="space-y-1.5">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                Playlist Collection
-              </span>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
-                {playlist.title}
-              </h1>
-              {getAccessBadge(playlist.shareAccessMode)}
-            </div>
-
-            {playlist.description && (
-              <div className="text-sm text-foreground/90 leading-relaxed max-w-3xl">
-                <RichTextViewer content={playlist.description} />
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground pt-0.5 flex-wrap">
-              <span className="flex items-center gap-1.5">
-                <Film className="w-3.5 h-3.5 text-primary" /> {items.length} {items.length === 1 ? "Video" : "Videos"}
-              </span>
-              {playlist.totalDurationSeconds > 0 && (
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-primary" /> {formatDuration(playlist.totalDurationSeconds)} Total Duration
-                </span>
-              )}
-              <span>Created {new Date(playlist.createdAt).toLocaleDateString()}</span>
-            </div>
-          </div>
+          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Playlist collection
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap shrink-0 lg:self-start">
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
           <Button
             variant="outline"
             onClick={() => {
@@ -632,6 +611,50 @@ export default function PlaylistDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Playlist title + description */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start gap-3.5">
+            <div className="hidden sm:flex p-2.5 rounded-xl bg-primary/10 text-primary shrink-0">
+              <ListVideo className="w-5 h-5" />
+            </div>
+            <div className="space-y-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <CardTitle className="text-xl sm:text-2xl font-black tracking-tight leading-tight break-words">
+                  {playlist.title}
+                </CardTitle>
+                {getAccessBadge(playlist.shareAccessMode)}
+              </div>
+
+              <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-primary" /> {items.length} {items.length === 1 ? "Video" : "Videos"}
+                </span>
+                {playlist.totalDurationSeconds > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-primary" /> {formatDuration(playlist.totalDurationSeconds)} Total Duration
+                  </span>
+                )}
+                <span>Created {new Date(playlist.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        {playlist.description && (
+          <>
+            <Separator />
+            <CardContent className="pt-4">
+              <ExpandableRichText
+                content={playlist.description}
+                clampLines={5}
+                textClassName="text-sm text-muted-foreground leading-relaxed max-w-4xl"
+              />
+            </CardContent>
+          </>
+        )}
+      </Card>
 
       {/* Main Tab Navigation Bar */}
       <div className="flex items-center gap-2 p-1.5 bg-muted/60 rounded-2xl border border-border w-fit">
