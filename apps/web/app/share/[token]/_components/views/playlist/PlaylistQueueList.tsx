@@ -27,7 +27,7 @@ export function PlaylistQueueList({
   onSelect,
 }: PlaylistQueueListProps) {
   return (
-    <ul className="space-y-1.5">
+    <ul className="space-y-0.5">
       {videos.map((video, i) => (
         <li key={video.id}>
           <PlaylistEpisodeItem

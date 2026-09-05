@@ -21,7 +21,7 @@ export function ShareHeader({ data, theme, copied, onCopyLink }: ShareHeaderProp
 
   return (
     <header className={`sticky top-0 z-50 backdrop-blur-xl border-b ${headerBgClass}`}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           {config.showLogo !== false &&
             (logoUrlToDisplay ? (

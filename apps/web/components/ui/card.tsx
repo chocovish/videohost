@@ -11,6 +11,7 @@ const cardVariants = cva(
         default: "border-border bg-card text-card-foreground shadow-sm",
         glass: "glass-card border-border text-card-foreground",
         interactive: "glass-card card-hover border-border text-card-foreground hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 cursor-pointer",
+        ghost: "border-transparent bg-transparent shadow-none",
       },
       size: {
         default: "",

@@ -150,8 +150,8 @@ export default function SharedContentClient({
 
       {/* Main Content */}
       <main
-        className={`flex-1 w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8 relative z-10 ${
-          isPlaylist || isPlaylistEpisode ? "max-w-6xl" : "max-w-5xl"
+        className={`flex-1 w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8 relative z-10 ${
+          isPlaylist || isPlaylistEpisode ? "max-w-7xl" : "max-w-5xl"
         }`}
       >
         <BannerHeader theme={theme} />
