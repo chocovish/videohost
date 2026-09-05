@@ -9,7 +9,9 @@ export const revalidate = 0;
 
 /**
  * Next.js 16 Dynamic Sitemap Generator
- * Generates sitemap for all public pages, explicitly excluding any /dashboard routes.
+ * Generates sitemap for all public pages, explicitly excluding any /dashboard
+ * and /share routes (shared videos, playlists, folders, meetings are private
+ * by design and must never be discoverable via sitemap.xml).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();
@@ -123,58 +125,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[Sitemap Generation] Error fetching published offerings:", error);
   }
 
-  // 3. Dynamic Public Shared Content (Videos & Playlists)
-  let sharedVideoRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const publicVideos = await db.video.findMany({
-      where: {
-        status: "READY",
-        shareAccessMode: "PUBLIC",
-      },
-      select: {
-        id: true,
-        updatedAt: true,
-      },
-      take: 2000,
-    });
+  // NOTE: /share/[token] routes (videos, playlists, folders, meetings) are
+  // intentionally excluded from the sitemap to keep shared content private
+  // and non-discoverable by search engines.
 
-    sharedVideoRoutes = publicVideos.map((video) => ({
-      url: `${baseUrl}/share/${encodeURIComponent(video.id)}`,
-      lastModified: video.updatedAt || currentDate,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-  } catch (error) {
-    console.error("[Sitemap Generation] Error fetching public videos:", error);
-  }
-
-  let sharedPlaylistRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const publicPlaylists = await db.playlist.findMany({
-      where: {
-        shareAccessMode: "PUBLIC",
-      },
-      select: {
-        id: true,
-        updatedAt: true,
-      },
-      take: 2000,
-    });
-
-    sharedPlaylistRoutes = publicPlaylists.map((playlist) => ({
-      url: `${baseUrl}/share/${encodeURIComponent(playlist.id)}`,
-      lastModified: playlist.updatedAt || currentDate,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    }));
-  } catch (error) {
-    console.error("[Sitemap Generation] Error fetching public playlists:", error);
-  }
-
-  return [
-    ...staticRoutes,
-    ...offeringsRoutes,
-    ...sharedVideoRoutes,
-    ...sharedPlaylistRoutes,
-  ];
+  return [...staticRoutes, ...offeringsRoutes];
 }
