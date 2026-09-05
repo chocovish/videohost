@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { db } from "@videohost/db";
 import { getBaseUrl } from "@/lib/utils";
+import { getFeatureSlugs } from "@/lib/features";
 
 // Force on-demand / dynamic generation on every request
 export const dynamic = "force-dynamic";
@@ -28,6 +29,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/features`,
+      lastModified: currentDate,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    ...getFeatureSlugs().map((slug) => ({
+      url: `${baseUrl}/features/${slug}`,
+      lastModified: currentDate,
+      changeFrequency: "weekly" as const,
+      priority: 0.85,
+    })),
     {
       url: `${baseUrl}/record`,
       lastModified: currentDate,

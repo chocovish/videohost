@@ -9,6 +9,7 @@ import {
   RefreshCcw,
   HelpCircle,
 } from "lucide-react";
+import { FEATURES } from "@/lib/features";
 
 export default function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -16,7 +17,7 @@ export default function PublicFooter() {
   return (
     <footer className="border-t border-border bg-white/50 dark:bg-slate-950/60 backdrop-blur-xl relative z-10 text-foreground transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 pb-12 border-b border-border/60">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-10 pb-12 border-b border-border/60">
           {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="inline-flex items-center group">
@@ -79,6 +80,14 @@ export default function PublicFooter() {
               </li>
               <li>
                 <Link
+                  href="/features"
+                  className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+                >
+                  All Features
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/pricing"
                   className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
                 >
@@ -104,6 +113,25 @@ export default function PublicFooter() {
                   Create Account
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          {/* Features Column */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
+              Features
+            </h4>
+            <ul className="space-y-2 text-xs sm:text-sm font-medium">
+              {FEATURES.map((feature) => (
+                <li key={feature.slug}>
+                  <Link
+                    href={`/features/${feature.slug}`}
+                    className="text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+                  >
+                    {feature.navLabel}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

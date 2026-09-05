@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Video, Menu, X, ArrowRight, LogIn, UserPlus, CreditCard, Mail } from "lucide-react";
+import { Video, Menu, X, ArrowRight, LogIn, UserPlus, CreditCard, Mail, ChevronDown, LayoutGrid, Sparkles } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FEATURES } from "@/lib/features";
 
 interface PublicHeaderProps {
-  currentPage?: "home" | "login" | "register" | "record" | "pricing" | "terms" | "privacy" | "refund" | "contact";
+  currentPage?: "home" | "login" | "register" | "record" | "pricing" | "terms" | "privacy" | "refund" | "contact" | "features";
 }
 
 export default function PublicHeader({ currentPage }: PublicHeaderProps) {
@@ -42,7 +43,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-3">
+        <nav className="hidden md:flex items-center gap-1.5">
           {currentPage !== "record" && (
             <Link
               href="/record"
@@ -55,6 +56,57 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
               </span>
             </Link>
           )}
+
+          {/* Features hover dropdown */}
+          <div className="relative group">
+            <Link
+              href="/features"
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+                currentPage === "features"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground hover:bg-black/5 dark:hover:bg-white/10"
+              }`}
+              aria-haspopup="true"
+            >
+              Features
+              <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-180" />
+            </Link>
+
+            {/* Dropdown panel — visible on hover / keyboard focus */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 transition-all duration-200 z-50">
+              <div className="w-[34rem] rounded-2xl border-2 border-border bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
+                <div className="grid grid-cols-2 gap-1 p-2.5">
+                  {FEATURES.map((feature) => (
+                    <Link
+                      key={feature.slug}
+                      href={`/features/${feature.slug}`}
+                      className="flex items-start gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/item"
+                    >
+                      <span className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 group-hover/item:bg-primary group-hover/item:[&>svg]:text-white transition-all">
+                        <feature.icon className="w-4 h-4 text-primary transition-colors" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13px] font-extrabold text-foreground leading-tight">
+                          {feature.navLabel}
+                        </span>
+                        <span className="block text-[11px] font-medium text-muted-foreground leading-snug mt-0.5 line-clamp-2">
+                          {feature.tagline}
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+                <Link
+                  href="/features"
+                  className="flex items-center justify-center gap-2 px-4 py-3 border-t-2 border-border bg-muted/50 text-[13px] font-extrabold text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  View all features
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
 
           <Link
             href="/pricing"
@@ -160,6 +212,45 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
             <div className="space-y-1.5">
               <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground px-1 pb-1">
                 Explore
+              </div>
+
+              <Link
+                href="/features"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
+                  currentPage === "features"
+                    ? "bg-primary/10 text-primary font-bold"
+                    : "text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      currentPage === "features"
+                        ? "bg-primary/20 text-primary"
+                        : "bg-slate-100 dark:bg-slate-800 text-foreground"
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <span>Features</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
+
+              {/* Inline feature quick-links */}
+              <div className="grid grid-cols-1 gap-1 pl-11 pr-1 pb-1">
+                {FEATURES.map((feature) => (
+                  <Link
+                    key={feature.slug}
+                    href={`/features/${feature.slug}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
+                  >
+                    <feature.icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">{feature.navLabel}</span>
+                  </Link>
+                ))}
               </div>
 
               <Link
