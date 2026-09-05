@@ -9,10 +9,11 @@ import { getBaseUrl } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Features — Host, Share, Record, Meet & Monetize | Taped",
   description:
-    "Explore Taped features: host videos with adaptive HLS, share selectively by email, sell any content from 3.5%, record screen with camera bubble, host meetings & record, build playlists & courses, publish an offerings page, and brand every viewer page.",
+    "Explore Taped features: host videos with adaptive HLS, see exactly who watched with video analytics, share selectively by email, sell any content from 3.5%, record screen with camera bubble, host meetings & record, build playlists & courses, publish an offerings page, and brand every viewer page.",
   keywords: [
     "Taped features",
     "private video hosting features",
+    "video analytics who watched",
     "selective video sharing",
     "sell videos online",
     "screen recorder with camera bubble",
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Taped Features — Host, Share, Record, Meet & Monetize",
     description:
-      "One platform for private video hosting, email-gated sharing, monetization from 3.5%, studio recording, meetings, courses, offerings storefront & white-label branding.",
+      "One platform for private video hosting, viewer analytics that show exactly who watched, email-gated sharing, monetization from 3.5%, studio recording, meetings, courses, offerings storefront & white-label branding.",
     url: "https://taped.in/features",
     siteName: "Taped",
     images: [
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Taped Features — Host, Share, Record, Meet & Monetize",
     description:
-      "Host videos, share with exact emails, sell content from 3.5%, record screen + camera, meet live, build courses, publish offerings & brand every page.",
+      "Host videos, see exactly who watched, share with exact emails, sell content from 3.5%, record screen + camera, meet live, build courses, publish offerings & brand every page.",
     images: ["/og-image.png"],
   },
 };
@@ -56,7 +57,7 @@ export default function FeaturesOverviewPage() {
     "@type": "ItemList",
     name: "Taped Platform Features",
     description:
-      "Core Taped features: private video hosting, selective sharing, monetization, screen recording, meetings, playlists/courses, offerings page, branded viewer pages.",
+      "Core Taped features: private video hosting, video analytics, selective sharing, monetization, screen recording, meetings, playlists/courses, offerings page, branded viewer pages.",
     url: `${baseUrl}/features`,
     numberOfItems: FEATURES.length,
     itemListElement: FEATURES.map((f, i) => ({
@@ -82,7 +83,7 @@ export default function FeaturesOverviewPage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-12 sm:pb-16">
             <p className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary border-2 border-primary/40 bg-primary/10 rounded-full px-4 py-1.5 mb-5">
               <Sparkles className="w-3.5 h-3.5" />
-              8 core features · one platform
+              9 core features · one platform
             </p>
             <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.05] font-heading max-w-3xl">
               Everything you need to host, share & sell video.
@@ -119,6 +120,10 @@ export default function FeaturesOverviewPage() {
               , and{" "}
               <Link href="/features/branded-pages" className="text-foreground font-bold underline underline-offset-4 decoration-primary/50 hover:decoration-primary">
                 white-label branding
+              </Link>
+              , and{" "}
+              <Link href="/features/video-analytics" className="text-foreground font-bold underline underline-offset-4 decoration-primary/50 hover:decoration-primary">
+                video analytics
               </Link>{" "}
               — with email-verified access on every viewer page.
             </p>

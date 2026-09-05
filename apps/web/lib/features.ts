@@ -7,6 +7,7 @@ import {
   ListVideo,
   LayoutPanelTop,
   Palette,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 
@@ -87,6 +88,11 @@ export const FEATURES: FeaturePage[] = [
           "New uploads are private until you decide otherwise. Share selectively, sell access, or publish publicly — nothing leaks by accident.",
       },
       {
+        title: "Built-in watch analytics",
+        description:
+          "Every hosted video tracks views, watch time, retention, and exactly who watched — see Video Analytics for the full picture.",
+      },
+      {
         title: "2GB free to start",
         description:
           "Every account includes 2GB of free cloud storage with no credit card required. Upgrade to 50GB, 200GB, or unlimited as you grow.",
@@ -111,7 +117,7 @@ export const FEATURES: FeaturePage[] = [
       {
         title: "Share, brand, or sell",
         description:
-          "Open the video to set access (private, selective emails, or public), customize the branded viewer page, or make it purchasable.",
+          "Open the video to set access (private, selective emails, or public), customize the branded viewer page, or make it purchasable — then watch the built-in analytics roll in.",
       },
     ],
     faqs: [
@@ -134,6 +140,117 @@ export const FEATURES: FeaturePage[] = [
         question: "Are my hosted videos private?",
         answer:
           "Yes. New uploads are private by default. You explicitly choose whether a video stays private, is shared with selected email addresses, or is published publicly.",
+      },
+      {
+        question: "Can I see who watched my videos?",
+        answer:
+          "Yes. Every hosted video includes built-in analytics: views, unique viewers, total and average watch time, completion rate, and a who-watched list that identifies logged-in viewers by name and email. See Video Analytics for details.",
+      },
+    ],
+  },
+  {
+    slug: "video-analytics",
+    navLabel: "Analytics",
+    title: "Video Analytics",
+    tagline: "Know exactly who watched — names, watch time, and the exact moments they skipped.",
+    description:
+      "Every video on Taped measures itself. From the moment someone presses play — on a share link, playlist episode, embed, or dashboard preview — playback is tracked automatically with no setup. Open Dashboard → Analytics to see views, unique viewers, total and average watch time, and completion rates across Today, Last 7 days, Last 30 days, or All time — then drill into any video for its retention curve and a who-watched list that identifies logged-in viewers by name and email. For client work, it answers the questions that matter before every follow-up: did your client watch the video, how much did they watch, and which portion did they rewatch or skip.",
+    seoTitle: "Video Analytics — See Exactly Who Watched Your Videos | Taped",
+    seoDescription:
+      "Taped video analytics shows exactly who watched: viewer names & emails, watch time, completion rates, retention heatmaps, and device/source breakdowns. Automatic tracking, no setup.",
+    keywords: [
+      "video analytics",
+      "see who watched my video",
+      "video view tracking",
+      "audience retention heatmap",
+      "video watch time analytics",
+      "video completion rate",
+    ],
+    icon: BarChart3,
+    benefits: [
+      {
+        title: "Exactly who watched, by name",
+        description:
+          "Logged-in viewers appear with their name, email, sessions, total watch time, and completion status. Anonymous viewers are counted separately with their own watch history — no one watches invisibly.",
+      },
+      {
+        title: "Know if your client watched",
+        description:
+          "Send a proposal walkthrough, demo, or onboarding video and stop guessing. See whether your client opened it, how much they watched, and which portion they replayed or skipped — then follow up with specifics instead of “just checking in”.",
+      },
+      {
+        title: "Views, viewers & watch time",
+        description:
+          "Track total views, unique viewers (logged-in vs anonymous split), total and average watch time, and completion rate for your whole library or any single video.",
+      },
+      {
+        title: "Retention heatmap & drop-offs",
+        description:
+          "A 20-segment retention chart shows which parts of each video get watched, rewatched, or skipped — with automatic callouts for the steepest drop-off and the most-watched moment.",
+      },
+      {
+        title: "Today, 7 days, 30 days, all time",
+        description:
+          "Switch ranges instantly. Daily stats are pre-aggregated as viewing happens, so even all-time reports over your full library load fast.",
+      },
+      {
+        title: "Device, source & country breakdowns",
+        description:
+          "See whether viewers watch on desktop or mobile, whether they came from share pages, embeds, or dashboard previews, and which countries they watch from.",
+      },
+      {
+        title: "Zero setup, everywhere",
+        description:
+          "Tracking is built into every player — share pages, playlist episodes, embeds, and dashboard previews report automatically. Bots and crawlers are filtered out, so numbers reflect real viewers.",
+      },
+    ],
+    steps: [
+      {
+        title: "Host and share a video",
+        description:
+          "Upload or record a video, then share it selectively, publicly, or as purchasable content. Tracking starts on its own — nothing to install or configure.",
+      },
+      {
+        title: "Viewers press play",
+        description:
+          "Each playback opens a session that records watch time, position, and completion. Logged-in viewers are identified automatically; everyone else counts as an anonymous viewer.",
+      },
+      {
+        title: "Open Dashboard → Analytics",
+        description:
+          "See library-wide KPIs, performance trends, and a per-video leaderboard ranked by views, watch time, viewers, or completions.",
+      },
+      {
+        title: "Drill into any video",
+        description:
+          "Open a video's analytics for its retention heatmap, trend chart, breakdowns, and the full who-watched table — every viewer, their watch time, and how much they finished.",
+      },
+    ],
+    faqs: [
+      {
+        question: "How do I see exactly who watched my video?",
+        answer:
+          "Open the video in your dashboard and go to Analytics (or Dashboard → Analytics → Details). The who-watched table lists every viewer: logged-in viewers show their name and email with sessions, total watch time, percentage watched, and completion status; anonymous viewers appear as separate anonymous entries with the same watch stats.",
+      },
+      {
+        question: "Do viewers need a Taped account to be tracked?",
+        answer:
+          "No. Anyone who presses play is counted. Viewers who are logged in are identified by name and email; viewers who are not logged in are tracked as anonymous viewers with a stable per-browser identity, so repeat anonymous views are still counted correctly.",
+      },
+      {
+        question: "What counts as a view?",
+        answer:
+          "A view is one playback session started by pressing play. Scrubbing, pausing, and rewatching all accrue to that session's watch time, and reaching 90% of the video marks it completed. Bots, crawlers, and backgrounded tabs don't inflate the numbers.",
+      },
+      {
+        question: "Are embedded videos tracked too?",
+        answer:
+          "Yes. Share pages, playlist episodes, dashboard previews, and embedded players all report to the same analytics, and the source breakdown shows you exactly how much each channel contributes.",
+      },
+      {
+        question: "How can I use analytics for client follow-ups?",
+        answer:
+          "Share the video selectively with your client's email so their viewing is identified. You'll see whether they watched, how much they finished, and portion-level retention showing what they replayed or skipped. Time your follow-up to actual engagement — and open with what they cared about, e.g. the pricing section they watched three times — instead of a generic check-in.",
       },
     ],
   },
