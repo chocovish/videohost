@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -395,6 +396,7 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
                     <SelectValue placeholder="Choose a plan" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-200 text-xs">
+                    <SelectGroup>
                     {availablePlans.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name.toUpperCase()} {p.isCustom ? "(Custom)" : ""} —{" "}
@@ -402,6 +404,7 @@ export function AdminOrganizationsTab({ onRefreshOverview }: AdminOrganizationsT
                         {p.minutesLimit === 0 ? "Unlimited" : `${p.minutesLimit} mins`}
                       </SelectItem>
                     ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>

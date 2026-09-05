@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -370,22 +371,24 @@ export function ShareAccessModeSelector({
             </Label>
             <div className="flex items-center gap-2">
               {/* Unified Input Group with Inbuilt Currency Dropdown */}
-              <div className="relative flex-1 flex items-center rounded-xl border border-input bg-card shadow-xs focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary transition-all overflow-hidden">
-                <div className="w-24 shrink-0 border-r border-border bg-muted/40">
+              <div className="relative flex-1 flex items-stretch rounded-xl border border-input bg-card shadow-xs focus-within:ring-2 focus-within:ring-primary/25 focus-within:border-primary transition-all overflow-hidden">
+                <div className="w-24 shrink-0 self-stretch border-r border-border bg-muted/40 flex items-center">
                   <Select
                     value={currency || "USD"}
                     onValueChange={(val) => onChangeCurrency?.(val || "USD")}
                     disabled={isInteractiveDisabled}
                   >
-                    <SelectTrigger className="h-9 text-xs font-bold bg-transparent border-0 rounded-none shadow-none focus-visible:ring-0 px-2.5">
+                    <SelectTrigger className="w-full h-full min-h-9 gap-1 rounded-none border-0 bg-transparent px-2.5 text-xs font-bold shadow-none outline-none focus-visible:border-transparent focus-visible:ring-0 data-[size=default]:h-full dark:bg-transparent dark:hover:bg-transparent">
                       <SelectValue placeholder="USD" />
                     </SelectTrigger>
                     <SelectContent align="start">
+                      <SelectGroup>
                       {SUPPORTED_CURRENCIES.map((curr) => (
                         <SelectItem key={curr} value={curr} className="text-xs font-medium">
                           {curr}
                         </SelectItem>
                       ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>
@@ -521,32 +524,36 @@ export function ShareAccessModeSelector({
                         <SelectValue placeholder="Select country" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectGroup>
                         {POPULAR_COUNTRIES.map((c) => (
                           <SelectItem key={c.code} value={c.code} className="text-xs">
                             {c.name} ({c.code})
                           </SelectItem>
                         ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Inbuilt Currency + Amount for Country Rule */}
-                  <div className="sm:col-span-5 flex items-center rounded-lg border border-input bg-background shadow-2xs focus-within:ring-1 focus-within:ring-primary focus-within:border-primary overflow-hidden h-8">
-                    <div className="w-20 shrink-0 border-r border-border bg-muted/40">
+                  <div className="sm:col-span-5 flex items-stretch rounded-lg border border-input bg-background shadow-2xs focus-within:ring-1 focus-within:ring-primary focus-within:border-primary overflow-hidden h-8">
+                    <div className="w-20 shrink-0 self-stretch border-r border-border bg-muted/40 flex items-center">
                       <Select
                         value={countryCurrency}
                         onValueChange={(val) => setCountryCurrency(val || "USD")}
                         disabled={isInteractiveDisabled}
                       >
-                        <SelectTrigger className="h-8 text-xs font-bold bg-transparent border-0 rounded-none shadow-none focus-visible:ring-0 px-2">
+                        <SelectTrigger className="w-full h-full gap-1 rounded-none border-0 bg-transparent px-2 text-xs font-bold shadow-none outline-none focus-visible:border-transparent focus-visible:ring-0 data-[size=default]:h-full dark:bg-transparent dark:hover:bg-transparent">
                           <SelectValue placeholder="USD" />
                         </SelectTrigger>
                         <SelectContent align="start">
+                          <SelectGroup>
                           {SUPPORTED_CURRENCIES.map((curr) => (
                             <SelectItem key={curr} value={curr} className="text-xs">
                               {curr}
                             </SelectItem>
                           ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </div>

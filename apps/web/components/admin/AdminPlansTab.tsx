@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -472,10 +473,12 @@ export function AdminPlansTab({ onRefreshOverview }: AdminPlansTabProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-zinc-950 border-zinc-800 text-zinc-200 text-xs">
+                      <SelectGroup>
                       <SelectItem value="720p">720p HD</SelectItem>
                       <SelectItem value="1080p">1080p Full HD</SelectItem>
                       <SelectItem value="1440p">1440p 2K</SelectItem>
                       <SelectItem value="4k">4K Ultra HD</SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                 </div>

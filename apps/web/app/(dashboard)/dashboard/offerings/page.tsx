@@ -50,7 +50,7 @@ import {
   SUPPORTED_SOCIAL_PLATFORMS,
 } from "@/lib/offerings-defaults";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectLabel ,SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +95,72 @@ const THEME_PRESET_OPTIONS = [
 ];
 
 const QUICK_ACCENTS = ["#84cc16", "#6366f1", "#f97316", "#2563eb", "#06b6d4", "#f43f5e", "#10b981", "#38bdf8", "#eab308", "#a855f7"];
+
+// --- Select display mappings -------------------------------------------------
+// Base UI `<Select.Value />` renders the raw `value` (DB value) unless the
+// `items` prop (value -> human-readable label) is provided. These mappings
+// keep the closed trigger text identical to the dropdown item texts instead
+// of leaking DB enums/ids (e.g. "SCROLL_OFFERINGS", "mesh-gradient", "PENDING").
+
+const BACKGROUND_STYLE_OPTIONS = [
+  { value: "mesh-gradient", label: "Mesh Glow Gradient (Modern)" },
+  { value: "obsidian-aura", label: "Ambient Top Aura" },
+  { value: "minimal-grid", label: "Subtle Grid Pattern" },
+] as const;
+
+const BACKGROUND_STYLE_LABELS: Record<string, string> = Object.fromEntries(
+  BACKGROUND_STYLE_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const CARD_ROUNDNESS_OPTIONS = [
+  { value: "xl", label: "Subtle Rounded (xl)" },
+  { value: "2xl", label: "Standard Modern (2xl)" },
+  { value: "3xl", label: "Ultra Pill Soft (3xl)" },
+  { value: "square", label: "Clean Sharp (Square)" },
+] as const;
+
+const CARD_ROUNDNESS_LABELS: Record<string, string> = Object.fromEntries(
+  CARD_ROUNDNESS_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const CTA_ACTION_OPTIONS = [
+  { value: "SCROLL_OFFERINGS", label: "Scroll to Offerings Catalog (#offerings)" },
+  { value: "INQUIRY_MODAL", label: "Open Inquiry & Booking Modal" },
+  { value: "CONTACT_SECTION", label: "Scroll to Contact Form (#contact)" },
+  { value: "FEATURED_VIDEO", label: "Play Featured Video Modal" },
+  { value: "EXTERNAL_LINK", label: "Open Custom Link / External URL" },
+] as const;
+
+const CTA_ACTION_LABELS: Record<string, string> = Object.fromEntries(
+  CTA_ACTION_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const CTA_ACTION_CUSTOM_OPTIONS = [
+  { value: "INQUIRY_MODAL", label: "Open Inquiry & Booking Modal" },
+  { value: "EXTERNAL_LINK", label: "Open Custom Checkout / External URL" },
+] as const;
+
+const CTA_ACTION_CUSTOM_LABELS: Record<string, string> = Object.fromEntries(
+  CTA_ACTION_CUSTOM_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const INQUIRY_STATUS_OPTIONS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "CONTACTED", label: "Contacted" },
+  { value: "RESOLVED", label: "Resolved" },
+] as const;
+
+const INQUIRY_STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  INQUIRY_STATUS_OPTIONS.map((o) => [o.value, o.label])
+);
+
+const OFFERING_TYPE_LABELS: Record<string, string> = {
+  PLAYLIST: "Playlist / Series",
+  MEETING: "Meetings",
+  VIDEO: "Video Showcase",
+  PRODUCT: "Digital Resource",
+  SERVICE: "Custom Service",
+};
 
 export default function OfferingsDashboardPage() {
   const [activeTab, setActiveTab] = useState<"catalog" | "customizer" | "inquiries">("catalog");
@@ -1140,14 +1206,20 @@ export default function OfferingsDashboardPage() {
                 <Select
                   value={config.backgroundStyle || "mesh-gradient"}
                   onValueChange={(val) => setConfig((prev) => ({ ...prev, backgroundStyle: val || undefined }))}
+                  items={BACKGROUND_STYLE_LABELS}
                 >
-                  <SelectTrigger className="rounded-xl text-xs">
-                    <SelectValue placeholder="Select background style" />
+                  <SelectTrigger className="w-full max-w-48 text-xs">
+                    <SelectValue className="text-xs" placeholder="Select background style" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mesh-gradient">Mesh Glow Gradient (Modern)</SelectItem>
-                    <SelectItem value="obsidian-aura">Ambient Top Aura</SelectItem>
-                    <SelectItem value="minimal-grid">Subtle Grid Pattern</SelectItem>
+                  <SelectContent className="text-xs">
+                    <SelectGroup>
+                      <SelectLabel>Background Style</SelectLabel>
+                      {BACKGROUND_STYLE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -1158,15 +1230,20 @@ export default function OfferingsDashboardPage() {
                 <Select
                   value={config.cardRoundness || "2xl"}
                   onValueChange={(val) => setConfig((prev) => ({ ...prev, cardRoundness: val || undefined }))}
+                  items={CARD_ROUNDNESS_LABELS}
                 >
-                  <SelectTrigger className="rounded-xl text-xs">
-                    <SelectValue placeholder="Card Roundness" />
+                  <SelectTrigger className="w-full max-w-48 text-xs">
+                    <SelectValue className="text-xs" placeholder="Card Roundness" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="xl">Subtle Rounded (xl)</SelectItem>
-                    <SelectItem value="2xl">Standard Modern (2xl)</SelectItem>
-                    <SelectItem value="3xl">Ultra Pill Soft (3xl)</SelectItem>
-                    <SelectItem value="square">Clean Sharp (Square)</SelectItem>
+                  <SelectContent className="text-xs">
+                    <SelectGroup>
+                    <SelectLabel>Card Corner Style</SelectLabel>
+                    {CARD_ROUNDNESS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -1398,16 +1475,19 @@ export default function OfferingsDashboardPage() {
                     <Select
                       value={config.ctaAction || "SCROLL_OFFERINGS"}
                       onValueChange={(val) => setConfig((prev) => ({ ...prev, ctaAction: val }))}
+                      items={CTA_ACTION_LABELS}
                     >
                       <SelectTrigger className="rounded-xl text-xs h-8">
-                        <SelectValue placeholder="Select Action" />
+                        <SelectValue className="text-xs" placeholder="Select Action" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SCROLL_OFFERINGS">Scroll to Offerings Catalog (#offerings)</SelectItem>
-                        <SelectItem value="INQUIRY_MODAL">Open Inquiry & Booking Modal</SelectItem>
-                        <SelectItem value="CONTACT_SECTION">Scroll to Contact Form (#contact)</SelectItem>
-                        <SelectItem value="FEATURED_VIDEO">Play Featured Video Modal</SelectItem>
-                        <SelectItem value="EXTERNAL_LINK">Open Custom Link / External URL</SelectItem>
+                      <SelectContent className="text-xs">
+                        <SelectGroup>
+                        {CTA_ACTION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1527,16 +1607,19 @@ export default function OfferingsDashboardPage() {
                     <Select
                       value={config.secondaryCtaAction || "INQUIRY_MODAL"}
                       onValueChange={(val) => setConfig((prev) => ({ ...prev, secondaryCtaAction: val }))}
+                      items={CTA_ACTION_LABELS}
                     >
                       <SelectTrigger className="rounded-xl text-xs h-8">
-                        <SelectValue placeholder="Select Action" />
+                        <SelectValue className="text-xs" placeholder="Select Action" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="INQUIRY_MODAL">Open Inquiry & Booking Modal</SelectItem>
-                        <SelectItem value="SCROLL_OFFERINGS">Scroll to Offerings Catalog (#offerings)</SelectItem>
-                        <SelectItem value="CONTACT_SECTION">Scroll to Contact Form (#contact)</SelectItem>
-                        <SelectItem value="FEATURED_VIDEO">Play Featured Video Modal</SelectItem>
-                        <SelectItem value="EXTERNAL_LINK">Open Custom Link / External URL</SelectItem>
+                      <SelectContent className="text-xs">
+                        <SelectGroup>
+                        {CTA_ACTION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1697,43 +1780,70 @@ export default function OfferingsDashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {Object.entries(config.socialLinks || {}).map(([platformKey, url], idx) => {
+                    {Object.entries(config.socialLinks || {}).map(([platformKey, url]) => {
                       const platformMeta = getSocialPlatformMeta(platformKey);
                       const basePlatformId = platformKey.includes("_") ? platformKey.split("_")[0] : platformKey;
+                      const currentValue = SUPPORTED_SOCIAL_PLATFORMS.some((p) => p.id === basePlatformId)
+                        ? basePlatformId
+                        : "custom";
                       const matchedPlatform = SUPPORTED_SOCIAL_PLATFORMS.find((p) => p.id === basePlatformId);
                       const placeholder = matchedPlatform?.placeholder || "https://...";
                       const PIcon = platformMeta.icon;
 
                       return (
                         <div
-                          key={platformKey + "_" + idx}
+                          key={platformKey}
                           className="p-2 bg-muted/40 rounded-xl border border-border/70 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 group transition-all"
                         >
                           {/* Platform Selector */}
-                          <div className="w-full sm:w-44 shrink-0">
+                          <div className="w-full sm:w-1/3 shrink-0">
                             <Select
-                              value={SUPPORTED_SOCIAL_PLATFORMS.some((p) => p.id === basePlatformId) ? basePlatformId : "custom"}
+                              value={currentValue}
+                              items={Object.fromEntries(
+                                SUPPORTED_SOCIAL_PLATFORMS.map((p) => [p.id, p.name])
+                              )}
                               onValueChange={(newPlatformId) => {
-                                if (!newPlatformId || newPlatformId === platformKey) return;
+                                if (!newPlatformId) return;
                                 const platformStr = String(newPlatformId);
+                                if (platformStr === currentValue) return;
                                 setConfig((prev) => {
-                                  const currentSocials: Record<string, string | undefined> = { ...(prev.socialLinks || {}) };
-                                  const existingVal = currentSocials[platformKey] || "";
-                                  delete currentSocials[platformKey];
-                                  
+                                  const entries = Object.entries(prev.socialLinks || {});
+                                  const rowIndex = entries.findIndex(([k]) => k === platformKey);
+                                  const existingVal = rowIndex >= 0 ? entries[rowIndex][1] : "";
+
                                   let targetKey = platformStr;
-                                  if (currentSocials[targetKey] !== undefined) {
+                                  if (entries.some(([k], i) => i !== rowIndex && k === targetKey)) {
                                     targetKey = `${platformStr}_${Date.now()}`;
                                   }
-                                  currentSocials[targetKey] = existingVal;
-                                  return { ...prev, socialLinks: currentSocials };
+                                  // Rebuild in place so the renamed row keeps its position
+                                  // instead of jumping to the end of the list.
+                                  const next: Record<string, string | undefined> = {};
+                                  if (rowIndex === -1) {
+                                    entries.forEach(([k, v]) => {
+                                      next[k] = v;
+                                    });
+                                    next[targetKey] = existingVal;
+                                  } else {
+                                    entries.forEach(([k, v], i) => {
+                                      if (i === rowIndex) next[targetKey] = existingVal;
+                                      else next[k] = v;
+                                    });
+                                  }
+                                  return { ...prev, socialLinks: next };
                                 });
                               }}
                             >
-                              <SelectTrigger className="rounded-lg text-xs h-8 bg-background border">
-                                <SelectValue placeholder="Platform" />
+                              <SelectTrigger className="w-full rounded-lg text-xs h-8 bg-background border">
+                                <SelectValue className="text-xs" placeholder="Platform" />
                               </SelectTrigger>
-                              <SelectContent className="max-h-64">
+                              <SelectContent
+                                alignItemWithTrigger={false}
+                                align="start"
+                                side="bottom"
+                                sideOffset={4}
+                                className="max-h-64 text-xs"
+                              >
+                                <SelectGroup>
                                 {SUPPORTED_SOCIAL_PLATFORMS.map((platform) => {
                                   const pMeta = getSocialPlatformMeta(platform.id);
                                   const ItemIcon = pMeta.icon;
@@ -1758,6 +1868,7 @@ export default function OfferingsDashboardPage() {
                                     </SelectItem>
                                   );
                                 })}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </div>
@@ -2423,6 +2534,7 @@ export default function OfferingsDashboardPage() {
                       <Select
                         value={inq.status}
                         onValueChange={(val) => handleUpdateInquiryStatus(inq.id, val)}
+                        items={INQUIRY_STATUS_LABELS}
                       >
                         <SelectTrigger
                           className={`h-8 rounded-lg text-xs font-bold ${
@@ -2433,12 +2545,16 @@ export default function OfferingsDashboardPage() {
                               : "bg-destructive/10 text-destructive border-destructive/30"
                           }`}
                         >
-                          <SelectValue />
+                          <SelectValue className="text-xs" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="PENDING">Pending</SelectItem>
-                          <SelectItem value="CONTACTED">Contacted</SelectItem>
-                          <SelectItem value="RESOLVED">Resolved</SelectItem>
+                        <SelectContent className="text-xs">
+                          <SelectGroup>
+                          {INQUIRY_STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </div>
@@ -2509,6 +2625,7 @@ export default function OfferingsDashboardPage() {
               <div className="space-y-1 min-w-0">
                 <Select
                   value={itemFormType === "COURSE" ? "PLAYLIST" : itemFormType}
+                  items={OFFERING_TYPE_LABELS}
                   onValueChange={(val) => {
                     const nextType = val || "PLAYLIST";
                     setItemFormType(nextType);
@@ -2561,39 +2678,41 @@ export default function OfferingsDashboardPage() {
                   }}
                 >
                   <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
-                    <SelectValue />
+                    <SelectValue className="text-xs" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PLAYLIST">
+                  <SelectContent className="text-xs">
+                    <SelectGroup>
+                    <SelectItem value="PLAYLIST" className="text-xs">
                       <div className="flex items-center gap-2">
                         <ListVideo className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Playlist / Series</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="MEETING">
+                    <SelectItem value="MEETING" className="text-xs">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Meetings</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="VIDEO">
+                    <SelectItem value="VIDEO" className="text-xs">
                       <div className="flex items-center gap-2">
                         <VideoIcon className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Video Showcase</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="PRODUCT">
+                    <SelectItem value="PRODUCT" className="text-xs">
                       <div className="flex items-center gap-2">
                         <Package className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Digital Resource</span>
                       </div>
                     </SelectItem>
-                    <SelectItem value="SERVICE">
+                    <SelectItem value="SERVICE" className="text-xs">
                       <div className="flex items-center gap-2">
                         <Briefcase className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Custom Service</span>
                       </div>
                     </SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -2650,6 +2769,7 @@ export default function OfferingsDashboardPage() {
                       </label>
                       <Select
                         value={selectedPlaylistId || (playlists.find((p) => p.title === itemFormTitle)?.id || "")}
+                        items={Object.fromEntries(playlists.map((pl) => [pl.id, pl.title]))}
                         onValueChange={(val) => {
                           const matched = playlists.find((p) => p.id === val);
                           if (matched) {
@@ -2658,9 +2778,10 @@ export default function OfferingsDashboardPage() {
                         }}
                       >
                         <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
-                          <SelectValue placeholder="Select a Playlist from your library..." />
+                          <SelectValue className="text-xs" placeholder="Select a Playlist from your library..." />
                         </SelectTrigger>
-                        <SelectContent className="max-h-64">
+                        <SelectContent className="max-h-64 text-xs">
+                          <SelectGroup>
                           {playlists.map((pl) => (
                             <SelectItem key={pl.id} value={pl.id} className="text-xs py-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -2672,6 +2793,7 @@ export default function OfferingsDashboardPage() {
                               </div>
                             </SelectItem>
                           ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </div>
@@ -2887,6 +3009,7 @@ export default function OfferingsDashboardPage() {
                       </label>
                       <Select
                         value={selectedMeetingId || (meetings.find((m) => m.title === itemFormTitle)?.id || "")}
+                        items={Object.fromEntries(meetings.map((m) => [m.id, m.title]))}
                         onValueChange={(val) => {
                           const matched = meetings.find((m) => m.id === val);
                           if (matched) {
@@ -2895,9 +3018,10 @@ export default function OfferingsDashboardPage() {
                         }}
                       >
                         <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
-                          <SelectValue placeholder="Select a Scheduled Meeting from your account..." />
+                          <SelectValue className="text-xs" placeholder="Select a Scheduled Meeting from your account..." />
                         </SelectTrigger>
-                        <SelectContent className="max-h-64">
+                        <SelectContent className="max-h-64 text-xs">
+                          <SelectGroup>
                           {meetings.map((m) => (
                             <SelectItem key={m.id} value={m.id} className="text-xs py-2">
                               <div className="flex items-center gap-2 min-w-0">
@@ -2911,6 +3035,7 @@ export default function OfferingsDashboardPage() {
                               </div>
                             </SelectItem>
                           ))}
+                          </SelectGroup>
                         </SelectContent>
                       </Select>
                     </div>
@@ -3282,13 +3407,19 @@ export default function OfferingsDashboardPage() {
                         <Select
                           value={itemFormCtaAction}
                           onValueChange={(val) => setItemFormCtaAction(val || "INQUIRY_MODAL")}
+                          items={CTA_ACTION_CUSTOM_LABELS}
                         >
                           <SelectTrigger className="rounded-xl text-xs h-9 bg-background w-full">
-                            <SelectValue placeholder="Select Action" />
+                            <SelectValue className="text-xs" placeholder="Select Action" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="INQUIRY_MODAL">Open Inquiry & Booking Modal</SelectItem>
-                            <SelectItem value="EXTERNAL_LINK">Open Custom Checkout / External URL</SelectItem>
+                          <SelectContent className="text-xs">
+                            <SelectGroup>
+                            {CTA_ACTION_CUSTOM_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </div>
@@ -3341,7 +3472,7 @@ export default function OfferingsDashboardPage() {
             </div>
 
             {/* Modal Footer Actions */}
-            <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-border shrink-0 mt-auto min-w-0">
+            <DialogFooter className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between sm:justify-between gap-3 pt-3 border-t border-border shrink-0 mt-auto min-w-0">
               <div className="flex items-center justify-between sm:justify-start gap-2">
                 <span className="text-xs text-muted-foreground">
                   Status: <strong className={itemFormIsPublished ? "text-primary" : "text-primary"}>{itemFormIsPublished ? "Published" : "Draft"}</strong>

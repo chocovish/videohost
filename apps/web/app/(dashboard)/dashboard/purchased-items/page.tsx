@@ -42,6 +42,7 @@ import VideoThumbnail from "@/components/VideoThumbnail";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -339,7 +340,7 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("VIDEO")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <Film className="w-3.5 h-3.5 text-primary" /> Videos
+              <Film className="w-3.5 h-3.5" /> Videos
             </Button>
             <Button
               size="sm"
@@ -347,7 +348,7 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("PLAYLIST")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <ListVideo className="w-3.5 h-3.5 text-primary" /> Playlists
+              <ListVideo className="w-3.5 h-3.5" /> Playlists
             </Button>
             <Button
               size="sm"
@@ -355,7 +356,7 @@ export default function PurchasedItemsPage() {
               onClick={() => setFilterType("MEETING")}
               className="h-8 text-xs font-medium gap-1.5"
             >
-              <Ticket className="w-3.5 h-3.5 text-primary" /> Meeting Passes
+              <Ticket className="w-3.5 h-3.5" /> Meeting Passes
             </Button>
           </div>
 
@@ -367,10 +368,12 @@ export default function PurchasedItemsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectGroup>
                 <SelectItem value="newest">Newest Purchased</SelectItem>
                 <SelectItem value="oldest">Oldest Purchased</SelectItem>
                 <SelectItem value="title">Title (A-Z)</SelectItem>
                 <SelectItem value="price">Price (High to Low)</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>

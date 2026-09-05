@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -379,6 +380,7 @@ export default function VideoSubtitlesManager({
                       <SelectValue placeholder="Language" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectGroup>
                       <SelectItem value={AUTO_LANGUAGE_VALUE}>Auto</SelectItem>
                       {SUBTITLE_LANGUAGES.map((l) => (
                         <SelectItem key={l.code} value={l.code}>
@@ -386,6 +388,7 @@ export default function VideoSubtitlesManager({
                         </SelectItem>
                       ))}
                       <SelectItem value={CUSTOM_LANGUAGE_VALUE}>Custom code…</SelectItem>
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   {p.language === CUSTOM_LANGUAGE_VALUE && (

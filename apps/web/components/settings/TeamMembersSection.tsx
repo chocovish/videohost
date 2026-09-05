@@ -15,6 +15,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -127,9 +128,11 @@ export function TeamMembersSection({
                 <SelectValue placeholder="Role" />
               </SelectTrigger>
               <SelectContent>
+                <SelectGroup>
                 <SelectItem value="MEMBER">Member</SelectItem>
                 <SelectItem value="ADMIN">Admin</SelectItem>
                 <SelectItem value="VIEWER">Viewer</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -247,9 +250,11 @@ export function TeamMembersSection({
                             <SelectValue placeholder={m.role} />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectGroup>
                             <SelectItem value="ADMIN">ADMIN</SelectItem>
                             <SelectItem value="MEMBER">MEMBER</SelectItem>
                             <SelectItem value="VIEWER">VIEWER</SelectItem>
+                            </SelectGroup>
                           </SelectContent>
                         </Select>
                       </div>

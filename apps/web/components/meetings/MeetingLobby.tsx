@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -535,6 +536,7 @@ export default function MeetingLobby({
                     <SelectValue placeholder="Select microphone" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                    <SelectGroup>
                     {audioDevices.length === 0 ? (
                       <SelectItem value="default" className="text-xs">
                         Default Microphone
@@ -546,6 +548,7 @@ export default function MeetingLobby({
                         </SelectItem>
                       ))
                     )}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -560,6 +563,7 @@ export default function MeetingLobby({
                     <SelectValue placeholder="Select camera" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                    <SelectGroup>
                     {videoDevices.length === 0 ? (
                       <SelectItem value="default" className="text-xs">
                         Default Camera
@@ -571,6 +575,7 @@ export default function MeetingLobby({
                         </SelectItem>
                       ))
                     )}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>

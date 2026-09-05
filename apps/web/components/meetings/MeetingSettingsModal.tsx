@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -337,6 +338,7 @@ export default function MeetingSettingsModal() {
                   <SelectValue placeholder="Select microphone" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  <SelectGroup>
                   {audioInputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default Microphone
@@ -352,6 +354,7 @@ export default function MeetingSettingsModal() {
                       );
                     })
                   )}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 
@@ -403,6 +406,7 @@ export default function MeetingSettingsModal() {
                   <SelectValue placeholder="Select speaker" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  <SelectGroup>
                   {audioOutputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default System Speaker
@@ -418,6 +422,7 @@ export default function MeetingSettingsModal() {
                       );
                     })
                   )}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
@@ -490,6 +495,7 @@ export default function MeetingSettingsModal() {
                   <SelectValue placeholder="Select camera" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  <SelectGroup>
                   {videoDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
                       Default Camera
@@ -505,6 +511,7 @@ export default function MeetingSettingsModal() {
                       );
                     })
                   )}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
@@ -609,7 +616,7 @@ export default function MeetingSettingsModal() {
                   onClick={handleCopyLink}
                   className="gap-1 font-bold"
                 >
-                  {copiedLink ? <Check className="w-3 h-3 text-black" /> : <Copy className="w-3 h-3" />}
+                  {copiedLink ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
                 </Button>
               </div>

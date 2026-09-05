@@ -171,7 +171,7 @@ export default function RecordOptionsModal({
         </div>
 
         {/* Modal Footer */}
-        <DialogFooter className="p-4 sm:p-6 border-t border-slate-800/80 bg-slate-950/60 shrink-0 flex items-center justify-between gap-3">
+        <DialogFooter className="p-4 sm:p-6 border-t border-slate-800/80 bg-slate-950/60 shrink-0 flex items-center justify-between sm:justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isStarting}>
             Cancel
           </Button>

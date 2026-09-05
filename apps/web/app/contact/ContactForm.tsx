@@ -5,6 +5,7 @@ import { Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -138,11 +139,13 @@ export default function ContactForm() {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectGroup>
                   <SelectItem value="General Inquiry">General Support</SelectItem>
                   <SelectItem value="Billing & Refund">Billing & Refund Request</SelectItem>
                   <SelectItem value="Technical Issue">Technical / Video Player Issue</SelectItem>
                   <SelectItem value="API & Webhooks">Developer APIs & Webhooks</SelectItem>
                   <SelectItem value="Enterprise & Custom">Business & Enterprise Sales</SelectItem>
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>

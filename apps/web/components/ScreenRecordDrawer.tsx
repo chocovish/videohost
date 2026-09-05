@@ -79,6 +79,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -726,6 +727,7 @@ export default function ScreenRecordDrawer({
                                       <SelectValue placeholder="Select camera" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      <SelectGroup>
                                       {cameraDevices.length === 0 ? (
                                         <SelectItem value="none" disabled>No camera found</SelectItem>
                                       ) : (
@@ -735,6 +737,7 @@ export default function ScreenRecordDrawer({
                                           </SelectItem>
                                         ))
                                       )}
+                                      </SelectGroup>
                                     </SelectContent>
                                   </Select>
                                 </div>

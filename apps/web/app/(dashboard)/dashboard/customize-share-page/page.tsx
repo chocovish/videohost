@@ -26,7 +26,7 @@ import {
 import SharedContentClient, { SharePageConfigData, SharedData } from "@/app/share/[token]/shared-content-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -590,11 +590,13 @@ export default function CustomizeSharePage() {
                     <SelectValue placeholder="Select background style" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectGroup>
                     <SelectItem value="mesh-gradient">Soft Gradient Wash (Subtle)</SelectItem>
                     <SelectItem value="obsidian-aura">Spotlight Wash (Subtle)</SelectItem>
                     <SelectItem value="neon-grid">Dot Grid Overlay</SelectItem>
                     <SelectItem value="glassmorphism">Soft Top Wash</SelectItem>
                     <SelectItem value="minimal-solid">Clean Solid (No Effects)</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -616,9 +618,7 @@ export default function CustomizeSharePage() {
                       variant={config.cardRoundness === r.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => setConfig((prev) => ({ ...prev, cardRoundness: r.id }))}
-                      className={`rounded-xl text-xs font-bold text-center cursor-pointer ${
-                        config.cardRoundness === r.id ? "text-primary" : "text-muted-foreground"
-                      }`}
+                      className="rounded-xl text-xs font-bold text-center cursor-pointer"
                     >
                       {r.label}
                     </Button>

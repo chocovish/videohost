@@ -136,7 +136,7 @@ export default function RecordingUpgradeModal({
         </div>
 
         {/* Footer Actions */}
-        <DialogFooter className="p-4 sm:p-6 pt-3 border-t border-slate-800/80 bg-slate-950/90 shrink-0 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <DialogFooter className="p-4 sm:p-6 pt-3 border-t border-slate-800/80 bg-slate-950/90 shrink-0 flex flex-col sm:flex-row items-center justify-between sm:justify-between gap-3">
           <Button
             type="button"
             variant="ghost"

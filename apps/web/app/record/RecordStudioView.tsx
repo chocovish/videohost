@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -442,6 +443,7 @@ export default function RecordStudioView() {
                                 <SelectValue placeholder="Select camera" />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectGroup>
                                 {cameraDevices.length === 0 ? (
                                   <SelectItem value="none" disabled>No camera detected</SelectItem>
                                 ) : (
@@ -451,6 +453,7 @@ export default function RecordStudioView() {
                                     </SelectItem>
                                   ))
                                 )}
+                                </SelectGroup>
                               </SelectContent>
                             </Select>
                           </div>

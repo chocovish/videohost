@@ -47,6 +47,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -1075,9 +1076,11 @@ export function ContentSalesPayoutSection({
                     <SelectValue placeholder="Select Account Type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectGroup>
                     <SelectItem value="CHECKING">Checking / Current Account</SelectItem>
                     <SelectItem value="SAVINGS">Savings Account</SelectItem>
                     <SelectItem value="BUSINESS">Business Corporate Account</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -1115,6 +1118,7 @@ export function ContentSalesPayoutSection({
                     <SelectValue placeholder="Select Country" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectGroup>
                     <SelectItem value="US">🇺🇸 United States</SelectItem>
                     <SelectItem value="IN">🇮🇳 India</SelectItem>
                     <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
@@ -1124,6 +1128,7 @@ export function ContentSalesPayoutSection({
                     <SelectItem value="AU">🇦🇺 Australia</SelectItem>
                     <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
                     <SelectItem value="AE">🇦🇪 United Arab Emirates</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
@@ -1143,6 +1148,7 @@ export function ContentSalesPayoutSection({
                     <SelectValue placeholder="Select Currency" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectGroup>
                     <SelectItem value="USD">USD ($)</SelectItem>
                     <SelectItem value="INR">INR (₹)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
@@ -1153,6 +1159,7 @@ export function ContentSalesPayoutSection({
                     <SelectItem value="AED">AED (AED)</SelectItem>
                     <SelectItem value="JPY">JPY (¥)</SelectItem>
                     <SelectItem value="BRL">BRL (R$)</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>

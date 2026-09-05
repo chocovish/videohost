@@ -29,6 +29,7 @@ import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -301,12 +302,14 @@ export default function ScheduleMeetingModal({
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectGroup>
                     <SelectItem value="15">15 Minutes</SelectItem>
                     <SelectItem value="30">30 Minutes</SelectItem>
                     <SelectItem value="45">45 Minutes</SelectItem>
                     <SelectItem value="60">1 Hour</SelectItem>
                     <SelectItem value="90">1.5 Hours</SelectItem>
                     <SelectItem value="120">2 Hours</SelectItem>
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </div>
