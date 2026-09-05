@@ -47,6 +47,14 @@ An enterprise-grade, multi-tenant video hosting, studio screen recording, transc
 - **API Keys**: Provision hashed API key credentials with prefixing (`vk_live_...`) for external API access.
 - **Event Webhooks**: Real-time webhook notifications for video lifecycle events (`video.ready`, `video.failed`, `usage.limit_reached`).
 
+### 📊 Video Analytics
+- **Automatic tracking**: every player (share page, playlist episodes, embeds, dashboard previews) reports playback sessions via `POST /api/analytics/track` — no setup required.
+- **Metrics**: views, unique viewers (logged-in vs anonymous), total/average watch time, completion rate, per-viewer watch history with name/email for logged-in viewers.
+- **Retention heatmap**: 20-segment (5% each) breakdown shows which parts of a video get watched, rewatched, or skipped, plus steepest drop-off insights.
+- **Breakdowns**: device, browser, watch source (`share` / `embed` / `dashboard` / `api`), and country (from CDN headers).
+- **Fast at any range**: dashboards read pre-aggregated `VideoDailyStat` rows (updated incrementally on every beacon) over Today / Last 7 / 30 days / All time. `POST /api/analytics/recompute` (owner/admin) rebuilds aggregates from raw sessions if ever needed.
+- **Dashboard**: `/dashboard/analytics` (org overview + per-video leaderboard) and `/dashboard/analytics/[id]` (retention, trends, who-watched table).
+
 ### 🐳 Flexible Transcoder Workers
 - Dual execution architecture for video processing:
   1. **BullMQ / Redis**: Event-driven queue processing for high throughput.

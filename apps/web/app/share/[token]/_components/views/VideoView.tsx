@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import {
   ArrowLeft,
   Check,
@@ -9,6 +10,7 @@ import {
   Share2,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoAnalyticsTracker from "@/components/analytics/video-analytics-tracker";
 import { formatDuration } from "@/lib/video-utils";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
 import type { PriceInfo, SharedData } from "../types";
@@ -67,6 +69,7 @@ export function VideoView({
     mutedHex,
   } = theme;
   const isLight = theme.isLight;
+  const playerWrapRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -99,6 +102,7 @@ export function VideoView({
 
       {/* Video Player or Purchasable Paywall */}
       <div
+        ref={playerWrapRef}
         className={
           video.playbackUrl
             ? `aspect-video w-full overflow-hidden border ${dividerBorder} ${roundnessClass}`
@@ -106,12 +110,15 @@ export function VideoView({
         }
       >
         {video.playbackUrl ? (
-          <VideoPlayer
-            src={video.playbackUrl}
-            poster={video.thumbnailUrl}
-            subtitles={video.subtitles || []}
-            className="w-full h-full rounded-lg"
-          />
+          <>
+            <VideoPlayer
+              src={video.playbackUrl}
+              poster={video.thumbnailUrl}
+              subtitles={video.subtitles || []}
+              className="w-full h-full rounded-lg"
+            />
+            <VideoAnalyticsTracker videoId={video.id} source="share" containerRef={playerWrapRef} />
+          </>
         ) : data.accessMode === "PURCHASABLE" ? (
           <PaywallHero
             theme={theme}

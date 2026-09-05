@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Video as VideoIcon,
   Link2,
+  Lock,
 } from "lucide-react";
 import {
   Dialog,
@@ -62,6 +63,7 @@ interface VideoPickerModalProps {
   selectedEmbedUrl?: string | null;
   title?: string;
   description?: string;
+  requirePublic?: boolean;
 }
 
 export default function VideoPickerModal({
@@ -71,6 +73,7 @@ export default function VideoPickerModal({
   selectedEmbedUrl,
   title = "Select Video",
   description = "Choose an uploaded video from your library or specify an external video URL.",
+  requirePublic = false,
 }: VideoPickerModalProps) {
   const [activeTab, setActiveTab] = useState<"library" | "custom">("library");
   const [videos, setVideos] = useState<VideoItem[]>([]);
@@ -133,6 +136,9 @@ export default function VideoPickerModal({
     }
   }, [videos, selectedEmbedUrl]);
 
+  const isVideoPublic = (v: VideoItem) =>
+    !v.shareAccessMode || v.shareAccessMode === "PUBLIC";
+
   const filteredVideos = useMemo(() => {
     return videos.filter((v) => {
       if (!search.trim()) return true;
@@ -145,8 +151,19 @@ export default function VideoPickerModal({
     });
   }, [videos, search]);
 
+  const publicVideoCount = useMemo(
+    () => videos.filter(isVideoPublic).length,
+    [videos]
+  );
+
+  const handleSelectVideoCard = (video: VideoItem) => {
+    if (requirePublic && !isVideoPublic(video)) return;
+    setSelectedVideo(video);
+  };
+
   const handleConfirmLibrarySelect = () => {
     if (!selectedVideo) return;
+    if (requirePublic && !isVideoPublic(selectedVideo)) return;
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const embedUrl = `/embed/${selectedVideo.id}`;
     onSelectVideo({
@@ -185,7 +202,15 @@ export default function VideoPickerModal({
             <Film className="w-5 h-5 text-primary" />
             <span>{title}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs">{description}</DialogDescription>
+          <DialogDescription className="text-xs">
+            {description}
+            {requirePublic && (
+              <span className="mt-1 flex items-center gap-1 font-semibold text-foreground">
+                <Lock className="w-3 h-3 text-primary" />
+                Only public videos can be selected as featured showcase video.
+              </span>
+            )}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col min-h-0">
@@ -219,6 +244,18 @@ export default function VideoPickerModal({
 
           {/* TAB 1: LIBRARY VIDEOS */}
           <TabsContent value="library" className="flex-1 flex flex-col min-h-0 space-y-3 pt-2">
+            {requirePublic && (
+              <Alert className="text-xs border-primary/30 bg-primary/5">
+                <Lock className="w-3.5 h-3.5" />
+                <span className="text-xs">
+                  Only <strong>public</strong> videos can be selected as featured showcase video, so every visitor can play it.
+                  Non-public videos are disabled below.
+                  {!loading && videos.length > 0 && (
+                    <span className="text-muted-foreground"> ({publicVideoCount} of {videos.length} public)</span>
+                  )}
+                </span>
+              </Alert>
+            )}
             {/* Search Input */}
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -249,10 +286,14 @@ export default function VideoPickerModal({
                 <div className="flex flex-col items-center justify-center py-14 text-center space-y-2 border border-dashed rounded-2xl p-6 text-muted-foreground">
                   <Film className="w-10 h-10 opacity-30 mx-auto" />
                   <p className="text-xs font-semibold">
-                    {search ? "No videos match your search query." : "No uploaded videos found in your account."}
+                    {search ? "No videos match your search query." : requirePublic && videos.length > 0 && publicVideoCount === 0 ? "No public videos found." : "No uploaded videos found in your account."}
                   </p>
                   <p className="text-xs max-w-sm">
-                    {search ? "Try searching with a different keyword." : "Upload videos from the Uploaded Videos page to choose them here."}
+                    {search
+                      ? "Try searching with a different keyword."
+                      : requirePublic && videos.length > 0 && publicVideoCount === 0
+                      ? "Only public videos can be selected as featured showcase video. Make one of your videos public to feature it here."
+                      : "Upload videos from the Uploaded Videos page to choose them here."}
                   </p>
                 </div>
               ) : (
@@ -260,12 +301,15 @@ export default function VideoPickerModal({
                   {filteredVideos.map((video) => {
                     const isSelected = selectedVideo?.id === video.id;
                     const isReady = video.status === "READY";
+                    const videoIsPublic = isVideoPublic(video);
+                    const isDisabled = requirePublic && !videoIsPublic;
 
                     return (
                       <div
                         key={video.id}
-                        onClick={() => setSelectedVideo(video)}
+                        onClick={() => handleSelectVideoCard(video)}
                         onDoubleClick={() => {
+                          if (isDisabled) return;
                           setSelectedVideo(video);
                           const embedUrl = `/embed/${video.id}`;
                           onSelectVideo({
@@ -275,13 +319,20 @@ export default function VideoPickerModal({
                             thumbnailUrl: video.thumbnailUrl,
                             description: video.description,
                             durationSeconds: video.durationSeconds,
+                            shareAccessMode: video.shareAccessMode,
+                            price: video.price,
+                            currency: video.currency,
                           });
                           onClose();
                         }}
-                        className={`group relative rounded-2xl border p-2.5 flex flex-col justify-between transition-all cursor-pointer select-none text-left ${
-                          isSelected
-                            ? "bg-primary/5 border-primary ring-2 ring-primary shadow-sm"
-                            : "bg-card hover:border-primary/50 hover:bg-muted/30"
+                        title={isDisabled ? `Only public videos can be selected as featured showcase video (this video is ${video.shareAccessMode || "non-public"})` : video.title}
+                        aria-disabled={isDisabled}
+                        className={`group relative rounded-2xl border p-2.5 flex flex-col justify-between transition-all select-none text-left ${
+                          isDisabled
+                            ? "bg-muted/40 opacity-60 cursor-not-allowed"
+                            : isSelected
+                            ? "bg-primary/5 border-primary ring-2 ring-primary shadow-sm cursor-pointer"
+                            : "bg-card hover:border-primary/50 hover:bg-muted/30 cursor-pointer"
                         }`}
                       >
                         {/* Thumbnail Container */}
@@ -304,9 +355,17 @@ export default function VideoPickerModal({
                           )}
 
                           {/* Selection Checkmark Badge */}
-                          {isSelected && (
+                          {isSelected && !isDisabled && (
                             <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md animate-in zoom-in-50">
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            </div>
+                          )}
+
+                          {/* Non-public lock badge (public-only mode) */}
+                          {isDisabled && (
+                            <div className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-md text-xs font-bold bg-black/80 text-white backdrop-blur-xs flex items-center gap-1">
+                              <Lock className="w-2.5 h-2.5" />
+                              {video.shareAccessMode || "PRIVATE"}
                             </div>
                           )}
                         </div>
@@ -316,6 +375,13 @@ export default function VideoPickerModal({
                           <h4 className="text-xs font-bold line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                             {video.title}
                           </h4>
+
+                          {requirePublic && isDisabled && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Lock className="w-3 h-3 shrink-0" />
+                              Only public videos can be selected
+                            </p>
+                          )}
 
                           <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground">
                             <span
@@ -342,11 +408,19 @@ export default function VideoPickerModal({
             <DialogFooter className="pt-3 border-t border-border shrink-0 mt-auto flex flex-row items-center justify-between sm:justify-between gap-2">
               <div className="text-xs text-muted-foreground truncate">
                 {selectedVideo ? (
-                  <span>
-                    Selected: <strong className="text-foreground">{selectedVideo.title}</strong>
-                  </span>
+                  requirePublic && !isVideoPublic(selectedVideo) ? (
+                    <span className="flex items-center gap-1 text-destructive">
+                      <Lock className="w-3 h-3" /> Only public videos can be selected
+                    </span>
+                  ) : (
+                    <span>
+                      Selected: <strong className="text-foreground">{selectedVideo.title}</strong>
+                    </span>
+                  )
                 ) : (
-                  <span>Click a video to select it.</span>
+                  <span>
+                    {requirePublic ? "Click a public video to select it." : "Click a video to select it."}
+                  </span>
                 )}
               </div>
 
@@ -357,8 +431,9 @@ export default function VideoPickerModal({
                 <Button
                   type="button"
                   size="sm"
-                  disabled={!selectedVideo}
+                  disabled={!selectedVideo || (requirePublic && !isVideoPublic(selectedVideo))}
                   onClick={handleConfirmLibrarySelect}
+                  title={requirePublic && selectedVideo && !isVideoPublic(selectedVideo) ? "Only public videos can be selected as featured showcase video" : undefined}
                   className="text-xs font-bold cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5 mr-1" /> Select Video

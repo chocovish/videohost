@@ -104,6 +104,33 @@ export async function PUT(req: Request) {
       where: { organizationId },
     });
 
+    // Featured showcase video is rendered on the public offerings page,
+    // so only public library videos (or external/YouTube links) are allowed.
+    if (body.featuredVideoUrl) {
+      const featuredUrl = String(body.featuredVideoUrl);
+      if (featuredUrl.includes("/embed/")) {
+        const featuredId = featuredUrl.split("/embed/")[1]?.split("?")[0]?.split("/")[0];
+        if (featuredId) {
+          const featuredVideo = await db.video.findFirst({
+            where: { id: featuredId, organizationId },
+            select: { id: true, shareAccessMode: true },
+          });
+          if (!featuredVideo) {
+            return NextResponse.json(
+              { error: "Featured showcase video not found in your library." },
+              { status: 400 }
+            );
+          }
+          if (featuredVideo.shareAccessMode !== "PUBLIC") {
+            return NextResponse.json(
+              { error: "Only public videos can be selected as featured showcase video." },
+              { status: 400 }
+            );
+          }
+        }
+      }
+    }
+
     // Reset Defaults if requested
     if (body.resetDefaults) {
       await deleteOldImage(existingConfig?.avatarKey);

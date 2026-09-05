@@ -386,6 +386,11 @@ export default function OfferingsDashboardPage() {
         secondaryCtaText: (!prev.secondaryCtaText || prev.secondaryCtaText === "Book 1:1 Session" || prev.secondaryCtaText === "Book 1:1 Call") ? "Explore Meetings" : prev.secondaryCtaText,
       }));
     } else if (videoPickerTarget === "featuredVideo") {
+      const isCustomUrl = video.id.startsWith("custom_");
+      if (!isCustomUrl && video.shareAccessMode && video.shareAccessMode !== "PUBLIC") {
+        alert("Only public videos can be selected as featured showcase video. Please choose a video with Public access.");
+        return;
+      }
       setConfig((prev) => ({
         ...prev,
         featuredVideoUrl: video.embedUrl,
@@ -1384,6 +1389,12 @@ export default function OfferingsDashboardPage() {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   Display a prominent video showcase / showreel section directly above your offerings catalog.
+                </p>
+                <p className="text-xs leading-relaxed flex items-start gap-1.5 rounded-xl border border-primary/20 bg-primary/5 px-2.5 py-2">
+                  <Lock className="w-3.5 h-3.5 text-primary shrink-0 mt-px" />
+                  <span className="text-muted-foreground">
+                    <strong className="text-foreground">Only public videos can be selected as featured showcase video</strong>, so every visitor can play it without signing in.
+                  </span>
                 </p>
 
                 {config.featuredVideoUrl ? (
@@ -3553,6 +3564,13 @@ export default function OfferingsDashboardPage() {
         isOpen={videoPickerOpen}
         onClose={() => setVideoPickerOpen(false)}
         onSelectVideo={handleVideoSelected}
+        requirePublic={videoPickerTarget === "featuredVideo"}
+        title={videoPickerTarget === "featuredVideo" ? "Select Featured Showcase Video" : undefined}
+        description={
+          videoPickerTarget === "featuredVideo"
+            ? "Choose a public uploaded video for your public showcase section, or use a YouTube link."
+            : undefined
+        }
         selectedEmbedUrl={
           videoPickerTarget === "itemForm"
             ? itemFormCtaUrl

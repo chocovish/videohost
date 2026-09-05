@@ -30,6 +30,7 @@ model User {
   createdMeetings Meeting[]
   contentPurchases ContentPurchase[]
   withdrawalRequests WithdrawalRequest[]
+  watchSessions VideoWatchSession[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -268,6 +269,8 @@ model Video {
   meetingRecordings Meeting[]      @relation("MeetingRecordedVideo")
   playlistItems   PlaylistItem[]
   purchases       ContentPurchase[]
+  watchSessions   VideoWatchSession[]
+  dailyStats      VideoDailyStat[]
 }
 
 // --------------------------------------------------------
@@ -707,4 +710,89 @@ model WithdrawalRequest {
   @@index([organizationId, status])
   @@index([status])
   @@index([createdAt])
+}
+
+// --------------------------------------------------------
+// Video Analytics (views, watch time, retention)
+// --------------------------------------------------------
+// Two-tier design for efficient aggregation:
+// 1. VideoWatchSession — one row per playback session, updated by
+//    lightweight client heartbeats. Source of truth for "who watched"
+//    and exact watch-time.
+// 2. VideoDailyStat — pre-aggregated per-video per-day counters updated
+//    incrementally on every tracked event, so dashboard queries over
+//    today / 7d / 30d / all never scan the session table.
+
+model VideoWatchSession {
+  id                  String    @id @default(cuid())
+  videoId             String
+  organizationId      String
+  // Logged-in viewer (null for anonymous viewers).
+  userId              String?
+  // Stable viewer identity for unique counting. "user:{userId}" when
+  // logged in, otherwise "anon:{client-generated uuid}".
+  viewerKey           String
+  // Snapshot of viewer identity at watch time (names/emails can change).
+  viewerName          String?
+  viewerEmail         String?
+  // Client-generated uuid per player mount. Retried beacons upsert safely.
+  sessionId           String    @unique
+  startedAt           DateTime  @default(now())
+  lastHeartbeatAt     DateTime  @default(now())
+  totalWatchedSeconds Int       @default(0)
+  maxPositionSeconds  Float     @default(0)
+  durationSeconds     Float?
+  completed           Boolean   @default(false)
+  // maxPositionSeconds / durationSeconds, 0..1.
+  completionRate      Float     @default(0)
+  device              String?   // "desktop" | "mobile" | "tablet" | "tv" | "unknown"
+  browser             String?   // "chrome" | "safari" | "firefox" | "edge" | ...
+  os                  String?   // "windows" | "macos" | "ios" | "android" | ...
+  country             String?   // ISO-3166 alpha-2 from CDN headers, e.g. "US"
+  referrer            String?
+  source              String    @default("share") // "share" | "embed" | "dashboard" | "api"
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([videoId, startedAt])
+  @@index([organizationId, startedAt])
+  @@index([videoId, viewerKey])
+  @@index([organizationId, viewerKey])
+  @@index([userId])
+}
+
+model VideoDailyStat {
+  id               String   @id @default(cuid())
+  videoId          String
+  organizationId   String
+  // UTC midnight of the day this row aggregates.
+  date             DateTime
+  // Sessions started that day.
+  views            Int      @default(0)
+  // Sessions started by viewers with no other session that day.
+  uniqueViewers    Int      @default(0)
+  loggedInViewers  Int      @default(0)
+  anonymousViewers Int      @default(0)
+  totalWatchSeconds Int     @default(0)
+  completions      Int      @default(0)
+  // Breakdown counters, e.g. { "desktop": 12, "mobile": 4 }.
+  devices          Json?
+  browsers         Json?
+  sources          Json?
+  countries        Json?
+  // 20 buckets of 5% of video duration. Each heartbeat increments the
+  // bucket matching the viewer's current position, so the array shows
+  // which parts of the video get watched / rewatched / skipped.
+  heatmap          Int[]    @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, date])
+  @@index([organizationId, date])
+  @@index([videoId, date])
 }

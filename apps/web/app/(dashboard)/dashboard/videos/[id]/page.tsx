@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,6 +18,7 @@ import {
   RotateCcw,
   FolderInput,
   Pencil,
+  BarChart3,
   FileText,
   DollarSign,
   Receipt,
@@ -27,6 +28,7 @@ import {
   Video as VideoIcon,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoAnalyticsTracker from "@/components/analytics/video-analytics-tracker";
 import VideoSubtitlesManager from "@/components/VideoSubtitlesManager";
 import ShareModal from "@/components/ShareModal";
 import MoveItemModal from "@/components/MoveItemModal";
@@ -114,6 +116,7 @@ export default function VideoDetailPage() {
 
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const playerWrapRef = useRef<HTMLDivElement>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const [copiedType, setCopiedType] = useState<string | null>(null);
@@ -412,6 +415,16 @@ export default function VideoDetailPage() {
             <span>Move Video</span>
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/dashboard/analytics/${id}`)}
+            className="flex-1 sm:flex-none"
+            title="View watch analytics for this video"
+          >
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <span>Analytics</span>
+          </Button>
+          <Button
             size="sm"
             onClick={() => setIsShareOpen(true)}
             className="flex-1 sm:flex-none"
@@ -469,14 +482,17 @@ export default function VideoDetailPage() {
         {/* Left Col: Player and Tabs */}
         <div className="lg:col-span-2 space-y-6">
           {/* Video Player */}
-          <div className="aspect-video w-full rounded-lg overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
+          <div ref={playerWrapRef} className="aspect-video w-full rounded-lg overflow-hidden relative flex items-center justify-center bg-black shadow-lg">
             {video.playbackUrl ? (
-              <VideoPlayer
-                src={video.playbackUrl}
-                poster={video.thumbnailUrl}
-                subtitles={video.subtitles || []}
-                className="w-full h-full rounded-lg"
-              />
+              <>
+                <VideoPlayer
+                  src={video.playbackUrl}
+                  poster={video.thumbnailUrl}
+                  subtitles={video.subtitles || []}
+                  className="w-full h-full rounded-lg"
+                />
+                <VideoAnalyticsTracker videoId={video.id} source="dashboard" containerRef={playerWrapRef} />
+              </>
             ) : video.status === "FAILED" || video.status === "CANCELLED" ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 p-6 text-center max-w-md mx-auto">
                 <div className="w-12 h-12 rounded-full bg-destructive/10 text-destructive flex items-center justify-center border border-destructive/20">

@@ -1,7 +1,7 @@
 import { db } from "@videohost/db";
 import { getPlaybackUrl, getThumbnailPlaybackUrl } from "@/lib/s3";
 import { getVideoSubtitleTracksSafe } from "@/lib/subtitles";
-import VideoPlayer from "@/components/VideoPlayer";
+import EmbedPlayer from "./embed-player";
 
 export default async function EmbedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,7 +33,7 @@ export default async function EmbedPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="w-screen h-screen bg-black overflow-hidden m-0 p-0 flex items-center justify-center">
-      <VideoPlayer src={srcUrl} poster={posterUrl} subtitles={subtitles} className="w-full h-full" />
+      <EmbedPlayer videoId={video.id} src={srcUrl} poster={posterUrl} subtitles={subtitles} />
     </div>
   );
 }

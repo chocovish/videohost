@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   Check,
@@ -13,6 +13,7 @@ import {
   SkipForward,
 } from "lucide-react";
 import VideoPlayer from "@/components/VideoPlayer";
+import VideoAnalyticsTracker from "@/components/analytics/video-analytics-tracker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,7 @@ export function PlaylistEpisodeView({
 }: PlaylistEpisodeViewProps) {
   const [queueOpen, setQueueOpen] = useState(false);
   const [sidebarQuery, setSidebarQuery] = useState("");
+  const playerWrapRef = useRef<HTMLDivElement>(null);
 
   const video = data.video;
   const { accentHex, onAccentHex } = theme;
@@ -138,16 +140,25 @@ export function PlaylistEpisodeView({
         <div className="min-w-0">
           {/* Player — own rounded shell, transport sits below as plain row */}
           <div
+            ref={playerWrapRef}
             className={`aspect-video w-full overflow-hidden border bg-black ${theme.dividerBorder} ${theme.roundnessClass}`}
           >
             {video.playbackUrl ? (
-              <VideoPlayer
-                key={video.id}
-                src={video.playbackUrl}
-                poster={video.thumbnailUrl}
-                subtitles={video.subtitles || []}
-                className="h-full w-full"
-              />
+              <>
+                <VideoPlayer
+                  key={video.id}
+                  src={video.playbackUrl}
+                  poster={video.thumbnailUrl}
+                  subtitles={video.subtitles || []}
+                  className="h-full w-full"
+                />
+                <VideoAnalyticsTracker
+                  key={`analytics-${video.id}`}
+                  videoId={video.id}
+                  source="share"
+                  containerRef={playerWrapRef}
+                />
+              </>
             ) : data.accessMode === "PURCHASABLE" ? (
               <PaywallHero
                 theme={theme}
