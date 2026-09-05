@@ -1178,7 +1178,7 @@ export default function OfferingsLandingClient({
                   {config.stats.map((st, i) => (
                     <div
                       key={i}
-                      className={`p-3.5 ${roundnessClass} border text-center transition-all duration-200 hover:-translate-y-0.5`}
+                      className={`p-3.5 ${roundnessClass} border text-center transition-all duration-200`}
                       style={{
                         backgroundColor: `${theme.card}80`,
                         borderColor: theme.cardBorder,
@@ -1321,7 +1321,7 @@ export default function OfferingsLandingClient({
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`px-3 py-2 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all duration-200 flex items-center gap-1.5 sm:gap-2 border cursor-pointer snap-start ${
-                      isActive ? "scale-[1.02]" : "hover:opacity-90 hover:-translate-y-0.5"
+                      isActive ? "scale-[1.02]" : "hover:opacity-90"
                     }`}
                     style={{
                       backgroundColor: isActive ? accentColor : theme.card,
@@ -1372,7 +1372,7 @@ export default function OfferingsLandingClient({
                 {filteredItems.map((item) => (
                   <div
                     key={item.id}
-                    className={`flex flex-col justify-between ${roundnessClass} border transition-all duration-300 hover:-translate-y-1.5 overflow-hidden group min-w-0 offerings-card`}
+                    className={`flex flex-col justify-between ${roundnessClass} border transition-all duration-300 overflow-hidden group min-w-0 offerings-card`}
                     style={{
                       backgroundColor: theme.card,
                       borderColor: item.isFeatured ? accentColor : theme.cardBorder,
@@ -1667,7 +1667,7 @@ export default function OfferingsLandingClient({
                 {config.testimonials.map((t, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 sm:p-6 ${roundnessClass} border flex flex-col justify-between space-y-3 sm:space-y-4 transition-all duration-200 hover:-translate-y-1 min-w-0`}
+                    className={`p-4 sm:p-6 ${roundnessClass} border flex flex-col justify-between space-y-3 sm:space-y-4 transition-all duration-200 min-w-0`}
                     style={{
                       backgroundColor: theme.card,
                       borderColor: theme.cardBorder,

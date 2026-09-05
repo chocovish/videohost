@@ -980,7 +980,7 @@ export default function OfferingsDashboardPage() {
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="rounded-2xl border border-border bg-card glass-card card-hover shadow-sm hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 flex flex-col justify-between overflow-hidden"
+                  className="rounded-2xl border border-border bg-card glass-card card-hover shadow-sm hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col justify-between overflow-hidden"
                 >
                   <div>
                     {item.coverImageUrl && (

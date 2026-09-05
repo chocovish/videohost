@@ -246,14 +246,14 @@ export default function LandingPage() {
                 <div className="mt-8 flex flex-col sm:flex-row gap-3.5">
                   <Link
                     href="/auth/register"
-                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[4px_4px_0px_0px_var(--comic-shadow)] hover:-translate-y-0.5 hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-primary text-primary-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[4px_4px_0px_0px_var(--comic-shadow)] hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
                   >
                     Start free — 2GB included
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link
                     href="/record"
-                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-border bg-card text-foreground font-extrabold text-base shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:border-foreground hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                    className="comic-press inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl border-2 border-border bg-card text-foreground font-extrabold text-base shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:border-foreground hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
                   >
                     <Camera className="w-4 h-4 text-primary" />
                     Open studio recorder
@@ -364,7 +364,7 @@ export default function LandingPage() {
               {PILLARS.map((pillar) => (
                 <article
                   key={pillar.title}
-                  className={`rounded-3xl border-2 p-7 transition-all duration-200 hover:-translate-y-1 ${
+                  className={`rounded-3xl border-2 p-7 transition-all duration-200 ${
                     pillar.highlight
                       ? "border-primary bg-primary/10 shadow-[6px_6px_0px_0px_var(--comic-shadow)]"
                       : "border-border bg-card shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] hover:border-foreground"
@@ -496,7 +496,7 @@ export default function LandingPage() {
               ].map((card) => (
                 <article
                   key={card.title}
-                  className="rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5px_5px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1"
+                  className="rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5px_5px_0px_0px_var(--comic-shadow)] hover:border-foreground"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center mb-5 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
                     <card.icon className="w-6 h-6 text-primary" />
@@ -532,7 +532,7 @@ export default function LandingPage() {
               {FEATURES.map((feature) => (
                 <article
                   key={feature.title}
-                  className="group rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3.5px_3.5px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1"
+                  className="group rounded-3xl border-2 border-border p-6 bg-card transition-all duration-200 shadow-[3.5px_3.5px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[5.5px_5.5px_0px_0px_var(--comic-shadow)] hover:border-foreground"
                 >
                   <div className="w-12 h-12 rounded-2xl bg-primary/15 border-2 border-primary/30 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:border-foreground/20 group-hover:[&>svg]:text-primary-foreground transition-all shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
                     <feature.icon className="w-6 h-6 text-primary transition-colors" />
@@ -674,7 +674,7 @@ export default function LandingPage() {
               {STEPS.map((step) => (
                 <li
                   key={step.number}
-                  className="relative rounded-3xl border-2 border-border p-6 bg-card shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] hover:border-foreground hover:-translate-y-1 transition-all"
+                  className="relative rounded-3xl border-2 border-border p-6 bg-card shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[6px_6px_0px_0px_var(--comic-shadow)] hover:border-foreground transition-all"
                 >
                   <span
                     aria-hidden
@@ -738,7 +738,7 @@ export default function LandingPage() {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
                 href="/auth/register"
-                className="comic-press w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-card text-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:-translate-y-0.5 hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                className="comic-press w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-card text-foreground font-extrabold text-base border-2 border-foreground/20 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
               >
                 Create your free account
                 <ArrowRight className="w-4 h-4" />

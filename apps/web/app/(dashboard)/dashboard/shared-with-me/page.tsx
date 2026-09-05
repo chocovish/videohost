@@ -171,7 +171,7 @@ export default function SharedWithYouPage() {
           {filteredItems.map((item) => (
             <div
               key={item.id}
-              className="bg-card glass-card card-hover border border-border rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
+              className="bg-card glass-card card-hover border border-border rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
             >
               <div>
                 {/* Header Preview / Icon */}

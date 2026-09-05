@@ -92,7 +92,7 @@ export function FolderView({
               <button
                 key={sf.id}
                 onClick={() => onSubfolderClick(sf.id)}
-                className={`flex items-center gap-3.5 p-4 border transition-all duration-300 text-left group shadow-lg hover:-translate-y-1 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
+                className={`flex items-center gap-3.5 p-4 border transition-all duration-300 text-left group shadow-lg backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
               >
                 <div className="p-3 bg-linear-to-br from-amber-500/20 to-amber-600/10 text-amber-400 rounded-xl border border-amber-500/20 group-hover:scale-110 transition-transform duration-300">
                   <Folder className="w-5 h-5 fill-amber-500/30" />
@@ -142,7 +142,7 @@ export function FolderView({
               <div
                 key={vid.id}
                 onClick={() => onVideoClick(vid.id)}
-                className={`group relative border overflow-hidden shadow-xl transition-all duration-300 hover:-translate-y-1.5 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
+                className={`group relative border overflow-hidden shadow-xl transition-all duration-300 backdrop-blur-md cursor-pointer ${cardBgClass} ${roundnessClass}`}
               >
                 {/* Thumbnail Box */}
                 <div className="aspect-video bg-slate-950 relative overflow-hidden flex items-center justify-center">

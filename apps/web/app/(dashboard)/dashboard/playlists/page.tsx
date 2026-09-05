@@ -352,7 +352,7 @@ export default function PlaylistsPage() {
           {filteredPlaylists.map((pl) => (
             <div
               key={pl.id}
-              className="group relative glass-card card-hover rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="group relative glass-card card-hover rounded-2xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 {/* Thumbnail / Header Stage */}

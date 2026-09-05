@@ -410,7 +410,7 @@ export default function PurchasedItemsPage() {
             return (
               <div
                 key={item.id}
-                className="bg-card glass-card card-hover border border-border/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:-translate-y-1 hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
+                className="bg-card glass-card card-hover border border-border/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
               >
                 <div>
                   {/* Thumbnail / Header Area */}

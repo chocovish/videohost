@@ -688,7 +688,7 @@ function UploadedVideosContent() {
                   className={`group cursor-pointer glass-card card-hover rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
                     isSelected
                       ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
-                      : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
+                      : "border-border hover:border-primary/50 hover:shadow-lg"
                   }`}
                 >
                   {/* Checkbox Overlay (Top Left) */}
@@ -854,7 +854,7 @@ function UploadedVideosContent() {
                   className={`group glass-card card-hover rounded-2xl overflow-hidden border transition-all duration-300 flex flex-col justify-between relative ${
                     isSelected
                       ? "border-primary ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10 shadow-md"
-                      : "border-border hover:border-primary/50 hover:shadow-lg hover:-translate-y-1"
+                      : "border-border hover:border-primary/50 hover:shadow-lg"
                   }`}
                 >
                   <div>

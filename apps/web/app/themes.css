@@ -75,8 +75,12 @@
   /* Typography & Dynamics */
   --theme-border-width: 2px;
   --theme-heading-font: var(--font-heading), var(--font-sans), cursive, sans-serif;
-  --theme-btn-transform: translate(-1px, -1px);
-  --theme-card-hover-transform: translateY(-2.5px);
+  /* NOTE: hover transforms are intentionally `none`. Translating a card on
+     :hover moves its hitbox away from a stationary cursor parked on the card
+     border, which toggles :hover off/on every frame (shake/flicker loop).
+     Hover feedback is delivered via shadow + border-color only. */
+  --theme-btn-transform: none;
+  --theme-card-hover-transform: none;
   --theme-active-transform: translate(1px, 1px);
 }
 
@@ -268,7 +272,7 @@
 
   --theme-heading-font: var(--font-sans), system-ui, sans-serif;
   --theme-btn-transform: none;
-  --theme-card-hover-transform: translateY(-2px);
+  --theme-card-hover-transform: none;
   --theme-active-transform: none;
 }
 
@@ -277,11 +281,14 @@
    ========================================================================== */
 
 /* CARDS */
+/* NOTE: no transform in transitions/hover states — translating the hovered
+   element itself makes the pointer enter/leave the hitbox repeatedly when it
+   sits on the card edge (flicker). Shadow + border-color carry the feedback. */
 [data-slot="card"],
 .card {
   border-width: var(--theme-border-width, 1px);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+  transition: box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -294,13 +301,12 @@
 .card-hover,
 .hover-lift,
 [data-slot="card"][data-variant="interactive"] {
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+  transition: box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
 }
 
 .card-hover:hover,
 .hover-lift:hover,
 [data-slot="card"][data-variant="interactive"]:hover {
-  transform: var(--theme-card-hover-transform, translateY(-2.5px));
   box-shadow: var(--shadow-lg);
   border-color: color-mix(in srgb, var(--foreground) 25%, var(--border));
 }
@@ -333,10 +339,6 @@
 
 [data-slot="button"].bg-primary:not(:disabled) {
   box-shadow: var(--shadow-sm);
-}
-
-[data-slot="button"].shadow-xs:hover:not(:disabled):not(.bg-secondary) {
-  transform: var(--theme-btn-transform, none);
 }
 
 [data-slot="button"].shadow-xs:active:not(:disabled):not(.bg-secondary) {
@@ -455,7 +457,6 @@
 }
 
 .comic-press:hover {
-  transform: var(--theme-btn-transform, translate(-1.5px, -1.5px));
   box-shadow: var(--shadow-md);
 }
 
@@ -469,11 +470,10 @@
   border: var(--theme-border-width, 1px) solid var(--border);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-sm);
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: box-shadow 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease;
 }
 
 .comic-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
   border-color: var(--foreground);
 }
@@ -511,7 +511,7 @@
   -webkit-backdrop-filter: blur(14px);
   border: var(--theme-border-width, 1px) solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
+  transition: box-shadow 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.22s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -524,7 +524,6 @@
 
 .glass-card.card-hover:hover,
 .glass-card-hover:hover {
-  transform: var(--theme-card-hover-transform, translateY(-2.5px));
   box-shadow: var(--shadow-lg);
   border-color: color-mix(in srgb, var(--foreground) 25%, var(--border));
 }
