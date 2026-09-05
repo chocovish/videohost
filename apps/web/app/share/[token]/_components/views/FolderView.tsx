@@ -184,6 +184,8 @@ export function FolderView({
                       clamp={2}
                       className="text-xs line-clamp-2 leading-relaxed"
                       style={{ color: bodyHex }}
+                      accentColor={accentHex}
+                      mutedColor={mutedHex}
                     />
                   ) : (
                     <p className="text-xs italic" style={{ color: mutedHex }}>

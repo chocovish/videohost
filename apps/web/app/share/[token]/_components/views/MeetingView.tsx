@@ -120,7 +120,13 @@ export function MeetingView({
 
             {meeting.description && (
               <div className="text-[15px] leading-relaxed max-w-3xl" style={{ color: bodyHex }}>
-                <RichTextViewer content={meeting.description} className="[&_a]:underline" />
+                <RichTextViewer
+                  content={meeting.description}
+                  className="[&_a]:underline"
+                  style={{ color: bodyHex }}
+                  accentColor={accentHex}
+                  mutedColor={mutedHex}
+                />
               </div>
             )}
           </div>

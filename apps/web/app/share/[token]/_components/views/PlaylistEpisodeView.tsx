@@ -303,6 +303,9 @@ export function PlaylistEpisodeView({
                 content={video.description}
                 clampLines={5}
                 textClassName="text-sm leading-relaxed sm:text-[15px]"
+                textStyle={{ color: theme.bodyHex }}
+                accentColor={theme.accentHex}
+                mutedColor={theme.mutedHex}
               />
             </div>
           ) : null}

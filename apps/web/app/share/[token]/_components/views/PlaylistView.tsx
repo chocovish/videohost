@@ -111,6 +111,9 @@ export function PlaylistView({
               content={playlist.description}
               clampLines={4}
               textClassName="text-sm leading-relaxed sm:text-[15px]"
+              textStyle={{ color: theme.bodyHex }}
+              accentColor={theme.accentHex}
+              mutedColor={theme.mutedHex}
             />
           ) : null}
 
@@ -278,6 +281,8 @@ export function PlaylistView({
                       onSelect={() => onVideoClick(video.id)}
                       showChevron
                       showDescription
+                      accentHex={theme.accentHex}
+                      mutedHex={theme.mutedHex}
                     />
                   </li>
                 );

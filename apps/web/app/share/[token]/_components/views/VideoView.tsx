@@ -217,6 +217,8 @@ export function VideoView({
               content={video.description}
               className="text-sm leading-relaxed [&_a]:underline"
               style={{ color: bodyHex }}
+              accentColor={accentHex}
+              mutedColor={mutedHex}
             />
           </div>
         )}

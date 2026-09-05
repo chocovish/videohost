@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RichTextViewer } from "@/components/ui/rich-text-viewer";
@@ -12,6 +12,12 @@ interface ExpandableRichTextProps {
   clampLines?: number;
   className?: string;
   textClassName?: string;
+  /** Inline style for the rich text (e.g. share palette body colour). */
+  textStyle?: CSSProperties;
+  /** Palette accent for links / code — falls back to system primary. */
+  accentColor?: string | null;
+  /** Palette muted for blockquotes — falls back to system muted. */
+  mutedColor?: string | null;
   readMoreLabel?: string;
   showLessLabel?: string;
 }
@@ -26,6 +32,9 @@ export function ExpandableRichText({
   clampLines = 5,
   className,
   textClassName,
+  textStyle,
+  accentColor,
+  mutedColor,
   readMoreLabel = "Read more",
   showLessLabel = "Show less",
 }: ExpandableRichTextProps) {
@@ -70,6 +79,9 @@ export function ExpandableRichText({
         <RichTextViewer
           content={content}
           className={cn("leading-relaxed [&_a]:underline", textClassName)}
+          style={textStyle}
+          accentColor={accentColor}
+          mutedColor={mutedColor}
         />
       </div>
       {truncated || expanded ? (

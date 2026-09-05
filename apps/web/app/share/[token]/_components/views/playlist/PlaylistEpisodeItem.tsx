@@ -17,6 +17,8 @@ interface PlaylistEpisodeItemProps {
   /** Queue mode: highlight the currently playing episode. */
   isActive?: boolean;
   accentHex?: string;
+  /** Share palette muted for the description — falls back to system muted. */
+  mutedHex?: string;
   /** Queue mode (sidebar/drawer) uses a smaller thumb to fit 360–400px rails. */
   compact?: boolean;
   /** Queue mode: leading position / now-playing badge. */
@@ -44,6 +46,7 @@ export function PlaylistEpisodeItem({
   onSelect,
   isActive = false,
   accentHex,
+  mutedHex,
   compact = false,
   showLeadingStatus = false,
   showChevron = false,
@@ -179,6 +182,9 @@ export function PlaylistEpisodeItem({
             content={video.description}
             clamp={1}
             className="mt-1 hidden text-[13px] leading-snug text-muted-foreground line-clamp-1 md:block"
+            style={mutedHex ? { color: mutedHex } : undefined}
+            accentColor={accentHex}
+            mutedColor={mutedHex}
           />
         ) : null}
       </div>
