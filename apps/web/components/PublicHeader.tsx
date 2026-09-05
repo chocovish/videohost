@@ -14,7 +14,13 @@ interface PublicHeaderProps {
 
 export default function PublicHeader({ currentPage }: PublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileFeaturesOpen, setMobileFeaturesOpen] = useState(false);
   const { data: session, status } = useSession();
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setMobileFeaturesOpen(false);
+  };
 
   const isAuthPage = currentPage === "login" || currentPage === "register";
 
@@ -30,7 +36,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
         <Link
           href="/"
           className="flex items-center group transition-transform active:scale-95 py-0.5"
-          onClick={() => setMobileMenuOpen(false)}
+          onClick={closeMobileMenu}
         >
           <Image
             src="/taped-in-logo.webp"
@@ -214,48 +220,68 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
                 Explore
               </div>
 
-              <Link
-                href="/features"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
+              <div
+                className={`rounded-xl transition-all ${
                   currentPage === "features"
-                    ? "bg-primary/10 text-primary font-bold"
-                    : "text-foreground hover:bg-black/5 dark:hover:bg-white/5"
+                    ? "bg-primary/10"
+                    : "hover:bg-black/5 dark:hover:bg-white/5"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                <div className="flex items-center justify-between p-2.5">
+                  <Link
+                    href="/features"
+                    onClick={closeMobileMenu}
+                    className={`flex items-center gap-3 font-semibold text-sm flex-1 ${
                       currentPage === "features"
-                        ? "bg-primary/20 text-primary"
-                        : "bg-slate-100 dark:bg-slate-800 text-foreground"
+                        ? "text-primary font-bold"
+                        : "text-foreground"
                     }`}
                   >
-                    <Sparkles className="w-4 h-4" />
-                  </div>
-                  <span>Features</span>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
-              </Link>
-
-              {/* Inline feature quick-links */}
-              <div className="grid grid-cols-1 gap-1 pl-11 pr-1 pb-1">
-                {FEATURES.map((feature) => (
-                  <Link
-                    key={feature.slug}
-                    href={`/features/${feature.slug}`}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
-                  >
-                    <feature.icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{feature.navLabel}</span>
+                    <span
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                        currentPage === "features"
+                          ? "bg-primary/20 text-primary"
+                          : "bg-slate-100 dark:bg-slate-800 text-foreground"
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                    </span>
+                    <span>Features</span>
                   </Link>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => setMobileFeaturesOpen((v) => !v)}
+                    aria-expanded={mobileFeaturesOpen}
+                    aria-label={mobileFeaturesOpen ? "Collapse features list" : "Expand features list"}
+                    className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                  >
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${mobileFeaturesOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                </div>
+
+                {/* Collapsible feature quick-links — collapsed by default */}
+                {mobileFeaturesOpen && (
+                  <div className="grid grid-cols-1 gap-1 px-2 pb-2.5 pl-11 pr-1 animate-in fade-in slide-in-from-top-1">
+                    {FEATURES.map((feature) => (
+                      <Link
+                        key={feature.slug}
+                        href={`/features/${feature.slug}`}
+                        onClick={closeMobileMenu}
+                        className="flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-[13px] font-semibold text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all"
+                      >
+                        <feature.icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{feature.navLabel}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Link
                 href="/pricing"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
                 className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
                   currentPage === "pricing"
                     ? "bg-primary/10 text-primary font-bold"
@@ -279,7 +305,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
 
               <Link
                 href="/contact"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={closeMobileMenu}
                 className={`flex items-center justify-between p-2.5 rounded-xl transition-all font-semibold text-sm ${
                   currentPage === "contact"
                     ? "bg-primary/10 text-primary font-bold"
@@ -312,7 +338,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all text-foreground"
                   >
                     <Avatar className="h-9 w-9 shrink-0">
@@ -334,7 +360,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href="/auth/login"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5 text-foreground"
                   >
                     <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
@@ -348,7 +374,7 @@ export default function PublicHeader({ currentPage }: PublicHeaderProps) {
 
                   <Link
                     href="/auth/register"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     className="flex items-center justify-between p-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:opacity-95 transition-all mt-1"
                   >
                     <div className="flex items-center gap-3">

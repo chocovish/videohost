@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ListOrdered,
+  Palette,
 } from "lucide-react";
 import PublicHeader from "@/components/PublicHeader";
 import PublicFooter from "@/components/PublicFooter";
@@ -73,6 +74,9 @@ export default async function FeatureDetailPage({
   const url = `${baseUrl}/features/${feature.slug}`;
   const related = getRelatedFeatures(feature.slug, 3);
   const Icon = feature.icon;
+  const showBrandingNote = ["online-meetings", "selective-video-sharing", "playlists-courses"].includes(
+    feature.slug
+  );
 
   const jsonLdArticle = {
     "@context": "https://schema.org",
@@ -236,6 +240,37 @@ export default async function FeatureDetailPage({
             </div>
           </div>
         </section>
+
+        {/* Branding note — meetings, sharing & playlists run under your branding */}
+        {showBrandingNote && (
+          <section aria-label="All under your branding" className="border-b-2 border-border bg-primary/5">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
+              <div className="rounded-3xl border-2 border-primary/30 bg-card p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center gap-5 justify-between shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)]">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center border-2 border-foreground/15 shrink-0 shadow-[2px_2px_0px_0px_var(--comic-shadow-subtle)]">
+                    <Palette className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-bold font-heading">
+                      All under your branding
+                    </h2>
+                    <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed font-medium max-w-2xl">
+                      Meetings, selective video &amp; playlist shares, and replays all carry your
+                      logo, colors, banner, and call-to-action — set once in Dashboard →
+                      Customize Share Page and applied everywhere automatically.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/features/branded-pages"
+                  className="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-extrabold text-sm border-2 border-foreground/20 shadow-[3px_3px_0px_0px_var(--comic-shadow)] hover:shadow-[4.5px_4.5px_0px_0px_var(--comic-shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+                >
+                  Explore branding <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* How to use */}
         <section className="border-b-2 border-border bg-muted/40">

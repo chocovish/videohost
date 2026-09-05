@@ -143,7 +143,7 @@ export const FEATURES: FeaturePage[] = [
     title: "Share Videos Selectively",
     tagline: "Only the exact people you invite by email can ever watch. Forwarded links simply don't work.",
     description:
-      "Selective sharing is Taped's core promise. Instead of unlisted links anyone can forward, you lock each video or playlist to an explicit list of email addresses. Viewers verify with a one-time passcode — if they are not on your list, they see nothing. Perfect for clients, students, teams, and paid buyers.",
+      "Selective sharing is Taped's core promise. Instead of unlisted links anyone can forward, you lock each video or playlist to an explicit list of email addresses. Viewers verify with a one-time passcode — if they are not on your list, they see nothing. And it all happens under your branding: every share page carries your logo, colors, banner, and call-to-action. Perfect for clients, students, teams, and paid buyers.",
     seoTitle: "Share Videos Selectively — Email-Gated Private Video Sharing | Taped",
     seoDescription:
       "Share videos with specific people only. Taped locks playback to exact email addresses with OTP verification — forwarded links never work. Ideal for clients, courses & teams.",
@@ -183,6 +183,11 @@ export const FEATURES: FeaturePage[] = [
           "Remove an email to revoke access immediately. See who was invited and who verified, without spreadsheets.",
       },
       {
+        title: "All under your branding",
+        description:
+          "Every selective share page carries your logo, theme, banner, and CTA — viewers see you, never a generic link page. Set it once in Dashboard → Customize Share Page.",
+      },
+      {
         title: "Combines with monetization",
         description:
           "Buyers are automatically added to the allow-list after payment, so paid access and private access use the same secure rail.",
@@ -200,14 +205,14 @@ export const FEATURES: FeaturePage[] = [
           "Set Share Access Mode to RESTRICTED / selective and enter the exact viewer email addresses.",
       },
       {
-        title: "Send the share link",
+        title: "Send the branded share link",
         description:
-          "Copy the /share/[id] link and send it to your invited viewers. Only listed emails can proceed.",
+          "Copy the /share/[id] link — already styled with your logo, colors, and CTA — and send it to your invited viewers. Only listed emails can proceed.",
       },
       {
         title: "Viewers verify by OTP",
         description:
-          "Each viewer enters their email, receives a 6-digit passcode, and unlocks playback after verification.",
+          "Each viewer opens your branded page, enters their email, receives a 6-digit passcode, and unlocks playback after verification.",
       },
     ],
     faqs: [
@@ -224,7 +229,7 @@ export const FEATURES: FeaturePage[] = [
       {
         question: "What does the viewer experience look like?",
         answer:
-          "Viewers open your branded share page, enter their invited email, receive a short-lived OTP, and start watching. No Taped account or install is required.",
+          "Viewers open your fully branded share page — your logo, theme, banner, and call-to-action — enter their invited email, receive a short-lived OTP, and start watching. No Taped account or install is required. Customize it all in Dashboard → Customize Share Page.",
       },
       {
         question: "Can I revoke someone's access later?",
@@ -426,7 +431,7 @@ export const FEATURES: FeaturePage[] = [
     title: "Host Meetings & Record",
     tagline: "HD meeting rooms with screen sharing — record the room or isolated speakers to your library.",
     description:
-      "Spin up HD WebRTC meeting rooms in one click — guests join from a link with no installs. Share your screen, moderate participants, and record the full room gallery or individual speakers straight into your video library. Sell entry passes to webinars and consults, then resell the recordings.",
+      "Spin up HD WebRTC meeting rooms in one click — guests join from a link with no installs. Share your screen, moderate participants, and record the full room gallery or individual speakers straight into your video library. Everything runs under your branding — meeting lobby, invites, share pages, and replays carry your logo and theme. Sell entry passes to webinars and consults, then resell the recordings.",
     seoTitle: "Host Online Meetings & Record — HD WebRTC Rooms, No Install | Taped",
     seoDescription:
       "Host HD browser meetings with screen sharing & one-click recording. Guests join with no install. Record full room or speakers, sell passes, resell replays.",
@@ -461,6 +466,11 @@ export const FEATURES: FeaturePage[] = [
           "Invite by email, manage participants, and control who can present — ideal for classes, consults, and client calls.",
       },
       {
+        title: "All under your branding",
+        description:
+          "Meeting lobby, email invites, share pages, and replays all carry your logo, colors, banner, and CTA — guests experience your brand end to end. Configure it in Dashboard → Customize Share Page.",
+      },
+      {
         title: "Sell passes, resell replays",
         description:
           "Price any meeting as a purchasable pass. After the live session, the recording becomes a sellable replay.",
@@ -485,7 +495,7 @@ export const FEATURES: FeaturePage[] = [
       {
         title: "Reuse the recording",
         description:
-          "Find the recording in Uploaded Videos. Share it selectively, brand the viewer page, or list it as a purchasable replay.",
+          "Find the recording in Uploaded Videos. It inherits your branding automatically — share it selectively, or list it as a purchasable replay on your branded pages.",
       },
     ],
     faqs: [
@@ -497,7 +507,12 @@ export const FEATURES: FeaturePage[] = [
       {
         question: "Where do meeting recordings go?",
         answer:
-          "Recordings are saved automatically to your Uploaded Videos library once processing completes, ready for selective sharing or sale as replays.",
+          "Recordings are saved automatically to your Uploaded Videos library once processing completes, ready for selective sharing or sale as replays — all presented on your branded viewer pages with your logo, theme, and CTA.",
+      },
+      {
+        question: "Is the meeting experience branded?",
+        answer:
+          "Yes. The meeting lobby, invites, share pages, and replays all run under your branding set in Dashboard → Customize Share Page, so guests see your identity throughout.",
       },
       {
         question: "Can I sell tickets to my meetings?",
@@ -517,7 +532,7 @@ export const FEATURES: FeaturePage[] = [
     title: "Create Playlists & Courses",
     tagline: "Bundle videos into a polished series — share privately or sell as a complete course.",
     description:
-      "Playlists turn scattered videos into a structured journey. Order lessons, add cover art and descriptions, then share the whole series with selected emails or price it as a purchasable course. Viewers get a continuous branded player with progress-friendly navigation, and you can embed it anywhere.",
+      "Playlists turn scattered videos into a structured journey. Order lessons, add cover art and descriptions, then share the whole series with selected emails or price it as a purchasable course. Viewers get a continuous player with progress-friendly navigation — all under your branding, with your logo, theme, banner, and CTA on every lesson page — and you can embed it anywhere.",
     seoTitle: "Create Video Playlists & Sell Online Courses — Branded Player | Taped",
     seoDescription:
       "Bundle videos into playlists & sell as courses. Ordered lessons, cover art, continuous branded player, selective sharing or one-click monetization.",
@@ -540,6 +555,11 @@ export const FEATURES: FeaturePage[] = [
         title: "Continuous branded player",
         description:
           "Viewers watch lesson-to-lesson in one embeddable player that carries your logo, theme, and CTA.",
+      },
+      {
+        title: "All under your branding",
+        description:
+          "Every playlist share page and lesson inherits your logo, colors, banner, avatar, and CTA from Dashboard → Customize Share Page — your course looks like your own product.",
       },
       {
         title: "Selective or purchasable",
@@ -576,7 +596,7 @@ export const FEATURES: FeaturePage[] = [
       {
         title: "Share or embed",
         description:
-          "Share the /share/[playlistId] link with your cohort, list it on your offerings page, or embed the player on your site.",
+          "Share the /share/[playlistId] link — already styled with your branding — with your cohort, list it on your offerings page, or embed the branded player on your site.",
       },
     ],
     faqs: [
@@ -599,6 +619,11 @@ export const FEATURES: FeaturePage[] = [
         question: "Can I embed the playlist player on my website?",
         answer:
           "Yes. Embed the continuous player on your own domain while keeping your branding, access rules, and checkout behavior.",
+      },
+      {
+        question: "Are playlist pages branded?",
+        answer:
+          "Yes. Every playlist share page and lesson carries your logo, theme, banner, and CTA from Dashboard → Customize Share Page, so your course always looks like your own product.",
       },
     ],
   },
