@@ -1,5 +1,5 @@
 export type WebcamCorner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-export type WebcamShape = "circle" | "squircle" | "rounded-square" | "square";
+export type WebcamShape = "circle" | "squircle" | "rounded-square";
 export type WebcamSize = "small" | "medium" | "large" | "extra-large";
 export type RecordingLayoutMode = "screen-cam" | "camera-only";
 export type ResolutionPreset = "native" | "720p" | "1080p" | "4k";
@@ -253,7 +253,9 @@ export class RecordingCompositor {
     if (webcamSize === "extra-large") overlaySizeScale = 0.40;
 
     const overlayW = Math.round(baseSize * overlaySizeScale);
-    const overlayH = overlayW; // Keep 1:1 ratio for circle / square / squircle
+    // The portrait squircle is intentionally taller than it is wide; all
+    // other frame shapes remain 1:1.
+    const overlayH = webcamShape === "squircle" ? Math.round(overlayW * 1.25) : overlayW;
 
     const padding = Math.round(baseSize * 0.03); // 3% margin from corner
 
@@ -289,11 +291,14 @@ export class RecordingCompositor {
       const centerY = y + overlayH / 2;
       const radius = overlayW / 2;
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    } else if (webcamShape === "squircle" || webcamShape === "rounded-square") {
-      cornerRadius = Math.round(overlayW * 0.28);
+    } else if (webcamShape === "squircle") {
+      cornerRadius = Math.round(overlayW * 0.35);
+      this.drawRoundedRectPath(ctx, x, y, overlayW, overlayH, cornerRadius);
+    } else if (webcamShape === "rounded-square") {
+      cornerRadius = Math.round(overlayW * 0.18);
       this.drawRoundedRectPath(ctx, x, y, overlayW, overlayH, cornerRadius);
     } else {
-      // square / sleek rounded rect
+      // Fallback for future frame shapes.
       cornerRadius = Math.round(overlayW * 0.12);
       this.drawRoundedRectPath(ctx, x, y, overlayW, overlayH, cornerRadius);
     }

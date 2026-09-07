@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
-import Link from "next/link";
+import { useState, useRef, useEffect, type ReactNode, type RefObject } from "react";
 import {
   Video,
   Mic,
@@ -15,20 +14,21 @@ import {
   Download,
   Camera,
   CameraOff,
+  Maximize2,
   Monitor,
-  Disc,
-  Sparkles,
-  SlidersHorizontal,
-  Zap,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  HardDrive,
-  Lock,
-  Layers,
+  Timer,
+  Eye,
+  RefreshCw,
   ChevronDown,
   Loader2,
   Scissors,
+  PictureInPicture2,
+  Settings2,
+  X,
+  MonitorUp,
+  Sparkles,
+  CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,8 +55,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import PublicHeader from "@/components/PublicHeader";
-import { formatDuration, formatBytes } from "@/lib/video-utils";
+import PublicFooter from "@/components/PublicFooter";
+import { formatDuration, formatBytes, type VideoMetadata } from "@/lib/video-utils";
 import {
   WebcamCorner,
   WebcamShape,
@@ -67,7 +75,495 @@ import {
 import { VideoTrimmer } from "@/components/VideoTrimmer";
 import { useScreenRecorder, CompressionPreset, TargetFps } from "@/hooks/useScreenRecorder";
 
-export default function RecordStudioView() {
+const CORNER_DOT: Record<WebcamCorner, string> = {
+  "top-left": "top-1.5 left-1.5",
+  "top-right": "top-1.5 right-1.5",
+  "bottom-left": "bottom-1.5 left-1.5",
+  "bottom-right": "bottom-1.5 right-1.5",
+};
+
+const SHAPE_CLASS: Record<WebcamShape, string> = {
+  circle: "rounded-full",
+  squircle: "h-5 rounded-[35%]",
+  "rounded-square": "rounded-[18%]",
+};
+
+const SHAPE_LABEL: Record<WebcamShape, string> = {
+  circle: "Circle",
+  squircle: "Portrait squircle",
+  "rounded-square": "Rounded square",
+};
+
+const SIZE_LABEL: Record<WebcamSize, string> = {
+  small: "S",
+  medium: "M",
+  large: "L",
+  "extra-large": "XL",
+};
+
+const RESOLUTION_LABEL: Record<ResolutionPreset, string> = {
+  native: "Auto",
+  "720p": "720p",
+  "1080p": "1080p",
+  "4k": "4K",
+};
+
+const QUALITY_LABEL: Record<CompressionPreset, string> = {
+  compact: "Compact",
+  balanced: "Balanced",
+  max_quality: "Max",
+};
+
+function DockDivider() {
+  return <div className="w-px h-6 bg-border/80 shrink-0 mx-0.5" aria-hidden="true" />;
+}
+
+function SegButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-1.5 h-8 px-3 rounded-xl text-xs font-bold transition-all",
+        active
+          ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+          : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+}
+
+function DockIconButton({
+  active = false,
+  label,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            onClick={onClick}
+            className={cn(
+              "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border transition-all",
+              active
+                ? "bg-primary/15 border-primary/40 text-primary"
+                : "bg-muted/60 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
+            )}
+          >
+            {children}
+          </button>
+        }
+      />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function HudButton({
+  label,
+  onClick,
+  children,
+  active = false,
+  disabled = false,
+}: {
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+  active?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            aria-label={label}
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+              "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40 disabled:pointer-events-none",
+              active
+                ? "bg-white/15 text-white"
+                : "text-slate-400 hover:text-white hover:bg-white/10"
+            )}
+          >
+            {children}
+          </button>
+        }
+      />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+function OptionGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+        {label}
+      </Label>
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/70">{children}</div>
+    </div>
+  );
+}
+
+function OptionButton({
+  active,
+  onClick,
+  title,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title?: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className={cn(
+        "flex-1 h-7 rounded-lg text-[11px] font-bold transition-all",
+        active
+          ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+          : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// Shared camera-bubble settings panel — used in the setup dock and in the
+// live recording HUD so bubble position/shape/size/device can be changed
+// at any time (changes apply live to the preview and the recording).
+function CameraBubbleSettings({
+  layoutMode,
+  cameraDevices,
+  selectedCameraId,
+  onSelectCameraDevice,
+  webcamCorner,
+  onCornerChange,
+  webcamShape,
+  onShapeChange,
+  webcamSize,
+  onSizeChange,
+}: {
+  layoutMode: RecordingLayoutMode;
+  cameraDevices: MediaDeviceInfo[];
+  selectedCameraId: string;
+  onSelectCameraDevice: (deviceId: string) => void;
+  webcamCorner: WebcamCorner;
+  onCornerChange: (corner: WebcamCorner) => void;
+  webcamShape: WebcamShape;
+  onShapeChange: (shape: WebcamShape) => void;
+  webcamSize: WebcamSize;
+  onSizeChange: (size: WebcamSize) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-0.5">
+        <PopoverTitle>
+          {layoutMode === "camera-only" ? "Camera" : "Camera bubble"}
+        </PopoverTitle>
+        <p className="text-[11px] text-muted-foreground font-medium">
+          Applied live to the preview and the final recording.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+          Camera device
+        </Label>
+        <Select
+          value={
+            selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")
+          }
+          onValueChange={(val) => onSelectCameraDevice(val || "")}
+          disabled={cameraDevices.length === 0}
+        >
+          <SelectTrigger size="sm" className="w-full">
+            <SelectValue placeholder="Select camera" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {cameraDevices.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No camera detected
+                </SelectItem>
+              ) : (
+                cameraDevices.map((dev) => (
+                  <SelectItem key={dev.deviceId} value={dev.deviceId}>
+                    {dev.label || `Camera (${dev.deviceId.slice(0, 5)}…)`}
+                  </SelectItem>
+                ))
+              )}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {layoutMode === "screen-cam" && (
+        <>
+          {/* Position corner — visual mini preview */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              Position
+            </Label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-label={`Bubble ${c.replace("-", " ")}`}
+                  onClick={() => onCornerChange(c)}
+                  className={cn(
+                    "relative h-10 rounded-xl border transition-all",
+                    webcamCorner === c
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                      : "border-border/60 bg-muted/50 hover:bg-muted"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute w-3 h-3 rounded-[4px] transition-colors",
+                      CORNER_DOT[c],
+                      webcamCorner === c ? "bg-primary" : "bg-muted-foreground/40"
+                    )}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Frame shape */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              Frame shape
+            </Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(["circle", "squircle", "rounded-square"] as WebcamShape[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  title={SHAPE_LABEL[s]}
+                  aria-label={`Frame shape ${SHAPE_LABEL[s]}`}
+                  onClick={() => onShapeChange(s)}
+                  className={cn(
+                    "h-9 rounded-xl border flex items-center justify-center transition-all",
+                    webcamShape === s
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/40"
+                      : "border-border/60 bg-muted/50 hover:bg-muted"
+                  )}
+                >
+                  <span className={cn("w-4 h-4 bg-foreground/70", SHAPE_CLASS[s])} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bubble size */}
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+              Bubble size
+            </Label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(["small", "medium", "large", "extra-large"] as WebcamSize[]).map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => onSizeChange(sz)}
+                  className={cn(
+                    "h-8 rounded-xl border text-[11px] font-black transition-all",
+                    webcamSize === sz
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {SIZE_LABEL[sz]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export type RecorderContext = ReturnType<typeof useScreenRecorder>;
+
+export interface RecordStudioViewProps {
+  /** Render the studio inside another surface, such as the dashboard drawer. */
+  embedded?: boolean;
+  /** Dashboard integrations can replace the public result actions with an upload form. */
+  renderRecordedActions?: (context: RecorderContext & {
+    showTrimmer: boolean;
+    toggleTrimmer: () => void;
+    recordedVideoRef: RefObject<HTMLVideoElement | null>;
+  }) => ReactNode;
+  /** Called when a completed recording has been processed. */
+  onRecordingComplete?: (file: File, metadata: VideoMetadata) => void;
+  /** Exposes the shared recorder state to an embedding surface for close/reset handling. */
+  onContextChange?: (context: RecorderContext) => void;
+}
+
+const RECORDER_FEATURES = [
+  {
+    icon: Monitor,
+    title: "Screen, window & tab capture",
+    description: "Record a presentation, product demo, lesson, or any browser tab with a clean, focused canvas.",
+  },
+  {
+    icon: Camera,
+    title: "Webcam picture-in-picture",
+    description: "Add your camera as a polished bubble with flexible corner, shape, and size controls.",
+  },
+  {
+    icon: Mic,
+    title: "Voice and audio recording",
+    description: "Capture microphone audio with your video and keep every explanation clear and personal.",
+  },
+  {
+    icon: Scissors,
+    title: "Trim and download instantly",
+    description: "Cut the beginning or end of a take, name your file, and download the finished WebM video.",
+  },
+];
+
+function RecorderMarketingContent() {
+  return (
+    <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-3 sm:pb-5">
+      <section className="relative overflow-hidden rounded-[2rem] border-2 border-border bg-comic-dots px-5 sm:px-8 lg:px-10 py-8 sm:py-11 shadow-[6px_6px_0px_0px_var(--comic-shadow-subtle)]">
+        <div className="relative z-10 grid lg:grid-cols-[1.35fr_0.65fr] gap-8 lg:gap-12 items-center">
+          <div className="max-w-3xl">
+            <p className="inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-wider text-primary border-2 border-primary/40 bg-primary/10 rounded-full px-3.5 py-1.5 mb-5">
+              <Video className="w-3.5 h-3.5" />
+              Free browser-based video recorder
+            </p>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.02] font-heading">
+              Record your screen, camera &amp; voice in one take.
+            </h1>
+            <p className="mt-5 text-base sm:text-lg text-muted-foreground leading-relaxed font-medium max-w-2xl">
+              Taped is a professional online screen recorder that lets you capture your screen,
+              webcam, microphone, and system audio directly in your browser. Create polished demos,
+              tutorials, lessons, and walkthroughs — with no download, no watermark, and no editing
+              software required.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2.5 text-xs sm:text-sm font-extrabold text-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                No installation
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                No watermark
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                Up to 4K / 60 FPS
+              </span>
+            </div>
+          </div>
+
+          <aside className="rounded-3xl border-2 border-border bg-card/90 p-5 sm:p-6 shadow-[4px_4px_0px_0px_var(--comic-shadow-subtle)]">
+            <div className="flex items-center gap-3 pb-4 border-b border-border">
+              <div className="w-11 h-11 rounded-2xl bg-primary/15 border-2 border-primary/30 text-primary flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-black tracking-tight">Made for focused recording</p>
+                <p className="text-xs text-muted-foreground font-medium mt-0.5">Simple controls. Professional results.</p>
+              </div>
+            </div>
+            <ul className="mt-4 space-y-3 text-sm font-semibold text-muted-foreground">
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                Record privately with local browser processing
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                Preview your screen and camera before you start
+              </li>
+              <li className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                Save a clean video file the moment you finish
+              </li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+    </div>
+  );
+}
+
+function RecorderFeaturesContent() {
+  return (
+    <section
+      className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-3 sm:pb-5"
+      aria-labelledby="recorder-features-heading"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-primary">Everything you need</p>
+          <h2 id="recorder-features-heading" className="mt-1.5 text-2xl sm:text-3xl font-black tracking-tight font-heading">
+            A better way to record online
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground font-medium max-w-md sm:text-right">
+          Capture content that looks and sounds ready to share, without a complicated video studio.
+        </p>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {RECORDER_FEATURES.map((feature) => (
+          <article
+            key={feature.title}
+            className="rounded-2xl border-2 border-border bg-card p-5 shadow-[3px_3px_0px_0px_var(--comic-shadow-subtle)] transition-all hover:-translate-y-0.5 hover:border-foreground hover:shadow-[5px_5px_0px_0px_var(--comic-shadow)]"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/25 text-primary flex items-center justify-center">
+              <feature.icon className="w-5 h-5" />
+            </div>
+            <h3 className="mt-4 text-sm font-black tracking-tight">{feature.title}</h3>
+            <p className="mt-2 text-xs text-muted-foreground leading-relaxed font-medium">{feature.description}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function RecordStudioView({
+  embedded = false,
+  renderRecordedActions,
+  onRecordingComplete,
+  onContextChange,
+}: RecordStudioViewProps) {
+  const studio = useScreenRecorder({ onRecordingComplete });
   const {
     recordState,
     isProcessing,
@@ -78,8 +574,6 @@ export default function RecordStudioView() {
     recordingTime,
     recordedFile,
     previewUrl,
-    originalRecordedFile,
-    originalMetadata,
     isTrimmed,
     applyTrimmedVideo,
     revertToOriginalRecording,
@@ -95,9 +589,7 @@ export default function RecordStudioView() {
     webcamSize,
     setWebcamSize,
     layoutMode,
-    setLayoutMode,
     handleSetLayoutMode,
-    handleToggleLayoutMode,
     fps,
     setFps,
     resolution,
@@ -107,9 +599,14 @@ export default function RecordStudioView() {
     countdownDelay,
     setCountdownDelay,
     countdownTime,
+    isPreviewArmed,
+    preparePreview,
+    stopPreview,
+    hasScreenSource,
+    ensureScreenStream,
     title,
-    setTitle,
     error,
+    setError,
     metadata,
     videoPreviewRef,
     startRecording,
@@ -119,11 +616,9 @@ export default function RecordStudioView() {
     cancelCountdown,
     handleReRecord,
     handleDownload,
-  } = useScreenRecorder();
+  } = studio;
 
-  const isMicDisabledMidRecording = (recordState === "recording" || recordState === "paused") && !wasMicEnabledOnStart;
-
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [isArming, setIsArming] = useState(false);
   const [downloadFilename, setDownloadFilename] = useState("");
   const [showTrimmer, setShowTrimmer] = useState(false);
   const recordedVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -134,8 +629,20 @@ export default function RecordStudioView() {
   }>({
     isOpen: false,
     settingLabel: "",
-    onConfirm: () => { },
+    onConfirm: () => {},
   });
+
+  const isMicDisabledMidRecording =
+    (recordState === "recording" || recordState === "paused") && !wasMicEnabledOnStart;
+  const isLiveSession =
+    recordState === "countdown" || recordState === "recording" || recordState === "paused";
+  const isRecording = recordState === "recording" || recordState === "paused";
+  const showLiveVideo = isPreviewArmed || isLiveSession;
+  const activeFilename = downloadFilename.trim() || title || "Studio Recording";
+
+  useEffect(() => {
+    onContextChange?.(studio);
+  }, [onContextChange, studio]);
 
   const handleSelectFps = (selectedFps: TargetFps) => {
     if (selectedFps === 60 && fps !== 60) {
@@ -173,998 +680,767 @@ export default function RecordStudioView() {
     }
   };
 
-  const activeFilename = downloadFilename.trim() || title || "Studio Recording";
+  const handleStartScreenPreview = async () => {
+    setIsArming(true);
+    try {
+      await preparePreview();
+    } finally {
+      setIsArming(false);
+    }
+  };
+
+  const handleStartCameraOnlyPreview = async () => {
+    setIsArming(true);
+    try {
+      await preparePreview({ layoutMode: "camera-only", enableWebcam: true });
+    } finally {
+      setIsArming(false);
+    }
+  };
+
+  const handleChangeScreen = async () => {
+    setIsArming(true);
+    try {
+      stopPreview();
+      await preparePreview();
+    } finally {
+      setIsArming(false);
+    }
+  };
+
+  const handleRecordClick = async () => {
+    if (isProcessing || isArming) return;
+    setIsArming(true);
+    try {
+      // Arm the live preview first if needed — recording then starts
+      // instantly from the already-acquired streams (countdown applies).
+      if (!isPreviewArmed) {
+        const armed = await preparePreview();
+        if (!armed) return;
+      }
+      await startRecording();
+    } finally {
+      setIsArming(false);
+    }
+  };
+
+  const handleToggleTrimmer = () => {
+    if (!showTrimmer) {
+      recordedVideoRef.current?.pause();
+    }
+    setShowTrimmer(!showTrimmer);
+  };
+
+  // Dock: switch to the screen layout — when a session is already live
+  // (e.g. coming from camera-only) prompt for a screen immediately and
+  // revert if the user dismisses the picker.
+  const handleSelectScreenLayout = async () => {
+    await handleSetLayoutMode("screen-cam");
+    if (isPreviewArmed || isLiveSession) {
+      const ok = await ensureScreenStream();
+      if (!ok) {
+        await handleSetLayoutMode("camera-only");
+      }
+    }
+  };
+
+  // HUD: toggle between screen+cam bubble and full-frame camera, usable
+  // mid-preview and mid-recording
+  const handleToggleLayout = async () => {
+    const nextMode: RecordingLayoutMode =
+      layoutMode === "camera-only" ? "screen-cam" : "camera-only";
+    await handleSetLayoutMode(nextMode);
+    if (nextMode === "screen-cam") {
+      const ok = await ensureScreenStream();
+      if (!ok) {
+        await handleSetLayoutMode("camera-only");
+      }
+    }
+  };
+
+  // Stage overlay: attach a screen to the live session on demand
+  const handleAddScreen = async () => {
+    await ensureScreenStream();
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden flex flex-col justify-between selection:bg-lime-500 selection:text-white">
-      {/* Dynamic Ambient Background Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3xl h-192 bg-primary/20 blur-[130px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none" />
-
-      {/* Header Navigation Bar */}
-      <PublicHeader currentPage="record" />
-
-      {/* Main Studio Workstation Section */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 relative z-10 space-y-8 flex-1 flex flex-col justify-center">
-        {/* Page Hero Header */}
-        <div className="text-center space-y-3 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" /> Free & Unlimited Web Studio Recorder
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
-            Record Screen & Webcam <br />
-            <span className="text-primary underline decoration-primary/30">
-              Download Instantly
-            </span>
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Capture full desktop screens, windows, or tabs with customizable camera Picture-in-Picture, mixed audio, and zero watermarks.
-          </p>
-        </div>
-
-        {/* Error Alert */}
-        {error && (
-          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="w-5 h-5 shrink-0" />
-            <span className="flex-1 font-medium">{error}</span>
-          </div>
+    <TooltipProvider>
+      <div
+        className={cn(
+          "relative w-full flex flex-col bg-background text-foreground selection:bg-primary selection:text-primary-foreground",
+          embedded
+            ? "h-full min-h-0 overflow-x-clip"
+            : isLiveSession
+              ? "fixed inset-0 h-[100dvh] max-h-[100dvh] overflow-hidden overscroll-none"
+              : "min-h-screen overflow-x-clip"
         )}
+      >
+        {/* Ambient glow accents */}
+        <div className="pointer-events-none absolute -top-48 left-1/2 -translate-x-1/2 h-96 w-[52rem] rounded-full bg-primary/10 blur-[130px]" />
+        <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-sky-500/10 blur-[110px]" />
+        {/* Use the shared public navigation outside the full-bleed live stage. */}
+        {!embedded && !isLiveSession && (
+          <PublicHeader currentPage="record" />
+        )}
+        {!embedded && !isLiveSession && <RecorderMarketingContent />}
 
-        {/* Recording Studio Main Canvas Box */}
-        <div className="glass-card rounded-3xl p-4 sm:p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl space-y-6 backdrop-blur-xl">
-          {/* Active Viewport Player & Studio Controls Grid */}
-          {(recordState === "idle" ||
-            recordState === "countdown" ||
-            recordState === "recording" ||
-            recordState === "paused") && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* LEFT COLUMN: Video Preview Viewport */}
-                <div className="lg:col-span-7 space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video flex items-center justify-center border border-slate-800 shadow-2xl group">
-                    <video
-                      ref={videoPreviewRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className={`w-full h-full object-contain ${recordState === "idle" ? "hidden" : "block"
-                        }`}
-                    />
+        {/* The live stage intentionally fills the viewport. In the public idle state it
+            stays inside the same max-width column as the marketing content above. */}
+        <main
+          className={cn(
+            "relative z-10 flex-1 min-h-0 flex w-full",
+            isLiveSession
+              ? ""
+              : embedded
+                ? "p-3 sm:p-4"
+                : "max-w-6xl mx-auto p-3 sm:p-5 lg:p-6"
+          )}
+        >
+          <div
+            className={cn(
+              "relative flex-1 min-h-0 overflow-hidden flex items-center justify-center bg-slate-950 transition-all duration-300",
+              isLiveSession
+                ? ""
+                : embedded
+                  ? "rounded-[2rem] ring-1 ring-border/80 shadow-2xl"
+                  : "rounded-[2rem] ring-1 ring-border/80 shadow-2xl min-h-[31rem] sm:min-h-[35rem] lg:min-h-[38rem]"
+            )}
+          >
+            {/* Dot grid backdrop for the idle viewport */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.09) 1px, transparent 0)",
+                backgroundSize: "26px 26px",
+              }}
+            />
 
-                    {/* Countdown Overlay HUD */}
-                    {recordState === "countdown" && (
-                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center z-30 gap-4">
-                        <div className="w-24 h-24 rounded-full bg-red-500/20 border-2 border-red-500 flex items-center justify-center animate-ping absolute" />
-                        <span className="text-7xl font-black text-white font-mono tracking-tighter drop-shadow-2xl z-10">
-                          {countdownTime}
-                        </span>
-                        <p className="text-xs text-slate-300 font-semibold uppercase tracking-widest">
-                          Recording starting in...
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={cancelCountdown}
-                          className="mt-2 text-xs text-slate-400 hover:text-white hover:bg-white/10 rounded-xl"
-                        >
-                          Cancel Countdown
-                        </Button>
-                      </div>
-                    )}
+            {/* Live WYSIWYG composite preview (kept mounted so the hook can attach streams) */}
+            <video
+              ref={videoPreviewRef}
+              autoPlay
+              playsInline
+              muted
+              className={cn(
+                "absolute inset-0 w-full h-full object-contain transition-opacity duration-300",
+                showLiveVideo ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+            />
 
-                    {/* Idle Preview Placeholder */}
-                    {recordState === "idle" && (
-                      <div className="text-center p-6 space-y-3 max-w-sm">
-                        <div className="w-16 h-16 rounded-2xl bg-linear-to-tr from-primary/20 to-emerald-500/20 border border-primary/30 flex items-center justify-center mx-auto text-primary shadow-inner">
-                          <Monitor className="w-8 h-8" />
-                        </div>
-                        <div className="space-y-1">
-                          <h3 className="text-lg font-extrabold text-white tracking-tight">
-                            Studio Viewport
-                          </h3>
-                          <p className="text-xs text-slate-400 leading-relaxed">
-                            Configure your studio settings on the right and click <strong className="text-white">Start Recording</strong>.
-                          </p>
-                        </div>
-                      </div>
-                    )}
+            {/* Recorded playback */}
+            {(recordState === "recorded" || recordState === "uploading") && previewUrl && (
+              <video
+                key={previewUrl}
+                ref={recordedVideoRef}
+                src={previewUrl}
+                controls
+                playsInline
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            )}
 
-                    {/* Live Recording HUD Status Bar */}
-                    {(recordState === "recording" || recordState === "paused") && (
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20 pointer-events-none">
-                        <div className="flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full shadow-xl pointer-events-auto">
-                          <span
-                            className={`w-2.5 h-2.5 rounded-full ${recordState === "recording"
-                              ? "bg-red-500 animate-pulse"
-                              : "bg-amber-500"
-                              }`}
-                          />
-                          <span className="text-xs font-mono font-bold text-white tracking-wide">
-                            {formatDuration(recordingTime)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 pointer-events-auto">
-                          <button
-                            type="button"
-                            onClick={handleToggleLayoutMode}
-                            className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 text-white border border-white/15 px-3 py-1.5 rounded-full shadow-xl text-[11px] font-bold transition-all cursor-pointer"
-                            title={layoutMode === "camera-only" ? "Switch to Screen + PIP" : "Switch to Camera Only"}
-                          >
-                            {layoutMode === "camera-only" ? (
-                              <>
-                                <Layers className="w-3.5 h-3.5 text-lime-400" />
-                                <span>Screen + PIP</span>
-                              </>
-                            ) : (
-                              <>
-                                <Camera className="w-3.5 h-3.5 text-lime-400" />
-                                <span>Camera Only</span>
-                              </>
-                            )}
-                          </button>
-
-                          <div className="hidden sm:flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-full shadow-xl text-[11px] font-semibold text-slate-300">
-                            <span className="text-primary uppercase font-mono font-bold">{resolution}</span>
-                            <span>•</span>
-                            <span>{fps} FPS</span>
-                            <span>•</span>
-                            <span>{layoutMode === "camera-only" ? "Full Camera" : isWebcamEnabled ? "Cam PIP" : "No Cam"}</span>
-                            <span>•</span>
-                            <span>{isMicEnabled ? "Mic Active" : "Mic Muted"}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Processing Video Overlay */}
-                    {isProcessing && (
-                      <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-xs z-30 flex flex-col items-center justify-center text-white space-y-3 p-6 text-center animate-in fade-in">
-                        <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shadow-xl shadow-red-500/20">
-                          <Loader2 className="w-7 h-7 animate-spin text-red-500" />
-                        </div>
-                        <div className="space-y-1">
-                          <h4 className="text-sm font-extrabold text-white">
-                            {processingStatus || "Processing Recording..."}
-                          </h4>
-                          <p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-                            Transmuxing container, fixing timeline duration, and generating 4 thumbnail previews.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            {/* Idle empty state — arm the WYSIWYG preview */}
+            {recordState === "idle" && !isPreviewArmed && (
+              <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-lg space-y-6">
+                <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto">
+                  <MonitorUp className="w-9 h-9" />
                 </div>
-
-                {/* RIGHT COLUMN: Controls Panel in Stacked Rows */}
-                <div className="lg:col-span-5 space-y-3.5">
-                  {recordState === "idle" && (
-                    <div className="space-y-3">
-                      {/* Row 0: Stream Layout Selector */}
-                      <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Recording Stream Mode
-                        </Label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleSetLayoutMode("screen-cam")}
-                            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${layoutMode === "screen-cam"
-                              ? "bg-primary text-white border-primary shadow-xs"
-                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                              }`}
-                          >
-                            <Layers className="w-4 h-4" />
-                            Screen + Cam PIP
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSetLayoutMode("camera-only")}
-                            className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 ${layoutMode === "camera-only"
-                              ? "bg-primary text-white border-primary shadow-xs"
-                              : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                              }`}
-                          >
-                            <Camera className="w-4 h-4" />
-                            Camera Only
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Row 1: Mic & Webcam Toggles */}
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <button
-                          type="button"
-                          onClick={handleToggleMic}
-                          className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isMicEnabled
-                            ? "bg-primary/10 border-primary/40 text-foreground"
-                            : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                        >
-                          <div
-                            className={`p-2 rounded-xl shrink-0 ${isMicEnabled ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                              }`}
-                          >
-                            {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold truncate">Microphone</p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {isMicEnabled ? "Voice On" : "Muted"}
-                            </p>
-                          </div>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleToggleWebcam}
-                          className={`flex items-center gap-2.5 p-3 rounded-2xl border text-left transition-all ${isWebcamEnabled
-                            ? "bg-primary/10 border-primary/40 text-foreground"
-                            : "bg-white dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                            }`}
-                        >
-                          <div
-                            className={`p-2 rounded-xl shrink-0 ${isWebcamEnabled ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500"
-                              }`}
-                          >
-                            {isWebcamEnabled ? <Camera className="w-4 h-4" /> : <CameraOff className="w-4 h-4" />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold truncate">Webcam</p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {isWebcamEnabled ? (layoutMode === "camera-only" ? "Full Cam" : "Active PIP") : "Disabled"}
-                            </p>
-                          </div>
-                        </button>
-                      </div>
-
-                      {/* Auto-Expanded Webcam PIP Controls (Shown immediately below On/Off toggle when enabled) */}
-                      {isWebcamEnabled && (
-                        <div className="p-3.5 rounded-2xl bg-slate-100/90 dark:bg-slate-900/90 border border-primary/30 space-y-3 animate-in fade-in slide-in-from-top-2">
-                          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
-                            <h4 className="text-xs font-extrabold flex items-center gap-1.5">
-                              <Sparkles className="w-3.5 h-3.5 text-primary" /> Webcam {layoutMode === "camera-only" ? "Camera Device" : "PIP Controls"}
-                            </h4>
-                            <span className="text-[10px] font-bold bg-primary/15 text-primary px-2 py-0.5 rounded-full">
-                              {layoutMode === "camera-only" ? "Full Camera" : "PIP Active"}
-                            </span>
-                          </div>
-
-                          {/* Camera Input Device */}
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-semibold text-muted-foreground">
-                              Camera Device
-                            </Label>
-                            <Select
-                              value={selectedCameraId || (cameraDevices.length > 0 ? cameraDevices[0].deviceId : "")}
-                              onValueChange={(val) => handleSelectCameraDevice(val || "")}
-                              disabled={cameraDevices.length === 0}
-                            >
-                              <SelectTrigger size="sm" className="w-full bg-white dark:bg-slate-800">
-                                <SelectValue placeholder="Select camera" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectGroup>
-                                {cameraDevices.length === 0 ? (
-                                  <SelectItem value="none" disabled>No camera detected</SelectItem>
-                                ) : (
-                                  cameraDevices.map((dev) => (
-                                    <SelectItem key={dev.deviceId} value={dev.deviceId}>
-                                      {dev.label || `Camera (${dev.deviceId.slice(0, 5)}...)`}
-                                    </SelectItem>
-                                  ))
-                                )}
-                                </SelectGroup>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {layoutMode === "screen-cam" && (
-                            <>
-                              {/* Position Corner */}
-                              <div className="space-y-1">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">
-                                  PIP Position Corner
-                                </Label>
-                                <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-                                  {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
-                                    <button
-                                      key={c}
-                                      type="button"
-                                      onClick={() => setWebcamCorner(c)}
-                                      className={`text-[10px] font-bold py-1 px-1.5 rounded-lg capitalize transition-all ${webcamCorner === c
-                                        ? "bg-primary text-white shadow-xs"
-                                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-                                        }`}
-                                    >
-                                      {c.replace("-", " ")}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Frame Shape */}
-                              <div className="space-y-1">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">
-                                  PIP Frame Shape
-                                </Label>
-                                <div className="flex items-center gap-1">
-                                  {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                    <button
-                                      key={s}
-                                      type="button"
-                                      onClick={() => setWebcamShape(s)}
-                                      className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamShape === s
-                                        ? "bg-primary text-white border-primary shadow-xs"
-                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                                        }`}
-                                    >
-                                      {s.replace("-", " ")}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Preview Size */}
-                              <div className="space-y-1">
-                                <Label className="text-[10px] font-semibold text-muted-foreground">
-                                  PIP Preview Bubble Size
-                                </Label>
-                                <div className="flex items-center gap-1">
-                                  {(["small", "medium", "large", "extra-large"] as WebcamSize[]).map((sz) => (
-                                    <button
-                                      key={sz}
-                                      type="button"
-                                      onClick={() => setWebcamSize(sz)}
-                                      className={`flex-1 text-[10px] font-bold py-1.5 rounded-xl capitalize transition-all border ${webcamSize === sz
-                                        ? "bg-primary text-white border-primary shadow-xs"
-                                        : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
-                                        }`}
-                                    >
-                                      {sz === "extra-large" ? "XL" : sz}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Row 2: Resolution Selector Pills */}
-                      <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Resolution Preset
-                        </Label>
-                        <div className="grid grid-cols-4 gap-1">
-                          {(["720p", "1080p", "1440p", "4k"] as ResolutionPreset[]).map((res) => (
-                            <button
-                              key={res}
-                              type="button"
-                              onClick={() => handleSelectResolution(res)}
-                              className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${resolution === res
-                                ? "bg-primary text-white border-primary shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                            >
-                              {res}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Row 2b: Frame Rate (FPS) Selector Pills */}
-                      <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Frame Rate (FPS)
-                        </Label>
-                        <div className="grid grid-cols-4 gap-1">
-                          {([15, 24, 30, 60] as TargetFps[]).map((rate) => (
-                            <button
-                              key={rate}
-                              type="button"
-                              onClick={() => handleSelectFps(rate)}
-                              className={`h-7 px-1 rounded-xl text-[10px] font-bold uppercase transition-all border flex items-center justify-center ${fps === rate
-                                ? "bg-primary text-white border-primary shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                            >
-                              {rate} FPS
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Row 3: Countdown Delay Pills */}
-                      <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                          Countdown Timer
-                        </Label>
-                        <div className="grid grid-cols-3 gap-1">
-                          {[
-                            { value: 0, label: "0s" },
-                            { value: 3, label: "3s" },
-                            { value: 5, label: "5s" },
-                          ].map((cd) => (
-                            <button
-                              key={cd.value}
-                              type="button"
-                              onClick={() => setCountdownDelay(cd.value as 0 | 3 | 5)}
-                              className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${countdownDelay === cd.value
-                                ? "bg-primary text-white border-primary shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                            >
-                              {cd.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Row 4: Bitrate Quality Pills */}
-                      <div className="bg-white dark:bg-slate-900/80 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1.5">
-                        <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                          <Zap className="w-3 h-3 text-primary" /> Recording Quality (bitrate)
-                        </Label>
-                        <div className="grid grid-cols-3 gap-1">
-                          {[
-                            { id: "compact", label: "Compact" },
-                            { id: "balanced", label: "Balanced" },
-                            { id: "max_quality", label: "Max" },
-                          ].map((b) => (
-                            <button
-                              key={b.id}
-                              type="button"
-                              onClick={() => handleSelectCompressionMode(b.id as CompressionPreset)}
-                              className={`h-7 px-1 rounded-xl text-[10px] font-bold transition-all border flex items-center justify-center ${compressionMode === b.id
-                                ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-slate-900 shadow-xs"
-                                : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-muted-foreground hover:bg-slate-200 dark:hover:bg-slate-700"
-                                }`}
-                            >
-                              {b.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Live Mid-Recording Controls Bar */}
-                  {(recordState === "recording" || recordState === "paused") && (
-                    <div className="p-4 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-white/15 text-white shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                      <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
-                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-200">
-                            Live Recording Controls
-                          </h4>
-                        </div>
-                        <span className="text-[10px] font-bold bg-white/10 text-slate-300 px-2 py-0.5 rounded-full">
-                          Live Active
-                        </span>
-                      </div>
-
-                      {/* Stream View Switcher (Screen + Cam PIP vs Full Camera) */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            Stream View Mode
-                          </Label>
-                          <span className="text-[10px] text-lime-400 font-semibold">
-                            {layoutMode === "camera-only" ? "Full Camera Active" : "Screen + PIP Active"}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => handleSetLayoutMode("screen-cam")}
-                            className={`py-1 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${layoutMode === "screen-cam"
-                              ? "bg-lime-500 text-slate-950 shadow-xs"
-                              : "text-slate-300 hover:bg-white/10"
-                              }`}
-                          >
-                            <Layers className="w-3.5 h-3.5" />
-                            Screen + PIP
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleSetLayoutMode("camera-only")}
-                            className={`py-1 px-2 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 ${layoutMode === "camera-only"
-                              ? "bg-lime-500 text-slate-950 shadow-xs"
-                              : "text-slate-300 hover:bg-white/10"
-                              }`}
-                          >
-                            <Camera className="w-3.5 h-3.5" />
-                            Camera Only
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Mic & Webcam Toggles */}
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {isMicDisabledMidRecording ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger render={<div className="w-full" />}>
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all bg-white/5 border-white/10 text-slate-500 opacity-50 cursor-not-allowed"
-                                >
-                                  <div className="p-1.5 rounded-lg shrink-0 bg-white/5 text-slate-500">
-                                    <MicOff className="w-3.5 h-3.5" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-xs font-bold truncate">Mic Audio</p>
-                                    <p className="text-[10px] opacity-75 truncate">Disabled</p>
-                                  </div>
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="bg-slate-900 text-slate-100 border-white/15">
-                                Cannot enable microphone mid-recording because it was disabled when recording started.
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleToggleMic}
-                            className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${isMicEnabled
-                              ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                              }`}
-                          >
-                            <div
-                              className={`p-1.5 rounded-lg shrink-0 ${isMicEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
-                                }`}
-                            >
-                              {isMicEnabled ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold truncate">Mic Audio</p>
-                              <p className="text-[10px] opacity-75 truncate">
-                                {isMicEnabled ? "Unmuted" : "Muted"}
-                              </p>
-                            </div>
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleToggleWebcam}
-                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition-all ${isWebcamEnabled
-                            ? "bg-lime-500/20 border-lime-500/40 text-lime-300"
-                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"
-                            }`}
-                        >
-                          <div
-                            className={`p-1.5 rounded-lg shrink-0 ${isWebcamEnabled ? "bg-lime-500 text-slate-950" : "bg-white/10 text-slate-400"
-                              }`}
-                          >
-                            {isWebcamEnabled ? <Camera className="w-3.5 h-3.5" /> : <CameraOff className="w-3.5 h-3.5" />}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold truncate">Webcam</p>
-                            <p className="text-[10px] opacity-75 truncate">
-                              {isWebcamEnabled ? (layoutMode === "camera-only" ? "Full Cam" : "Active PIP") : "Disabled"}
-                            </p>
-                          </div>
-                        </button>
-                      </div>
-
-                      {/* Live Advanced Webcam Controls */}
-                      {isWebcamEnabled && layoutMode === "screen-cam" && (
-                        <div className="space-y-2 pt-2 border-t border-white/10">
-                          {/* Live Camera Bubble Size */}
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              Camera Bubble Size
-                            </Label>
-                            <div className="flex items-center gap-1">
-                              {(["small", "medium", "large", "extra-large"] as WebcamSize[]).map((sz) => (
-                                <button
-                                  key={sz}
-                                  type="button"
-                                  onClick={() => setWebcamSize(sz)}
-                                  className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${webcamSize === sz
-                                    ? "bg-lime-500 text-slate-950 border-lime-500 shadow-xs"
-                                    : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                                    }`}
-                                >
-                                  {sz === "extra-large" ? "XL" : sz}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              PIP Corner Position
-                            </Label>
-                            <div className="grid grid-cols-2 gap-1 bg-white/5 p-1 rounded-xl border border-white/10">
-                              {(["top-left", "top-right", "bottom-left", "bottom-right"] as WebcamCorner[]).map((c) => (
-                                <button
-                                  key={c}
-                                  type="button"
-                                  onClick={() => setWebcamCorner(c)}
-                                  className={`h-6 text-[10px] font-bold rounded-lg capitalize transition-all flex items-center justify-center ${webcamCorner === c
-                                    ? "bg-lime-500 text-slate-950 shadow-xs"
-                                    : "text-slate-300 hover:bg-white/10"
-                                    }`}
-                                >
-                                  {c.replace("-", " ")}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              PIP Frame Shape
-                            </Label>
-                            <div className="flex items-center gap-1">
-                              {(["circle", "rounded-square", "square"] as WebcamShape[]).map((s) => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  onClick={() => setWebcamShape(s)}
-                                  className={`flex-1 h-7 text-[10px] font-bold rounded-xl capitalize transition-all border flex items-center justify-center ${webcamShape === s
-                                    ? "bg-lime-500 text-slate-950 border-lime-500 shadow-xs"
-                                    : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
-                                    }`}
-                                >
-                                  {s.replace("-", " ")}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Primary Action Buttons Bar */}
-                  <div className="pt-1">
-                    {recordState === "idle" && (
-                      <Button
-                        size="lg"
-                        onClick={startRecording}
-                        className="w-full bg-linear-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-red-500/25 text-base gap-3 group transition-all hover:scale-[1.02]"
-                      >
-                        <Disc className="w-5 h-5 animate-pulse text-white" />
-                        Start Screen Recording
-                      </Button>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-black tracking-tight text-white">Studio viewport</h2>
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Select a screen to arm a live WYSIWYG preview — including your camera bubble —
+                    then hit <strong className="text-white">Record</strong> to start instantly.
+                    Everything runs locally in your browser.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-2.5">
+                  <Button
+                    size="lg"
+                    disabled={isArming}
+                    onClick={() => void handleStartScreenPreview()}
+                    className="h-11 rounded-full px-6 font-extrabold gap-2 shadow-lg shadow-primary/25"
+                  >
+                    {isArming ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MonitorUp className="w-4 h-4" />
                     )}
-
-                    {recordState === "recording" && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          onClick={pauseRecording}
-                          disabled={isProcessing}
-                          className="font-bold rounded-2xl py-6 border-slate-300 dark:border-slate-700 gap-2"
-                        >
-                          <Pause className="w-5 h-5 text-amber-500 fill-current" /> Pause
-                        </Button>
-
-                        <Button
-                          size="lg"
-                          onClick={stopRecording}
-                          disabled={isProcessing}
-                          className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2 disabled:opacity-75"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                              <span>Processing...</span>
-                            </>
-                          ) : (
-                            <>
-                              <SquareIcon className="w-5 h-5 fill-current" />
-                              <span>Stop & Finish</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
-                    {recordState === "paused" && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          size="lg"
-                          onClick={resumeRecording}
-                          disabled={isProcessing}
-                          className="bg-primary hover:opacity-90 text-white font-extrabold rounded-2xl py-6 shadow-xl gap-2"
-                        >
-                          <Play className="w-5 h-5 fill-current" /> Resume
-                        </Button>
-
-                        <Button
-                          size="lg"
-                          onClick={stopRecording}
-                          disabled={isProcessing}
-                          className="bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-2xl py-6 shadow-xl shadow-red-600/25 gap-2 disabled:opacity-75"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                              <span>Processing...</span>
-                            </>
-                          ) : (
-                            <>
-                              <SquareIcon className="w-5 h-5 fill-current" />
-                              <span>Stop & Finish</span>
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                    Select screen to preview
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    disabled={isArming}
+                    onClick={() => void handleStartCameraOnlyPreview()}
+                    className="h-11 rounded-full px-6 font-bold gap-2 border-white/15 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+                  >
+                    <Camera className="w-4 h-4" />
+                    Camera only
+                  </Button>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-[11px] font-bold text-slate-500">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  100% local &amp; private · No watermarks · Up to 4K 60 FPS
                 </div>
               </div>
             )}
 
-          {/* Post-Recording Viewport & Download Area */}
-          {recordState === "recorded" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                {/* Left Column: Preview Video Player & Trimmer */}
-                <div className="md:col-span-3 space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-video border border-slate-800 shadow-2xl group">
-                    {previewUrl && (
-                      <video
-                        key={previewUrl}
-                        ref={recordedVideoRef}
-                        src={previewUrl}
-                        controls
-                        className="w-full h-full object-contain"
-                      />
-                    )}
-
-                    {/* Trimmed Badge */}
-                    {isTrimmed && (
-                      <div className="absolute top-3 left-3 bg-lime-500/90 backdrop-blur-md text-slate-950 px-2.5 py-1 rounded-full text-xs font-black shadow-lg flex items-center gap-1.5 z-10 animate-in fade-in">
-                        <Scissors className="w-3.5 h-3.5" />
-                        Trimmed Video
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Video Trimmer Toggle & Metadata Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => {
-                          if (!showTrimmer) {
-                            recordedVideoRef.current?.pause();
-                          }
-                          setShowTrimmer(!showTrimmer);
-                        }}
-                        className={`rounded-xl text-xs font-extrabold gap-1.5 transition-all ${showTrimmer
-                          ? "bg-lime-500 text-slate-950 hover:bg-lime-400 shadow-md shadow-lime-500/20"
-                          : "bg-white dark:bg-slate-800 border border-lime-500/40 text-lime-600 dark:text-lime-400 hover:bg-lime-500/10 shadow-2xs"
-                          }`}
-                      >
-                        <Scissors className="w-3.5 h-3.5" />
-                        {showTrimmer ? "Close Trimmer" : isTrimmed ? "Re-trim Video" : "Trim Video"}
-                      </Button>
-
-                      {isTrimmed && (
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            revertToOriginalRecording();
-                            setShowTrimmer(false);
-                          }}
-                          className="rounded-xl text-xs font-bold text-slate-500 hover:text-red-500 gap-1 hover:bg-red-500/10"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                          Revert to Original
-                        </Button>
-                      )}
-                    </div>
-
-                    {metadata && (
-                      <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 pr-1">
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {formatDuration(metadata.durationSeconds)}
-                        </span>
-                        <span>•</span>
-                        <span>{metadata.sourceWidth}x{metadata.sourceHeight}</span>
-                        <span>•</span>
-                        <span>{recordedFile ? formatBytes(recordedFile.size) : "-"}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Video Trimmer Engine Panel */}
-                  {showTrimmer && recordedFile && previewUrl && (
-                    <VideoTrimmer
-                      videoFile={recordedFile}
-                      previewUrl={previewUrl}
-                      metadata={metadata}
-                      videoElementRef={recordedVideoRef}
-                      onTrimSuccess={(newFile, newUrl, newMeta) => {
-                        applyTrimmedVideo(newFile, newMeta, newUrl);
-                        setShowTrimmer(false);
-                      }}
-                      onCancel={() => setShowTrimmer(false)}
-                    />
+            {/* Armed preview badges */}
+            {recordState === "idle" && isPreviewArmed && (
+              <>
+                <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-[11px] font-black uppercase tracking-wider backdrop-blur-md">
+                    <Eye className="w-3.5 h-3.5" />
+                    Preview
+                  </span>
+                  {countdownDelay > 0 && (
+                    <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white/5 border border-white/10 text-slate-300 text-[11px] font-bold backdrop-blur-md">
+                      <Timer className="w-3.5 h-3.5" />
+                      {countdownDelay}s countdown before capture
+                    </span>
                   )}
                 </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isArming}
+                  onClick={() => void handleChangeScreen()}
+                  className="absolute top-4 right-4 z-30 rounded-full border-white/15 bg-slate-950/60 text-slate-200 hover:bg-slate-900 hover:text-white backdrop-blur-md gap-1.5"
+                >
+                  <RefreshCw className={cn("w-3.5 h-3.5", isArming && "animate-spin")} />
+                  Change screen
+                </Button>
+              </>
+            )}
 
-                {/* Right Column: Download Controls & Cloud Options */}
-                <div className="md:col-span-2 space-y-4 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-extrabold text-primary uppercase tracking-wider">
-                        <CheckCircle2 className="w-4 h-4" /> Recording Complete
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Your video has been recorded successfully in high quality. You can download the file directly to your device or save it to your Taped cloud account.
-                      </p>
-                    </div>
+            {/* Trimmed badge */}
+            {recordState === "recorded" && isTrimmed && (
+              <span className="absolute top-4 left-4 z-30 inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-primary/90 text-primary-foreground text-[11px] font-black uppercase tracking-wider shadow-lg">
+                <Scissors className="w-3.5 h-3.5" />
+                Trimmed
+              </span>
+            )}
 
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-bold">File Download Name</Label>
-                      <Input
-                        value={downloadFilename}
-                        onChange={(e) => setDownloadFilename(e.target.value)}
-                        placeholder={title || "Studio Recording"}
-                        className="rounded-xl font-semibold"
-                      />
-                    </div>
-
-                    {/* Main Download Button */}
-                    <Button
-                      size="lg"
-                      onClick={() => handleDownload(activeFilename)}
-                      className="w-full bg-primary hover:opacity-95 text-white font-extrabold py-6 rounded-2xl shadow-xl shadow-primary/25 text-sm gap-2"
-                    >
-                      <Download className="w-5 h-5" />
-                      Download Recording (.webm)
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      onClick={handleReRecord}
-                      className="w-full font-bold rounded-2xl py-5 text-xs gap-2"
-                    >
-                      <RotateCcw className="w-4 h-4" /> Start New Recording
-                    </Button>
+            {/* Prompt when a live session is missing its screen source
+                (e.g. armed camera-only, then switched to the screen layout) */}
+            {(isPreviewArmed || isLiveSession) &&
+              layoutMode === "screen-cam" &&
+              !hasScreenSource && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-slate-950/70 backdrop-blur-sm px-6 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 text-slate-300 flex items-center justify-center">
+                    <Monitor className="w-7 h-7" />
                   </div>
-
-                  {/* Cloud Account CTA Card */}
-                  <div className="p-4 rounded-2xl bg-linear-to-br from-slate-900 to-slate-950 text-white border border-slate-800 space-y-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white shrink-0">
-                        <HardDrive className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-extrabold">Want Cloud HLS Transcoding?</h4>
-                        <p className="text-[10px] text-slate-400">Save videos, embed anywhere, and get HLS ladders.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 pt-1">
-                      <Link
-                        href="/auth/register"
-                        className="flex-1 py-2 px-3 bg-primary text-white text-xs font-bold rounded-xl text-center hover:opacity-90 transition-opacity"
-                      >
-                        Create Free Account
-                      </Link>
-                      <Link
-                        href="/auth/login"
-                        className="py-2 px-3 bg-white/10 text-white text-xs font-bold rounded-xl hover:bg-white/20 transition-colors"
-                      >
-                        Sign In
-                      </Link>
-                    </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-black text-white">Add a screen to capture</p>
+                    <p className="text-xs text-slate-400 font-medium max-w-xs">
+                      Your camera is live. Pick the screen, window, or tab you want to record
+                      alongside it.
+                    </p>
                   </div>
+                  <Button
+                    onClick={() => void handleAddScreen()}
+                    className="rounded-full h-10 px-5 font-extrabold gap-2"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    Select screen
+                  </Button>
+                </div>
+              )}
+
+            {/* Error toast */}
+            {error && (
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2.5rem)] max-w-md">
+                <div className="flex items-center gap-3 p-3 rounded-2xl bg-red-950/80 border border-red-500/30 backdrop-blur-xl text-red-300 shadow-2xl">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="flex-1 text-xs font-semibold leading-relaxed">{error}</span>
+                  <button
+                    type="button"
+                    onClick={() => setError("")}
+                    aria-label="Dismiss error"
+                    className="p-1 rounded-lg hover:bg-white/10 transition-colors shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Feature Highlights Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-6">
-          <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
-              <Lock className="w-4 h-4" />
-            </div>
-            <h3 className="font-extrabold text-sm">100% Private & Local</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Recording and canvas composition run locally in your browser. Zero data sent to servers.
-            </p>
+            {/* Countdown overlay */}
+            {recordState === "countdown" && (
+              <div className="absolute inset-0 z-40 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center gap-7">
+                <div className="relative flex items-center justify-center w-44 h-44">
+                  <span className="absolute inset-0 rounded-full border-2 border-red-500/40 animate-ping" />
+                  <span className="absolute inset-3 rounded-full border border-red-500/20 animate-pulse" />
+                  <span className="text-8xl font-black text-white font-mono tabular-nums drop-shadow-2xl">
+                    {countdownTime}
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-center">
+                  <p className="text-xs font-black uppercase tracking-[0.25em] text-slate-300">
+                    Recording starts in
+                  </p>
+                  <p className="text-[11px] text-slate-500 font-semibold">
+                    Switch to the window you want to capture
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={cancelCountdown}
+                  className="rounded-full gap-2 border-white/15 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel — back to preview
+                </Button>
+              </div>
+            )}
+
+            {/* Live recording HUD — floats on top of the preview only */}
+            {isRecording && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 p-1.5 rounded-full bg-slate-950/85 ring-1 ring-white/15 shadow-2xl backdrop-blur-xl max-w-[calc(100%-2rem)]">
+                <div className="flex items-center gap-2 pl-2.5 pr-1 shrink-0">
+                  <span
+                    className={cn(
+                      "w-2.5 h-2.5 rounded-full",
+                      recordState === "recording"
+                        ? "bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.9)]"
+                        : "bg-amber-400"
+                    )}
+                  />
+                  <span className="font-mono text-sm font-bold text-white tabular-nums">
+                    {formatDuration(recordingTime)}
+                  </span>
+                  {recordState === "paused" && (
+                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">
+                      Paused
+                    </span>
+                  )}
+                </div>
+                <div className="w-px h-5 bg-white/10 shrink-0" />
+                <HudButton
+                  label={recordState === "paused" ? "Resume recording" : "Pause recording"}
+                  onClick={recordState === "paused" ? resumeRecording : pauseRecording}
+                >
+                  {recordState === "paused" ? (
+                    <Play className="w-4 h-4 fill-current" />
+                  ) : (
+                    <Pause className="w-4 h-4 fill-current" />
+                  )}
+                </HudButton>
+                <HudButton
+                  label={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
+                  onClick={handleToggleMic}
+                  active={isMicEnabled}
+                  disabled={isMicDisabledMidRecording}
+                >
+                  {isMicEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                </HudButton>
+                <HudButton
+                  label={isWebcamEnabled ? "Disable camera" : "Enable camera"}
+                  onClick={() => void handleToggleWebcam()}
+                  active={isWebcamEnabled}
+                >
+                  {isWebcamEnabled ? (
+                    <Camera className="w-4 h-4" />
+                  ) : (
+                    <CameraOff className="w-4 h-4" />
+                  )}
+                </HudButton>
+                {/* Layout toggle — screen+cam bubble ↔ full-frame camera */}
+                <HudButton
+                  label={
+                    layoutMode === "screen-cam"
+                      ? "Click for full-frame camera"
+                      : "Click for screen + camera bubble"
+                  }
+                  onClick={() => void handleToggleLayout()}
+                  active
+                >
+                  {layoutMode === "screen-cam" ? (
+                    <PictureInPicture2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                </HudButton>
+                {/* Live bubble settings — position/shape/size/device */}
+                {layoutMode === "screen-cam" && (
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <button
+                          type="button"
+                          aria-label="Camera bubble settings"
+                          className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                          <Settings2 className="w-4 h-4" />
+                        </button>
+                      }
+                    />
+                    <PopoverContent side="bottom" align="center" className="w-80">
+                      <CameraBubbleSettings
+                        layoutMode={layoutMode}
+                        cameraDevices={cameraDevices}
+                        selectedCameraId={selectedCameraId}
+                        onSelectCameraDevice={(deviceId) =>
+                          void handleSelectCameraDevice(deviceId || "")
+                        }
+                        webcamCorner={webcamCorner}
+                        onCornerChange={setWebcamCorner}
+                        webcamShape={webcamShape}
+                        onShapeChange={setWebcamShape}
+                        webcamSize={webcamSize}
+                        onSizeChange={setWebcamSize}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+                <button
+                  type="button"
+                  onClick={stopRecording}
+                  disabled={isProcessing}
+                  className="ml-1 h-9 pl-3 pr-4 rounded-full bg-red-500 hover:bg-red-400 disabled:opacity-70 text-white flex items-center gap-2 text-xs font-black transition-all shadow-lg shadow-red-500/30 shrink-0"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <SquareIcon className="w-3 h-3 fill-current" />
+                  )}
+                  Stop
+                </button>
+              </div>
+            )}
+
+            {/* Processing overlay (finalizing after stop) */}
+            {isProcessing && recordState !== "recorded" && (
+              <div className="absolute inset-0 z-40 bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-4">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="space-y-1 text-center">
+                  <p className="text-sm font-bold text-white">Finalizing your recording</p>
+                  <p className="text-xs text-slate-400 font-semibold">
+                    {processingStatus || "Processing…"}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
+        </main>
+        {/* Setup dock */}
+        {recordState === "idle" && (
+          <footer className="relative z-30 shrink-0 px-3 sm:px-6 pb-4 sm:pb-5 pt-1.5">
+            <div className="mx-auto max-w-5xl rounded-[1.75rem] border border-border/70 bg-background/85 backdrop-blur-2xl shadow-2xl p-2 flex flex-wrap items-center gap-1.5">
+              {/* Layout mode */}
+              <div className="flex items-center gap-0.5 p-1 rounded-2xl bg-muted/70 shrink-0">
+                {/* Screen seg — auto-prompts for a screen when the session is live */}
+                <SegButton
+                  active={layoutMode === "screen-cam"}
+                  onClick={() => void handleSelectScreenLayout()}
+                  icon={<Monitor className="w-4 h-4" />}
+                  label="Screen"
+                />
+                <SegButton
+                  active={layoutMode === "camera-only"}
+                  onClick={() => void handleSetLayoutMode("camera-only")}
+                  icon={<Camera className="w-4 h-4" />}
+                  label="Camera"
+                />
+              </div>
 
-          <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
-              <Layers className="w-4 h-4" />
+              <DockDivider />
+
+              {/* Microphone toggle */}
+              <DockIconButton
+                active={isMicEnabled}
+                label={isMicEnabled ? "Microphone on — click to mute" : "Microphone off — click to enable"}
+                onClick={handleToggleMic}
+              >
+                {isMicEnabled ? <Mic className="w-4.5 h-4.5" /> : <MicOff className="w-4.5 h-4.5" />}
+              </DockIconButton>
+
+              {/* Webcam toggle */}
+              <DockIconButton
+                active={isWebcamEnabled}
+                label={isWebcamEnabled ? "Camera on — click to disable" : "Camera off — click to enable"}
+                onClick={() => void handleToggleWebcam()}
+              >
+                {isWebcamEnabled ? (
+                  <Camera className="w-4.5 h-4.5" />
+                ) : (
+                  <CameraOff className="w-4.5 h-4.5" />
+                )}
+              </DockIconButton>
+
+              {/* Camera bubble settings */}
+              {isWebcamEnabled && (
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 h-10 px-3 rounded-2xl bg-muted/60 border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                      >
+                        <PictureInPicture2 className="w-4.5 h-4.5" />
+                        <span className="hidden sm:inline text-xs font-bold">Bubble</span>
+                        <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                      </button>
+                    }
+                  />
+                  <PopoverContent side="top" align="start" className="w-80">
+                    <CameraBubbleSettings
+                      layoutMode={layoutMode}
+                      cameraDevices={cameraDevices}
+                      selectedCameraId={selectedCameraId}
+                      onSelectCameraDevice={(deviceId) =>
+                        void handleSelectCameraDevice(deviceId || "")
+                      }
+                      webcamCorner={webcamCorner}
+                      onCornerChange={setWebcamCorner}
+                      webcamShape={webcamShape}
+                      onShapeChange={setWebcamShape}
+                      webcamSize={webcamSize}
+                      onSizeChange={setWebcamSize}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+              {/* Quality settings */}
+              <Popover>
+                <PopoverTrigger
+                  render={
+                    <button
+                      type="button"
+                      className="flex items-center gap-1.5 h-10 px-3 rounded-2xl bg-muted/60 border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                    >
+                      <Settings2 className="w-4.5 h-4.5" />
+                      <span className="hidden sm:inline text-xs font-bold">
+                        {RESOLUTION_LABEL[resolution]} · {fps} FPS · {QUALITY_LABEL[compressionMode]}
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+                    </button>
+                  }
+                />
+                <PopoverContent side="top" align="end" className="w-80 space-y-4">
+                  <div className="space-y-0.5">
+                    <PopoverTitle>Recording quality</PopoverTitle>
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                      Higher quality produces larger files.
+                    </p>
+                  </div>
+
+                  <OptionGroup label="Resolution">
+                    {(["native", "720p", "1080p", "4k"] as ResolutionPreset[]).map((r) => (
+                      <OptionButton
+                        key={r}
+                        active={resolution === r}
+                        onClick={() => handleSelectResolution(r)}
+                      >
+                        {RESOLUTION_LABEL[r]}
+                      </OptionButton>
+                    ))}
+                  </OptionGroup>
+
+                  <OptionGroup label="Frame rate">
+                    {([15, 24, 30, 60] as TargetFps[]).map((f) => (
+                      <OptionButton key={f} active={fps === f} onClick={() => handleSelectFps(f)}>
+                        {f}
+                      </OptionButton>
+                    ))}
+                  </OptionGroup>
+
+                  <OptionGroup label="Bitrate">
+                    {(["compact", "balanced", "max_quality"] as CompressionPreset[]).map((m) => (
+                      <OptionButton
+                        key={m}
+                        active={compressionMode === m}
+                        onClick={() => handleSelectCompressionMode(m)}
+                      >
+                        {QUALITY_LABEL[m]}
+                      </OptionButton>
+                    ))}
+                  </OptionGroup>
+
+                  <OptionGroup label="Countdown">
+                    {([0, 3, 5] as const).map((d) => (
+                      <OptionButton
+                        key={d}
+                        active={countdownDelay === d}
+                        onClick={() => setCountdownDelay(d)}
+                      >
+                        {d === 0 ? "Off" : `${d}s`}
+                      </OptionButton>
+                    ))}
+                  </OptionGroup>
+                </PopoverContent>
+              </Popover>
+
+              <div className="flex-1 min-w-1" />
+
+              {/* Record */}
+              <Button
+                type="button"
+                onClick={() => void handleRecordClick()}
+                disabled={isProcessing || isArming}
+                className="h-11 shrink-0 rounded-full pl-4 pr-5 bg-red-600 hover:bg-red-500 text-white font-extrabold gap-2.5 shadow-lg shadow-red-600/30"
+              >
+                <span className="relative flex w-3 h-3">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-white opacity-40 animate-ping" />
+                  <span className="relative inline-flex w-3 h-3 rounded-full bg-white" />
+                </span>
+                {isArming ? "Preparing…" : isPreviewArmed ? "Start recording" : "Record"}
+              </Button>
             </div>
-            <h3 className="font-extrabold text-sm">Webcam PIP Overlay</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Overlay your face camera in top or bottom corners with circle or square frame shapes.
-            </p>
-          </div>
+          </footer>
+        )}
 
-          <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
-              <Zap className="w-4 h-4" />
+        {/* Result dock */}
+        {(recordState === "recorded" || recordState === "uploading") && (
+          <footer className="relative z-30 shrink-0 px-3 sm:px-6 pb-4 pt-1.5 space-y-2.5">
+            {showTrimmer && recordedFile && previewUrl && (
+              <div className="mx-auto max-w-5xl rounded-[1.75rem] border border-border/70 bg-background/90 backdrop-blur-2xl shadow-2xl">
+                <VideoTrimmer
+                  videoFile={recordedFile}
+                  previewUrl={previewUrl}
+                  metadata={metadata}
+                  videoElementRef={recordedVideoRef}
+                  onTrimSuccess={(newFile, newUrl, newMeta) => {
+                    applyTrimmedVideo(newFile, newMeta, newUrl);
+                    setShowTrimmer(false);
+                  }}
+                  onCancel={() => setShowTrimmer(false)}
+                />
+              </div>
+            )}
+
+            <div className="mx-auto max-w-5xl rounded-[1.75rem] border border-border/70 bg-background/85 backdrop-blur-2xl shadow-2xl p-2 flex flex-wrap items-center gap-1.5">
+              {renderRecordedActions ? (
+                renderRecordedActions({
+                  ...studio,
+                  showTrimmer,
+                  toggleTrimmer: handleToggleTrimmer,
+                  recordedVideoRef,
+                })
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 flex-1 min-w-52">
+                    <Input
+                      value={downloadFilename}
+                      onChange={(e) => setDownloadFilename(e.target.value)}
+                      placeholder={title || "Recording name"}
+                      aria-label="Download file name"
+                      className="h-10 rounded-2xl bg-muted/60 border-transparent focus-visible:border-ring font-semibold"
+                    />
+                    <span className="text-[11px] font-mono font-bold text-muted-foreground shrink-0">
+                      .webm
+                    </span>
+                  </div>
+
+                  {metadata && (
+                    <div className="hidden lg:flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground bg-muted/60 rounded-full px-3 py-1.5 shrink-0">
+                      <Timer className="w-3.5 h-3.5" />
+                      {formatDuration(metadata.durationSeconds)}
+                      <span className="opacity-40">·</span>
+                      {metadata.sourceWidth}×{metadata.sourceHeight}
+                      <span className="opacity-40">·</span>
+                      {recordedFile ? formatBytes(recordedFile.size) : "—"}
+                    </div>
+                  )}
+
+                  <DockDivider />
+
+                  <Button
+                    variant="ghost"
+                    onClick={handleToggleTrimmer}
+                    className="h-10 rounded-2xl font-bold gap-1.5 shrink-0"
+                  >
+                    <Scissors className="w-4 h-4" />
+                    {showTrimmer ? "Close trimmer" : isTrimmed ? "Re-trim" : "Trim"}
+                  </Button>
+
+                  {isTrimmed && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        revertToOriginalRecording();
+                        setShowTrimmer(false);
+                      }}
+                      className="h-10 rounded-2xl font-bold gap-1.5 text-muted-foreground shrink-0"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Revert
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    onClick={handleReRecord}
+                    className="h-10 rounded-2xl font-bold gap-1.5 shrink-0"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    New recording
+                  </Button>
+
+                  <Button
+                    onClick={() => handleDownload(activeFilename)}
+                    className="h-10 rounded-full px-5 font-extrabold gap-2 shadow-lg shadow-primary/25 shrink-0"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download
+                  </Button>
+
+                </>
+              )}
             </div>
-            <h3 className="font-extrabold text-sm">Up to 4K 60FPS</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Hardware-accelerated VP9 capture up to 3840x2160 resolution with dynamic audio mixing.
-            </p>
-          </div>
+          </footer>
+        )}
+        {!embedded && !isLiveSession && <RecorderFeaturesContent />}
+        {/* High file size confirmation modal */}
+        <Dialog
+          open={highQualityConfirm.isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="space-y-3 text-center sm:text-left">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto sm:mx-0">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <DialogTitle>High File Size Warning</DialogTitle>
+                <DialogDescription>
+                  Selecting <strong className="text-amber-500">{highQualityConfirm.settingLabel}</strong>{" "}
+                  will significantly increase video quality, but will result in substantially higher
+                  output file sizes and may consume more disk storage and network bandwidth.
+                </DialogDescription>
+              </div>
+            </DialogHeader>
 
-          <div className="glass-card p-5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 space-y-2">
-            <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center mb-2">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium">
+              <strong>Pro tip:</strong> For standard recordings, 30 FPS, Balanced bitrate, or 1080p
+              produces smooth quality while keeping the file size compact.
             </div>
-            <h3 className="font-extrabold text-sm">No Watermark Ever</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Clean high-definition videos with zero time limits, branding logos, or hidden fees.
-            </p>
-          </div>
-        </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground relative z-10">
-        © 2026 Taped Platform. Professional Web Studio Screen Recorder.
-      </footer>
-
-      {/* High File Size Confirmation Modal */}
-      <Dialog
-        open={highQualityConfirm.isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="space-y-3 text-center sm:text-left">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto sm:mx-0">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <div>
-              <DialogTitle>
-                High File Size Warning
-              </DialogTitle>
-              <DialogDescription>
-                Selecting <strong className="text-amber-500">{highQualityConfirm.settingLabel}</strong> will significantly increase video quality, but will result in substantially higher output file sizes and may consume more disk storage and network bandwidth.
-              </DialogDescription>
-            </div>
-          </DialogHeader>
-
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300 font-medium">
-            💡 <strong>Pro Tip:</strong> For standard recordings, 30 FPS, Balanced bitrate, or 1080p produces smooth quality while keeping the file size compact.
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
-            <Button
-              variant="outline"
-              onClick={() => setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }))}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                highQualityConfirm.onConfirm();
-                setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
-              }}
-            >
-              Proceed with High Quality
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border shrink-0 mt-3">
+              <Button
+                variant="outline"
+                onClick={() => setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }))}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  highQualityConfirm.onConfirm();
+                  setHighQualityConfirm((prev) => ({ ...prev, isOpen: false }));
+                }}
+              >
+                Proceed with High Quality
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        {!embedded && !isLiveSession && <PublicFooter />}
+      </div>
+    </TooltipProvider>
   );
 }

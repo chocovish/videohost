@@ -1,77 +1,42 @@
-# AGENTS.md — Taped / videohost Monorepo
+# Taped / videohost
 
-> Lightweight operating guide for AI agents and human contributors.
-> Monorepo: Turborepo + npm workspaces. Node 20+, npm 10+, Go 1.26+, PostgreSQL, Redis (optional), FFmpeg, S3-compatible storage.
+Turborepo + npm workspaces. Node 20+, npm 10+, Go 1.26+, PostgreSQL, optional Redis, FFmpeg, S3-compatible storage.
 
-## 1. App Finder — where to work
+## Find the right place first
 
-| Path | What it is | Stack / entry point |
-|---|---|---|
-| `apps/web` | **Main Next.js app.** Dashboard, Studio Screen Recorder, HLS/DASH player, all API routes (`app/api/**`), Auth.js, uploads, billing, LiveKit meetings. | Next.js 16 App Router, React 19, `npm run dev --prefix apps/web` → `:3000` |
-| `apps/worker` | **Transcoder worker (Node).** Reference implementation. | Node + TS + Express + BullMQ + fluent-ffmpeg, `src/index.ts`, `npm run dev:worker` → `:8080` |
-| `apps/worker-go` | **Transcoder worker (Go).** High-performance port. Must stay in parity with Node worker. | Go, `cmd/worker`, `npm run dev:worker-go` → `:8080` |
-| `packages/db` | **Single source of truth for data.** Prisma schema, client, seeds, migrations. | `prisma/`, `src/index.ts`, package `@videohost/db` |
-| `packages/ui` | **Shared headless UI helpers** (`utils`, themes). | Package `@videohost/ui` |
-| `packages/config` | Shared TS / lint configs. Extend these, do not duplicate. | — |
-| `scripts/` | Ops helpers (`test-worker.js`, `migrate-video-s3-keys.js`). | Run via root `npm run test:worker`, `db:migrate-keys` |
+| Need | Start here |
+|---|---|
+| Web UI, API, auth, uploads, billing, LiveKit | `apps/web` |
+| Node transcoder | `apps/worker/src` |
+| Go transcoder | `apps/worker-go/internal`, entry: `cmd/worker` |
+| Schema, Prisma client, migrations | `packages/db` |
+| Shared UI helpers/theme utilities | `packages/ui` |
+| Shared config / operations scripts | `packages/config`, `scripts` |
 
-Docker: `Dockerfile.worker` (Node), `Dockerfile.worker-go` (Go). LiveKit: `docker-compose.livekit.yml`, `livekit.yaml`, `egress.yaml`.
+Before editing, use `rg --files <area>` and `rg -n "<feature-or-symbol>" <area>` to locate the closest existing implementation. Read only the files directly involved plus their local imports; extend the established pattern instead of introducing a parallel one. Check `package.json` scripts and the nearest README when behavior is unclear.
 
-## 2. Critical rule — worker parity
+## Web UI: reuse the system
 
-All transcoder workers expose the **same stateless HTTP contract**: `POST /transcode`, `POST /cancel`, `GET /health`, `GET /stats`, plus BullMQ queue mode when `REDIS_URL` is set.
+- shadcn is the design system: inspect `apps/web/components/ui/` first, then `apps/web/components/`; compose existing primitives before adding anything new.
+- The site already has a custom theme. Components using shadcn/Tailwind semantic tokens inherit it automatically—use those tokens and `cn()` from `@/lib/utils`; never add hex colors, competing global styles, or a new icon library. Use `lucide-react`.
+- Reuse or extract patterns used more than once (forms, dialogs, empty states, pickers). Prefer the existing `confirm-dialog`, `VideoThumbnail`, and `VideoPlayerCore` conventions over copy/paste.
+- Next.js App Router: server components by default; add `'use client'` only for browser interaction. Keep data/auth on the server or API routes.
+- Keep `apps/web/app/globals.css` the single global CSS entry. Respect `apps/web/components.json` aliases and shadcn configuration.
 
-> **If you add or change a transcoding feature in ANY worker (`apps/worker`, `apps/worker-go`), you MUST port the same behavior to the other worker in the same change.** This includes: payload fields, rendition ladder logic, DAR/scaling rules, no-upscale rule, DASH+HLS packaging, WebP thumbnails, S3/R2 upload paths, progress reporting, cancellation semantics, concurrency limits, auth (`WORKER_SECRET_TOKEN`), and Docker `localhost` ↔ `host.docker.internal` translation.
+## Data, security, and media contracts
 
-Feature checklist before marking a worker task done:
+- Change the database only in `packages/db/prisma/schema.prisma`; use `@videohost/db`, then run `npm run db:generate`. No raw SQL or app-local Prisma clients.
+- Respect `VIDEO_STORAGE` (`s3`/`bunny`), `STREAMING_PROTOCOL` (`dash`/`hls`), and `STREAMING_SEGMENTS`; gate/document any storage-specific feature.
+- Enforce Auth.js authorization, org isolation, and roles on the server. Never trust client flags or commit secrets, signed URLs, or keys.
 
-1. Node (`apps/worker/src/*.ts`) updated.
-2. Go (`apps/worker-go/internal/**`) updated.
-3. `apps/worker-go/README.md` behavior docs updated if user-visible.
-4. Verified with `npm run test:worker` and `npm run test:worker-go` where applicable.
+## Worker parity is mandatory
 
-Shared worker conventions: payload-driven (no reliance on worker-local env for job specifics), bounded concurrent jobs via `WORKER_MAX_CONCURRENT_JOBS`, kill FFmpeg on cancel, never upscale beyond source, inject native-resolution rung on large gaps.
+The Node and Go workers share `POST /transcode`, `POST /cancel`, `GET /health`, and `GET /stats` (plus optional BullMQ). A transcoding change must be implemented in both workers: payload validation, renditions/scaling, HLS/DASH, thumbnails, storage paths, progress/cancel, concurrency, and worker-token/Docker URL handling. Keep jobs payload-driven, do not upscale, and kill FFmpeg on cancel. Update `apps/worker-go/README.md` for user-visible behavior.
 
-## 3. Frontend rules — Next.js + shadcn
+## Work efficiently
 
-- **shadcn is the design system.** Config: `apps/web/components.json` (`style: base-nova`, `cssVariables: true`, aliases `@/components`, `@/components/ui`, `@/lib`, `@/hooks`).
-- **Reuse first:** before building new UI, check `apps/web/components/ui/` (button, dialog, drawer, dropdown-menu, sheet, tabs, select, table, skeleton, etc.) and `apps/web/components/` (modals, player, recorder, share). Compose from these.
-- **Make it reusable:** if a pattern is used twice (modals, pickers, empty states, confirm dialogs, form fields), extract it to `apps/web/components/ui/` or a generic component in `apps/web/components/` with clear props — do not copy-paste per page. Prefer `confirm-dialog.tsx`, `VideoThumbnail`, `VideoPlayerCore` patterns as examples.
-- Use Radix primitives + `class-variance-authority` + `clsx`/`tailwind-merge` (`cn()` in `@/lib/utils`). Lucide icons only (`lucide-react`). No new icon libraries.
-- Next.js 16 App Router: Server Components by default; add `'use client'` only where interactivity (recorder, player, canvas, audio) requires it. Keep data fetching and auth on the server / API routes.
-- Styling: Tailwind v4, CSS variables, `neutral` base. No inline hex palettes; use theme tokens. Keep `app/globals.css` as the single global entry.
-
-## 4. Backend / data rules
-
-- **Prisma (`packages/db`) is the only place for schema changes.** Never raw SQL in apps. Workflow: edit `prisma/schema.prisma` → `npm run db:push` (dev) / migrate (prod) → `npm run db:generate` → use `@videohost/db` client. Never import Prisma directly from `apps/web` via a local copy.
-- **Storage abstraction:** respect `VIDEO_STORAGE="s3" | "bunny"`. New video features must work for both paths (presigned S3 + FFmpeg worker vs. Bunny Stream auto-transcode) or explicitly gate and document the limitation.
-- **Streaming:** respect `STREAMING_PROTOCOL="dash" | "hls"` and `STREAMING_SEGMENTS`. Don't hardcode `.m3u8` assumptions in shared player logic.
-- Auth: Auth.js v5 (Credentials + Google). RBAC roles `OWNER/ADMIN/MEMBER/VIEWER`, org isolation, share modes `PUBLIC/RESTRICTED/PRIVATE`. Enforce on server, never trust client flags.
-- Secrets via `.env` (see `.env.example`). Never commit secrets, presigned URLs, or real keys. Payment (Razorpay/Cashfree), Bunny, LiveKit keys stay server-side.
-
-## 5. Commands agents should use
-
-```bash
-npm install                 # install all workspaces
-npm run dev                 # web only (:3000)
-npm run dev:worker          # node worker (:8080)
-npm run dev:worker-go       # go worker (:8080)
-npm run dev:all             # everything via turbo
-npm run build / build:web / build:worker
-npm run build:worker-go     # go build -C apps/worker-go -o worker ./cmd/worker
-npm run lint                # turbo lint
-npm run db:push / db:generate / db:seed
-npm run test:worker         # scripts/test-worker.js → POST /transcode
-npm run test:worker-go      # go test ./...
-```
-
-Prefer Turbo filters (`turbo run build --filter=@videohost/web`) over `cd` into apps. Verify every change with the narrowest relevant build/lint/test, not just typecheck.
-
-## 6. Working agreements
-
-1. **Small, scoped diffs.** Follow existing file patterns in the touched app; don't re-architect across `apps/*` in one change.
-2. **No duplication across apps/packages.** Shared logic goes in `packages/*` or `apps/web/lib/`; worker-shared concepts stay mirrored per §2 (ports, not imports, across languages).
-3. **Type-safe, strict TS.** No `any` without justification; handle null/undefined; validate worker payloads and API inputs at boundaries.
-4. **Don't invent infra.** Reuse BullMQ queues, S3 client wrappers (`s3.ts` / `internal/s3`), progress reporters, and URL utils already present in each worker.
-5. **Update docs with behavior changes:** root `README.md` for architecture, `apps/worker-go/README.md` for worker behavior, `.env.example` for new env vars.
-6. **Ask when ambiguous:** if scope spans workers + web + billing/storage, confirm target apps and `VIDEO_STORAGE` path before coding.
+- Make small, scoped diffs; avoid unrelated refactors. Reuse existing queues, storage clients, URL helpers, and API/component patterns.
+- Use the narrowest relevant check: `turbo run build --filter=@videohost/web`, `npm run lint`, `npm run test:worker`, or `npm run test:worker-go`. Run both worker tests for worker changes.
+- Common commands: `npm run dev`, `npm run dev:worker`, `npm run dev:worker-go`, `npm run build`, `npm run db:push`, `npm run db:generate`.
+- Update `README.md`, `.env.example`, or worker docs only when the corresponding external behavior/configuration changes.
+- If work crosses web, workers, storage, or billing and the target path is not evident, ask which storage mode and surface are intended before implementing.

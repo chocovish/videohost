@@ -48,6 +48,11 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const [compressionMode, setCompressionMode] = useState<CompressionPreset>("compact");
   const [countdownDelay, setCountdownDelay] = useState<0 | 3 | 5>(5);
   const [countdownTime, setCountdownTime] = useState<number>(5);
+  // True when a live WYSIWYG preview session is armed (streams acquired &
+  // compositor rendering) but the recorder has not started yet.
+  const [isPreviewArmed, setIsPreviewArmed] = useState(false);
+  // Whether a screen display source is currently attached to the session
+  const [hasScreenSource, setHasScreenSource] = useState(false);
 
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
@@ -69,13 +74,17 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
   const recordingTimeRef = useRef(0);
   const recordingStartTimeRef = useRef(0);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const armedPreviewRef = useRef(false);
+  // Mirrors recordState for use inside stable media-event callbacks
+  const recordStateRef = useRef<RecordState>("idle");
 
   // Enumerate Camera Input Devices
   const updateCameraDevices = useCallback(async () => {
     try {
       if (typeof window === "undefined" || !navigator.mediaDevices?.enumerateDevices) return;
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoInputs = devices.filter((d) => d.kind === "videoinput");
+      // Ignore entries without an id (hidden until permission is granted)
+      const videoInputs = devices.filter((d) => d.kind === "videoinput" && d.deviceId);
       setCameraDevices(videoInputs);
 
       if (videoInputs.length > 0 && !selectedCameraId) {
@@ -85,10 +94,6 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       console.warn("Failed to enumerate media devices:", e);
     }
   }, [selectedCameraId]);
-
-  useEffect(() => {
-    updateCameraDevices();
-  }, [updateCameraDevices]);
 
   // Handle webcam stream initialization/switching
   const setupWebcamStream = useCallback(
@@ -214,6 +219,11 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     }
   }, [webcamCorner, webcamShape, webcamSize, isWebcamEnabled, layoutMode]);
 
+  // Keep a ref mirror of recordState for stable media event callbacks
+  useEffect(() => {
+    recordStateRef.current = recordState;
+  }, [recordState]);
+
   const cleanupStreams = useCallback(() => {
     if (countdownTimerRef.current) {
       clearInterval(countdownTimerRef.current);
@@ -266,6 +276,10 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
       compositeStreamRef.current.getTracks().forEach((track) => track.stop());
       compositeStreamRef.current = null;
     }
+
+    armedPreviewRef.current = false;
+    setIsPreviewArmed(false);
+    setHasScreenSource(false);
   }, []);
 
   const resetAll = useCallback(() => {
@@ -300,58 +314,260 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     setOriginalMetadata(null);
   }, [cleanupStreams, previewUrl, originalPreviewUrl, metadata]);
 
-  // Cancel Countdown during delay phase
+  // Cancel Countdown during delay phase.
+  // When the session was armed for live preview, the streams stay warm so the
+  // user lands back on the WYSIWYG preview; otherwise everything is torn down.
   const cancelCountdown = () => {
-    cleanupStreams();
-    setRecordState("idle");
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+
+    // The recorder was created before the countdown but never started
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.warn("Failed to stop media recorder:", e);
+      }
+    }
+    mediaRecorderRef.current = null;
+    recordedChunksRef.current = [];
+
+    const previewTrack = compositeStreamRef.current?.getVideoTracks()[0];
+    if (
+      armedPreviewRef.current &&
+      previewTrack &&
+      previewTrack.readyState === "live"
+    ) {
+      setRecordState("idle");
+      setIsPreviewArmed(true);
+    } else {
+      cleanupStreams();
+      setRecordState("idle");
+    }
   };
 
   // Build resolution constraints based on chosen preset
-  const getDisplayVideoConstraints = (preset: ResolutionPreset, targetFpsVal: number): MediaTrackConstraints => {
-    if (preset === "4k") {
-      return { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: targetFpsVal } };
+  const getDisplayVideoConstraints = useCallback(
+    (preset: ResolutionPreset, targetFpsVal: number): MediaTrackConstraints => {
+      if (preset === "4k") {
+        return { width: { ideal: 3840 }, height: { ideal: 2160 }, frameRate: { ideal: targetFpsVal } };
+      }
+      if (preset === "1080p") {
+        return { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: targetFpsVal } };
+      }
+      if (preset === "720p") {
+        return { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: targetFpsVal } };
+      }
+      return { displaySurface: "browser", frameRate: { ideal: targetFpsVal } };
+    },
+    []
+  );
+
+  // Best-effort: apply resolution / fps changes to the live preview track
+  // without tearing down the armed preview session
+  useEffect(() => {
+    if (!isPreviewArmed) return;
+    const track = displayStreamRef.current?.getVideoTracks()[0];
+    if (!track || track.readyState !== "live") return;
+    track
+      .applyConstraints(getDisplayVideoConstraints(resolution, fps))
+      .catch(() => {
+        /* Browser may reject some constraint combinations — best effort */
+      });
+  }, [resolution, fps, isPreviewArmed, getDisplayVideoConstraints]);
+
+  // Tear down the armed live preview session
+  const stopPreview = useCallback(() => {
+    cleanupStreams();
+  }, [cleanupStreams]);
+
+  // Shared handler for the browser's "stop sharing" floating bar across all
+  // phases (armed preview, countdown, recording). Uses refs so the closure
+  // captured by media events always reflects the current phase.
+  const handleDisplayTrackEnded = () => {
+    setHasScreenSource(false);
+    const state = recordStateRef.current;
+    if (state === "recording" || state === "paused") {
+      stopRecording();
+    } else if (state === "countdown") {
+      // Countdown aborted because the source disappeared
+      cancelCountdown();
+    } else {
+      stopPreview();
     }
-    if (preset === "1080p") {
-      return { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: targetFpsVal } };
-    }
-    if (preset === "720p") {
-      return { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: targetFpsVal } };
-    }
-    return { displaySurface: "browser", frameRate: { ideal: targetFpsVal } };
   };
 
-  // Start Screen Recording with Canvas Compositer Engine & Optimized Compression
+  // Arm a live WYSIWYG preview (screen + camera bubble exactly as it will be
+  // recorded) WITHOUT starting the recorder. Streams stay live so hitting
+  // "Record" starts instantly without re-prompting for screen selection.
+  // Returns true when the preview is ready.
+  const preparePreview = useCallback(
+    async (overrides?: {
+      layoutMode?: RecordingLayoutMode;
+      enableWebcam?: boolean;
+    }): Promise<boolean> => {
+      setError("");
+      const effectiveLayout = overrides?.layoutMode ?? layoutMode;
+      const effectiveWebcam = overrides?.enableWebcam ?? isWebcamEnabled;
+
+      try {
+        // Keep React state aligned with the effective session so the
+        // compositor-sync effect never fights the armed preview
+        if (effectiveLayout !== layoutMode) {
+          setLayoutMode(effectiveLayout);
+        }
+        if (effectiveWebcam && !isWebcamEnabled) {
+          setIsWebcamEnabled(true);
+        }
+
+        // 1. Screen display stream (not required for camera-only layout)
+        if (!displayStreamRef.current && effectiveLayout !== "camera-only") {
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: getDisplayVideoConstraints(resolution, fps),
+            audio: true,
+          });
+          displayStreamRef.current = displayStream;
+          setHasScreenSource(true);
+
+          // User stopped the share from the browser floating bar
+          displayStream.getVideoTracks()[0].onended = handleDisplayTrackEnded;
+
+          // Attach to a compositor that is already live (re-arm scenario)
+          compositorRef.current?.setScreenStream(displayStream);
+        }
+
+        // 2. Canvas compositor — renders the exact frames that get recorded
+        if (!compositorRef.current) {
+          const compositor = new RecordingCompositor({
+            webcamCorner,
+            webcamShape,
+            webcamSize,
+            isWebcamEnabled: effectiveWebcam || effectiveLayout === "camera-only",
+            layoutMode: effectiveLayout,
+          });
+          compositorRef.current = compositor;
+          compositor.setScreenStream(displayStreamRef.current);
+          // Re-attach a webcam stream that was acquired before arming
+          if (webcamStreamRef.current) {
+            compositor.setWebcamStream(webcamStreamRef.current);
+          }
+        }
+
+        // 3. Webcam stream when the layout needs it
+        if (
+          (effectiveWebcam || effectiveLayout === "camera-only") &&
+          !webcamStreamRef.current
+        ) {
+          if (!isWebcamEnabled) {
+            setIsWebcamEnabled(true);
+          }
+          const camStream = await setupWebcamStream();
+          if (!camStream && effectiveLayout === "camera-only") {
+            stopPreview();
+            return false;
+          }
+        }
+
+        // 4. Start the canvas render loop & attach the video-only composite
+        if (
+          !compositeStreamRef.current ||
+          compositeStreamRef.current.getVideoTracks().length === 0 ||
+          compositeStreamRef.current
+            .getVideoTracks()
+            .every((track) => track.readyState !== "live")
+        ) {
+          const canvasVideoStream = compositorRef.current.start(fps);
+          compositeStreamRef.current = new MediaStream([
+            ...canvasVideoStream.getVideoTracks(),
+          ]);
+        }
+
+        if (videoPreviewRef.current) {
+          videoPreviewRef.current.srcObject = compositeStreamRef.current;
+        }
+
+        armedPreviewRef.current = true;
+        setIsPreviewArmed(true);
+        return true;
+      } catch (err) {
+        console.error("Live preview setup failed:", err);
+        if ((err as { name?: string })?.name !== "NotAllowedError") {
+          setError(
+            (err as { message?: string })?.message ||
+              "Failed to start the live preview"
+          );
+          // Only tear down on real failures — dismissing the browser picker
+          // should keep any live session (and its camera) intact
+          stopPreview();
+        }
+        return false;
+      }
+    },
+    [
+      layoutMode,
+      isWebcamEnabled,
+      resolution,
+      fps,
+      webcamCorner,
+      webcamShape,
+      webcamSize,
+      getDisplayVideoConstraints,
+      setupWebcamStream,
+      stopPreview,
+    ]
+  );
+
+  // Start Screen Recording with Canvas Compositer Engine & Optimized Compression.
+  // Reuses the streams from an armed live preview session when available
+  // (no second permission prompt) — otherwise acquires everything itself.
   const startRecording = async () => {
     setError("");
     setWasMicEnabledOnStart(isMicEnabled);
     try {
-      // 1. Get Screen Display Stream
-      const displayConstraints = getDisplayVideoConstraints(resolution, fps);
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        video: displayConstraints,
-        audio: true,
-      });
-
-      displayStreamRef.current = displayStream;
+      // 1. Get Screen Display Stream (reuse the armed preview stream when live)
+      let displayStream = displayStreamRef.current;
+      if (!displayStream && layoutMode !== "camera-only") {
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: getDisplayVideoConstraints(resolution, fps),
+          audio: true,
+        });
+        displayStreamRef.current = displayStream;
+        setHasScreenSource(true);
+      }
 
       // Handle user stopping screen share via browser floating bar
-      displayStream.getVideoTracks()[0].onended = () => {
-        stopRecording();
-      };
+      if (displayStream) {
+        displayStream.getVideoTracks()[0].onended = handleDisplayTrackEnded;
+      }
 
-      // 2. Initialize Canvas Compositor
-      const compositor = new RecordingCompositor({
-        webcamCorner,
-        webcamShape,
-        webcamSize,
-        isWebcamEnabled: isWebcamEnabled || layoutMode === "camera-only",
-        layoutMode,
-      });
-      compositorRef.current = compositor;
-      compositor.setScreenStream(displayStream);
+      // 2. Initialize Canvas Compositor (reuse the armed preview compositor)
+      let compositor = compositorRef.current;
+      if (!compositor) {
+        compositor = new RecordingCompositor({
+          webcamCorner,
+          webcamShape,
+          webcamSize,
+          isWebcamEnabled: isWebcamEnabled || layoutMode === "camera-only",
+          layoutMode,
+        });
+        compositorRef.current = compositor;
+        compositor.setScreenStream(displayStream ?? null);
+        // Re-attach a webcam stream that was acquired before recording
+        if (webcamStreamRef.current) {
+          compositor.setWebcamStream(webcamStreamRef.current);
+        }
+      }
 
       // 3. Acquire webcam stream if enabled or if in camera-only layout mode
-      if (isWebcamEnabled || layoutMode === "camera-only") {
+      if (
+        (isWebcamEnabled || layoutMode === "camera-only") &&
+        !webcamStreamRef.current
+      ) {
         if (!isWebcamEnabled) {
           setIsWebcamEnabled(true);
         }
@@ -370,12 +586,25 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         targetBitrate = 5_000_000;
       }
 
-      const canvasVideoStream = compositor.start(targetFps);
+      // Canvas video stream — reuse the armed preview capture, or start fresh
+      let canvasVideoStream = compositeStreamRef.current;
+      if (
+        !canvasVideoStream ||
+        canvasVideoStream.getVideoTracks().length === 0 ||
+        canvasVideoStream
+          .getVideoTracks()
+          .every((track) => track.readyState !== "live")
+      ) {
+        canvasVideoStream = compositor.start(targetFps);
+        compositeStreamRef.current = new MediaStream([
+          ...canvasVideoStream.getVideoTracks(),
+        ]);
+      }
 
       // 4. Handle microphone audio mixing if enabled
       let audioTracks: MediaStreamTrack[] = [];
 
-      if (displayStream.getAudioTracks().length > 0) {
+      if (displayStream && displayStream.getAudioTracks().length > 0) {
         audioTracks.push(...displayStream.getAudioTracks());
       }
 
@@ -388,7 +617,7 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
           audioContextRef.current = audioCtx;
           const dest = audioCtx.createMediaStreamDestination();
 
-          if (displayStream.getAudioTracks().length > 0) {
+          if (displayStream && displayStream.getAudioTracks().length > 0) {
             const displayAudioSource = audioCtx.createMediaStreamSource(
               new MediaStream([displayStream.getAudioTracks()[0]])
             );
@@ -404,15 +633,22 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
         }
       }
 
-      // 5. Build final composite stream
+      // 5. Build final composite stream (canvas video + mixed audio)
       const compositeStream = new MediaStream([
         ...canvasVideoStream.getVideoTracks(),
         ...audioTracks,
       ]);
       compositeStreamRef.current = compositeStream;
 
+      // Recording is live — the armed preview session is over
+      armedPreviewRef.current = false;
+      setIsPreviewArmed(false);
+
       // Set live preview stream
-      if (videoPreviewRef.current) {
+      if (
+        videoPreviewRef.current &&
+        videoPreviewRef.current.srcObject !== compositeStream
+      ) {
         videoPreviewRef.current.srcObject = compositeStream;
       }
 
@@ -561,6 +797,33 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     cleanupStreams();
   };
 
+  // Ensure a screen source is attached to the live compositor. Prompts the
+  // user only when no display stream exists yet — e.g. switching from the
+  // camera-only layout back to screen+cam mid-session or mid-recording.
+  const ensureScreenStream = async (): Promise<boolean> => {
+    if (displayStreamRef.current) return true;
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        video: getDisplayVideoConstraints(resolution, fps),
+        audio: true,
+      });
+      displayStreamRef.current = displayStream;
+      setHasScreenSource(true);
+
+      displayStream.getVideoTracks()[0].onended = handleDisplayTrackEnded;
+      compositorRef.current?.setScreenStream(displayStream);
+      return true;
+    } catch (err) {
+      console.warn("Screen selection dismissed or failed:", err);
+      if ((err as { name?: string })?.name !== "NotAllowedError") {
+        setError(
+          (err as { message?: string })?.message || "Failed to select a screen"
+        );
+      }
+      return false;
+    }
+  };
+
   const handleReRecord = () => {
     resetAll();
   };
@@ -663,6 +926,11 @@ export function useScreenRecorder(options?: UseScreenRecorderOptions) {
     countdownDelay,
     setCountdownDelay,
     countdownTime,
+    isPreviewArmed,
+    preparePreview,
+    stopPreview,
+    hasScreenSource,
+    ensureScreenStream,
     title,
     setTitle,
     error,
