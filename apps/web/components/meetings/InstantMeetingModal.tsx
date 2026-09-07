@@ -155,7 +155,7 @@ export default function InstantMeetingModal({
                       htmlFor="instant-auto-record"
                       className={`text-xs font-semibold ${isFreePlan ? "cursor-not-allowed text-muted-foreground" : "cursor-pointer"}`}
                     >
-                      Record Meeting
+                      Record meeting automatically
                     </Label>
                     {isFreePlan ? (
                       <Badge
@@ -185,7 +185,7 @@ export default function InstantMeetingModal({
                         </Button>
                       </span>
                     ) : (
-                      "Save recorded video directly to your library when the meeting ends."
+                      "Recording will start automatically when more than 1 participant joins (at least 2 participants), and will be saved to your video library."
                     )}
                   </p>
                 </div>

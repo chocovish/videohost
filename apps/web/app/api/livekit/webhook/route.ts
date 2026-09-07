@@ -3,49 +3,9 @@ import { WebhookReceiver, EgressStatus } from "livekit-server-sdk";
 import { db } from "@videohost/db";
 import { getLiveKitCredentials, getRoomServiceClient, getEgressClient } from "@/lib/livekit";
 import { extractFileName } from "@/lib/s3";
+import { startMeetingRecording, getOrCreateFolder } from "@/lib/meeting-recording";
 
 const BOT_IDENTITIES = ["egress-recorder-bot"];
-
-/**
- * Helper to retrieve an existing folder or create it if not found.
- * Handles race conditions gracefully.
- */
-async function getOrCreateFolder(
-  organizationId: string,
-  name: string,
-  parentId: string | null = null
-) {
-  let folder = await db.folder.findFirst({
-    where: {
-      organizationId,
-      parentId,
-      name,
-    },
-  });
-
-  if (!folder) {
-    try {
-      folder = await db.folder.create({
-        data: {
-          organizationId,
-          name,
-          parentId,
-        },
-      });
-    } catch (err: any) {
-      // Fallback in case of race condition / unique constraint collision
-      folder = await db.folder.findFirst({
-        where: {
-          organizationId,
-          parentId,
-          name,
-        },
-      });
-    }
-  }
-
-  return folder;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,6 +28,49 @@ export async function POST(req: NextRequest) {
     }
 
     console.log(`[LiveKit Webhook] Event received: ${event.event}`);
+
+    // Trigger auto-recording when 2 or more human participants join a meeting room with recordOnStart
+    if (event.event === "participant_joined" && event.room?.name) {
+      const roomName: string = event.room.name;
+      try {
+        const meeting = await db.meeting.findUnique({
+          where: { id: roomName },
+          include: {
+            organization: {
+              include: { plan: true },
+            },
+          },
+        });
+
+        if (meeting && meeting.recordOnStart && !meeting.isRecording) {
+          const orgPlanName = meeting.organization?.plan?.name?.toLowerCase() || "free";
+          if (orgPlanName !== "free") {
+            const roomService = getRoomServiceClient();
+            const participants = await roomService
+              .listParticipants(roomName)
+              .catch(() => [] as { identity?: string }[]);
+
+            const humanParticipants = participants.filter(
+              (p) =>
+                !BOT_IDENTITIES.includes(p.identity || "") &&
+                !(p.identity || "").includes("egress")
+            );
+
+            if (humanParticipants.length >= 2) {
+              console.log(
+                `[LiveKit Webhook] Auto-recording triggered for room "${roomName}" (human participants: ${humanParticipants.length})`
+              );
+              await startMeetingRecording({
+                meetingId: meeting.id,
+                userId: meeting.createdById,
+              });
+            }
+          }
+        }
+      } catch (autoRecErr) {
+        console.error("[LiveKit Webhook] Error evaluating auto-recording on participant_joined:", autoRecErr);
+      }
+    }
 
     // Stop web egress when the last human participant leaves.
     // Web egress records a URL and is NOT bound to the room lifecycle, so it

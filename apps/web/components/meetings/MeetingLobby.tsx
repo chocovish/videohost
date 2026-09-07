@@ -470,8 +470,11 @@ export default function MeetingLobby({
 
               {/* Auto Record notification badge if enabled */}
               {meeting.recordOnStart && (
-                <div className="absolute top-3 right-3 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-[11px] font-bold">
-                  <Disc className="w-3.5 h-3.5 animate-pulse" /> Auto-Record
+                <div
+                  className="absolute top-3 right-3 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-[11px] font-bold"
+                  title="Auto-record will start automatically when 2 or more participants join"
+                >
+                  <Disc className="w-3.5 h-3.5 animate-pulse" /> Auto-Record (2+ joined)
                 </div>
               )}
 

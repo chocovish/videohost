@@ -396,7 +396,7 @@ export default function ScheduleMeetingModal({
                         </Button>
                       </span>
                     ) : (
-                      "Record conference and automatically save to your video library when the session starts."
+                      "Recording will start automatically when more than 1 participant joins (at least 2 participants), and will be saved to your video library."
                     )}
                   </p>
                 </div>

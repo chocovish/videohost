@@ -352,7 +352,7 @@ export default function MeetingsDashboardPage() {
                           <Badge
                             variant="destructive"
                             className="gap-1 uppercase"
-                            title="This meeting will be recorded automatically"
+                            title="This meeting will record automatically when 2 or more participants join"
                           >
                             <Disc className="w-3 h-3" /> Auto-Record
                           </Badge>

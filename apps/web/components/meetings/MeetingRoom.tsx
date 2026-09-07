@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   LiveKitRoom,
@@ -267,8 +267,17 @@ function RoomContent({
     };
   }, [room, meeting.isHost, onLeave, showToast, userIntentionalLeave]);
 
-  // Recording State & Timer
-  const [isRecording, setIsRecording] = useState(Boolean(meeting.isRecording || meeting.recordOnStart));
+  // Filter human participants (ignoring egress / bot recorders)
+  const humanParticipants = useMemo(() => {
+    return participants.filter(
+      (p) => !p.identity?.includes("egress") && p.identity !== "egress-recorder-bot"
+    );
+  }, [participants]);
+
+  // Recording State & Timer: initialize to actual active recording state (not recordOnStart)
+  const [isRecording, setIsRecording] = useState(
+    Boolean(meeting.isRecording || (room as any)?.isRecording)
+  );
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [meetingSeconds, setMeetingSeconds] = useState(0);
   const [isUpdatingRecord, setIsUpdatingRecord] = useState(false);
@@ -276,6 +285,24 @@ function RoomContent({
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [recordingError, setRecordingError] = useState<string | null>(null);
   const [recordingFallbackUrl, setRecordingFallbackUrl] = useState<string | null>(null);
+
+  // Sync with LiveKit's native RecordingStatusChanged event
+  useEffect(() => {
+    if (!room) return;
+    const handleRecordingStatusChanged = (recording: boolean) => {
+      setIsRecording(recording);
+      if (recording) {
+        showToast("Meeting recording is now active.", "info");
+      } else {
+        showToast("Meeting recording stopped.", "info");
+      }
+    };
+
+    room.on(RoomEvent.RecordingStatusChanged, handleRecordingStatusChanged);
+    return () => {
+      room.off(RoomEvent.RecordingStatusChanged, handleRecordingStatusChanged);
+    };
+  }, [room, showToast]);
 
   // Track meeting duration
   useEffect(() => {
@@ -570,6 +597,21 @@ function RoomContent({
               <span className="leading-none tracking-tight">REC {formatTimer(recordingSeconds)}</span>
             </div>
           )}
+
+          {/* Queued Auto-Record Badge (Waiting for 2nd participant) */}
+          {!isRecording &&
+            meeting.recordOnStart &&
+            Boolean(meeting.isOrgMember || meeting.isHost) &&
+            humanParticipants.length < 2 && (
+              <div
+                className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[11px] sm:text-xs font-medium inline-flex items-center gap-1.5"
+                title="Recording will start automatically when another participant joins (2+ participants)"
+              >
+                <Disc className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                <span className="hidden md:inline">Auto-REC: Waiting for 2nd participant</span>
+                <span className="md:hidden">Auto-REC: Waiting</span>
+              </div>
+            )}
 
           {/* --- Desktop Controls (hidden on mobile, visible on sm/md and up) --- */}
           <div className="hidden sm:flex items-center gap-1.5 sm:gap-2">
