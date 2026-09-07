@@ -9,7 +9,6 @@ import { useCopyLink } from "./_components/hooks/use-copy-link";
 import { useShareNavigation } from "./_components/hooks/use-share-navigation";
 import { useBuyerCountry } from "./_components/hooks/use-buyer-country";
 import { useCheckout } from "./_components/hooks/use-checkout";
-import { PageBackground } from "./_components/ui/PageBackground";
 import { ShareHeader } from "./_components/ui/ShareHeader";
 import { BannerHeader } from "./_components/ui/BannerHeader";
 import { ShareFooter } from "./_components/ui/ShareFooter";
@@ -169,7 +168,6 @@ export default function SharedContentClient({
 
   return (
     <div className={`min-h-screen flex flex-col font-sans antialiased relative ${theme.bgClass}`}>
-      <PageBackground theme={theme} />
       <ShareHeader data={data} theme={theme} copied={copied} onCopyLink={handleCopyLink} />
 
       {/* Main Content */}

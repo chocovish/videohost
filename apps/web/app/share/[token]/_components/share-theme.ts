@@ -19,7 +19,6 @@ export interface ShareTheme extends ResolvedShareTheme {
 const DEFAULT_CONFIG: SharePageConfigData = {
   themePreset: "obsidian",
   accentColor: "#84cc16",
-  backgroundStyle: "mesh-gradient",
   cardRoundness: "3xl",
   showLogo: true,
   showCta: false,

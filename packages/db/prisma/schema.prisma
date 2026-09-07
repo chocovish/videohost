@@ -121,7 +121,6 @@ model SharePageConfig {
   // Appearance & Styling
   themePreset      String       @default("obsidian") // "obsidian" | "cyberpunk" | "vaporwave" | "gold" | "ocean" | "sunset" | "minimal-light"
   accentColor      String       @default("#84cc16")
-  backgroundStyle  String       @default("mesh-gradient") // "mesh-gradient" | "obsidian-aura" | "neon-grid" | "glassmorphism" | "minimal-solid"
   cardRoundness    String       @default("3xl") // "xl" | "3xl" | "pill" | "square"
 
   // Palette-driven font / icon colours (saved whenever a palette is picked so

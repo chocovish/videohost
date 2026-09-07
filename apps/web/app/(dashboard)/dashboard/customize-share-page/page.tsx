@@ -26,7 +26,6 @@ import {
 import SharedContentClient, { SharePageConfigData, SharedData } from "@/app/share/[token]/shared-content-client";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -58,7 +57,6 @@ const DEFAULT_FONT_COLORS = getPresetFontColors("obsidian");
 const DEFAULT_CONFIG: SharePageConfigData = {
   themePreset: "obsidian",
   ...DEFAULT_FONT_COLORS,
-  backgroundStyle: "mesh-gradient",
   cardRoundness: "3xl",
   customTitle: "",
   welcomeTagline: "",
@@ -575,30 +573,6 @@ export default function CustomizeSharePage() {
                   These are saved with your palette and used instead of hard-coded
                   colours on video, playlist and meeting-pass share pages.
                 </p>
-              </div>
-
-              {/* Shadcn Select for Background Visual Style */}
-              <div className="space-y-3 pt-4 border-t border-border">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground block">
-                  Background Visual Style
-                </label>
-                <Select
-                  value={config.backgroundStyle || "mesh-gradient"}
-                  onValueChange={(val) => setConfig((prev) => ({ ...prev, backgroundStyle: val || undefined }))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select background style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                    <SelectItem value="mesh-gradient">Soft Gradient Wash (Subtle)</SelectItem>
-                    <SelectItem value="obsidian-aura">Spotlight Wash (Subtle)</SelectItem>
-                    <SelectItem value="neon-grid">Dot Grid Overlay</SelectItem>
-                    <SelectItem value="glassmorphism">Soft Top Wash</SelectItem>
-                    <SelectItem value="minimal-solid">Clean Solid (No Effects)</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-border">

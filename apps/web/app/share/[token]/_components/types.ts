@@ -14,7 +14,6 @@ export interface SharePageConfigData {
   mutedColor?: string | null;
   iconColor?: string | null;
   onAccentColor?: string | null;
-  backgroundStyle?: string;
   cardRoundness?: string;
   customTitle?: string | null;
   welcomeTagline?: string | null;
