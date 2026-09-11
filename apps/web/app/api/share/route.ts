@@ -2,7 +2,15 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
 import { sendShareEmail, sendMeetingInvitationEmail } from "@/lib/mail";
-import { getBaseUrl } from "@/lib/utils";
+import { getBaseUrl, isAllowedCurrency } from "@/lib/utils";
+
+function sanitizeCountryPricing(pricing: any): any[] {
+  if (!Array.isArray(pricing)) return [];
+  return pricing.map((item) => ({
+    ...item,
+    currency: isAllowedCurrency(item.currency) ? String(item.currency).toUpperCase() : "INR",
+  }));
+}
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
   if (!authCtx) {
@@ -173,10 +181,10 @@ export async function POST(req: Request) {
         updateData.price = price !== null && price !== "" ? parseFloat(String(price)) : null;
       }
       if (currency !== undefined) {
-        updateData.currency = currency;
+        updateData.currency = isAllowedCurrency(currency) ? String(currency).toUpperCase() : "INR";
       }
       if (countryPricing !== undefined) {
-        updateData.countryPricing = countryPricing;
+        updateData.countryPricing = sanitizeCountryPricing(countryPricing);
       }
 
       if (targetType === "video") {
@@ -329,10 +337,10 @@ export async function POST(req: Request) {
         updateData.price = price !== null ? parseFloat(price) : null;
       }
       if (currency !== undefined) {
-        updateData.currency = currency;
+        updateData.currency = isAllowedCurrency(currency) ? String(currency).toUpperCase() : "INR";
       }
       if (countryPricing !== undefined) {
-        updateData.countryPricing = countryPricing;
+        updateData.countryPricing = sanitizeCountryPricing(countryPricing);
       }
 
       if (targetType === "video") {

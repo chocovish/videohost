@@ -62,11 +62,37 @@ export interface CountryPrice {
   currency: string;
 }
 
+export interface SharedAppointmentOffering {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  duration: number;
+  price: number;
+  currency: string;
+  color: string;
+  locationType: string;
+  bookingNoticeHours: number;
+  bufferMinutes: number;
+  createdAt: string;
+  createdBy?: {
+    name: string;
+    email?: string;
+    image?: string | null;
+  };
+}
+
 export interface SharedData {
-  type: "video" | "folder" | "playlist" | "meeting";
+  type: "video" | "folder" | "playlist" | "meeting" | "appointment";
   accessMode?: string;
   isPurchased?: boolean;
   isLoggedIn?: boolean;
+  currentUser?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+  } | null;
   price?: number | null;
   currency?: string;
   countryPricing?: CountryPrice[];
@@ -130,6 +156,7 @@ export interface SharedData {
     name: string;
     parentId?: string | null;
   };
+  appointmentOffering?: SharedAppointmentOffering;
   videos?: SharedVideoItem[];
   subfolders?: Array<{
     id: string;

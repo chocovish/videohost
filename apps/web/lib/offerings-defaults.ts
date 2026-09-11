@@ -69,6 +69,7 @@ export const DEFAULT_OFFERINGS_CONFIG: OfferingsConfigData = {
     showPlaylists: true,
     showCourses: true,
     showMeetings: true,
+    showAppointments: true,
     showVideos: true,
     showProducts: true,
     showServices: true,

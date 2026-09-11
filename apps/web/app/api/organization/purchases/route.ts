@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { getCommissionRateForPlan } from "@/lib/platform-fees";
+import { getCommissionRateForPlan, calculateSaleSplit } from "@/lib/platform-fees";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -22,13 +22,89 @@ export async function GET(req: Request) {
         ? org.plan.commissionPercent
         : getCommissionRateForPlan(activePlanName);
 
-    // 2. Perform parallel indexed DB-level aggregations and counts
+    // 2. Auto-sync any paid appointments that don't have a ContentPurchase row yet
+    try {
+      const paidAppointments = await db.appointment.findMany({
+        where: {
+          organizationId: authCtx.orgId,
+          offering: { price: { gt: 0 } },
+        },
+        include: {
+          offering: true,
+          purchases: { select: { id: true } },
+        },
+      });
+
+      for (const appt of paidAppointments) {
+        if (!appt.purchases || appt.purchases.length === 0) {
+          const existing = await db.contentPurchase.findFirst({
+            where: {
+              organizationId: authCtx.orgId,
+              contentType: "APPOINTMENT",
+              OR: [
+                { appointmentId: appt.id },
+                ...(appt.meetingId ? [{ meetingId: appt.meetingId }] : []),
+              ],
+            },
+          });
+
+          if (!existing) {
+            let userId = appt.clientId;
+            if (!userId && appt.clientEmail) {
+              const u = await db.user.findFirst({
+                where: { email: appt.clientEmail.toLowerCase().trim() },
+                select: { id: true },
+              });
+              if (u) userId = u.id;
+            }
+            if (!userId) userId = appt.hostId;
+
+            const split = calculateSaleSplit(
+              appt.offering.price,
+              org?.plan?.name || "free",
+              org?.plan?.commissionPercent
+            );
+
+            await db.contentPurchase.create({
+              data: {
+                organizationId: authCtx.orgId,
+                userId,
+                contentType: "APPOINTMENT",
+                appointmentId: appt.id,
+                meetingId: appt.meetingId,
+                amount: appt.offering.price,
+                currency: appt.offering.currency || "USD",
+                commissionPercent: split.commissionPercent,
+                commissionAmount: split.commissionAmount,
+                gatewayFeePercent: split.gatewayFeePercent,
+                gatewayFeeAmount: split.gatewayFeeAmount,
+                creatorEarnings: split.creatorEarnings,
+                planSnapshot: split.planSnapshot,
+                paymentMethod: "CARD",
+                status: "COMPLETED",
+                createdAt: appt.createdAt,
+              },
+            });
+          } else if (!existing.appointmentId) {
+            await db.contentPurchase.update({
+              where: { id: existing.id },
+              data: { appointmentId: appt.id },
+            });
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.error("[Auto-sync appointment purchases Error]:", syncErr);
+    }
+
+    // 3. Perform parallel indexed DB-level aggregations and counts
     const [
       salesAgg,
       withdrawalsAgg,
       videoPurchasesCount,
       playlistPurchasesCount,
       meetingPurchasesCount,
+      appointmentPurchasesCount,
       bankAccount,
       rawPurchases,
     ] = await Promise.all([
@@ -82,6 +158,13 @@ export async function GET(req: Request) {
           status: "COMPLETED",
         },
       }),
+      db.contentPurchase.count({
+        where: {
+          organizationId: authCtx.orgId,
+          contentType: "APPOINTMENT",
+          status: "COMPLETED",
+        },
+      }),
 
       // D. Connected bank account for payout currency
       db.bankAccount.findUnique({
@@ -121,6 +204,25 @@ export async function GET(req: Request) {
               title: true,
             },
           },
+          appointment: {
+            select: {
+              id: true,
+              clientName: true,
+              clientEmail: true,
+              scheduledStart: true,
+              scheduledEnd: true,
+              durationMinutes: true,
+              offering: {
+                select: {
+                  id: true,
+                  title: true,
+                  duration: true,
+                  price: true,
+                  currency: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { createdAt: "desc" },
         take: 300,
@@ -146,8 +248,9 @@ export async function GET(req: Request) {
         : 0;
 
     const currency =
+      org?.preferredCurrency ||
       bankAccount?.currency ||
-      (rawPurchases.length > 0 && rawPurchases[0].currency ? rawPurchases[0].currency : "USD");
+      (rawPurchases.length > 0 && rawPurchases[0].currency ? rawPurchases[0].currency : "INR");
 
     return NextResponse.json({
       success: true,
@@ -163,6 +266,7 @@ export async function GET(req: Request) {
         videoPurchasesCount,
         playlistPurchasesCount,
         meetingPurchasesCount,
+        appointmentPurchasesCount,
         activePlanName,
         activeCommissionPercent,
         gatewayFeePercent: effectiveGatewayFeePercent,

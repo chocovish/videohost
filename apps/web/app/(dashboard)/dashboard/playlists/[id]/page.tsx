@@ -151,6 +151,7 @@ export default function PlaylistDetailPage() {
     salesCount: number;
     basePrice?: number | null;
     currency?: string;
+    preferredCurrency?: string;
     shareAccessMode?: string;
   } | null>(null);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
@@ -851,7 +852,7 @@ export default function PlaylistDetailPage() {
                 <Receipt className="w-3.5 h-3.5 text-primary" /> Total Playlist Revenue
               </span>
               <p className="text-xl font-black text-foreground">
-                {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, playlist?.currency || "USD")}
+                {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, purchasesStats?.preferredCurrency || "INR")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}

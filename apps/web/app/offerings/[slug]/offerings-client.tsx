@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ListVideo,
   Calendar,
+  CalendarClock,
   Video as VideoIcon,
   Package,
   Briefcase,
@@ -102,6 +103,7 @@ export interface OfferingsConfigData {
     showPlaylists?: boolean;
     showCourses?: boolean;
     showMeetings?: boolean;
+    showAppointments?: boolean;
     showVideos?: boolean;
     showProducts?: boolean;
     showServices?: boolean;
@@ -573,6 +575,7 @@ export default function OfferingsLandingClient({
       ALL: items.length,
       PLAYLIST: 0,
       MEETING: 0,
+      APPOINTMENT: 0,
       VIDEO: 0,
       PRODUCT: 0,
       SERVICE: 0,
@@ -757,6 +760,7 @@ export default function OfferingsLandingClient({
     showPlaylists: true,
     showCourses: true,
     showMeetings: true,
+    showAppointments: true,
     showVideos: true,
     showProducts: true,
     showServices: true,
@@ -784,6 +788,8 @@ export default function OfferingsLandingClient({
         return <ListVideo className="w-4 h-4 text-emerald-400" />;
       case "MEETING":
         return <Calendar className="w-4 h-4 text-sky-400" />;
+      case "APPOINTMENT":
+        return <CalendarClock className="w-4 h-4 text-emerald-400" />;
       case "VIDEO":
         return <VideoIcon className="w-4 h-4 text-indigo-400" />;
       case "PRODUCT":
@@ -802,6 +808,8 @@ export default function OfferingsLandingClient({
         return "Playlist / Series";
       case "MEETING":
         return "Meeting";
+      case "APPOINTMENT":
+        return "1:1 Appointment";
       case "VIDEO":
         return "Featured Video";
       case "PRODUCT":
@@ -1305,6 +1313,9 @@ export default function OfferingsLandingClient({
                 ...(sections.showMeetings !== false
                   ? [{ id: "MEETING", label: "Meetings", count: categoryCounts.MEETING }]
                   : []),
+                ...(sections.showAppointments !== false
+                  ? [{ id: "APPOINTMENT", label: "Appointments", count: categoryCounts.APPOINTMENT }]
+                  : []),
                 ...(sections.showVideos !== false
                   ? [{ id: "VIDEO", label: "Showcases", count: categoryCounts.VIDEO }]
                   : []),
@@ -1433,14 +1444,22 @@ export default function OfferingsLandingClient({
                               {getCategoryIcon(item.type)}
                               <span>{getCategoryBadgeLabel(item.type)}</span>
                             </div>
-                            {item.badge && (
-                              <span
-                                className="px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs"
-                                style={{ backgroundColor: accentColor }}
-                              >
-                                {item.badge}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {item.meetingDuration && (
+                                <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-muted-foreground">
+                                  <Clock className="w-3 h-3 text-sky-400" />
+                                  {item.meetingDuration}
+                                </span>
+                              )}
+                              {item.badge && (
+                                <span
+                                  className="px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-white shadow-xs"
+                                  style={{ backgroundColor: accentColor }}
+                                >
+                                  {item.badge}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
 
@@ -1458,14 +1477,13 @@ export default function OfferingsLandingClient({
                           <RichTextViewer
                             content={item.description}
                             clamp={3}
-                            className="text-xs sm:text-sm leading-relaxed line-clamp-3 break-words"
-                            style={{ color: theme.subtext }}
+                            className="text-xs leading-relaxed break-words opacity-85"
                           />
                         )}
 
-                        {/* Highlights List */}
-                        {Array.isArray(item.highlights) && item.highlights.length > 0 && (
-                          <div className="pt-2 space-y-1.5 border-t border-dashed" style={{ borderColor: theme.cardBorder }}>
+                        {/* Highlights (if provided) */}
+                        {item.highlights && item.highlights.length > 0 && (
+                          <div className="space-y-1.5 pt-1">
                             {item.highlights.slice(0, 4).map((hl, idx) => (
                               <div key={idx} className="flex items-start gap-2 text-xs leading-normal" style={{ color: theme.subtext }}>
                                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-400" />
@@ -1478,8 +1496,8 @@ export default function OfferingsLandingClient({
 
                       {/* Card Footer: Price & Action */}
                       <div className="pt-3.5 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3" style={{ borderColor: theme.cardBorder }}>
-                        {/* 1. DYNAMIC CATALOG ITEM (PLAYLIST, MEETING, OR HOSTED VIDEO) */}
-                        {(item.type === "PLAYLIST" || item.type === "COURSE" || item.type === "MEETING" || (item.type === "VIDEO" && !item.ctaUrl?.startsWith("http"))) ? (
+                        {/* 1. DYNAMIC CATALOG ITEM (PLAYLIST, MEETING, APPOINTMENT, OR HOSTED VIDEO) */}
+                        {(item.type === "PLAYLIST" || item.type === "COURSE" || item.type === "MEETING" || item.type === "APPOINTMENT" || (item.type === "VIDEO" && !item.ctaUrl?.startsWith("http"))) ? (
                           <>
                             {/* Price / Status Column */}
                             <div className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-1">
@@ -1489,7 +1507,7 @@ export default function OfferingsLandingClient({
                                   <div className="flex items-center gap-1.5 pt-0.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                                       <CheckCircle2 className="w-3.5 h-3.5" />
-                                      <span>{item.type === "MEETING" ? "Seat Booked" : "Purchased"}</span>
+                                      <span>{item.type === "MEETING" ? "Seat Booked" : item.type === "APPOINTMENT" ? "Session Booked" : "Purchased"}</span>
                                     </span>
                                   </div>
                                 </>
@@ -1499,7 +1517,7 @@ export default function OfferingsLandingClient({
                                   <div className="flex items-center gap-1.5 pt-0.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                                       <ShieldCheck className="w-3.5 h-3.5" />
-                                      <span>{item.type === "MEETING" ? "Invite Granted" : "Access Granted"}</span>
+                                      <span>{item.type === "MEETING" || item.type === "APPOINTMENT" ? "Invite Granted" : "Access Granted"}</span>
                                     </span>
                                   </div>
                                 </>
@@ -1516,21 +1534,21 @@ export default function OfferingsLandingClient({
                               ) : item.shareAccessMode === "PURCHASABLE" ? (
                                 <>
                                   <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                    {item.type === "MEETING" ? "Session Fee" : "Price"}
+                                    {item.type === "APPOINTMENT" ? "Session Fee" : item.type === "MEETING" ? "Session Fee" : "Price"}
                                   </div>
                                   <div className="flex items-baseline gap-1">
                                     <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
                                       {item.price || "Free"}
                                     </span>
                                     <span className="text-[10px] sm:text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                      {item.pricePeriod || (item.type === "MEETING" ? "per seat" : "one-time")}
+                                      {item.pricePeriod || (item.type === "APPOINTMENT" || item.type === "MEETING" ? "per session" : "one-time")}
                                     </span>
                                   </div>
                                 </>
                               ) : (
                                 <>
                                   <div className="text-[11px] font-medium" style={{ color: theme.subtext }}>
-                                    {item.type === "MEETING" ? "Session Fee" : "Price"}
+                                    {item.type === "APPOINTMENT" ? "Session Fee" : item.type === "MEETING" ? "Session Fee" : "Price"}
                                   </div>
                                   <div className="flex items-baseline gap-1">
                                     <span className="text-lg sm:text-xl font-black tracking-tight" style={{ color: accentColor }}>
@@ -1553,7 +1571,13 @@ export default function OfferingsLandingClient({
                               className="w-full sm:w-auto text-xs font-bold rounded-xl py-2 sm:py-2.5 px-3.5 sm:px-4 text-white shadow-md cursor-pointer flex items-center justify-center gap-1.5 transition-transform active:scale-95 text-center"
                               style={{ backgroundColor: accentColor }}
                             >
-                              {item.userAccessState === "PURCHASED" || item.userAccessState === "GRANTED" ? (
+                              {item.type === "APPOINTMENT" ? (
+                                <>
+                                  <CalendarClock className="w-3.5 h-3.5" />
+                                  <span>{item.price === "Free" || item.price === "$0.00" || !item.price ? "Book Free Session" : "Book Session"}</span>
+                                  <ArrowRight className="w-3.5 h-3.5" />
+                                </>
+                              ) : item.userAccessState === "PURCHASED" || item.userAccessState === "GRANTED" ? (
                                 item.type === "MEETING" ? (
                                   <>
                                     <VideoIcon className="w-3.5 h-3.5" />

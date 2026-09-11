@@ -21,23 +21,29 @@ export async function GET(
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
     }
 
-    const purchases = await db.contentPurchase.findMany({
-      where: {
-        meetingId: id,
-        organizationId: authCtx.orgId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+    const [purchases, org] = await Promise.all([
+      db.contentPurchase.findMany({
+        where: {
+          meetingId: id,
+          organizationId: authCtx.orgId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      db.organization.findUnique({
+        where: { id: authCtx.orgId },
+        select: { preferredCurrency: true },
+      }),
+    ]);
 
     const totalRevenue = purchases
       .filter((p) => p.status === "COMPLETED")
@@ -50,7 +56,8 @@ export async function GET(
         totalRevenue,
         salesCount: purchases.filter((p) => p.status === "COMPLETED").length,
         basePrice: meeting.price,
-        currency: meeting.currency || "USD",
+        currency: meeting.currency || org?.preferredCurrency || "INR",
+        preferredCurrency: org?.preferredCurrency || "INR",
         shareAccessMode: meeting.shareAccessMode,
       },
     });

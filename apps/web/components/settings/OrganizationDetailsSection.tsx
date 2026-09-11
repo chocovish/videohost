@@ -12,15 +12,26 @@ import {
   Loader2,
   Sparkles,
   Crop,
+  Coins,
 } from "lucide-react";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { GLOBAL_CURRENCY_OPTIONS, GLOBAL_CURRENCY_MAP } from "@/lib/utils";
 
 interface OrganizationDetailsSectionProps {
   orgName: string;
   setOrgName: (name: string) => void;
+  preferredCurrency: string;
+  setPreferredCurrency: (currency: string) => void;
   activeOrg: OrganizationItem | undefined;
   currentDisplayLogo: string | null;
   currentDisplayCover: string | null;
@@ -39,6 +50,8 @@ interface OrganizationDetailsSectionProps {
 export function OrganizationDetailsSection({
   orgName,
   setOrgName,
+  preferredCurrency,
+  setPreferredCurrency,
   activeOrg,
   currentDisplayLogo,
   currentDisplayCover,
@@ -107,6 +120,51 @@ export function OrganizationDetailsSection({
                 </div>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Preferred Currency Section */}
+        <div className="pt-2 border-t border-border space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+            <div className="md:col-span-8 space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-primary" /> Preferred Currency
+              </label>
+              <Select
+                value={preferredCurrency}
+                onValueChange={(val) => setPreferredCurrency(val || "INR")}
+                disabled={loading}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-background border-border">
+                  <SelectValue placeholder="Select preferred currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GLOBAL_CURRENCY_OPTIONS.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{c.label}</span>
+                        <span className="text-xs text-muted-foreground">— {c.name} {c.code === "INR" ? "(Default)" : ""}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                All cumulative financial values—including total gross revenue, net creator earnings, available balance, and payouts—are displayed in this preferred currency. Supported currencies: INR and USD.
+              </p>
+            </div>
+
+            <div className="md:col-span-4 p-3 rounded-xl bg-muted/40 border border-border space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-muted-foreground">Selected Currency</span>
+                <Badge variant="outline" className="font-mono font-bold text-primary">
+                  {GLOBAL_CURRENCY_MAP[preferredCurrency as keyof typeof GLOBAL_CURRENCY_MAP]?.label || preferredCurrency || "INR (₹)"}
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Applied to sales summaries, video and playlist revenues, and payout ledgers.
+              </p>
+            </div>
           </div>
         </div>
 

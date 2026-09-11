@@ -7,6 +7,7 @@ import {
   deleteOldImage,
   uploadBase64Image,
 } from "@/lib/branding-image";
+import { isAllowedCurrency } from "@/lib/utils";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -55,6 +56,7 @@ export async function GET(req: Request) {
         slug: organization.slug,
         logoUrl,
         coverUrl,
+        preferredCurrency: organization.preferredCurrency || "INR",
         planId: organization.planId,
         planName: organization.plan?.name || "free",
         plan: organization.plan,
@@ -112,7 +114,12 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
-    const updateData: { name?: string; logoUrl?: string | null; coverUrl?: string | null } = {};
+    const updateData: {
+      name?: string;
+      logoUrl?: string | null;
+      coverUrl?: string | null;
+      preferredCurrency?: string;
+    } = {};
 
     // 1. Handle Display Name Update
     if (body.name !== undefined) {
@@ -190,6 +197,18 @@ export async function PATCH(req: Request) {
       updateData.coverUrl = s3Key;
     }
 
+    // 4. Handle Preferred Currency Update
+    if (body.preferredCurrency !== undefined) {
+      const preferredCurrency = String(body.preferredCurrency || "").trim().toUpperCase();
+      if (!isAllowedCurrency(preferredCurrency)) {
+        return NextResponse.json(
+          { error: "Currently, only INR and USD are supported as preferred currencies" },
+          { status: 400 }
+        );
+      }
+      updateData.preferredCurrency = preferredCurrency;
+    }
+
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No update parameters provided" },
@@ -213,6 +232,7 @@ export async function PATCH(req: Request) {
         slug: updatedOrg.slug,
         logoUrl: resolvedLogoUrl,
         coverUrl: resolvedCoverUrl,
+        preferredCurrency: updatedOrg.preferredCurrency || "INR",
       },
     });
   } catch (error: any) {

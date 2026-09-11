@@ -93,7 +93,7 @@ export async function POST(req: Request) {
         ctaAction: isPlaylistOrVideo ? "EXTERNAL_LINK" : (body.ctaAction || "INQUIRY_MODAL"),
         ctaUrl: body.ctaUrl || null,
         highlights: Array.isArray(body.highlights) ? body.highlights.filter(Boolean) : [],
-        meetingDuration: body.type === "MEETING" ? (body.meetingDuration || null) : null,
+        meetingDuration: (body.type === "MEETING" || body.type === "APPOINTMENT") ? (body.meetingDuration || null) : null,
         deliveryFormat: isPlaylistOrVideo ? null : (body.deliveryFormat || null),
         order: typeof body.order === "number" ? body.order : nextOrder,
         isFeatured: body.isFeatured ?? false,

@@ -26,6 +26,7 @@ import {
   ShoppingBag,
   BadgeDollarSign,
   BarChart3,
+  CalendarClock,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSidebar } from "@/components/SidebarContext";
@@ -181,6 +182,7 @@ export default function Sidebar({
         { label: "Uploaded Videos", href: "/dashboard/uploaded-videos", icon: Video },
         { label: "Playlists", href: "/dashboard/playlists", icon: ListVideo },
         { label: "Meetings", href: "/dashboard/meetings", icon: Users2 },
+        { label: "Appointments", href: "/dashboard/appointments", icon: CalendarClock },
         { label: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
       ],
     },

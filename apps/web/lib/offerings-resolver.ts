@@ -49,6 +49,7 @@ export async function resolveOfferingItem(
   let coverImageUrl: string | null = null;
   let shareUrl = item.ctaUrl || "";
   let deliveryFormat = item.deliveryFormat || null;
+  let meetingDuration = item.meetingDuration || null;
   let shareAccessMode: "PUBLIC" | "RESTRICTED" | "PURCHASABLE" | "PRIVATE" = "PUBLIC";
   let userAccessState: "PUBLIC" | "RESTRICTED" | "GRANTED" | "UNPURCHASED" | "PURCHASED" = "PUBLIC";
 
@@ -323,7 +324,66 @@ export async function resolveOfferingItem(
     }
   }
 
-  // 4. CUSTOM ITEMS (PRODUCT, SERVICE, EXTERNAL URLS)
+  // 4. APPOINTMENT RESOLUTION (Dynamically pull from AppointmentOffering source)
+  else if (item.type === "APPOINTMENT") {
+    let offeringId = "";
+    if (item.ctaUrl) {
+      const m = item.ctaUrl.match(/\/(?:share|book|appointments)\/([a-zA-Z0-9_-]+)/);
+      if (m && m[1]) offeringId = m[1];
+    }
+
+    let apptOffering = offeringId
+      ? await db.appointmentOffering.findUnique({
+          where: { id: offeringId },
+          include: {
+            createdBy: {
+              select: { name: true, email: true, image: true },
+            },
+          },
+        })
+      : null;
+
+    if (!apptOffering && item.organizationId) {
+      apptOffering = await db.appointmentOffering.findFirst({
+        where: { organizationId: item.organizationId, title: item.title },
+        include: {
+          createdBy: {
+            select: { name: true, email: true, image: true },
+          },
+        },
+      });
+    }
+
+    if (apptOffering) {
+      title = apptOffering.title;
+      description = apptOffering.description || item.description || "";
+      subtitle = `${apptOffering.duration} min 1-on-1 session`;
+      shareUrl = `/share/${apptOffering.id}`;
+      shareAccessMode = apptOffering.price > 0 ? "PURCHASABLE" : "PUBLIC";
+      meetingDuration = `${apptOffering.duration} mins`;
+      deliveryFormat = `1:1 Live Video Session • ${apptOffering.duration} mins`;
+
+      if (apptOffering.price > 0) {
+        price = formatCurrencyPrice(apptOffering.price, apptOffering.currency || "USD");
+        pricePeriod = "per session";
+      } else {
+        price = "Free";
+        pricePeriod = "";
+      }
+
+      if (item.coverImageKey) {
+        try {
+          coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
+        } catch (e) {}
+      }
+    } else if (item.coverImageKey) {
+      try {
+        coverImageUrl = await getPresignedPlaybackUrl(item.coverImageKey);
+      } catch (e) {}
+    }
+  }
+
+  // 5. CUSTOM ITEMS (PRODUCT, SERVICE, EXTERNAL URLS)
   else {
     if (item.coverImageKey) {
       try {
@@ -341,6 +401,7 @@ export async function resolveOfferingItem(
     pricePeriod,
     coverImageUrl,
     shareUrl,
+    meetingDuration,
     deliveryFormat,
     shareAccessMode,
     userAccessState,

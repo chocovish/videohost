@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { amount, currency = "USD" } = body;
+    const { amount, currency = "INR" } = body;
 
     const requestAmount = parseFloat(amount);
     if (isNaN(requestAmount) || requestAmount <= 0) {
@@ -48,9 +48,15 @@ export async function POST(req: Request) {
     }
 
     // 1. Verify Bank Account is configured
-    const bankAccount = await db.bankAccount.findUnique({
-      where: { organizationId: authCtx.orgId },
-    });
+    const [bankAccount, org] = await Promise.all([
+      db.bankAccount.findUnique({
+        where: { organizationId: authCtx.orgId },
+      }),
+      db.organization.findUnique({
+        where: { id: authCtx.orgId },
+        select: { preferredCurrency: true },
+      }),
+    ]);
 
     if (!bankAccount) {
       return NextResponse.json(
@@ -102,7 +108,7 @@ export async function POST(req: Request) {
     const totalWithdrawn = withdrawalsAgg._sum.amount || 0;
     const availableBalance = Math.max(0, Math.round((totalNetEarnings - totalWithdrawn) * 100) / 100);
 
-    const payoutCurrency = bankAccount.currency || currency || "USD";
+    const payoutCurrency = org?.preferredCurrency || bankAccount.currency || currency || "INR";
 
     if (requestAmount > availableBalance) {
       return NextResponse.json(

@@ -24,7 +24,7 @@ export default function SalesAndPayoutsPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [hasPendingWithdrawal, setHasPendingWithdrawal] = useState(false);
   const [monetizationTab, setMonetizationTab] = useState<"purchases" | "withdrawals" | "bank" | "tiers">("purchases");
-  const [purchaseFilterType, setPurchaseFilterType] = useState<"ALL" | "VIDEO" | "PLAYLIST" | "MEETING">("ALL");
+  const [purchaseFilterType, setPurchaseFilterType] = useState<"ALL" | "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT">("ALL");
   const [purchaseSearchQuery, setPurchaseSearchQuery] = useState("");
   const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
   const [withdrawalPresetPct, setWithdrawalPresetPct] = useState<number | null>(null);
@@ -38,12 +38,12 @@ export default function SalesAndPayoutsPage() {
     bankName: "",
     swiftCode: "",
     accountType: "CHECKING",
-    country: "US",
-    currency: "USD",
+    country: "IN",
+    currency: "INR",
   });
 
   // Active Payout / Monetization Currency
-  const activeCurrency = bankAccount?.currency || purchasesStats?.currency || bankFormData.currency || (purchases.length > 0 && purchases[0].currency) || "USD";
+  const activeCurrency = activeOrg?.preferredCurrency || purchasesStats?.currency || bankAccount?.currency || "INR";
   const [showAccountNumber, setShowAccountNumber] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
   const [bankSuccessMsg, setBankSuccessMsg] = useState("");
@@ -95,8 +95,8 @@ export default function SalesAndPayoutsPage() {
             bankName: bData.bankAccount.bankName || "",
             swiftCode: bData.bankAccount.swiftCode || "",
             accountType: bData.bankAccount.accountType || "CHECKING",
-            country: bData.bankAccount.country || "US",
-            currency: bData.bankAccount.currency || "USD",
+            country: bData.bankAccount.country || "IN",
+            currency: bData.bankAccount.currency || "INR",
           });
         }
       }

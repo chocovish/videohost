@@ -106,6 +106,28 @@ const STARTER_OFFERINGS = [
     isFeatured: false,
     isPublished: true,
   },
+  {
+    type: "APPOINTMENT",
+    title: "1-on-1 Architecture & System Review Consultation",
+    subtitle: "Direct private video call with live code review & screen share",
+    description: "Book a personalized 1-on-1 session to review your production stack, debug performance bottlenecks, or discuss your engineering roadmap.",
+    price: "$99",
+    pricePeriod: "per session",
+    badge: "1:1 Session",
+    ctaText: "Book Session",
+    ctaUrl: "#offerings",
+    highlights: [
+      "Private 1-on-1 Live Video Session",
+      "Interactive Screen Share & Debugging",
+      "Session Recording & Notes Included",
+      "Flexible Slot Selection & Rescheduling",
+    ],
+    meetingDuration: "45 mins",
+    deliveryFormat: "1:1 Live Video Session • 45 mins",
+    order: 5,
+    isFeatured: true,
+    isPublished: true,
+  },
 ];
 
 export async function POST() {

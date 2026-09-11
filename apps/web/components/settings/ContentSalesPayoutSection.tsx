@@ -30,6 +30,7 @@ import {
   Save,
   ChevronRight,
   CreditCard,
+  CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +53,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatMoney, getCurrencySymbol } from "@/lib/utils";
+import {
+  formatMoney,
+  getCurrencySymbol,
+  GLOBAL_CURRENCY_OPTIONS,
+  GLOBAL_CURRENCY_MAP,
+} from "@/lib/utils";
 import { PLAN_COMMISSION_RATES } from "@/lib/platform-fees";
 import { OrganizationItem } from "./OrganizationSwitcherSection";
 
@@ -67,6 +73,7 @@ export interface PurchasesStats {
   videoPurchasesCount: number;
   playlistPurchasesCount: number;
   meetingPurchasesCount?: number;
+  appointmentPurchasesCount?: number;
   activePlanName?: string;
   activeCommissionPercent?: number;
   gatewayFeePercent?: number;
@@ -92,8 +99,8 @@ interface ContentSalesPayoutSectionProps {
   hasPendingWithdrawal: boolean;
   monetizationTab: "purchases" | "withdrawals" | "bank" | "tiers";
   setMonetizationTab: (tab: "purchases" | "withdrawals" | "bank" | "tiers") => void;
-  purchaseFilterType: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING";
-  setPurchaseFilterType: (type: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING") => void;
+  purchaseFilterType: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT";
+  setPurchaseFilterType: (type: "ALL" | "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT") => void;
   purchaseSearchQuery: string;
   setPurchaseSearchQuery: (query: string) => void;
   copiedPaymentId: string | null;
@@ -168,9 +175,15 @@ export function ContentSalesPayoutSection({
     }
     if (purchaseSearchQuery.trim()) {
       const q = purchaseSearchQuery.toLowerCase();
-      const title = (p.video?.title || p.playlist?.title || p.meeting?.title || "").toLowerCase();
-      const userName = (p.user?.name || "").toLowerCase();
-      const userEmail = (p.user?.email || "").toLowerCase();
+      const title = (
+        p.appointment?.offering?.title ||
+        p.video?.title ||
+        p.playlist?.title ||
+        p.meeting?.title ||
+        ""
+      ).toLowerCase();
+      const userName = (p.user?.name || p.appointment?.clientName || "").toLowerCase();
+      const userEmail = (p.user?.email || p.appointment?.clientEmail || "").toLowerCase();
       const paymentId = (p.paymentId || "").toLowerCase();
       if (!title.includes(q) && !userName.includes(q) && !userEmail.includes(q) && !paymentId.includes(q)) {
         return false;
@@ -350,13 +363,49 @@ export function ContentSalesPayoutSection({
       </div>
 
       {/* Available Balance & Payout Financial KPI Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Card 1: Available for Payout (Featured Hero Card) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Gross Revenue */}
+        <div className="p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-2 hover:border-border transition-colors">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Receipt className="w-4 h-4 text-primary" /> Total Gross Revenue
+            </span>
+            <Badge variant="outline" className="font-mono">
+              {purchasesStats?.totalPurchasesCount || 0} sales
+            </Badge>
+          </span>
+          <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalGrossRevenue : 0, activeCurrency)}
+          </p>
+          <p className="text-xs text-muted-foreground truncate pt-1">
+            Lifetime cumulative sales volume
+          </p>
+        </div>
+
+        {/* Card 2: Net Creator Earnings */}
+        <div className="p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-2 hover:border-border transition-colors">
+          <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-primary" /> Net Take-Home
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">
+              After fees
+            </span>
+          </span>
+          <p className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+            {formatMoney(purchasesStats ? purchasesStats.totalNetEarnings : 0, activeCurrency)}
+          </p>
+          <p className="text-xs text-muted-foreground truncate pt-1">
+            Net take-home from content sales
+          </p>
+        </div>
+
+        {/* Card 3: Available for Payout (Featured Hero Card) */}
         <div className="p-5 rounded-3xl bg-primary/10 border-2 border-primary/30 shadow-md space-y-2 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform" />
           <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <Wallet className="w-4 h-4" /> Available Payout Balance
+              <Wallet className="w-4 h-4" /> Available Balance
             </span>
             <span className="w-2.5 h-2.5 rounded-full bg-primary" />
           </span>
@@ -380,11 +429,11 @@ export function ContentSalesPayoutSection({
           </div>
         </div>
 
-        {/* Card 2: Pending & Paid Out */}
+        {/* Card 4: Pending & Paid Out */}
         <div className="p-5 rounded-3xl bg-card border border-border/80 shadow-xs space-y-2 hover:border-border transition-colors">
           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <ArrowDownToLine className="w-4 h-4 text-primary" /> Total Withdrawn / Pending
+              <ArrowDownToLine className="w-4 h-4 text-primary" /> Total Withdrawn
             </span>
             <Badge variant="outline" className="font-mono">
               {withdrawals.length} requests
@@ -414,7 +463,7 @@ export function ContentSalesPayoutSection({
               <span className="text-xs font-bold text-muted-foreground flex items-center gap-1 mr-1">
                 <Filter className="w-3.5 h-3.5" /> Type:
               </span>
-              {(["ALL", "VIDEO", "PLAYLIST", "MEETING"] as const).map((type) => (
+              {(["ALL", "VIDEO", "PLAYLIST", "MEETING", "APPOINTMENT"] as const).map((type) => (
                 <Button
                   key={type}
                   type="button"
@@ -424,7 +473,15 @@ export function ContentSalesPayoutSection({
                   className={`rounded-xl text-xs font-bold ${purchaseFilterType !== type ? "bg-muted/50 text-muted-foreground hover:text-foreground" : ""
                     }`}
                 >
-                  {type === "ALL" ? "All Orders" : type === "VIDEO" ? "Videos" : type === "PLAYLIST" ? "Playlists" : "Meetings"}
+                  {type === "ALL"
+                    ? "All Orders"
+                    : type === "VIDEO"
+                    ? "Videos"
+                    : type === "PLAYLIST"
+                    ? "Playlists"
+                    : type === "MEETING"
+                    ? "Meetings"
+                    : "Appointments"}
                 </Button>
               ))}
             </div>
@@ -512,19 +569,22 @@ export function ContentSalesPayoutSection({
                               <ListVideo className="w-4 h-4" />
                             ) : purchase.contentType === "MEETING" ? (
                               <Users className="w-4 h-4" />
+                            ) : purchase.contentType === "APPOINTMENT" ? (
+                              <CalendarCheck className="w-4 h-4" />
                             ) : (
                               <Film className="w-4 h-4" />
                             )}
                           </div>
                           <div>
                             <p className="font-bold text-foreground line-clamp-1 max-w-[200px]">
-                              {purchase.video?.title ||
+                              {purchase.appointment?.offering?.title ||
+                                purchase.video?.title ||
                                 purchase.playlist?.title ||
                                 purchase.meeting?.title ||
-                                "Purchasable Content"}
+                                (purchase.contentType === "APPOINTMENT" ? "1:1 Appointment" : "Purchasable Content")}
                             </p>
                             <Badge variant="secondary" className="uppercase mt-0.5">
-                              {purchase.contentType}
+                              {purchase.contentType === "APPOINTMENT" ? "1:1 Appointment" : purchase.contentType}
                             </Badge>
                           </div>
                         </div>
@@ -533,10 +593,10 @@ export function ContentSalesPayoutSection({
                       {/* Buyer */}
                       <TableCell className="py-3.5 px-4">
                         <div className="font-bold text-foreground">
-                          {purchase.user?.name || "Guest Purchaser"}
+                          {purchase.user?.name || purchase.appointment?.clientName || "Guest Purchaser"}
                         </div>
                         <div className="text-xs text-muted-foreground font-mono truncate max-w-[180px]">
-                          {purchase.user?.email || "—"}
+                          {purchase.user?.email || purchase.appointment?.clientEmail || "—"}
                         </div>
                         {purchase.countryCode && (
                           <Badge variant="outline" className="font-mono mt-0.5">
@@ -1092,22 +1152,22 @@ export function ContentSalesPayoutSection({
                 <Select
                   value={bankFormData.country}
                   onValueChange={(val) => {
-                    const country = val || "US";
+                    const country = val || "IN";
                     const countryCurrencyMap: Record<string, string> = {
-                      US: "USD",
                       IN: "INR",
-                      GB: "GBP",
-                      DE: "EUR",
-                      FR: "EUR",
-                      CA: "CAD",
-                      AU: "AUD",
-                      SG: "SGD",
-                      AE: "AED",
+                      US: "USD",
+                      GB: "USD",
+                      DE: "USD",
+                      FR: "USD",
+                      CA: "USD",
+                      AU: "USD",
+                      SG: "USD",
+                      AE: "USD",
                     };
                     setBankFormData((prev) => ({
                       ...prev,
                       country,
-                      currency: countryCurrencyMap[country] || prev.currency,
+                      currency: countryCurrencyMap[country] || (country === "IN" ? "INR" : "USD"),
                     }));
                   }}
                 >
@@ -1119,8 +1179,8 @@ export function ContentSalesPayoutSection({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                    <SelectItem value="US">🇺🇸 United States</SelectItem>
                     <SelectItem value="IN">🇮🇳 India</SelectItem>
+                    <SelectItem value="US">🇺🇸 United States</SelectItem>
                     <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
                     <SelectItem value="CA">🇨🇦 Canada</SelectItem>
                     <SelectItem value="DE">🇩🇪 Germany</SelectItem>
@@ -1139,7 +1199,7 @@ export function ContentSalesPayoutSection({
                 </Label>
                 <Select
                   value={bankFormData.currency}
-                  onValueChange={(val) => setBankFormData({ ...bankFormData, currency: val || "USD" })}
+                  onValueChange={(val) => setBankFormData({ ...bankFormData, currency: val || "INR" })}
                 >
                   <SelectTrigger
                     id="bank-currency-select"
@@ -1149,16 +1209,11 @@ export function ContentSalesPayoutSection({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="INR">INR (₹)</SelectItem>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
-                    <SelectItem value="CAD">CAD (CA$)</SelectItem>
-                    <SelectItem value="AUD">AUD (AU$)</SelectItem>
-                    <SelectItem value="SGD">SGD (SG$)</SelectItem>
-                    <SelectItem value="AED">AED (AED)</SelectItem>
-                    <SelectItem value="JPY">JPY (¥)</SelectItem>
-                    <SelectItem value="BRL">BRL (R$)</SelectItem>
+                      {GLOBAL_CURRENCY_OPTIONS.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>

@@ -38,6 +38,8 @@ export default function SettingsPage() {
   // Organization settings state
   const [orgName, setOrgName] = useState("");
   const [initialOrgName, setInitialOrgName] = useState("");
+  const [preferredCurrency, setPreferredCurrency] = useState("INR");
+  const [initialPreferredCurrency, setInitialPreferredCurrency] = useState("INR");
   const [orgLogoUrl, setOrgLogoUrl] = useState<string | null>(null);
   const [newLogoData, setNewLogoData] = useState<string | null>(null);
   const [removeLogo, setRemoveLogo] = useState(false);
@@ -114,6 +116,9 @@ export default function SettingsPage() {
         if (data.organization) {
           setOrgName(data.organization.name || "");
           setInitialOrgName(data.organization.name || "");
+          const curr = data.organization.preferredCurrency || "INR";
+          setPreferredCurrency(curr);
+          setInitialPreferredCurrency(curr);
           setOrgLogoUrl(data.organization.logoUrl || null);
           setNewLogoData(null);
           setRemoveLogo(false);
@@ -310,7 +315,8 @@ export default function SettingsPage() {
   const hasNameChanged = orgName.trim() !== initialOrgName && orgName.trim().length > 0;
   const hasLogoChanged = newLogoData !== null || (removeLogo && orgLogoUrl !== null);
   const hasCoverChanged = newCoverData !== null || (removeCover && orgCoverUrl !== null);
-  const hasUnsavedChanges = hasNameChanged || hasLogoChanged || hasCoverChanged;
+  const hasCurrencyChanged = preferredCurrency !== initialPreferredCurrency;
+  const hasUnsavedChanges = hasNameChanged || hasLogoChanged || hasCoverChanged || hasCurrencyChanged;
 
   // Active display logo (new local crop > current server logo > null)
   const currentDisplayLogo = removeLogo ? null : newLogoData || orgLogoUrl;
@@ -332,10 +338,15 @@ export default function SettingsPage() {
         removeLogo?: boolean;
         coverData?: string;
         removeCover?: boolean;
+        preferredCurrency?: string;
       } = {};
 
       if (hasNameChanged) {
         payload.name = orgName.trim();
+      }
+
+      if (hasCurrencyChanged) {
+        payload.preferredCurrency = preferredCurrency;
       }
 
       if (removeLogo) {
@@ -365,6 +376,9 @@ export default function SettingsPage() {
       if (data.organization) {
         setInitialOrgName(data.organization.name);
         setOrgName(data.organization.name);
+        const updatedCurrency = data.organization.preferredCurrency || "INR";
+        setInitialPreferredCurrency(updatedCurrency);
+        setPreferredCurrency(updatedCurrency);
         setOrgLogoUrl(data.organization.logoUrl || null);
         setNewLogoData(null);
         setRemoveLogo(false);
@@ -381,6 +395,7 @@ export default function SettingsPage() {
                   ...o,
                   name: data.organization.name,
                   logoUrl: data.organization.logoUrl,
+                  preferredCurrency: updatedCurrency,
                 }
               : o
           )
@@ -587,6 +602,8 @@ export default function SettingsPage() {
       <OrganizationDetailsSection
         orgName={orgName}
         setOrgName={setOrgName}
+        preferredCurrency={preferredCurrency}
+        setPreferredCurrency={setPreferredCurrency}
         activeOrg={activeOrg}
         currentDisplayLogo={currentDisplayLogo}
         currentDisplayCover={currentDisplayCover}

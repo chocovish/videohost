@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
+import { isAllowedCurrency } from "@/lib/utils";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -38,8 +39,8 @@ export async function POST(req: Request) {
       bankName,
       swiftCode,
       accountType = "CHECKING",
-      country = "US",
-      currency = "USD",
+      country = "IN",
+      currency = "INR",
     } = body;
 
     if (!accountHolderName || !accountNumber || !bankName) {
@@ -48,6 +49,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const sanitizedCurrency = isAllowedCurrency(currency) ? currency.toUpperCase() : "INR";
 
     const bankAccount = await db.bankAccount.upsert({
       where: { organizationId: authCtx.orgId },
@@ -60,7 +63,7 @@ export async function POST(req: Request) {
         swiftCode: swiftCode ? swiftCode.trim() : null,
         accountType,
         country,
-        currency,
+        currency: sanitizedCurrency,
       },
       update: {
         accountHolderName: accountHolderName.trim(),
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
         swiftCode: swiftCode ? swiftCode.trim() : null,
         accountType,
         country,
-        currency,
+        currency: sanitizedCurrency,
       },
     });
 

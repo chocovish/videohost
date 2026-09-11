@@ -18,23 +18,29 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Video not found" }, { status: 404 });
     }
 
-    const purchases = await db.contentPurchase.findMany({
-      where: {
-        videoId: id,
-        organizationId: authCtx.orgId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+    const [purchases, org] = await Promise.all([
+      db.contentPurchase.findMany({
+        where: {
+          videoId: id,
+          organizationId: authCtx.orgId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              image: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      }),
+      db.organization.findUnique({
+        where: { id: authCtx.orgId },
+        select: { preferredCurrency: true },
+      }),
+    ]);
 
     const totalRevenue = purchases
       .filter((p) => p.status === "COMPLETED")
@@ -47,7 +53,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         totalRevenue,
         salesCount: purchases.filter((p) => p.status === "COMPLETED").length,
         basePrice: video.price,
-        currency: video.currency || "USD",
+        currency: video.currency || org?.preferredCurrency || "INR",
+        preferredCurrency: org?.preferredCurrency || "INR",
         shareAccessMode: video.shareAccessMode,
       },
     });

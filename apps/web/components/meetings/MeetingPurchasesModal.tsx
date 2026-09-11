@@ -75,6 +75,7 @@ interface PurchasesStats {
   salesCount: number;
   basePrice?: number | null;
   currency?: string;
+  preferredCurrency?: string;
   shareAccessMode?: string;
 }
 
@@ -181,7 +182,7 @@ export default function MeetingPurchasesModal({
                 <Receipt className="w-3.5 h-3.5 text-primary" /> Total Meeting Revenue
               </span>
               <p className="text-2xl font-black text-foreground">
-                {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, currentCurrency)}
+                {formatMoney(purchasesStats ? purchasesStats.totalRevenue : 0, purchasesStats?.preferredCurrency || "INR")}
               </p>
               <p className="text-xs text-muted-foreground">
                 {purchasesStats?.salesCount || 0} direct purchase{purchasesStats?.salesCount !== 1 ? "s" : ""}

@@ -178,6 +178,50 @@ export async function generateMetadata({
         },
       };
     }
+
+    const appointmentOffering = await db.appointmentOffering.findFirst({
+      where: {
+        OR: [{ id: token }, { slug: token }],
+        isPublished: true,
+      },
+      include: {
+        organization: true,
+        createdBy: true,
+      },
+    });
+
+    if (appointmentOffering) {
+      const title = `${appointmentOffering.title} — ${appointmentOffering.organization.name}`;
+      const description =
+        appointmentOffering.description ||
+        `Schedule "${appointmentOffering.title}" with ${appointmentOffering.createdBy?.name || appointmentOffering.organization.name} on Taped.`;
+
+      return {
+        title,
+        description,
+        openGraph: {
+          title,
+          description,
+          url: `/share/${token}`,
+          siteName: appointmentOffering.organization.name,
+          images: [
+            {
+              url: "/og-image.png",
+              width: 1200,
+              height: 630,
+              alt: appointmentOffering.title,
+            },
+          ],
+          type: "website",
+        },
+        twitter: {
+          card: "summary_large_image",
+          title,
+          description,
+          images: ["/og-image.png"],
+        },
+      };
+    }
   } catch (err) {
     console.error("[generateMetadata Share Error]:", err);
   }

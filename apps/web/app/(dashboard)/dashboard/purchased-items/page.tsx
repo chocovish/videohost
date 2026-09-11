@@ -24,6 +24,7 @@ import {
   RefreshCw,
   Ticket,
   Calendar,
+  CalendarClock,
   Video,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -49,6 +50,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/lib/video-utils";
+import RescheduleDialog from "@/components/appointments/RescheduleDialog";
+import RescheduleStatusCard from "@/components/appointments/RescheduleStatusCard";
 
 interface PlaylistVideoItem {
   id: string;
@@ -59,7 +62,7 @@ interface PlaylistVideoItem {
 
 interface PurchasedItem {
   id: string;
-  contentType: "VIDEO" | "PLAYLIST" | "MEETING";
+  contentType: "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT";
   contentId: string;
   title: string;
   description?: string | null;
@@ -67,6 +70,34 @@ interface PurchasedItem {
   durationSeconds?: number | null;
   itemCount?: number | null;
   playlistVideos: PlaylistVideoItem[];
+  appointmentInfo?: {
+    id: string;
+    offeringId?: string | null;
+    offeringTitle: string;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+    durationMinutes?: number;
+    timezone?: string;
+    status?: string;
+    hostName?: string;
+    hostImage?: string | null;
+    hostEmail?: string | null;
+    clientName?: string;
+    clientEmail?: string;
+    meetingId?: string | null;
+    joinUrl?: string | null;
+    rescheduleCount?: number;
+    pendingReschedule?: {
+      id: string;
+      proposedStart: string;
+      proposedEnd: string;
+      timezone?: string;
+      reason?: string | null;
+      proposedByRole: "HOST" | "CLIENT";
+      proposedByName?: string | null;
+      createdAt?: string;
+    } | null;
+  } | null;
   meetingInfo?: {
     scheduledStart?: string | null;
     scheduledEnd?: string | null;
@@ -98,6 +129,7 @@ interface PurchasesStats {
   totalVideos: number;
   totalPlaylists: number;
   totalMeetings?: number;
+  totalAppointments?: number;
   totalSpentByCurrency: Record<string, number>;
 }
 
@@ -108,17 +140,20 @@ export default function PurchasedItemsPage() {
     totalVideos: 0,
     totalPlaylists: 0,
     totalMeetings: 0,
+    totalAppointments: 0,
     totalSpentByCurrency: {},
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "VIDEO" | "PLAYLIST" | "MEETING">("all");
+  const [filterType, setFilterType] = useState<"all" | "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title" | "price">("newest");
   const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
   const [selectedReceipt, setSelectedReceipt] = useState<PurchasedItem | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [reschedulingItem, setReschedulingItem] = useState<PurchasedItem | null>(null);
+  const [needsActionOnly, setNeedsActionOnly] = useState(false);
 
   const fetchPurchasedItems = async (isManualRefresh = false) => {
     try {
@@ -165,12 +200,18 @@ export default function PurchasedItemsPage() {
   const filteredItems = items
     .filter((item) => {
       const matchesType = filterType === "all" || item.contentType === filterType;
+      if (needsActionOnly) {
+        const pending = item.appointmentInfo?.pendingReschedule;
+        if (!pending || pending.proposedByRole !== "HOST") return false;
+      }
       const query = searchQuery.toLowerCase();
       const matchesSearch =
         item.title.toLowerCase().includes(query) ||
         item.organization.name.toLowerCase().includes(query) ||
         (item.description && item.description.toLowerCase().includes(query)) ||
         (item.paymentId && item.paymentId.toLowerCase().includes(query)) ||
+        (item.appointmentInfo?.hostName && item.appointmentInfo.hostName.toLowerCase().includes(query)) ||
+        (item.appointmentInfo?.offeringTitle && item.appointmentInfo.offeringTitle.toLowerCase().includes(query)) ||
         item.id.toLowerCase().includes(query);
       return matchesType && matchesSearch;
     })
@@ -206,7 +247,21 @@ export default function PurchasedItemsPage() {
 
   const formattedSpentSummary = Object.entries(stats.totalSpentByCurrency || {})
     .map(([curr, amount]) => formatPrice(amount, curr))
-    .join(" + ") || "$0.00";
+    .join(" + ") || "₹0.00";
+
+  const needsActionItems = items.filter(
+    (i) => i.contentType === "APPOINTMENT" && i.appointmentInfo?.pendingReschedule?.proposedByRole === "HOST"
+  );
+  const pendingAnyItems = items.filter(
+    (i) => i.contentType === "APPOINTMENT" && Boolean(i.appointmentInfo?.pendingReschedule)
+  );
+
+  const refreshAll = async (isManual = false) => {
+    await fetchPurchasedItems(isManual);
+    try {
+      window.dispatchEvent(new Event("notifications-refresh"));
+    } catch {}
+  };
 
   if (loading) {
     return (
@@ -236,7 +291,7 @@ export default function PurchasedItemsPage() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Access, stream, and review receipts for all videos and playlists unlocked under your account
+            Access, stream, and review receipts for all videos, playlists, and appointments unlocked under your account
           </p>
         </div>
 
@@ -244,7 +299,7 @@ export default function PurchasedItemsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchPurchasedItems(true)}
+            onClick={() => refreshAll(true)}
             disabled={refreshing}
             className="gap-2"
           >
@@ -254,8 +309,41 @@ export default function PurchasedItemsPage() {
         </div>
       </div>
 
+      {pendingAnyItems.length > 0 && (
+        <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-sky-500/30 bg-sky-500/[0.07]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-500/30 flex items-center justify-center shrink-0">
+              <CalendarClock className="w-4 h-4 text-sky-600 dark:text-sky-300" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground">
+                {pendingAnyItems.length} appointment{pendingAnyItems.length === 1 ? "" : "s"} with pending reschedule
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {needsActionItems.length > 0
+                  ? `${needsActionItems.length} need${needsActionItems.length === 1 ? "s" : ""} your approval — original slots stay booked until you respond.`
+                  : "Awaiting host approval — your original slots stay booked."}
+              </p>
+            </div>
+          </div>
+          {needsActionItems.length > 0 && (
+            <Button
+              size="sm"
+              variant={needsActionOnly ? "default" : "outline"}
+              onClick={() => {
+                setNeedsActionOnly((v) => !v);
+                setFilterType("APPOINTMENT");
+              }}
+              className="cursor-pointer text-xs font-bold shrink-0"
+            >
+              {needsActionOnly ? "Show all" : `Review (${needsActionItems.length})`}
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Metrics Summary Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Total Purchased</span>
@@ -297,6 +385,19 @@ export default function PurchasedItemsPage() {
 
         <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">1:1 Appointments</span>
+            <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <CalendarClock className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-2xl font-black text-foreground">{stats.totalAppointments || 0}</span>
+            <span className="text-xs text-muted-foreground font-medium">sessions booked</span>
+          </div>
+        </div>
+
+        <div className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs relative overflow-hidden col-span-2 sm:col-span-1">
+          <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Total Invested</span>
             <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
               <CreditCard className="w-4 h-4" />
@@ -316,7 +417,7 @@ export default function PurchasedItemsPage() {
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by title, creator, payment ID..."
+            placeholder="Search by title, creator, host, payment ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -325,7 +426,7 @@ export default function PurchasedItemsPage() {
 
         <div className="flex items-center gap-2 flex-wrap justify-between md:justify-end">
           {/* Type Filter Buttons */}
-          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border">
+          <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-xl border border-border flex-wrap">
             <Button
               size="sm"
               variant={filterType === "all" ? "default" : "ghost"}
@@ -357,6 +458,14 @@ export default function PurchasedItemsPage() {
               className="h-8 text-xs font-medium gap-1.5"
             >
               <Ticket className="w-3.5 h-3.5" /> Meeting Passes
+            </Button>
+            <Button
+              size="sm"
+              variant={filterType === "APPOINTMENT" ? "default" : "ghost"}
+              onClick={() => setFilterType("APPOINTMENT")}
+              className="h-8 text-xs font-medium gap-1.5"
+            >
+              <CalendarClock className="w-3.5 h-3.5" /> Appointments
             </Button>
           </div>
 
@@ -406,19 +515,50 @@ export default function PurchasedItemsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((item) => {
+            const isAppointment = item.contentType === "APPOINTMENT";
             const isPlaylist = item.contentType === "PLAYLIST";
             const isMeeting = item.contentType === "MEETING";
             const isExpanded = expandedPlaylists[item.id] || false;
+            const pending = item.appointmentInfo?.pendingReschedule || null;
+            const needsClientAction = Boolean(pending && pending.proposedByRole === "HOST");
 
             return (
               <div
                 key={item.id}
-                className="bg-card glass-card card-hover border border-border/80 rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group"
+                className={cn(
+                  "bg-card glass-card card-hover border rounded-2xl overflow-hidden shadow-2xs hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col justify-between group",
+                  needsClientAction ? "border-sky-500/50" : "border-border/80"
+                )}
               >
                 <div>
                   {/* Thumbnail / Header Area */}
                   <div className="aspect-video bg-muted relative overflow-hidden flex items-center justify-center">
-                    {!isMeeting && !isPlaylist ? (
+                    {isAppointment ? (
+                      <div className="w-full h-full bg-gradient-to-br from-primary/15 via-background to-primary/5 flex flex-col items-center justify-center p-4 text-center relative group-hover:scale-105 transition-transform duration-300">
+                        {item.thumbnailUrl ? (
+                          <div className="relative">
+                            <img
+                              src={item.thumbnailUrl}
+                              alt={item.title}
+                              className="w-16 h-16 rounded-full object-cover border-2 border-primary shadow-md"
+                            />
+                            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-xs">
+                              <CalendarClock className="w-3.5 h-3.5" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-primary/20 text-primary flex items-center justify-center border border-primary/30 shadow-md">
+                            <CalendarClock className="w-8 h-8" />
+                          </div>
+                        )}
+                        <span className="text-xs font-bold text-foreground mt-2 line-clamp-1">
+                          {item.appointmentInfo?.hostName ? `1:1 with ${item.appointmentInfo.hostName}` : "1:1 Appointment"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {item.durationSeconds ? `${Math.round(item.durationSeconds / 60)} mins session` : "Consultation"}
+                        </span>
+                      </div>
+                    ) : !isMeeting && !isPlaylist ? (
                       <VideoThumbnail
                         src={item.thumbnailUrl}
                         alt={item.title}
@@ -452,12 +592,16 @@ export default function PurchasedItemsPage() {
                     {/* Type Badge (Top Left) */}
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                       <Badge
-                        variant={isMeeting ? "outline" : isPlaylist ? "default" : "secondary"}
+                        variant={isAppointment ? "default" : isMeeting ? "outline" : isPlaylist ? "default" : "secondary"}
                         className={`gap-1 text-xs font-extrabold uppercase backdrop-blur-md shadow-xs ${
                           isMeeting ? "text-muted-foreground" : ""
                         }`}
                       >
-                        {isMeeting ? (
+                        {isAppointment ? (
+                          <>
+                            <CalendarClock className="w-3 h-3" /> Appointment
+                          </>
+                        ) : isMeeting ? (
                           <>
                             <Ticket className="w-3 h-3" /> Meeting Pass
                           </>
@@ -471,14 +615,38 @@ export default function PurchasedItemsPage() {
                           </>
                         )}
                       </Badge>
-                      <Badge className="font-black text-xs tracking-wider gap-1 shadow-xs">
-                        <CheckCircle2 className="w-3 h-3" /> UNLOCKED
-                      </Badge>
+                      {isAppointment && item.appointmentInfo?.status === "CANCELLED" ? (
+                        <Badge variant="destructive" className="font-bold text-xs tracking-wider gap-1">
+                          CANCELLED
+                        </Badge>
+                      ) : needsClientAction ? (
+                        <Badge variant="outline" className="font-bold text-xs tracking-wider gap-1 bg-sky-500/90 text-white border-sky-300 animate-pulse">
+                          ACTION NEEDED
+                        </Badge>
+                      ) : pending ? (
+                        <Badge variant="outline" className="font-bold text-xs tracking-wider gap-1 bg-black/70 text-sky-200 border-sky-500/50">
+                          RESCHEDULE PENDING
+                        </Badge>
+                      ) : (
+                        <Badge className="font-black text-xs tracking-wider gap-1 shadow-xs">
+                          <CheckCircle2 className="w-3 h-3" /> UNLOCKED
+                        </Badge>
+                      )}
                     </div>
 
                     {/* Duration / Item Count / Meeting Start (Bottom Right) */}
                     <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5">
-                      {isMeeting && item.meetingInfo?.scheduledStart ? (
+                      {isAppointment && item.appointmentInfo?.scheduledStart ? (
+                        <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-xs font-bold text-white rounded-md flex items-center gap-1 border border-white/10">
+                          <CalendarClock className="w-3 h-3 text-primary" />
+                          {new Date(item.appointmentInfo.scheduledStart).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      ) : isMeeting && item.meetingInfo?.scheduledStart ? (
                         <span className="px-2 py-0.5 bg-black/85 backdrop-blur-md text-xs font-bold text-white rounded-md flex items-center gap-1 border border-white/10">
                           <Calendar className="w-3 h-3 text-primary" />
                           {new Date(item.meetingInfo.scheduledStart).toLocaleDateString(undefined, {
@@ -545,6 +713,55 @@ export default function PurchasedItemsPage() {
                         />
                       )}
                     </div>
+
+                    {/* Appointment Scheduled Time Banner */}
+                    {isAppointment && item.appointmentInfo && (
+                      <div className="space-y-2">
+                        <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/15 text-xs space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-muted-foreground font-medium flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-primary" />
+                              {new Date(item.appointmentInfo.scheduledStart || "").toLocaleDateString(undefined, {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                            <span className="font-semibold text-foreground">
+                              {new Date(item.appointmentInfo.scheduledStart || "").toLocaleTimeString(undefined, {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                              {" - "}
+                              {new Date(item.appointmentInfo.scheduledEnd || "").toLocaleTimeString(undefined, {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>
+                              Host: <strong className="text-foreground">{item.appointmentInfo.hostName}</strong>
+                            </span>
+                            <span>{item.appointmentInfo.timezone}</span>
+                          </div>
+                          {(item.appointmentInfo.rescheduleCount || 0) > 0 && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Rescheduled ×{item.appointmentInfo.rescheduleCount} — video room link unchanged
+                            </p>
+                          )}
+                        </div>
+                        {item.appointmentInfo.pendingReschedule && (
+                          <RescheduleStatusCard
+                            appointmentId={item.appointmentInfo.id}
+                            pending={item.appointmentInfo.pendingReschedule}
+                            viewerRole="CLIENT"
+                            compact
+                            onChanged={() => refreshAll(false)}
+                          />
+                        )}
+                      </div>
+                    )}
 
                     {/* Price Paid & Payment Badge */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
@@ -613,20 +830,27 @@ export default function PurchasedItemsPage() {
                 </div>
 
                 {/* Primary Action Button */}
-                <div className="p-4 pt-0">
+                <div className="p-4 pt-0 space-y-2">
                   <Link
                     href={
-                      isMeeting
+                      isAppointment
+                        ? item.appointmentInfo?.joinUrl || (item.appointmentInfo?.meetingId ? `/meet/${item.appointmentInfo.meetingId}` : `/dashboard/appointments`)
+                        : isMeeting
                         ? item.meetingInfo?.joinUrl || `/meet/${item.contentId}`
                         : item.shareUrl || `/share/${item.contentId}`
                     }
-                    target={isMeeting ? "_self" : "_blank"}
+                    target={isAppointment || isMeeting ? "_self" : "_blank"}
                     className={cn(
                       buttonVariants({ variant: "default" }),
                       "w-full gap-2 font-bold shadow-xs"
                     )}
                   >
-                    {isMeeting ? (
+                    {isAppointment ? (
+                      <>
+                        <Video className="w-4 h-4" />
+                        <span>Join Video Room</span>
+                      </>
+                    ) : isMeeting ? (
                       <>
                         <Video className="w-4 h-4" />
                         <span>Join Live Meeting Room</span>
@@ -639,6 +863,23 @@ export default function PurchasedItemsPage() {
                     )}
                     <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                   </Link>
+                  {isAppointment &&
+                    item.appointmentInfo?.status === "CONFIRMED" &&
+                    !item.appointmentInfo?.pendingReschedule &&
+                    item.appointmentInfo?.scheduledStart &&
+                    item.appointmentInfo?.offeringId &&
+                    new Date(item.appointmentInfo.scheduledStart).getTime() > Date.now() && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setReschedulingItem(item)}
+                        className="w-full gap-2 text-xs font-semibold cursor-pointer"
+                        title="Propose a new time — host must approve"
+                      >
+                        <CalendarClock className="w-3.5 h-3.5" />
+                        Request reschedule
+                      </Button>
+                    )}
                 </div>
               </div>
             );
@@ -681,7 +922,7 @@ export default function PurchasedItemsPage() {
                         {selectedReceipt.title}
                       </h4>
                       <span className="text-xs text-muted-foreground">
-                        Type: {selectedReceipt.contentType}
+                        Type: {selectedReceipt.contentType === "APPOINTMENT" ? "1:1 APPOINTMENT" : selectedReceipt.contentType}
                       </span>
                     </div>
                     <Badge variant="secondary" className="font-bold">
@@ -691,9 +932,13 @@ export default function PurchasedItemsPage() {
 
                   <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border text-xs">
                     <div>
-                      <span className="text-muted-foreground block text-xs">Creator / Organization</span>
+                      <span className="text-muted-foreground block text-xs">
+                        {selectedReceipt.contentType === "APPOINTMENT" ? "Host" : "Creator / Organization"}
+                      </span>
                       <span className="font-semibold text-foreground">
-                        {selectedReceipt.organization.name}
+                        {selectedReceipt.contentType === "APPOINTMENT" && selectedReceipt.appointmentInfo?.hostName
+                          ? selectedReceipt.appointmentInfo.hostName
+                          : selectedReceipt.organization.name}
                       </span>
                     </div>
                     <div>
@@ -702,6 +947,22 @@ export default function PurchasedItemsPage() {
                         {new Date(selectedReceipt.purchasedAt).toLocaleString()}
                       </span>
                     </div>
+                    {selectedReceipt.contentType === "APPOINTMENT" && selectedReceipt.appointmentInfo?.scheduledStart && (
+                      <div className="col-span-2 p-2 rounded-lg bg-background border border-border/80 space-y-0.5">
+                        <span className="text-muted-foreground block text-xs">Scheduled Session</span>
+                        <span className="font-semibold text-foreground block">
+                          {new Date(selectedReceipt.appointmentInfo.scheduledStart).toLocaleString(undefined, {
+                            weekday: "short",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}{" "}
+                          ({selectedReceipt.appointmentInfo.timezone})
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-muted-foreground block text-xs">Amount Paid</span>
                       <span className="font-bold text-primary text-sm">
@@ -783,17 +1044,19 @@ export default function PurchasedItemsPage() {
                 </Button>
                 <Link
                   href={
-                    selectedReceipt.contentType === "MEETING"
+                    selectedReceipt.contentType === "APPOINTMENT"
+                      ? selectedReceipt.appointmentInfo?.joinUrl || (selectedReceipt.appointmentInfo?.meetingId ? `/meet/${selectedReceipt.appointmentInfo.meetingId}` : `/dashboard/appointments`)
+                      : selectedReceipt.contentType === "MEETING"
                       ? selectedReceipt.meetingInfo?.joinUrl || `/meet/${selectedReceipt.contentId}`
                       : selectedReceipt.shareUrl || `/share/${selectedReceipt.contentId}`
                   }
-                  target={selectedReceipt.contentType === "MEETING" ? "_self" : "_blank"}
+                  target={selectedReceipt.contentType === "APPOINTMENT" || selectedReceipt.contentType === "MEETING" ? "_self" : "_blank"}
                   className={cn(
                     buttonVariants({ variant: "default" }),
                     "w-full sm:w-auto flex-1 gap-2 font-bold"
                   )}
                 >
-                  {selectedReceipt.contentType === "MEETING" ? (
+                  {selectedReceipt.contentType === "APPOINTMENT" || selectedReceipt.contentType === "MEETING" ? (
                     <>
                       <Video className="w-4 h-4" />
                       <span>Enter Meeting Room</span>
@@ -811,6 +1074,24 @@ export default function PurchasedItemsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {reschedulingItem?.appointmentInfo?.offeringId && (
+        <RescheduleDialog
+          open={Boolean(reschedulingItem)}
+          onOpenChange={(open) => {
+            if (!open) setReschedulingItem(null);
+          }}
+          appointmentId={reschedulingItem.appointmentInfo.id}
+          offeringId={reschedulingItem.appointmentInfo.offeringId || ""}
+          currentStart={reschedulingItem.appointmentInfo.scheduledStart || ""}
+          currentEnd={reschedulingItem.appointmentInfo.scheduledEnd || ""}
+          defaultTimezone={reschedulingItem.appointmentInfo.timezone}
+          onSuccess={() => {
+            setReschedulingItem(null);
+            refreshAll(false);
+          }}
+        />
+      )}
     </div>
   );
 }

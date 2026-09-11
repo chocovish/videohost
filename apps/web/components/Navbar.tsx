@@ -7,6 +7,7 @@ import { useSidebar } from "@/components/SidebarContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NotificationBell from "@/components/NotificationBell";
 
 interface NavbarProps {
   userEmail: string;
@@ -65,6 +66,8 @@ export default function Navbar({ userEmail, userName, userImage, role, organizat
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3.5 shrink-0">
+        <NotificationBell />
+
         <Link
           href="/dashboard/meetings"
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border hover:border-foreground bg-card hover:bg-muted text-foreground transition-all text-xs font-bold"

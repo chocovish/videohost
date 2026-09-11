@@ -31,6 +31,11 @@ model User {
   contentPurchases ContentPurchase[]
   withdrawalRequests WithdrawalRequest[]
   watchSessions VideoWatchSession[]
+  hostAppointments Appointment[] @relation("HostAppointments")
+  clientAppointments Appointment[] @relation("ClientAppointments")
+  createdOfferings AppointmentOffering[]
+  appointmentAvailabilities AppointmentAvailability[]
+  notifications Notification[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -81,6 +86,7 @@ model Organization {
   logoUrl              String?
   coverUrl             String?
   themeId              String   @default("lime")
+  preferredCurrency    String   @default("INR")
   planId               String
   plan                 Plan     @relation(fields: [planId], references: [id])
   customMinutesLimit   Int?     // overrides plan.minutesLimit when set
@@ -111,6 +117,9 @@ model Organization {
   contentPurchases ContentPurchase[]
   bankAccount     BankAccount?
   withdrawalRequests WithdrawalRequest[]
+  appointmentOfferings AppointmentOffering[]
+  appointmentAvailabilities AppointmentAvailability[]
+  appointments    Appointment[]
 }
 
 model SharePageConfig {
@@ -481,6 +490,7 @@ model Meeting {
   invites         MeetingInvite[]
   recordedVideo   Video?          @relation("MeetingRecordedVideo", fields: [recordedVideoId], references: [id], onDelete: SetNull)
   purchases       ContentPurchase[]
+  appointments    Appointment[]
 
   @@index([organizationId])
   @@index([createdById])
@@ -636,10 +646,11 @@ model ContentPurchase {
   id              String        @id @default(cuid())
   organizationId  String
   userId          String
-  contentType     String        // "VIDEO" | "PLAYLIST" | "MEETING"
+  contentType     String        // "VIDEO" | "PLAYLIST" | "MEETING" | "APPOINTMENT"
   videoId         String?
   playlistId      String?
   meetingId       String?
+  appointmentId   String?
   amount          Float
   currency        String        @default("USD")
   countryCode     String?       // purchaser country code, e.g. "US", "IN"
@@ -660,6 +671,7 @@ model ContentPurchase {
   video           Video?        @relation(fields: [videoId], references: [id], onDelete: SetNull)
   playlist        Playlist?     @relation(fields: [playlistId], references: [id], onDelete: SetNull)
   meeting         Meeting?      @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
   @@index([organizationId, status])
@@ -667,6 +679,7 @@ model ContentPurchase {
   @@index([videoId])
   @@index([playlistId])
   @@index([meetingId])
+  @@index([appointmentId])
   @@index([createdAt])
 }
 
@@ -794,4 +807,155 @@ model VideoDailyStat {
   @@unique([videoId, date])
   @@index([organizationId, date])
   @@index([videoId, date])
+}
+
+// --------------------------------------------------------
+// Appointments, Offerings & Availability (Calendly-style)
+// --------------------------------------------------------
+
+model AppointmentOffering {
+  id                  String       @id @default(cuid())
+  organizationId      String
+  createdById         String
+  title               String
+  slug                String
+  description         String?      @db.Text
+  duration            Int          @default(30) // In minutes: 15, 30, 45, 60, etc.
+  price               Float        @default(0)  // 0 for free sessions
+  currency            String       @default("USD")
+  countryPricing      Json?
+  color               String       @default("#84cc16") // Tag color for UI display
+  isPublished         Boolean      @default(true)
+  locationType        String       @default("LIVEKIT") // "LIVEKIT" | "PHONE" | "CUSTOM"
+  bookingNoticeHours  Int          @default(1)  // Minimum notice in hours required
+  bufferMinutes       Int          @default(0)  // Buffer before/after
+  order               Int          @default(0)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy           User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  appointments        Appointment[]
+
+  @@unique([organizationId, slug])
+  @@index([organizationId])
+  @@index([createdById])
+}
+
+model AppointmentAvailability {
+  id              String       @id @default(cuid())
+  organizationId  String
+  userId          String
+  timezone        String       @default("UTC")
+  weeklyHours     Json         // [{ day: "monday", isEnabled: true, slots: [{ start: "09:00", end: "17:00" }] }, ...]
+  dateOverrides   Json?        // [{ date: "2026-09-20", isAvailable: false }, ...]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Appointment {
+  id              String              @id @default(cuid())
+  organizationId  String
+  offeringId      String
+  hostId          String
+  clientId        String?
+  clientName      String
+  clientEmail     String
+  clientNotes     String?             @db.Text
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  durationMinutes Int
+  timezone        String              @default("UTC")
+  status          AppointmentStatus   @default(CONFIRMED)
+  // Deprecated payment fields (cleaned up in app code; all purchase info is in ContentPurchase)
+  price           Float?              @default(0)
+  currency        String?             @default("USD")
+  paymentStatus   String?             @default("FREE")
+  paymentId       String?
+  meetingId       String?             // LiveKit video meeting ID
+  joinUrl         String?             // Direct join URL e.g. /meet/[meetingId]
+  cancelledReason String?
+  cancelledAt     DateTime?
+  reminderSentAt  DateTime?           // Stamped when 1-hour prior reminder is sent
+  rescheduleCount   Int               @default(0) // How many times this appointment was rescheduled (approved)
+  lastRescheduledAt DateTime?         // Last approved reschedule timestamp
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  offering        AppointmentOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  host            User                @relation("HostAppointments", fields: [hostId], references: [id], onDelete: Cascade)
+  client          User?               @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: SetNull)
+  meeting         Meeting?            @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  purchases       ContentPurchase[]
+  rescheduleRequests AppointmentRescheduleRequest[]
+
+  @@index([organizationId])
+  @@index([offeringId])
+  @@index([hostId])
+  @@index([clientId])
+  @@index([scheduledStart])
+  @@index([status])
+}
+
+model AppointmentRescheduleRequest {
+  id              String   @id @default(cuid())
+  appointmentId   String
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  proposedStart   DateTime
+  proposedEnd     DateTime
+  timezone        String   @default("UTC")
+  reason          String?  @db.Text
+  // Who proposed: user id + role snapshot (HOST = offering owner/org member, CLIENT = booker)
+  proposedById    String
+  proposedByRole  String   // "HOST" | "CLIENT"
+  proposedByName  String?
+  // Lifecycle: PENDING | APPROVED | REJECTED | CANCELLED | SUPERSEDED
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  decidedAt       DateTime?
+  decidedById     String?
+
+  @@index([appointmentId])
+  @@index([status])
+  @@index([appointmentId, status])
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  RESCHEDULED
+}
+
+// --------------------------------------------------------
+// Notifications (general in-app notification center)
+// --------------------------------------------------------
+model Notification {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?
+  // e.g. APPOINTMENT_RESCHEDULE_REQUEST | APPOINTMENT_RESCHEDULE_APPROVED
+  //      | APPOINTMENT_RESCHEDULE_REJECTED | APPOINTMENT_RESCHEDULE_CANCELLED
+  //      | APPOINTMENT_BOOKED | APPOINTMENT_CANCELLED | APPOINTMENT_REMINDER
+  type           String
+  title          String
+  message        String   @db.Text
+  link           String?
+  data           Json?
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([type])
 }

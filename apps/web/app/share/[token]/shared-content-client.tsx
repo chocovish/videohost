@@ -23,6 +23,7 @@ import { VideoView } from "./_components/views/VideoView";
 import { PlaylistView } from "./_components/views/PlaylistView";
 import { PlaylistEpisodeView } from "./_components/views/PlaylistEpisodeView";
 import { FolderView } from "./_components/views/FolderView";
+import { AppointmentView } from "./_components/views/AppointmentView";
 
 // Preserve the previous public API: customize-share-page imports these types
 // directly from this file.
@@ -153,6 +154,7 @@ export default function SharedContentClient({
   const isVideo = data.type === "video";
   const isPlaylist = data.type === "playlist";
   const isMeeting = data.type === "meeting";
+  const isAppointment = data.type === "appointment";
 
   // Dedicated episode page: video token + `?playlistId=` queue resolved.
   // Falls back to the plain single-video view when the playlist id is
@@ -177,6 +179,20 @@ export default function SharedContentClient({
         }`}
       >
         <BannerHeader theme={theme} />
+
+        {/* APPOINTMENT OFFERING & SCHEDULING VIEW */}
+        {isAppointment && data.appointmentOffering && (
+          <AppointmentView
+            data={data}
+            theme={theme}
+            priceInfo={checkout.priceInfo}
+            selectedCountry={selectedBuyerCountry}
+            onCountryChange={setSelectedBuyerCountry}
+            copied={copied}
+            onCopyLink={handleCopyLink}
+            onSignIn={handleSignIn}
+          />
+        )}
 
         {/* MEETING SHARE & ENTRY PASS VIEW */}
         {isMeeting && data.meeting && (

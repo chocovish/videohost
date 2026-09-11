@@ -16,33 +16,24 @@ export interface SharedEmailItem {
   isNew?: boolean;
 }
 
+import { ALLOWED_CURRENCIES, AllowedCurrency } from "@/lib/utils";
+
 export const POPULAR_COUNTRIES = [
   { code: "US", name: "United States", defaultCurrency: "USD" },
   { code: "IN", name: "India", defaultCurrency: "INR" },
-  { code: "GB", name: "United Kingdom", defaultCurrency: "GBP" },
-  { code: "EU", name: "European Union", defaultCurrency: "EUR" },
-  { code: "CA", name: "Canada", defaultCurrency: "CAD" },
-  { code: "AU", name: "Australia", defaultCurrency: "AUD" },
-  { code: "DE", name: "Germany", defaultCurrency: "EUR" },
-  { code: "FR", name: "France", defaultCurrency: "EUR" },
-  { code: "JP", name: "Japan", defaultCurrency: "JPY" },
-  { code: "BR", name: "Brazil", defaultCurrency: "BRL" },
-  { code: "SG", name: "Singapore", defaultCurrency: "SGD" },
-  { code: "AE", name: "United Arab Emirates", defaultCurrency: "AED" },
+  { code: "GB", name: "United Kingdom", defaultCurrency: "USD" },
+  { code: "EU", name: "European Union", defaultCurrency: "USD" },
+  { code: "CA", name: "Canada", defaultCurrency: "USD" },
+  { code: "AU", name: "Australia", defaultCurrency: "USD" },
+  { code: "DE", name: "Germany", defaultCurrency: "USD" },
+  { code: "FR", name: "France", defaultCurrency: "USD" },
+  { code: "JP", name: "Japan", defaultCurrency: "USD" },
+  { code: "BR", name: "Brazil", defaultCurrency: "USD" },
+  { code: "SG", name: "Singapore", defaultCurrency: "USD" },
+  { code: "AE", name: "United Arab Emirates", defaultCurrency: "USD" },
 ];
 
-export const SUPPORTED_CURRENCIES = [
-  "USD",
-  "INR",
-  "EUR",
-  "GBP",
-  "CAD",
-  "AUD",
-  "JPY",
-  "SGD",
-  "AED",
-  "BRL",
-];
+export const SUPPORTED_CURRENCIES: readonly string[] = ALLOWED_CURRENCIES;
 
 export interface AccessModeMeta {
   id: ShareAccessMode;

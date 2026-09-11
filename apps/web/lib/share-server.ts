@@ -116,25 +116,45 @@ export async function getShareContent(
     });
   }
 
+  let appointmentOffering: any = null;
   if (!video && !folder && !playlist && !meeting) {
+    // 5. Try finding as Appointment Offering
+    appointmentOffering = await db.appointmentOffering.findFirst({
+      where: {
+        OR: [{ id: token }, { slug: token }],
+        isPublished: true,
+      },
+      include: {
+        organization: true,
+        createdBy: {
+          select: { id: true, name: true, image: true, email: true },
+        },
+      },
+    });
+  }
+
+  if (!video && !folder && !playlist && !meeting && !appointmentOffering) {
     return {
       status: 404,
       body: { error: "NOT_FOUND", message: "Shared item not found or has expired." },
     };
   }
 
-  const item = video || folder || playlist || meeting;
+  const item = video || folder || playlist || meeting || appointmentOffering;
   const isVideo = Boolean(video);
   const isFolder = Boolean(folder);
   const isPlaylist = Boolean(playlist);
   const isMeeting = Boolean(meeting);
+  const isAppointment = Boolean(appointmentOffering);
 
-  const targetType: "video" | "folder" | "playlist" | "meeting" = isVideo
+  const targetType: "video" | "folder" | "playlist" | "meeting" | "appointment" = isVideo
     ? "video"
     : isPlaylist
     ? "playlist"
     : isMeeting
     ? "meeting"
+    : isAppointment
+    ? "appointment"
     : "folder";
   const itemTitle = isVideo
     ? video!.title
@@ -142,6 +162,8 @@ export async function getShareContent(
     ? playlist!.title
     : isMeeting
     ? meeting!.title
+    : isAppointment
+    ? appointmentOffering!.title
     : folder!.name;
 
   const organization = {
@@ -151,8 +173,16 @@ export async function getShareContent(
     slug: item.organization.slug,
   };
 
-  const accessMode = item.shareAccessMode;
-  const sharedEmails: Array<{ email: string }> = isMeeting ? meeting.invites : item.sharedEmails;
+  const accessMode = isAppointment
+    ? appointmentOffering.price > 0
+      ? "PURCHASABLE"
+      : "PUBLIC"
+    : item.shareAccessMode;
+  const sharedEmails: Array<{ email: string }> = isMeeting
+    ? meeting.invites
+    : isAppointment
+    ? []
+    : item.sharedEmails;
 
   // Fetch customization config for this organization
   const rawShareConfig = await db.sharePageConfig.findUnique({
@@ -192,6 +222,8 @@ export async function getShareContent(
     ? playlist!.description
     : isMeeting
     ? meeting!.description
+    : isAppointment
+    ? appointmentOffering!.description
     : undefined;
 
   // 3.5 Playlist-context gate: a video opened from a playlist share page
@@ -297,9 +329,9 @@ export async function getShareContent(
     }
   }
 
-  // 5.5 Check PURCHASABLE Access Mode (skipped when the playlist context
-  // already granted access in 3.5)
-  if (accessMode === "PURCHASABLE" && !playlistContextGranted) {
+  // 5.5 Check PURCHASABLE Access Mode (skipped for appointments and when
+  // playlist context already granted access in 3.5)
+  if (accessMode === "PURCHASABLE" && !playlistContextGranted && !isAppointment) {
     let isPurchasedOrAllowed = false;
 
     if (session?.user?.id) {
@@ -689,6 +721,62 @@ export async function getShareContent(
           createdAt: meeting.createdAt,
           createdBy: {
             name: meeting.createdBy?.name || "Host",
+            image: hostAvatarUrl,
+          },
+        },
+      },
+    };
+  }
+
+  // 10. Return Appointment Offering Response
+  if (isAppointment && appointmentOffering) {
+    let hostAvatarUrl = appointmentOffering.createdBy?.image || null;
+    if (hostAvatarUrl && !hostAvatarUrl.startsWith("http")) {
+      try {
+        hostAvatarUrl = await getPresignedPlaybackUrl(hostAvatarUrl);
+      } catch {}
+    }
+
+    return {
+      status: 200,
+      body: {
+        type: "appointment",
+        accessMode: appointmentOffering.price > 0 ? "PURCHASABLE" : "PUBLIC",
+        isPurchased: true,
+        isLoggedIn: Boolean(session?.user?.id),
+        currentUser: session?.user
+          ? {
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+              image: session.user.image,
+            }
+          : null,
+        token,
+        organization,
+        sharePageConfig,
+        itemTitle: appointmentOffering.title,
+        price: appointmentOffering.price,
+        currency: appointmentOffering.currency || "USD",
+        countryPricing: Array.isArray(appointmentOffering.countryPricing) ? appointmentOffering.countryPricing : [],
+        detectedCountryCode: headerCountry ? headerCountry.toUpperCase() : undefined,
+        appointmentOffering: {
+          id: appointmentOffering.id,
+          title: appointmentOffering.title,
+          slug: appointmentOffering.slug,
+          description: appointmentOffering.description,
+          duration: appointmentOffering.duration,
+          price: appointmentOffering.price,
+          currency: appointmentOffering.currency || "USD",
+          countryPricing: Array.isArray(appointmentOffering.countryPricing) ? appointmentOffering.countryPricing : [],
+          color: appointmentOffering.color,
+          locationType: appointmentOffering.locationType,
+          bookingNoticeHours: appointmentOffering.bookingNoticeHours,
+          bufferMinutes: appointmentOffering.bufferMinutes,
+          createdAt: appointmentOffering.createdAt.toISOString(),
+          createdBy: {
+            name: appointmentOffering.createdBy?.name || "Host",
+            email: appointmentOffering.createdBy?.email,
             image: hostAvatarUrl,
           },
         },

@@ -42,6 +42,7 @@ export async function GET(req: Request) {
         logoUrl: await getPresignedPlaybackUrl(m.organization.logoUrl),
         coverUrl: await getPresignedPlaybackUrl(m.organization.coverUrl),
         themeId: m.organization.themeId,
+        preferredCurrency: m.organization.preferredCurrency || "INR",
         planName: m.organization.plan.name,
         role: m.role,
         joinedAt: m.joinedAt,
@@ -146,6 +147,7 @@ export async function POST(req: Request) {
           slug,
           planId: defaultPlan.id,
           themeId: "lime",
+          preferredCurrency: "INR",
           members: {
             create: {
               userId: authCtx.userId,

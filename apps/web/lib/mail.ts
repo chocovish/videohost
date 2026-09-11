@@ -511,4 +511,505 @@ export async function sendShareOtpEmail(options: SendShareOtpEmailOptions) {
   });
 }
 
+export interface SendAppointmentConfirmationEmailOptions {
+  recipientEmail: string;
+  recipientRole: "host" | "client";
+  hostName: string;
+  clientName: string;
+  clientEmail: string;
+  offeringTitle: string;
+  offeringDuration: number;
+  scheduledStart: Date | string;
+  scheduledEnd: Date | string;
+  timezone: string;
+  joinUrl: string;
+  meetingId: string;
+  price?: number;
+  currency?: string;
+  clientNotes?: string | null;
+  organizationName: string;
+}
+
+export async function sendAppointmentConfirmationEmail(options: SendAppointmentConfirmationEmailOptions) {
+  const {
+    recipientEmail,
+    recipientRole,
+    hostName,
+    clientName,
+    clientEmail,
+    offeringTitle,
+    offeringDuration,
+    scheduledStart,
+    scheduledEnd,
+    timezone,
+    joinUrl,
+    meetingId,
+    price = 0,
+    currency = "USD",
+    clientNotes,
+    organizationName,
+  } = options;
+
+  if (!recipientEmail || !recipientEmail.includes("@")) {
+    throw new Error(`Invalid recipient email address: ${recipientEmail}`);
+  }
+
+  const startDate = new Date(scheduledStart);
+  const endDate = new Date(scheduledEnd);
+
+  let dateFormatted = "Scheduled Date";
+  let timeFormatted = "Scheduled Time";
+  try {
+    dateFormatted = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: timezone || "UTC",
+    }).format(startDate);
+
+    const startTime = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone || "UTC",
+    }).format(startDate);
+
+    const endTime = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: timezone || "UTC",
+    }).format(endDate);
+
+    timeFormatted = `${startTime} – ${endTime}`;
+  } catch {
+    dateFormatted = startDate.toDateString();
+    timeFormatted = `${startDate.toLocaleTimeString()} - ${endDate.toLocaleTimeString()}`;
+  }
+
+  const isHost = recipientRole === "host";
+  const emailSubject = isHost
+    ? `New Appointment: ${offeringTitle} with ${clientName}`
+    : `Appointment Confirmed: ${offeringTitle} with ${hostName}`;
+
+  const headingText = isHost ? "New Appointment Scheduled" : "Appointment Confirmed!";
+  const subText = isHost
+    ? `<strong>${clientName}</strong> has scheduled a session with you on <strong>${organizationName}</strong>.`
+    : `Your appointment with <strong>${hostName}</strong> (${organizationName}) is booked and confirmed.`;
+
+  const senderEmail = process.env.SMTP_FROM || process.env.SMTP_USER || "appointments@taped.in";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .badge { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); color: #000; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 24px; font-weight: 800; margin: 0 0 10px; color: #ffffff; letter-spacing: -0.02em; }
+          .sub { font-size: 15px; color: #94a3b8; margin: 0 0 28px; line-height: 1.5; }
+          .card { background-color: #0b1324; border: 1px solid #1e293b; border-radius: 14px; padding: 24px; margin-bottom: 28px; }
+          .grid { display: table; width: 100%; border-collapse: collapse; }
+          .row { display: table-row; }
+          .col-label { display: table-cell; padding: 8px 12px 8px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; width: 120px; }
+          .col-val { display: table-cell; padding: 8px 0; font-size: 15px; font-weight: 600; color: #f1f5f9; }
+          .button-wrap { text-align: center; margin: 32px 0; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 800; font-size: 16px; padding: 15px 38px; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 16px rgba(132, 204, 22, 0.4); }
+          .link-box { background-color: #0b1324; padding: 12px 14px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .notes-box { background: rgba(132, 204, 22, 0.08); border-left: 3px solid #84cc16; padding: 12px 16px; border-radius: 6px; font-size: 14px; color: #e2e8f0; margin-top: 16px; }
+          .footer { margin-top: 36px; padding-top: 24px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="badge">Appointment Scheduled</div>
+          <h1>${headingText}</h1>
+          <p class="sub">${subText}</p>
+
+          <div class="card">
+            <div style="font-size: 18px; font-weight: 800; color: #84cc16; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
+              ${offeringTitle}
+            </div>
+
+            <div class="grid">
+              <div class="row">
+                <div class="col-label">Date</div>
+                <div class="col-val">${dateFormatted}</div>
+              </div>
+              <div class="row">
+                <div class="col-label">Time</div>
+                <div class="col-val">${timeFormatted}</div>
+              </div>
+              <div class="row">
+                <div class="col-label">Duration</div>
+                <div class="col-val">${offeringDuration} Minutes</div>
+              </div>
+              <div class="row">
+                <div class="col-label">${isHost ? "Client" : "Host"}</div>
+                <div class="col-val">${isHost ? `${clientName} (${clientEmail})` : `${hostName} (${organizationName})`}</div>
+              </div>
+              ${
+                price > 0
+                  ? `
+              <div class="row">
+                <div class="col-label">Price</div>
+                <div class="col-val" style="color: #84cc16;">${currency} ${price}</div>
+              </div>`
+                  : `
+              <div class="row">
+                <div class="col-label">Price</div>
+                <div class="col-val">Free</div>
+              </div>`
+              }
+              <div class="row">
+                <div class="col-label">Location</div>
+                <div class="col-val">LiveKit HD Video Room</div>
+              </div>
+            </div>
+
+            ${
+              clientNotes
+                ? `
+            <div style="margin-top: 18px;">
+              <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; margin-bottom: 6px;">
+                Notes from ${clientName}
+              </div>
+              <div class="notes-box">"${clientNotes}"</div>
+            </div>`
+                : ""
+            }
+          </div>
+
+          <div class="button-wrap">
+            <a href="${joinUrl}" class="button" target="_blank">Join Video Call</a>
+          </div>
+
+          <p style="font-size: 13px; color: #94a3b8; margin: 20px 0 8px;">Or copy and paste this link to join:</p>
+          <div class="link-box">${joinUrl}</div>
+
+          <div class="footer">
+            Powered by <strong>Taped</strong> Appointments & HD Video Conferencing.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Taped" <${senderEmail}>`,
+    to: recipientEmail,
+    subject: emailSubject,
+    html,
+  });
+}
+
+export interface SendAppointmentReminderEmailOptions {
+  recipientEmail: string;
+  recipientRole: "host" | "client";
+  hostName: string;
+  clientName: string;
+  offeringTitle: string;
+  scheduledStart: Date | string;
+  timezone: string;
+  joinUrl: string;
+  meetingId: string;
+  organizationName: string;
+}
+
+export async function sendAppointmentReminderEmail(options: SendAppointmentReminderEmailOptions) {
+  const {
+    recipientEmail,
+    recipientRole,
+    hostName,
+    clientName,
+    offeringTitle,
+    scheduledStart,
+    timezone,
+    joinUrl,
+    organizationName,
+  } = options;
+
+  if (!recipientEmail || !recipientEmail.includes("@")) {
+    throw new Error(`Invalid recipient email address: ${recipientEmail}`);
+  }
+
+  const startDate = new Date(scheduledStart);
+  let timeStr = "in 1 hour";
+  try {
+    timeStr = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: timezone || "UTC",
+    }).format(startDate);
+  } catch {
+    timeStr = startDate.toLocaleTimeString();
+  }
+
+  const isHost = recipientRole === "host";
+  const partnerName = isHost ? clientName : hostName;
+  const emailSubject = `Reminder: Your appointment "${offeringTitle}" starts at ${timeStr}!`;
+  const senderEmail = process.env.SMTP_FROM || process.env.SMTP_USER || "appointments@taped.in";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 580px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .badge { display: inline-flex; align-items: center; gap: 8px; background: #f59e0b; color: #000; font-weight: 800; font-size: 13px; padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 24px; }
+          h1 { font-size: 24px; font-weight: 800; margin: 0 0 10px; color: #ffffff; letter-spacing: -0.02em; }
+          p { font-size: 15px; color: #94a3b8; margin: 0 0 24px; line-height: 1.6; }
+          .reminder-card { background: #0b1324; border: 1px solid #1e293b; border-radius: 14px; padding: 22px; margin-bottom: 28px; }
+          .button-wrap { text-align: center; margin: 32px 0; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 800; font-size: 16px; padding: 15px 38px; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 16px rgba(132, 204, 22, 0.4); }
+          .link-box { background-color: #0b1324; padding: 12px 14px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .footer { margin-top: 36px; padding-top: 24px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="badge">Starting in 1 Hour</div>
+          <h1>Upcoming Appointment Reminder</h1>
+          <p>This is a quick reminder that your appointment <strong>"${offeringTitle}"</strong> with <strong>${partnerName}</strong> starts at <strong>${timeStr}</strong>.</p>
+
+          <div class="reminder-card">
+            <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 700; margin-bottom: 4px;">Meeting Session</div>
+            <div style="font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 12px;">${offeringTitle}</div>
+            <div style="font-size: 14px; color: #94a3b8;">Please ensure your camera and microphone are ready before entering the video room.</div>
+          </div>
+
+          <div class="button-wrap">
+            <a href="${joinUrl}" class="button" target="_blank">Join Video Room Now</a>
+          </div>
+
+          <p style="font-size: 13px; color: #94a3b8; margin: 20px 0 8px;">Or copy and paste this link to join:</p>
+          <div class="link-box">${joinUrl}</div>
+
+          <div class="footer">
+            Powered by <strong>Taped</strong> Appointments & Video Conferencing.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Taped" <${senderEmail}>`,
+    to: recipientEmail,
+    subject: emailSubject,
+    html,
+  });
+}
+
+export interface SendAppointmentRescheduleEmailOptions {
+  recipientEmail: string;
+  recipientRole: "host" | "client";
+  hostName: string;
+  clientName: string;
+  offeringTitle: string;
+  offeringDuration: number;
+  previousStart: Date | string;
+  previousEnd: Date | string;
+  proposedStart: Date | string;
+  proposedEnd: Date | string;
+  timezone: string;
+  joinUrl: string;
+  proposedByRole: "HOST" | "CLIENT";
+  reason?: string | null;
+  organizationName: string;
+  kind: "REQUEST" | "APPROVED" | "REJECTED" | "CANCELLED";
+}
+
+function formatRescheduleMailDate(value: Date | string, timezone: string) {
+  try {
+    const d = new Date(value);
+    const datePart = new Intl.DateTimeFormat("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: timezone || "UTC",
+    }).format(d);
+    const startTime = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: timezone || "UTC",
+    }).format(d);
+    return `${datePart} at ${startTime}`;
+  } catch {
+    return new Date(value).toLocaleString();
+  }
+}
+
+export async function sendAppointmentRescheduleEmail(options: SendAppointmentRescheduleEmailOptions) {
+  const {
+    recipientEmail,
+    recipientRole,
+    hostName,
+    clientName,
+    offeringTitle,
+    offeringDuration,
+    previousStart,
+    previousEnd,
+    proposedStart,
+    proposedEnd,
+    timezone,
+    joinUrl,
+    proposedByRole,
+    reason,
+    organizationName,
+    kind,
+  } = options;
+
+  if (!recipientEmail || !recipientEmail.includes("@")) {
+    throw new Error(`Invalid recipient email address: ${recipientEmail}`);
+  }
+
+  const isHost = recipientRole === "host";
+  const partnerName = proposedByRole === "HOST" ? hostName : clientName;
+  const viewerIsProposer =
+    (isHost && proposedByRole === "HOST") || (!isHost && proposedByRole === "CLIENT");
+
+  const prevStr = formatRescheduleMailDate(previousStart, timezone);
+  const prevEndStr = (() => {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+        timeZone: timezone || "UTC",
+      }).format(new Date(previousEnd));
+    } catch {
+      return "";
+    }
+  })();
+  const nextStr = formatRescheduleMailDate(proposedStart, timezone);
+  const nextEndStr = (() => {
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+        timeZone: timezone || "UTC",
+      }).format(new Date(proposedEnd));
+    } catch {
+      return "";
+    }
+  })();
+
+  const subjectMap: Record<SendAppointmentRescheduleEmailOptions["kind"], string> = {
+    REQUEST: `Reschedule requested: ${offeringTitle} — action needed`,
+    APPROVED: `Rescheduled: ${offeringTitle} confirmed for new time`,
+    REJECTED: `Reschedule update: ${offeringTitle} keeps original time`,
+    CANCELLED: `Reschedule withdrawn: ${offeringTitle}`,
+  };
+
+  const headingMap: Record<SendAppointmentRescheduleEmailOptions["kind"], string> = {
+    REQUEST: viewerIsProposer ? "Reschedule request sent" : "New reschedule request",
+    APPROVED: "Appointment rescheduled",
+    REJECTED: "Reschedule declined",
+    CANCELLED: "Reschedule request withdrawn",
+  };
+
+  const badgeMap: Record<SendAppointmentRescheduleEmailOptions["kind"], string> = {
+    REQUEST: "Action needed",
+    APPROVED: "Confirmed",
+    REJECTED: "Declined",
+    CANCELLED: "Withdrawn",
+  };
+
+  const introMap: Record<SendAppointmentRescheduleEmailOptions["kind"], string> = {
+    REQUEST: viewerIsProposer
+      ? `You proposed a new time for <strong>${offeringTitle}</strong>. We notified <strong>${isHost ? clientName : hostName}</strong> — the appointment stays at its original time until they approve.`
+      : `<strong>${partnerName}</strong> proposed a new time for <strong>${offeringTitle}</strong>. Please review and approve or decline — the original slot stays booked until you decide.`,
+    APPROVED: `The new time for <strong>${offeringTitle}</strong> is confirmed. Your video room link stays the same.`,
+    REJECTED: `The proposed new time for <strong>${offeringTitle}</strong> was declined. The appointment remains at its original time below.`,
+    CANCELLED: `The pending reschedule request for <strong>${offeringTitle}</strong> was withdrawn. The appointment remains at its original time.`,
+  };
+
+  const emailSubject = subjectMap[kind];
+  const senderEmail = process.env.SMTP_FROM || process.env.SMTP_USER || "appointments@taped.in";
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #090d16; color: #f8fafc; margin: 0; padding: 40px 20px; }
+          .container { max-width: 600px; margin: 0 auto; background: #131c2e; border-radius: 16px; border: 1px solid #1e293b; padding: 36px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.6); }
+          .badge { display: inline-block; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); color: #020617; font-weight: 800; font-size: 12px; padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 20px; }
+          h1 { font-size: 24px; font-weight: 800; margin: 0 0 10px; color: #ffffff; letter-spacing: -0.02em; }
+          .sub { font-size: 15px; color: #94a3b8; margin: 0 0 24px; line-height: 1.6; }
+          .card { background-color: #0b1324; border: 1px solid #1e293b; border-radius: 14px; padding: 22px; margin-bottom: 22px; }
+          .row-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 700; margin-bottom: 2px; }
+          .row-val { font-size: 15px; font-weight: 700; color: #f1f5f9; margin: 0 0 14px; }
+          .row-val.old { color: #94a3b8; text-decoration: line-through; font-weight: 500; }
+          .row-val.new { color: #84cc16; }
+          .meta { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+          .reason { background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8; padding: 12px 16px; border-radius: 6px; font-size: 14px; color: #e2e8f0; margin-top: 14px; }
+          .button-wrap { text-align: center; margin: 28px 0 12px; }
+          .button { display: inline-block; background-color: #84cc16; color: #09090b; font-weight: 800; font-size: 15px; padding: 14px 34px; text-decoration: none; border-radius: 12px; }
+          .link-box { background-color: #0b1324; padding: 12px 14px; border-radius: 8px; border: 1px solid #1e293b; word-break: break-all; font-size: 13px; color: #84cc16; }
+          .footer { margin-top: 32px; padding-top: 20px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="badge">${badgeMap[kind]}</div>
+          <h1>${headingMap[kind]}</h1>
+          <p class="sub">${introMap[kind]}</p>
+
+          <div class="card">
+            <div style="font-size: 17px; font-weight: 800; color: #84cc16; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">
+              ${offeringTitle} • ${offeringDuration} min
+            </div>
+            <div class="row-label">Original time</div>
+            <p class="row-val old">${prevStr}${prevEndStr ? ` – ${prevEndStr}` : ""}</p>
+            <div class="row-label">${kind === "APPROVED" ? "New confirmed time" : "Proposed time"}</div>
+            <p class="row-val new">${nextStr}${nextEndStr ? ` – ${nextEndStr}` : ""} (${timezone || "UTC"})</p>
+            <div class="row-label">${isHost ? "Client" : "Host"}</div>
+            <p class="row-val" style="font-size: 14px;">${isHost ? `${clientName}` : `${hostName} (${organizationName})`}</p>
+            ${
+              reason
+                ? `<div class="row-label">Reason / note</div><div class="reason">"${String(reason).replace(/</g, "&lt;")}"</div>`
+                : ""
+            }
+            <p class="meta" style="margin-top: 16px;">Location: LiveKit HD Video Room. ${
+              kind === "REQUEST" && !viewerIsProposer
+                ? "Approve or decline from your dashboard — no change happens until you respond."
+                : "No action needed — your calendar invite will reflect the confirmed time."
+            }</p>
+          </div>
+
+          <div class="button-wrap">
+            <a href="${joinUrl}" class="button" target="_blank">Open Video Room</a>
+          </div>
+          <div class="link-box">${joinUrl}</div>
+
+          <div class="footer">
+            Powered by <strong>Taped</strong> Appointments & HD Video Conferencing.<br/>
+            &copy; ${new Date().getFullYear()} ${organizationName}. All rights reserved.
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await transporter.sendMail({
+    from: `"${organizationName} via Taped" <${senderEmail}>`,
+    to: recipientEmail,
+    subject: emailSubject,
+    html,
+  });
+}
+
+
 

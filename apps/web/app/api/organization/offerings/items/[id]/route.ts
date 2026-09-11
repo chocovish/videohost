@@ -73,7 +73,7 @@ export async function PUT(
         ctaAction: isPlaylistOrVideo ? "EXTERNAL_LINK" : (body.ctaAction !== undefined ? body.ctaAction : undefined),
         ctaUrl: body.ctaUrl !== undefined ? body.ctaUrl : undefined,
         highlights: Array.isArray(body.highlights) ? body.highlights.filter(Boolean) : undefined,
-        meetingDuration: itemType === "MEETING" ? (body.meetingDuration !== undefined ? body.meetingDuration : undefined) : null,
+        meetingDuration: (itemType === "MEETING" || itemType === "APPOINTMENT") ? (body.meetingDuration !== undefined ? body.meetingDuration : undefined) : null,
         deliveryFormat: isPlaylistOrVideo ? null : (body.deliveryFormat !== undefined ? body.deliveryFormat : undefined),
         order: typeof body.order === "number" ? body.order : undefined,
         isFeatured: body.isFeatured !== undefined ? body.isFeatured : undefined,

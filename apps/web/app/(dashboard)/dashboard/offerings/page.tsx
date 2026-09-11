@@ -15,6 +15,7 @@ import {
   Trash2,
   Eye,
   Calendar,
+  CalendarClock,
   Video as VideoIcon,
   Film,
   Play,
@@ -60,6 +61,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import ImageCropperModal, { AspectRatioOption } from "@/components/ImageCropperModal";
 import VideoPickerModal, { SelectedVideoPayload } from "@/components/VideoPickerModal";
+import OfferingModal, { AppointmentOfferingItem } from "@/components/appointments/OfferingModal";
 import Link from "next/link";
 import { formatDuration } from "@/lib/video-utils";
 import { formatCurrencyPrice } from "@/lib/utils";
@@ -156,6 +158,7 @@ const INQUIRY_STATUS_LABELS: Record<string, string> = Object.fromEntries(
 
 const OFFERING_TYPE_LABELS: Record<string, string> = {
   PLAYLIST: "Playlist / Series",
+  APPOINTMENT: "Appointment Offering",
   MEETING: "Meetings",
   VIDEO: "Video Showcase",
   PRODUCT: "Digital Resource",
@@ -173,6 +176,10 @@ export default function OfferingsDashboardPage() {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string>("");
   const [meetings, setMeetings] = useState<any[]>([]);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string>("");
+  const [appointmentOfferings, setAppointmentOfferings] = useState<AppointmentOfferingItem[]>([]);
+  const [selectedAppointmentOfferingId, setSelectedAppointmentOfferingId] = useState<string>("");
+  const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [editingAppointmentOffering, setEditingAppointmentOffering] = useState<AppointmentOfferingItem | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -346,6 +353,36 @@ export default function OfferingsDashboardPage() {
     }
   };
 
+  const handleSelectAppointmentOffering = (offering: AppointmentOfferingItem) => {
+    setSelectedAppointmentOfferingId(offering.id);
+    setItemFormTitle(offering.title);
+    setItemFormSubtitle(`${offering.duration} min 1-on-1 session`);
+    setItemFormDescription(offering.description || "");
+    setItemFormCoverData(null);
+    setItemFormRemoveCover(false);
+    setItemFormCtaUrl(`/share/${offering.id}`);
+    setItemFormCtaAction("EXTERNAL_LINK");
+    setItemFormDuration(`${offering.duration} mins`);
+    setItemFormDelivery(`1:1 Live Video Session • ${offering.duration} mins`);
+    setItemFormBadge(offering.duration ? `${offering.duration} min session` : "1:1 Session");
+
+    if (offering.price > 0) {
+      setItemFormPrice(formatCurrencyPrice(offering.price, offering.currency || "USD"));
+      setItemFormPricePeriod("per session");
+      setItemFormCtaText("Book Session");
+    } else {
+      setItemFormPrice("Free");
+      setItemFormPricePeriod("");
+      setItemFormCtaText("Book Free Session");
+    }
+  };
+
+  const handleAppointmentOfferingCreated = (newOffering: AppointmentOfferingItem) => {
+    setAppointmentOfferings((prev) => [newOffering, ...prev]);
+    handleSelectAppointmentOffering(newOffering);
+    setAppointmentModalOpen(false);
+  };
+
   const handleVideoSelected = (video: SelectedVideoPayload) => {
     if (videoPickerTarget === "itemForm") {
       const isCustomUrl = video.id.startsWith("custom_");
@@ -411,12 +448,13 @@ export default function OfferingsDashboardPage() {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const [cfgRes, itemsRes, inqRes, playlistsRes, meetingsRes] = await Promise.all([
+      const [cfgRes, itemsRes, inqRes, playlistsRes, meetingsRes, apptsRes] = await Promise.all([
         fetch("/api/organization/offerings-config"),
         fetch("/api/organization/offerings/items"),
         fetch("/api/organization/offerings/inquiries"),
         fetch("/api/playlists"),
         fetch("/api/meetings"),
+        fetch("/api/appointments/offerings"),
       ]);
 
       if (cfgRes.ok) {
@@ -454,6 +492,13 @@ export default function OfferingsDashboardPage() {
         const mData = await meetingsRes.json();
         if (mData.meetings) {
           setMeetings(mData.meetings);
+        }
+      }
+
+      if (apptsRes.ok) {
+        const aData = await apptsRes.json();
+        if (aData.offerings) {
+          setAppointmentOfferings(aData.offerings);
         }
       }
     } catch (err) {
@@ -652,7 +697,7 @@ export default function OfferingsDashboardPage() {
   };
 
   // Open Create/Edit Item Modal
-  const handleOpenItemModal = (item?: OfferingItemData) => {
+  const handleOpenItemModal = (item?: OfferingItemData, defaultType?: string) => {
     if (item) {
       setEditingItem(item);
       const type = item.type === "COURSE" ? "PLAYLIST" : item.type;
@@ -663,12 +708,12 @@ export default function OfferingsDashboardPage() {
       setItemFormPrice(item.price || "");
       setItemFormPricePeriod(item.pricePeriod || "");
       setItemFormBadge(item.badge || "");
-      setItemFormCtaText(item.ctaText || (type === "VIDEO" ? "Watch Video" : type === "PLAYLIST" ? "Explore Playlist" : type === "MEETING" ? "Join Meeting" : "Learn More"));
-      setItemFormCtaAction(item.ctaAction || (type === "VIDEO" ? "FEATURED_VIDEO" : item.ctaUrl?.startsWith("http") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"));
+      setItemFormCtaText(item.ctaText || (type === "VIDEO" ? "Watch Video" : type === "PLAYLIST" ? "Explore Playlist" : type === "MEETING" ? "Join Meeting" : type === "APPOINTMENT" ? "Book Session" : "Learn More"));
+      setItemFormCtaAction(item.ctaAction || (type === "VIDEO" ? "FEATURED_VIDEO" : (item.ctaUrl?.startsWith("http") || type === "APPOINTMENT") ? "EXTERNAL_LINK" : "INQUIRY_MODAL"));
       setItemFormCtaUrl(item.ctaUrl || "");
       setItemFormHighlights((item.highlights || []).join("\n"));
       setItemFormDuration(item.meetingDuration || "");
-      setItemFormDelivery(item.deliveryFormat || (type === "VIDEO" ? "Self-paced HD Video" : type === "PLAYLIST" ? "Self-paced Series" : type === "MEETING" ? "Live Video Meeting" : ""));
+      setItemFormDelivery(item.deliveryFormat || (type === "VIDEO" ? "Self-paced HD Video" : type === "PLAYLIST" ? "Self-paced Series" : type === "MEETING" ? "Live Video Meeting" : type === "APPOINTMENT" ? "1:1 Live Video Session" : ""));
       setItemFormIsFeatured(item.isFeatured || false);
       setItemFormIsPublished(item.isPublished !== false);
       setItemFormCoverData(item.coverImageUrl || null);
@@ -683,6 +728,7 @@ export default function OfferingsDashboardPage() {
           setSelectedPlaylistId("");
         }
         setSelectedMeetingId("");
+        setSelectedAppointmentOfferingId("");
       } else if (type === "MEETING") {
         const matched = meetings.find(
           (m) => (item.ctaUrl && item.ctaUrl.includes(m.id)) || m.title.toLowerCase() === item.title.toLowerCase()
@@ -693,37 +739,75 @@ export default function OfferingsDashboardPage() {
           setSelectedMeetingId("");
         }
         setSelectedPlaylistId("");
+        setSelectedAppointmentOfferingId("");
+      } else if (type === "APPOINTMENT") {
+        const matched = appointmentOfferings.find(
+          (a) => (item.ctaUrl && item.ctaUrl.includes(a.id)) || a.title.toLowerCase() === item.title.toLowerCase()
+        );
+        if (matched) {
+          setSelectedAppointmentOfferingId(matched.id);
+        } else {
+          setSelectedAppointmentOfferingId("");
+        }
+        setSelectedPlaylistId("");
+        setSelectedMeetingId("");
       } else {
         setSelectedPlaylistId("");
         setSelectedMeetingId("");
+        setSelectedAppointmentOfferingId("");
       }
     } else {
       setEditingItem(null);
-      setItemFormType("PLAYLIST");
+      const initType = defaultType || "PLAYLIST";
+      setItemFormType(initType);
       setItemFormSubtitle("");
-      setItemFormPrice("$99");
-      setItemFormPricePeriod("one-time");
-      setItemFormBadge("Popular");
-      setItemFormCtaText("Explore Playlist");
-      setItemFormCtaAction("INQUIRY_MODAL");
-      setItemFormHighlights("Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access");
       setItemFormDuration("");
       setItemFormIsFeatured(false);
       setItemFormIsPublished(true);
       setSelectedMeetingId("");
 
-      if (playlists.length > 0) {
-        const firstPl = playlists[0];
-        handleSelectPlaylist(firstPl);
-      } else {
+      if (initType === "APPOINTMENT") {
+        setItemFormBadge("1:1 Session");
+        setItemFormCtaAction("EXTERNAL_LINK");
+        setItemFormCtaText("Book Session");
+        setItemFormHighlights("1-on-1 Live Video Consultation\nLive Screen Share & Code Review\nPrivate Notes & Action Items");
         setSelectedPlaylistId("");
-        setItemFormTitle("");
-        setItemFormDescription("");
-        setItemFormCoverData(null);
-        setItemFormCtaUrl("");
-        setItemFormDelivery("Self-paced Series");
-        setItemFormPrice("Free");
-        setItemFormPricePeriod("");
+        setSelectedMeetingId("");
+        if (appointmentOfferings.length > 0) {
+          handleSelectAppointmentOffering(appointmentOfferings[0]);
+        } else {
+          setSelectedAppointmentOfferingId("");
+          setItemFormTitle("");
+          setItemFormDescription("");
+          setItemFormCoverData(null);
+          setItemFormCtaUrl("");
+          setItemFormDelivery("1:1 Live Video Session");
+          setItemFormDuration("30 mins");
+          setItemFormPrice("Free");
+          setItemFormPricePeriod("");
+        }
+      } else {
+        setItemFormPrice("$99");
+        setItemFormPricePeriod("one-time");
+        setItemFormBadge("Popular");
+        setItemFormCtaText("Explore Playlist");
+        setItemFormCtaAction("INQUIRY_MODAL");
+        setItemFormHighlights("Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access");
+        setSelectedAppointmentOfferingId("");
+
+        if (playlists.length > 0) {
+          const firstPl = playlists[0];
+          handleSelectPlaylist(firstPl);
+        } else {
+          setSelectedPlaylistId("");
+          setItemFormTitle("");
+          setItemFormDescription("");
+          setItemFormCoverData(null);
+          setItemFormCtaUrl("");
+          setItemFormDelivery("Self-paced Series");
+          setItemFormPrice("Free");
+          setItemFormPricePeriod("");
+        }
       }
     }
     setItemFormRemoveCover(false);
@@ -737,6 +821,7 @@ export default function OfferingsDashboardPage() {
     const isPlaylist = itemFormType === "PLAYLIST" || itemFormType === "COURSE";
     const isVideo = itemFormType === "VIDEO";
     const isMeeting = itemFormType === "MEETING";
+    const isAppointment = itemFormType === "APPOINTMENT";
 
     if (isPlaylist) {
       if (!itemFormTitle.trim()) {
@@ -755,6 +840,11 @@ export default function OfferingsDashboardPage() {
     } else if (isMeeting) {
       if (!itemFormTitle.trim()) {
         alert("Please select or specify a scheduled meeting for this offering.");
+        return;
+      }
+    } else if (isAppointment) {
+      if (!itemFormTitle.trim()) {
+        alert("Please select or create an appointment offering.");
         return;
       }
     } else {
@@ -783,16 +873,18 @@ export default function OfferingsDashboardPage() {
           ? (itemFormPrice === "Restricted" ? "View / Request Access" : itemFormPrice && itemFormPrice !== "Free" ? "Purchase" : "Watch")
           : isVideo
             ? (itemFormPrice === "Restricted" ? "View / Request Access" : itemFormPrice && itemFormPrice !== "Free" ? "Purchase" : "Watch")
-            : (itemFormCtaText.trim() || "Learn More"),
-        ctaAction: isPlaylist
+            : isAppointment
+              ? (itemFormPrice === "Free" || !itemFormPrice ? "Book Free Session" : "Book Session")
+              : (itemFormCtaText.trim() || "Learn More"),
+        ctaAction: (isPlaylist || isAppointment)
           ? "EXTERNAL_LINK"
           : isVideo
             ? (itemFormCtaUrl.startsWith("http") ? "FEATURED_VIDEO" : "EXTERNAL_LINK")
             : itemFormCtaAction,
         ctaUrl: itemFormCtaUrl.trim() || null,
         highlights: highlightsArray,
-        meetingDuration: itemFormType === "MEETING" ? (itemFormDuration.trim() || null) : null,
-        deliveryFormat: itemFormDelivery.trim() || (isVideo ? "Self-paced HD Video" : isPlaylist ? "Self-paced Series" : null),
+        meetingDuration: (itemFormType === "MEETING" || itemFormType === "APPOINTMENT") ? (itemFormDuration.trim() || null) : null,
+        deliveryFormat: itemFormDelivery.trim() || (isAppointment ? "1:1 Live Video Session" : isVideo ? "Self-paced HD Video" : isPlaylist ? "Self-paced Series" : null),
         isFeatured: itemFormIsFeatured,
         isPublished: itemFormIsPublished,
         coverImageData: itemFormCoverData?.startsWith("data:") ? itemFormCoverData : undefined,
@@ -975,6 +1067,15 @@ export default function OfferingsDashboardPage() {
                 <span>Seed Sample Offerings</span>
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenItemModal(undefined, "APPOINTMENT")}
+                className="h-9 px-3.5 text-xs font-bold gap-1.5 cursor-pointer"
+              >
+                <CalendarClock className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Add Appointment</span>
+              </Button>
+              <Button
                 size="sm"
                 onClick={() => handleOpenItemModal()}
                 className="h-9 px-4 text-xs font-bold gap-1.5 cursor-pointer shadow-xs"
@@ -1069,6 +1170,7 @@ export default function OfferingsDashboardPage() {
                       <div className="flex items-center justify-between gap-2">
                         <Badge variant="secondary" className="gap-1">
                           {(item.type === "PLAYLIST" || item.type === "COURSE") && <ListVideo className="w-3.5 h-3.5 text-primary" />}
+                          {item.type === "APPOINTMENT" && <CalendarClock className="w-3.5 h-3.5 text-emerald-400" />}
                           {item.type === "MEETING" && <Calendar className="w-3.5 h-3.5 text-primary" />}
                           {item.type === "VIDEO" && <VideoIcon className="w-3.5 h-3.5 text-primary" />}
                           {item.type === "PRODUCT" && <Package className="w-3.5 h-3.5 text-primary" />}
@@ -2329,6 +2431,7 @@ export default function OfferingsDashboardPage() {
                 <div className="space-y-2">
                   {[
                     { key: "showPlaylists", altKey: "showCourses", label: "Show Playlists & Series" },
+                    { key: "showAppointments", label: "Show Appointment Offerings" },
                     { key: "showMeetings", label: "Show Live Meetings" },
                     { key: "showVideos", label: "Show Video Showcases" },
                     { key: "showProducts", label: "Show Digital Products" },
@@ -2659,9 +2762,21 @@ export default function OfferingsDashboardPage() {
                         setVideoPickerTarget("itemForm");
                         setVideoPickerOpen(true);
                       }
+                    } else if (nextType === "APPOINTMENT") {
+                      setItemFormCtaAction("EXTERNAL_LINK");
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
+                        setItemFormCtaText("Book Session");
+                      }
+                      const curA = appointmentOfferings.find((a) => a.id === selectedAppointmentOfferingId) || appointmentOfferings[0];
+                      if (curA) {
+                        handleSelectAppointmentOffering(curA);
+                      } else {
+                        setItemFormDelivery("1:1 Live Video Session");
+                        setItemFormDuration("30 mins");
+                      }
                     } else if (nextType === "MEETING") {
                       setItemFormCtaAction("EXTERNAL_LINK");
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Watch Video") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Explore Playlist" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Book Session") {
                         setItemFormCtaText("Join Meeting");
                       }
                       const curM = meetings.find((m) => m.id === selectedMeetingId) || meetings[0];
@@ -2672,14 +2787,14 @@ export default function OfferingsDashboardPage() {
                         setItemFormDuration("45 mins");
                       }
                     } else if (nextType === "PRODUCT") {
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting" || itemFormCtaText === "Book Session") {
                         setItemFormCtaText("Get Resource");
                       }
                       if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
                         setItemFormDelivery("Instant Digital Download");
                       }
                     } else if (nextType === "SERVICE") {
-                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting") {
+                      if (!itemFormCtaText || itemFormCtaText === "Learn More" || itemFormCtaText === "Watch Video" || itemFormCtaText === "Join Meeting" || itemFormCtaText === "Book Session") {
                         setItemFormCtaText("Request Proposal");
                       }
                       if (!itemFormDelivery || itemFormDelivery.includes("HD Video") || itemFormDelivery.includes("Live")) {
@@ -2697,6 +2812,12 @@ export default function OfferingsDashboardPage() {
                       <div className="flex items-center gap-2">
                         <ListVideo className="w-4 h-4 text-primary shrink-0" />
                         <span className="font-semibold">Playlist / Series</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="APPOINTMENT" className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="font-semibold">Appointment Offering (1:1 Session)</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="MEETING" className="text-xs">
@@ -3097,9 +3218,167 @@ export default function OfferingsDashboardPage() {
             )}
 
             {/* ========================================================================= */}
-            {/* OFFERING DETAILS: Offering Settings (Shared for Playlist, Video, & Meeting) */}
+            {/* 4. APPOINTMENT OFFERING: Linked Appointment Offering Selection & Auto-Synced Info */}
             {/* ========================================================================= */}
-            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "VIDEO" || itemFormType === "MEETING") && (
+            {itemFormType === "APPOINTMENT" && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
+                <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                      <CalendarClock className="w-3 h-3" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                      Selected Appointment Offering
+                    </span>
+                  </div>
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                    Auto-Synced
+                  </span>
+                </div>
+
+                {appointmentOfferings.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed text-center space-y-2 bg-background">
+                    <CalendarClock className="w-8 h-8 mx-auto text-muted-foreground opacity-40" />
+                    <p className="text-xs font-bold">No appointment offerings found in your account</p>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      Create an appointment offering (e.g. 1-on-1 consultation or mentorship) to list it in your portfolio.
+                    </p>
+                    <div className="pt-2 flex items-center justify-center gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          setEditingAppointmentOffering(null);
+                          setAppointmentModalOpen(true);
+                        }}
+                        className="gap-1.5 text-xs font-bold cursor-pointer"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Create Appointment Offering</span>
+                      </Button>
+                      <Link
+                        href="/dashboard/appointments"
+                        target="_blank"
+                        className={buttonVariants({ variant: "outline", size: "sm" }) + " text-xs font-semibold"}
+                      >
+                        <span>Manage in Appointments</span>
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-foreground">
+                          Choose Appointment Offering *
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAppointmentOffering(null);
+                              setAppointmentModalOpen(true);
+                            }}
+                            className="text-xs text-primary hover:underline font-bold inline-flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>New Offering</span>
+                          </button>
+                          <span className="text-muted-foreground text-xs">•</span>
+                          <Link
+                            href="/dashboard/appointments"
+                            target="_blank"
+                            className="text-xs text-muted-foreground hover:text-foreground font-semibold inline-flex items-center gap-1"
+                          >
+                            <span>Manage</span>
+                            <ExternalLink className="w-2.5 h-2.5" />
+                          </Link>
+                        </div>
+                      </div>
+                      <Select
+                        value={selectedAppointmentOfferingId || (appointmentOfferings.find((a) => a.title === itemFormTitle)?.id || "")}
+                        items={Object.fromEntries(appointmentOfferings.map((a) => [a.id, `${a.title} (${a.duration} mins)`]))}
+                        onValueChange={(val) => {
+                          const matched = appointmentOfferings.find((a) => a.id === val);
+                          if (matched) {
+                            handleSelectAppointmentOffering(matched);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="rounded-xl text-xs h-10 bg-background w-full">
+                          <SelectValue className="text-xs" placeholder="Select an Appointment Offering..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64 text-xs">
+                          <SelectGroup>
+                            {appointmentOfferings.map((a) => (
+                              <SelectItem key={a.id} value={a.id} className="text-xs py-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                                    style={{ backgroundColor: a.color || "#84cc16" }}
+                                  />
+                                  <span className="font-bold truncate max-w-[280px] sm:max-w-md">{a.title}</span>
+                                  <span className="text-xs text-muted-foreground shrink-0">
+                                    ({a.duration} mins • {a.price > 0 ? `${a.currency || "USD"} ${a.price}` : "Free"})
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Synced Appointment Information Box */}
+                    {itemFormTitle && (
+                      <div className="p-3 bg-background rounded-xl border border-border flex flex-col sm:flex-row gap-3 items-start sm:items-center shadow-xs animate-in fade-in">
+                        <div className="w-full sm:w-36 aspect-video bg-emerald-500/10 border border-emerald-500/20 rounded-lg overflow-hidden relative shrink-0 flex flex-col items-center justify-center text-emerald-400 p-2">
+                          <CalendarClock className="w-7 h-7 mb-1" />
+                          <span className="text-xs font-bold text-center truncate w-full">
+                            {itemFormDuration || "30 mins"}
+                          </span>
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded text-xs font-mono font-bold bg-foreground text-background">
+                            1:1 Session
+                          </div>
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-extrabold text-xs sm:text-sm text-foreground truncate max-w-full">
+                              {itemFormTitle}
+                            </span>
+                          </div>
+                          {itemFormSubtitle && (
+                            <p className="text-xs text-primary font-semibold truncate">
+                              {itemFormSubtitle}
+                            </p>
+                          )}
+                          {itemFormDescription && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                              {itemFormDescription}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+                            <Badge variant="secondary" className="uppercase tracking-wider">
+                              Price: {itemFormPrice || "Free"} {itemFormPricePeriod ? `(${itemFormPricePeriod})` : ""}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              • Direct booking via /share link
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* OFFERING DETAILS: Offering Settings (Shared for Playlist, Video, Meeting, & Appointment) */}
+            {/* ========================================================================= */}
+            {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "VIDEO" || itemFormType === "MEETING" || itemFormType === "APPOINTMENT") && (
               <div className="p-3.5 sm:p-4 rounded-2xl bg-muted/30 border border-border/70 space-y-3.5 min-w-0">
                 <div className="flex items-center justify-between border-b border-border/60 pb-2">
                   <div className="flex items-center gap-2">
@@ -3115,8 +3394,8 @@ export default function OfferingsDashboardPage() {
                   </span>
                 </div>
 
-                {/* Optional Highlights (for Playlist and Meeting) */}
-                {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "MEETING") && (
+                {/* Optional Highlights (for Playlist, Meeting, and Appointment) */}
+                {(itemFormType === "PLAYLIST" || itemFormType === "COURSE" || itemFormType === "MEETING" || itemFormType === "APPOINTMENT") && (
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
@@ -3127,7 +3406,7 @@ export default function OfferingsDashboardPage() {
                     </div>
                     <Textarea
                       rows={3}
-                      placeholder={itemFormType === "MEETING" ? "Live HD Video Conferencing\nQ&A and Architecture Review\nRecording Included" : "Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
+                      placeholder={itemFormType === "APPOINTMENT" ? "1-on-1 Live Video Consultation\nLive Screen Share & Code Review\nPrivate Notes & Action Items" : itemFormType === "MEETING" ? "Live HD Video Conferencing\nQ&A and Architecture Review\nRecording Included" : "Full Lifetime Access\nDownloadable Source Code\nPrivate Community Access"}
                       value={itemFormHighlights}
                       onChange={(e) => setItemFormHighlights(e.target.value)}
                       className="min-w-0 leading-relaxed"
@@ -3612,6 +3891,14 @@ export default function OfferingsDashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Appointment Offering Modal (Inline creation/edit) */}
+      <OfferingModal
+        isOpen={appointmentModalOpen}
+        onClose={() => setAppointmentModalOpen(false)}
+        offering={editingAppointmentOffering}
+        onSuccess={handleAppointmentOfferingCreated}
+      />
     </div>
   );
 }

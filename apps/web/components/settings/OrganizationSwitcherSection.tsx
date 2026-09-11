@@ -12,6 +12,7 @@ export interface OrganizationItem {
   logoUrl?: string | null;
   coverUrl?: string | null;
   themeId: string;
+  preferredCurrency?: string;
   planName: string;
   role: string;
   joinedAt: string;
