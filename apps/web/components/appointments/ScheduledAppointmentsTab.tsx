@@ -73,7 +73,7 @@ export interface ScheduledAppointmentItem {
   };
 }
 
-export default function ScheduledAppointmentsTab() {
+export default function ScheduledAppointmentsTab({ onStatsChange }: { onStatsChange?: (stats: { upcoming: number; total: number }) => void } = {}) {
   const [appointments, setAppointments] = useState<ScheduledAppointmentItem[]>([]);
   const [stats, setStats] = useState<{
     total: number;
@@ -120,7 +120,10 @@ export default function ScheduledAppointmentsTab() {
       if (res.ok) {
         const data = await res.json();
         setAppointments(data.appointments || []);
-        if (data.stats) setStats(data.stats);
+        if (data.stats) {
+          setStats(data.stats);
+          onStatsChange?.({ upcoming: data.stats.upcoming ?? 0, total: data.stats.total ?? 0 });
+        }
       }
     } catch (err) {
       console.error("Failed to load appointments:", err);
@@ -137,7 +140,10 @@ export default function ScheduledAppointmentsTab() {
       if (res.ok) {
         const data = await res.json();
         setAppointments(data.appointments || []);
-        if (data.stats) setStats(data.stats);
+        if (data.stats) {
+          setStats(data.stats);
+          onStatsChange?.({ upcoming: data.stats.upcoming ?? 0, total: data.stats.total ?? 0 });
+        }
       }
     } finally {
       setIsRefreshing(false);

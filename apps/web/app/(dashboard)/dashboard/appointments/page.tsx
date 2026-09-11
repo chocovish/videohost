@@ -20,6 +20,19 @@ export default function AppointmentsDashboardPage() {
   const [offerings, setOfferings] = useState<AppointmentOfferingItem[]>([]);
   const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [upcomingCount, setUpcomingCount] = useState(0);
+
+  const fetchUpcomingCount = async () => {
+    try {
+      const res = await fetch("/api/appointments?filter=all");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.stats) setUpcomingCount(data.stats.upcoming ?? 0);
+      }
+    } catch (err) {
+      console.error("Failed to fetch upcoming appointments count:", err);
+    }
+  };
 
   const fetchOfferings = async () => {
     try {
@@ -44,6 +57,7 @@ export default function AppointmentsDashboardPage() {
         const data = await res.json();
         setOfferings(data.offerings || []);
       }
+      await fetchUpcomingCount();
     } finally {
       setIsRefreshing(false);
     }
@@ -51,6 +65,16 @@ export default function AppointmentsDashboardPage() {
 
   useEffect(() => {
     fetchOfferings();
+    fetchUpcomingCount();
+    const handleAppointmentsUpdated = () => {
+      fetchUpcomingCount();
+    };
+    window.addEventListener("appointment-updated", handleAppointmentsUpdated);
+    window.addEventListener("notifications-refresh", handleAppointmentsUpdated);
+    return () => {
+      window.removeEventListener("appointment-updated", handleAppointmentsUpdated);
+      window.removeEventListener("notifications-refresh", handleAppointmentsUpdated);
+    };
   }, []);
 
   return (
@@ -93,7 +117,13 @@ export default function AppointmentsDashboardPage() {
           <Layers className="w-4 h-4" />
           <span>Appointment offerings</span>
           {offerings.length > 0 && (
-            <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-primary/20 text-primary-foreground font-mono">
+            <span
+              className={`text-[11px] px-1.5 py-0.5 rounded-full font-mono font-bold min-w-[22px] text-center ${
+                activeTab === "offerings"
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-primary/10 text-primary"
+              }`}
+            >
               {offerings.length}
             </span>
           )}
@@ -117,6 +147,18 @@ export default function AppointmentsDashboardPage() {
         >
           <CalendarCheck className="w-4 h-4" />
           <span>Scheduled appointments</span>
+          {upcomingCount > 0 && (
+            <span
+              className={`text-[11px] px-1.5 py-0.5 rounded-full font-mono font-bold min-w-[22px] text-center ${
+                activeTab === "scheduled"
+                  ? "bg-primary-foreground/20 text-primary-foreground"
+                  : "bg-primary/10 text-primary"
+              }`}
+              title={`${upcomingCount} upcoming appointment${upcomingCount === 1 ? "" : "s"}`}
+            >
+              {upcomingCount > 99 ? "99+" : upcomingCount}
+            </span>
+          )}
         </Button>
       </div>
 
@@ -132,7 +174,9 @@ export default function AppointmentsDashboardPage() {
 
         {activeTab === "availability" && <AvailabilityTab />}
 
-        {activeTab === "scheduled" && <ScheduledAppointmentsTab />}
+        {activeTab === "scheduled" && (
+          <ScheduledAppointmentsTab onStatsChange={(stats) => setUpcomingCount(stats.upcoming)} />
+        )}
       </div>
     </div>
   );

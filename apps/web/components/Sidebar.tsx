@@ -73,6 +73,7 @@ export default function Sidebar({
 
   const [currentUsedBytes, setCurrentUsedBytes] = useState(usedBytes);
   const [currentLimitBytes, setCurrentLimitBytes] = useState(storageLimitBytes);
+  const [upcomingAppointmentsCount, setUpcomingAppointmentsCount] = useState(0);
 
   useEffect(() => {
     setCurrentUsedBytes(usedBytes);
@@ -106,6 +107,33 @@ export default function Sidebar({
       window.removeEventListener("video-updated", handleUsageUpdated);
     };
   }, []);
+
+  const refreshUpcomingAppointments = async () => {
+    try {
+      const res = await fetch("/api/appointments?filter=all");
+      if (res.ok) {
+        const data = await res.json();
+        setUpcomingAppointmentsCount(data.stats?.upcoming ?? 0);
+      }
+    } catch (e) {
+      console.error("Failed to refresh upcoming appointments in sidebar:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode !== "CREATOR") return;
+    refreshUpcomingAppointments();
+    const handleAppointmentsUpdated = () => {
+      refreshUpcomingAppointments();
+    };
+
+    window.addEventListener("appointment-updated", handleAppointmentsUpdated);
+    window.addEventListener("notifications-refresh", handleAppointmentsUpdated);
+    return () => {
+      window.removeEventListener("appointment-updated", handleAppointmentsUpdated);
+      window.removeEventListener("notifications-refresh", handleAppointmentsUpdated);
+    };
+  }, [viewMode]);
 
   const isUnlimited = currentLimitBytes >= Number.MAX_SAFE_INTEGER - 1000;
   const percentage = isUnlimited ? 0 : Math.min(100, Math.round((currentUsedBytes / currentLimitBytes) * 100));
@@ -345,6 +373,9 @@ export default function Sidebar({
                     pathname === item.href ||
                     (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
                     (item.href === "/dashboard/uploaded-videos" && pathname.startsWith("/dashboard/uploaded-videos"));
+                  const showUpcomingPill =
+                    item.href === "/dashboard/appointments" && upcomingAppointmentsCount > 0;
+                  const isCollapsedIconOnly = isCollapsed && !isMobile;
                   return (
                     <Link
                       key={item.href}
@@ -355,12 +386,33 @@ export default function Sidebar({
                       title={isCollapsed && !isMobile ? item.label : undefined}
                       className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors duration-150 ${isCollapsed && !isMobile ? "justify-center px-2" : ""
                         } ${isActive
-                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
+                           ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                           : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
                         }`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className={showUpcomingPill && isCollapsedIconOnly ? "relative" : "flex shrink-0"}>
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {showUpcomingPill && isCollapsedIconOnly && (
+                          <span
+                            className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center border-2 border-sidebar"
+                            title={`${upcomingAppointmentsCount} upcoming appointment${upcomingAppointmentsCount === 1 ? "" : "s"}`}
+                          >
+                            {upcomingAppointmentsCount > 99 ? "99+" : upcomingAppointmentsCount}
+                          </span>
+                        )}
+                      </span>
                       {(!isCollapsed || isMobile) && <span className="truncate">{item.label}</span>}
+                      {showUpcomingPill && !isCollapsedIconOnly && (
+                        <span
+                          className={`ml-auto text-[11px] px-1.5 py-0.5 rounded-full font-mono font-bold min-w-[22px] text-center shrink-0 ${
+                            isActive
+                              ? "bg-primary-foreground/20 text-primary-foreground"
+                              : "bg-primary/10 text-primary"
+                          }`}
+                        >
+                          {upcomingAppointmentsCount > 99 ? "99+" : upcomingAppointmentsCount}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
