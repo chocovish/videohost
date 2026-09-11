@@ -181,7 +181,7 @@ export async function POST(
       },
     });
 
-    // Notify the OTHER party by email (guaranteed) + confirm to proposer.
+    // Email ONLY the other party — the proposer just made the request so they already know.
     // The appointment never moves until the other side approves.
     const baseUrl = getBaseUrl();
     const joinUrl = appointment.joinUrl || (appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`);
@@ -204,9 +204,7 @@ export async function POST(
       organizationName: orgName,
       kind: "REQUEST" as const,
     };
-    // Explicit other-party routing: HOST proposal -> client email; CLIENT proposal -> host email.
-    // We still CC the proposer for their own records, but the other party send is awaited
-    // (with catch) so a failure is logged loudly instead of silently skipped.
+    // Explicit other-party routing: HOST proposal -> client email only; CLIENT proposal -> host email only.
     const otherPartySends: Promise<unknown>[] = [];
     if (access.role === "HOST") {
       if (appointment.clientEmail) {
@@ -218,11 +216,6 @@ export async function POST(
       } else {
         console.error("[reschedule request] no client email to notify (other party)");
       }
-      if (hostEmail) {
-        sendAppointmentRescheduleEmail({ ...mailBase, recipientEmail: hostEmail, recipientRole: "host" }).catch((e) =>
-          console.error("[reschedule request host copy]", e)
-        );
-      }
     } else {
       if (hostEmail) {
         otherPartySends.push(
@@ -232,11 +225,6 @@ export async function POST(
         );
       } else {
         console.error("[reschedule request] no host email to notify (other party)");
-      }
-      if (appointment.clientEmail) {
-        sendAppointmentRescheduleEmail({ ...mailBase, recipientEmail: appointment.clientEmail, recipientRole: "client" }).catch((e) =>
-          console.error("[reschedule request client copy]", e)
-        );
       }
     }
     await Promise.allSettled(otherPartySends);
