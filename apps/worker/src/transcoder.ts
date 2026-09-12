@@ -217,6 +217,169 @@ export function computeRenditionSAR(
   return `${sarNum / g}/${sarDen / g}`;
 }
 
+export const AUDIO_FOLDER_NAME = "audio";
+
+/**
+ * Folder name for a video rendition — numeric height only (e.g. 480, 720,
+ * 1080, 2160). Keeps the S3 `dash/` prefix organized per rendition.
+ */
+export function renditionFolderName(height: number): string {
+  return `${height}`;
+}
+
+/**
+ * Maps a DASH RepresentationID to its output subfolder:
+ * - video representations 0..N-1 map to `<height>` (e.g. "720", "1080")
+ * - audio representation N (when present) maps to "audio"
+ * Returns null for unknown IDs.
+ */
+export function representationFolderName(
+  repId: number,
+  targetRenditions: RenditionConfig[],
+  hasAudio: boolean
+): string | null {
+  if (Number.isInteger(repId) && repId >= 0 && repId < targetRenditions.length) {
+    return renditionFolderName(targetRenditions[repId].height);
+  }
+  if (hasAudio && repId === targetRenditions.length) {
+    return AUDIO_FOLDER_NAME;
+  }
+  return null;
+}
+
+/**
+ * Reorganizes a flat FFmpeg DASH output directory into per-rendition folders:
+ *
+ *   dash/master.mpd, master.m3u8, media_*.m3u8  (kept at root)
+ *   dash/480/, dash/720/, dash/1080/, ...       (video segments)
+ *   dash/audio/                                  (audio segments)
+ *
+ * Segment filenames still embed the RepresentationID
+ * (`stream_0.mp4`, `init-stream0.m4s`, `chunk-stream0-00001.m4s`), so the
+ * mapping stays unambiguous. Manifests are patched so relative URLs point
+ * into the new subfolders:
+ * - master.mpd: per-Representation SegmentTemplate `$RepresentationID$`
+ *   placeholders are expanded to concrete folder-prefixed paths, and
+ *   single-file `<BaseURL>stream_X.mp4</BaseURL>` entries are prefixed.
+ * - media_X.m3u8 (kept at root): init/chunk/stream references are prefixed.
+ * - master.m3u8: untouched (only references media_*.m3u8 at root).
+ *
+ * Returns the representationId -> folder map used.
+ */
+export function organizeDashOutput(
+  dashOutputDir: string,
+  targetRenditions: RenditionConfig[],
+  hasAudio: boolean
+): Map<number, string> {
+  const repFolders = new Map<number, string>();
+  targetRenditions.forEach((r, i) => repFolders.set(i, renditionFolderName(r.height)));
+  if (hasAudio) repFolders.set(targetRenditions.length, AUDIO_FOLDER_NAME);
+
+  const singleFileRegex = /^stream_(\d+)\.mp4$/;
+  const chunkFileRegex = /^(?:init|chunk)-stream(\d+)/;
+  const mediaPlaylistRegex = /^media_(\d+)\.m3u8$/;
+
+  // 1. Move flat segment files into per-representation subfolders.
+  // Playlists (master.mpd, master.m3u8, media_*.m3u8) stay at root.
+  let topEntries: string[] = [];
+  try {
+    topEntries = fs.readdirSync(dashOutputDir);
+  } catch {
+    return repFolders;
+  }
+  for (const entry of topEntries) {
+    const fullPath = path.join(dashOutputDir, entry);
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(fullPath);
+    } catch {
+      continue;
+    }
+    if (!stat.isFile()) continue;
+    if (entry === "master.mpd" || entry === "master.m3u8" || mediaPlaylistRegex.test(entry)) {
+      continue;
+    }
+    const singleMatch = entry.match(singleFileRegex);
+    const chunkMatch = entry.match(chunkFileRegex);
+    const match = singleMatch || chunkMatch;
+    if (!match) continue;
+    const repId = parseInt(match[1], 10);
+    const folder = repFolders.get(repId);
+    if (!folder) continue;
+    const destDir = path.join(dashOutputDir, folder);
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.renameSync(fullPath, path.join(destDir, entry));
+  }
+
+  // 2. Patch master.mpd so SegmentTemplate/BaseURL point into subfolders.
+  const masterMpdPath = path.join(dashOutputDir, "master.mpd");
+  if (fs.existsSync(masterMpdPath)) {
+    let mpd = fs.readFileSync(masterMpdPath, "utf-8");
+    // Single-file mode: <BaseURL>stream_X.mp4</BaseURL> -> <BaseURL>folder/stream_X.mp4</BaseURL>
+    for (const [repId, folder] of repFolders) {
+      mpd = mpd.split(`>stream_${repId}.mp4<`).join(`>${folder}/stream_${repId}.mp4<`);
+      mpd = mpd.split(`"stream_${repId}.mp4"`).join(`"${folder}/stream_${repId}.mp4"`);
+    }
+    // Chunked mode: expand $RepresentationID$ templates per Representation block.
+    mpd = mpd.replace(
+      /<Representation id="(\d+)"[\s\S]*?<\/Representation>/g,
+      (block: string, idStr: string) => {
+        const repId = parseInt(idStr, 10);
+        const folder = repFolders.get(repId);
+        if (!folder) return block;
+        let patched = block;
+        patched = patched
+          .split(`init-stream$RepresentationID$.m4s`)
+          .join(`${folder}/init-stream${repId}.m4s`);
+        patched = patched
+          .split(`chunk-stream$RepresentationID$-$Number%05d$.m4s`)
+          .join(`${folder}/chunk-stream${repId}-$Number%05d$.m4s`);
+        patched = patched
+          .split(`stream_$RepresentationID$.mp4`)
+          .join(`${folder}/stream_${repId}.mp4`);
+        // Generic fallback for any other $RepresentationID$ template usage.
+        patched = patched.split(`$RepresentationID$`).join(`${repId}`);
+        // Safety net for already-expanded concrete names lacking a folder
+        // prefix (attribute-start quote ensures no double-prefixing).
+        patched = patched.replace(
+          new RegExp(`"init-stream${repId}\\.m4s"`, "g"),
+          `"${folder}/init-stream${repId}.m4s"`
+        );
+        patched = patched.replace(
+          new RegExp(`"chunk-stream${repId}-`, "g"),
+          `"${folder}/chunk-stream${repId}-`
+        );
+        return patched;
+      }
+    );
+    fs.writeFileSync(masterMpdPath, mpd);
+  }
+
+  // 3. Patch media_*.m3u8 playlists (kept at root) to reference subfolders.
+  for (const entry of fs.readdirSync(dashOutputDir)) {
+    const m = entry.match(mediaPlaylistRegex);
+    if (!m) continue;
+    const playlistPath = path.join(dashOutputDir, entry);
+    let stat: fs.Stats;
+    try {
+      stat = fs.statSync(playlistPath);
+    } catch {
+      continue;
+    }
+    if (!stat.isFile()) continue;
+    const repId = parseInt(m[1], 10);
+    const folder = repFolders.get(repId);
+    if (!folder) continue;
+    let content = fs.readFileSync(playlistPath, "utf-8");
+    content = content.split(`init-stream${repId}.m4s`).join(`${folder}/init-stream${repId}.m4s`);
+    content = content.split(`chunk-stream${repId}-`).join(`${folder}/chunk-stream${repId}-`);
+    content = content.split(`stream_${repId}.mp4`).join(`${folder}/stream_${repId}.mp4`);
+    fs.writeFileSync(playlistPath, content);
+  }
+
+  return repFolders;
+}
+
 export async function probeVideo(filePath: string): Promise<{
   width: number;
   height: number;
@@ -406,7 +569,11 @@ export async function processVideoJob(
 
     await new Promise<void>((resolve, reject) => {
       const stderrLines: string[] = [];
-      const encodeCommand = ffmpeg(inputPath)
+      // Run FFmpeg with cwd=dashOutputDir so relative DASH segment templates
+      // (init-stream*.m4s / chunk-stream*.m4s / stream_*.mp4) land in the
+      // dash folder instead of the worker process cwd. Required for
+      // concurrent jobs (same segment names) and for organizeDashOutput below.
+      const encodeCommand = ffmpeg(inputPath, { cwd: dashOutputDir })
         .inputOptions([
           `-threads ${threadCount}`,
         ])
@@ -509,6 +676,23 @@ export async function processVideoJob(
       fs.writeFileSync(masterM3u8Path, masterM3u8);
     }
 
+    // 5b. Organize flat DASH segments into per-rendition subfolders
+    // (dash/<height>/ + dash/audio/) and patch manifests accordingly.
+    // Playlists stay at root; uploadDirectoryToS3 preserves the nesting.
+    try {
+      const repFolders = organizeDashOutput(dashOutputDir, targetRenditions, hasAudio);
+      console.log(
+        `[Worker] Organized DASH output: ${Array.from(repFolders.entries())
+          .map(([id, folder]) => `${id}->${folder}`)
+          .join(", ")}`
+      );
+    } catch (organizeErr: any) {
+      console.error(`[Worker] Failed to organize DASH output:`, organizeErr?.message || organizeErr);
+      throw organizeErr;
+    }
+
+    assertNotCancelled();
+
     // 6. Generate Thumbnail (thumbnail-{unique}.webp) if not skipped
     const shouldGenerateThumbnail =
       payload.skipThumbnail === true || payload.generateThumbnail === false
@@ -577,20 +761,29 @@ export async function processVideoJob(
     // Get original file size
     const originalSizeBytes = fs.statSync(inputPath).size;
 
-    // Helper to calculate total and per-stream sizes in dashOutputDir
+    // Helper to calculate total and per-stream sizes in dashOutputDir.
+    // Recursive: segments now live in per-rendition subfolders
+    // (dash/<height>/, dash/audio/) — match on basename so RepresentationID
+    // mapping still works regardless of nesting depth.
     function calculateDashStreamSizes(dirPath: string): { streamSizes: Map<number, number>; totalSize: number } {
       const streamSizes = new Map<number, number>();
       let totalSize = 0;
       if (!fs.existsSync(dirPath)) return { streamSizes, totalSize };
 
-      const files = fs.readdirSync(dirPath);
-      for (const file of files) {
-        const fullPath = path.join(dirPath, file);
-        const stat = fs.statSync(fullPath);
+      const entries = fs.readdirSync(dirPath, { recursive: true }) as unknown as string[];
+      for (const entry of entries) {
+        const fullPath = path.join(dirPath, entry.toString());
+        let stat: fs.Stats;
+        try {
+          stat = fs.statSync(fullPath);
+        } catch {
+          continue;
+        }
         if (stat.isFile()) {
           totalSize += stat.size;
-          const singleMatch = file.match(/^stream_(\d+)\.mp4$/);
-          const chunkMatch = file.match(/^(?:init|chunk)-stream(\d+)/);
+          const base = path.basename(fullPath);
+          const singleMatch = base.match(/^stream_(\d+)\.mp4$/);
+          const chunkMatch = base.match(/^(?:init|chunk)-stream(\d+)/);
           const match = singleMatch || chunkMatch;
           if (match) {
             const streamId = parseInt(match[1], 10);

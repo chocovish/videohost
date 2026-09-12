@@ -536,6 +536,28 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		_ = os.WriteFile(masterM3u8Path, []byte(m3u8Str), 0644)
 	}
 
+	// 5b. Organize flat DASH segments into per-rendition subfolders
+	// (dash/<height>/ + dash/audio/) and patch manifests accordingly.
+	// Playlists stay at root; UploadDirectoryToS3 preserves the nesting.
+	repFolders, err := OrganizeDashOutput(dashOutputDir, targetRenditions, meta.HasAudio)
+	if err != nil {
+		return nil, handleError(fmt.Errorf("failed organizing dash output: %w", err))
+	}
+	var repParts []string
+	for id := 0; id < len(targetRenditions); id++ {
+		if folder, ok := repFolders[id]; ok {
+			repParts = append(repParts, fmt.Sprintf("%d->%s", id, folder))
+		}
+	}
+	if folder, ok := repFolders[len(targetRenditions)]; ok && meta.HasAudio {
+		repParts = append(repParts, fmt.Sprintf("%d->%s", len(targetRenditions), folder))
+	}
+	fmt.Printf("[Worker] Organized DASH output: %s\n", strings.Join(repParts, ", "))
+
+	if err := assertNotCancelled(); err != nil {
+		return nil, handleError(err)
+	}
+
 	// 6. Generate Thumbnail (WebP) if not skipped
 	shouldGenerateThumbnail := true
 	if payload.SkipThumbnail != nil && *payload.SkipThumbnail {

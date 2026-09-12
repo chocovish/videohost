@@ -9,6 +9,7 @@ A high-performance, stateless transcoding and packaging worker service written i
 - **Aspect Ratio Preservation**: Height-only scaling (`scale=-2:HEIGHT`) preserves any source aspect ratio (16:9, 9:16, 4:3, …) with no fixed-width or DAR enforcement. Stored widths are metadata only.
 - **Strict Ladder Capping (No Upscaling, No Native Extra)**: Only renders ladder rungs at or below the source height. Never upscales and never adds an extra native/beyond-ladder rung — a 1080p-capped request on a 4K source renders only 1080p and below.
 - **Single-Pass Multi-Representation DASH + HLS**: Encodes all renditions concurrently into an MPEG-DASH and HLS single manifest structure using FFmpeg.
+- **Organized DASH Layout**: Segments are stored per rendition under `dash/<height>/` (e.g. `dash/480/`, `dash/720/`, `dash/1080/`) with audio in `dash/audio/`; playlists (`master.mpd`, `master.m3u8`, `media_*.m3u8`) stay at the `dash/` root with relative URLs pointing into the subfolders. Applies to both chunked (`.m4s`) and single-file (`stream_*.mp4`) packaging modes.
 - **WebP Thumbnails**: Fast extraction and quality compression to WebP.
 - **Direct S3 / R2 Multipart Uploads**: Uploads original source, DASH files, and thumbnails directly to Cloudflare R2 / AWS S3 / MinIO.
 - **Thread-safe Bounded Job Queue**: Limits active transcode jobs with concurrency controls (`WORKER_MAX_CONCURRENT_JOBS`).
