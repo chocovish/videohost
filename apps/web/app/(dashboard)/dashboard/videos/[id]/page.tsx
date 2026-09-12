@@ -595,7 +595,7 @@ export default function VideoDetailPage() {
                       : "…"
                   : video.renditions?.length > 0
                     ? video.renditions.length
-                    : video.requireHls && video.status !== "FAILED"
+                    : ["QUEUED", "PROCESSING", "UPLOADING"].includes(video.status)
                       ? "Processing"
                       : 0}
                 )
@@ -831,12 +831,12 @@ export default function VideoDetailPage() {
                       );
                     })()}
                   </>
-                ) : video.requireHls ? (
+                ) : ["FAILED", "CANCELLED", "QUEUED", "PROCESSING", "UPLOADING"].includes(video.status) ? (
                   video.status === "FAILED" || video.status === "CANCELLED" ? (
                     <Alert variant="destructive" className="text-xs">
                       <AlertTriangle />
                       <AlertTitle className="flex items-center justify-between gap-2 font-semibold">
-                        <span>{video.status === "CANCELLED" ? "Transcoding Cancelled (Require HLS = ON)" : "Transcoding Failed (Require HLS = ON)"}</span>
+                        <span>{video.status === "CANCELLED" ? "Transcoding Cancelled" : "Transcoding Failed"}</span>
                         <Button
                           variant="destructive"
                           size="xs"
@@ -880,10 +880,10 @@ export default function VideoDetailPage() {
                   )
                 ) : (
                   <Alert className="text-xs">
-                    <AlertTitle className="text-xs font-semibold">Direct Playback Mode (Require HLS = OFF)</AlertTitle>
+                    <AlertTitle className="text-xs font-semibold">Single-Quality HLS Mode</AlertTitle>
                     <AlertDescription className="text-xs space-y-1 leading-relaxed">
                       <p>
-                        HLS transcoding was disabled for this video upon upload. The original video file is stored in Cloudflare R2 and served directly.
+                        This video was rendered to single highest-quality HLS. Enable “Render in multiple qualities” (Pro+) on upload for adaptive multi-bitrate renditions.
                       </p>
                     </AlertDescription>
                   </Alert>
@@ -1021,7 +1021,7 @@ export default function VideoDetailPage() {
             <div className="flex justify-between py-1 border-b border-border">
               <span className="text-muted-foreground">HLS Mode</span>
               <span className="font-semibold text-foreground">
-                {video.requireHls ? "Required" : "Disabled (Direct)"}
+                {video.requireHls ? "Multi-quality" : "Single quality"}
               </span>
             </div>
             <div className="flex justify-between py-1 border-b border-border">

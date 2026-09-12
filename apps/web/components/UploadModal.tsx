@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { UploadCloud, Film, AlertCircle, Folder, Clock, Maximize2, Image as ImageIcon, Sparkles, Check, AlertTriangle } from "lucide-react";
 import {
   Dialog,
@@ -80,11 +80,45 @@ export default function UploadModal({
   const [compressingThumb, setCompressingThumb] = useState(false);
   const [checkingQuota, setCheckingQuota] = useState(false);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState(false);
-  const [userPlan, setUserPlan] = useState<string>("free");
+  // null = plan not loaded yet (avoids flashing free copy to pro users).
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [isPlanLoading, setIsPlanLoading] = useState(false);
   const [unsupportedModalOpen, setUnsupportedModalOpen] = useState(false);
   const [unsupportedTracks, setUnsupportedTracks] = useState<UnsupportedTrackInfo[]>([]);
   const [unsupportedFileName, setUnsupportedFileName] = useState("");
   const [validatingTracks, setValidatingTracks] = useState(false);
+
+  // Fetch plan as soon as the modal opens so the multi-quality toggle
+  // reflects pro/enterprise immediately (previously it only updated after
+  // file selection, showing a disabled PRO FEATURE toggle to pro users).
+  useEffect(() => {
+    if (!isOpen) return;
+    // Keep last known plan across re-opens; only show loading on first load.
+    if (userPlan !== null) return;
+    let cancelled = false;
+    setIsPlanLoading(true);
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/usage");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data?.plan) setUserPlan(String(data.plan).toLowerCase());
+        }
+      } catch {
+        // keep default; backend still enforces plan gating
+      } finally {
+        if (!cancelled) {
+          // Fall back to free only if the fetch failed entirely.
+          setUserPlan((prev) => prev ?? "free");
+          setIsPlanLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const resetForm = () => {
     setFile(null);
@@ -207,7 +241,8 @@ export default function UploadModal({
         if (usageRes.ok) {
           const usageData = await usageRes.json();
           if (usageData.plan) {
-            setUserPlan(usageData.plan.toLowerCase());
+            setUserPlan(String(usageData.plan).toLowerCase());
+            setIsPlanLoading(false);
           }
           if (usageData.usage) {
             const { usedBytes, storageLimitBytes, isLimitReached } = usageData.usage;
@@ -507,35 +542,58 @@ export default function UploadModal({
               />
             )}
 
-            {/* Require HLS Switch */}
+            {/* Multi-quality HLS Switch — every upload renders HLS; toggle adds multi-quality (Pro+) */}
             {(() => {
-              const canUseHls = ["pro", "enterprise"].includes(userPlan.toLowerCase());
+              if (userPlan === null || isPlanLoading) {
+                return (
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card">
+                    <div className="space-y-0.5 pr-4">
+                      <Label htmlFor="require-hls-toggle" className="text-xs font-semibold">
+                        Render in multiple qualities
+                      </Label>
+                      <p className="text-xs text-muted-foreground">Checking your plan…</p>
+                    </div>
+                    <Switch id="require-hls-toggle" checked={false} disabled />
+                  </div>
+                );
+              }
+              const canUseMulti = ["pro", "enterprise"].includes(userPlan.toLowerCase());
               return (
                 <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card">
                   <div className="space-y-0.5 pr-4">
                     <div className="flex items-center gap-2">
                       <Label htmlFor="require-hls-toggle" className="text-xs font-semibold cursor-pointer">
-                        Require HLS (Adaptive Bitrate)
+                        Render in multiple qualities
                       </Label>
-                      {!canUseHls && (
+                      {!canUseMulti && (
                         <Badge variant="secondary" className="uppercase">
                           PRO FEATURE
                         </Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {!canUseHls
-                        ? "Adaptive bitrate HLS streaming (multi-quality) requires Pro or Enterprise plan."
+                      {!canUseMulti
+                        ? "Your plan renders single highest-quality HLS (up to 1080p). Multiple qualities require Pro or Enterprise."
                         : requireHls
-                        ? "Transcode video into adaptive HLS stream (480p-4K)"
-                        : "Store original video & play directly without transcoding"}
+                        ? "Multiple HLS qualities (adaptive bitrate)."
+                        : "Single highest-quality HLS."}
                     </p>
+                    {canUseMulti && requireHls && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Multiple quality render increases storage usage significantly.
+                      </p>
+                    )}
+                    {!canUseMulti && (
+                      <p className="text-[11px] text-muted-foreground">
+                        Every upload is rendered to HLS automatically.
+                      </p>
+                    )}
                   </div>
                   <Switch
                     id="require-hls-toggle"
-                    checked={canUseHls && requireHls}
-                    onCheckedChange={(checked) => canUseHls && setRequireHls(checked)}
-                    disabled={uploading || !canUseHls}
+                    checked={canUseMulti && requireHls}
+                    onCheckedChange={(checked) => canUseMulti && setRequireHls(checked)}
+                    disabled={uploading || !canUseMulti}
                   />
                 </div>
               );
@@ -632,9 +690,7 @@ export default function UploadModal({
                 ? "Checking Quota..."
                 : isQuotaExceeded
                 ? "Quota Exceeded"
-                : requireHls
-                ? "Upload & Transcode"
-                : "Upload Video"}
+                : "Upload & Transcode"}
             </Button>
           </DialogFooter>
         </form>

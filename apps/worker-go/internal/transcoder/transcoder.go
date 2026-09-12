@@ -338,7 +338,10 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 	masterManifestPath := filepath.ToSlash(filepath.Join(dashOutputDir, "master.mpd"))
 	totalRenditions := len(targetRenditions)
 
-	dar := ComputeTargetDAR(meta.Width, meta.Height, meta.SAR)
+	// Height-only scaling preserves any source aspect ratio automatically.
+	// (ComputeTargetDAR/ComputeRenditionSAR helpers are retained for compat/tests
+	// but no longer enforced in the FFmpeg filter.)
+	_ = meta.SAR
 
 	var filterParts []string
 	if totalRenditions > 1 {
@@ -354,8 +357,8 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		if totalRenditions > 1 {
 			inputLabel = fmt.Sprintf("[v%d]", i)
 		}
-		filterParts = append(filterParts, fmt.Sprintf("%sscale=%d:%d:flags=bicubic,setdar=%d/%d:max=1000000[o%d]",
-			inputLabel, rend.Width, rend.Height, dar.DarNum, dar.DarDen, i))
+		filterParts = append(filterParts, fmt.Sprintf("%sscale=-2:%d:flags=bicubic[o%d]",
+			inputLabel, rend.Height, i))
 	}
 	filterComplex := strings.Join(filterParts, ";")
 

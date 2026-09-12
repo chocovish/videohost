@@ -6,8 +6,8 @@ A high-performance, stateless transcoding and packaging worker service written i
 
 - **Stateless HTTP API**: High-performance HTTP server matching `apps/worker` endpoints (`/health`, `/stats`, `/transcode`, `/cancel`).
 - **Payload-Driven Architecture**: Fully independent of job environment variables; all storage credentials, buckets, and endpoints are supplied per request.
-- **Aspect Ratio Preservation**: Automatic Display Aspect Ratio (DAR) calculation and exact even-rounding scaling ladder.
-- **Adaptive Ladder (No Upscaling)**: Never upscales beyond the source resolution; automatically injects native resolution rungs when significant gap exists.
+- **Aspect Ratio Preservation**: Height-only scaling (`scale=-2:HEIGHT`) preserves any source aspect ratio (16:9, 9:16, 4:3, …) with no fixed-width or DAR enforcement. Stored widths are metadata only.
+- **Strict Ladder Capping (No Upscaling, No Native Extra)**: Only renders ladder rungs at or below the source height. Never upscales and never adds an extra native/beyond-ladder rung — a 1080p-capped request on a 4K source renders only 1080p and below.
 - **Single-Pass Multi-Representation DASH + HLS**: Encodes all renditions concurrently into an MPEG-DASH and HLS single manifest structure using FFmpeg.
 - **WebP Thumbnails**: Fast extraction and quality compression to WebP.
 - **Direct S3 / R2 Multipart Uploads**: Uploads original source, DASH files, and thumbnails directly to Cloudflare R2 / AWS S3 / MinIO.

@@ -17,10 +17,12 @@ import { isBunnyEnabled as isBunnyFlag } from "./bunny";
 
 export type StorageType = "s3" | "bunny";
 
-export function getStorageType(options?: { requireHls?: boolean }): StorageType {
-  if (options?.requireHls) {
-    return "s3";
-  }
+export function getStorageType(_options?: { requireHls?: boolean }): StorageType {
+  // Storage is decided solely by VIDEO_STORAGE. `requireHls` is kept in the
+  // signature for backward compatibility but no longer forces S3:
+  // - VIDEO_STORAGE=bunny → Bunny Stream (Bunny encodes HLS itself)
+  // - otherwise → S3/R2 + FFmpeg worker (always HLS now; `requireHls` on the
+  //   video record means "multiple qualities", a Pro+ feature, not "whether HLS")
   return isBunnyFlag() ? "bunny" : "s3";
 }
 

@@ -35,31 +35,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ id: video.id, status: "PROCESSING", message: "Bunny video processing started", storageType: "bunny" });
   }
 
-  if (video.requireHls) {
-    if (hasThumbnail === false && video.thumbnailKey) {
-      await db.video.update({
-        where: { id },
-        data: { thumbnailKey: null },
-      });
-    }
-
-    const skipThumbnail =
-      hasThumbnail !== undefined ? hasThumbnail : Boolean(video.thumbnailKey);
-
+  // Always render HLS for S3. `requireHls` = multiple-qualities request (Pro+).
+  if (hasThumbnail === false && video.thumbnailKey) {
     await db.video.update({
       where: { id },
-      data: { status: "QUEUED" },
+      data: { thumbnailKey: null },
     });
-
-    await addTranscodeJob(video.id, authCtx.orgId, { skipThumbnail });
-
-    return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued", skipThumbnail, storageType: "s3" });
-  } else {
-    await db.video.update({
-      where: { id },
-      data: { status: "READY" },
-    });
-
-    return NextResponse.json({ id: video.id, status: "READY", message: "Video upload marked ready without transcoding", storageType: "s3" });
   }
+
+  const skipThumbnail =
+    hasThumbnail !== undefined ? hasThumbnail : Boolean(video.thumbnailKey);
+
+  await db.video.update({
+    where: { id },
+    data: { status: "QUEUED" },
+  });
+
+  await addTranscodeJob(video.id, authCtx.orgId, { skipThumbnail });
+
+  return NextResponse.json({ id: video.id, status: "QUEUED", message: "Transcoding job queued", skipThumbnail, storageType: "s3" });
 }

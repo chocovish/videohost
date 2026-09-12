@@ -80,7 +80,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
 
   const isBunnyUpload = storageType === "bunny";
 
-  onProgress?.(15, isBunnyUpload ? "Uploading video file to Bunny.net..." : "Uploading video file to S3...");
+  onProgress?.(15, isBunnyUpload ? "Uploading video file..." : "Uploading video file...");
 
   // ------------------------------------------------------------------
   // Video body upload – isolated branches for debuggability
@@ -117,7 +117,7 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
           const percentComplete = Math.round((event.loaded / event.total) * 70) + 15;
-          onProgress?.(percentComplete, "Uploading video file to S3...");
+          onProgress?.(percentComplete, "Uploading video file...");
         }
       };
 
@@ -177,8 +177,8 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
     }
   }
 
-  if (requireHls) {
-    onProgress?.(93, "Queueing HLS adaptive transcode job...");
+  if (!isBunnyUpload) {
+    onProgress?.(93, "Queueing HLS transcode job...");
   } else {
     onProgress?.(93, "Finalizing video upload...");
   }
@@ -199,10 +199,8 @@ export async function uploadVideoFile(options: UploadVideoOptions): Promise<{ vi
   const finalStorageType = completeData.storageType || storageType;
   if (finalStorageType === "bunny") {
     onProgress?.(100, "Upload complete! Bunny.net is processing your video.");
-  } else if (requireHls) {
-    onProgress?.(100, "Upload complete! Video queued for HLS processing.");
   } else {
-    onProgress?.(100, "Upload complete! Video ready for playback.");
+    onProgress?.(100, "Upload complete! Video queued for HLS processing.");
   }
 
   return { videoId };

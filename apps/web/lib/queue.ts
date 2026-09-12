@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import { db } from "@videohost/db";
-import { parseRenditionResolutions } from "./renditions";
+import { getRenditionsForJob, parseRenditionResolutions } from "./renditions";
 import { getBaseUrl } from "./utils";
 import { getVideoOriginalS3Key } from "./s3";
 
@@ -63,7 +63,30 @@ export async function addTranscodeJob(
     region,
   };
 
-  const renditions = parseRenditionResolutions();
+  // Plan-aware renditions: `video.requireHls` now stores the "multiple qualities"
+  // request (pro+ only). Everyone gets HLS; toggle OFF = single highest rendition
+  // capped by plan (free/basic up to 1080p). The worker further caps by source
+  // height, never upscales, and never adds an extra native rung.
+  const allRenditions = parseRenditionResolutions();
+  let planName: string | null = null;
+  let planMaxResolution: string | null = null;
+  try {
+    const org = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { plan: true },
+    });
+    planName = (org?.plan as any)?.name || null;
+    planMaxResolution = (org?.plan as any)?.maxResolution || null;
+  } catch (e) {
+    console.warn(`[Queue Dispatch] Failed to load plan for org ${orgId}, defaulting to free caps`);
+  }
+  const wantsMulti = Boolean((video as any)?.requireHls);
+  const renditions = getRenditionsForJob({
+    allRenditions,
+    planName,
+    planMaxResolution,
+    wantsMulti,
+  });
   const rawSegmentsEnv = (process.env.STREAMING_SEGMENTS || "").replace(/["'\r\n]/g, "").trim();
   const parsedSegments = rawSegmentsEnv !== "" ? parseInt(rawSegmentsEnv, 10) : 0;
   const streamingSegments = isNaN(parsedSegments) ? 0 : parsedSegments;
@@ -74,7 +97,7 @@ export async function addTranscodeJob(
   const threads = isNaN(parsedWorkerCore) || parsedWorkerCore < 0 ? 0 : parsedWorkerCore;
 
   console.log(
-    `[Queue Dispatch] Configured DASH renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")}, streamingSegments: ${streamingSegments}, skipThumbnail: ${skipThumbnail}, threads: ${threads === 0 ? "0 (all cores)" : threads}`
+    `[Queue Dispatch] Configured HLS renditions for job (${videoId}): ${renditions.map((r) => r.resolution).join(", ")} (plan=${planName || "free"}, multi=${wantsMulti}), streamingSegments: ${streamingSegments}, skipThumbnail: ${skipThumbnail}, threads: ${threads === 0 ? "0 (all cores)" : threads}`
   );
 
   const jobPayload = {

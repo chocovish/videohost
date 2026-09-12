@@ -57,11 +57,14 @@ export async function POST(req: Request) {
     });
 
     const planName = org?.plan.name.toLowerCase() || "free";
-    // Adaptive bitrate storage (HLS) is only available on Pro and Enterprise plans
-    const allowsHls = ["pro", "enterprise"].includes(planName);
-    const isHls = allowsHls ? Boolean(requireHls) : false;
+    // HLS is now rendered for every plan. `requireHls` from the client means
+    // "render in multiple qualities" — a Pro/Enterprise-only feature that
+    // significantly increases storage usage. Free/Basic always get single-quality HLS.
+    const allowsMulti = ["pro", "enterprise"].includes(planName);
+    const isMulti = allowsMulti ? Boolean(requireHls) : false;
 
-    // Create DB Video record (for non-HLS videos, store sizeBytes immediately upon upload; for HLS videos, store after processing)
+    // Create DB Video record. `requireHls` stores the multi-quality request
+    // (Pro+ only). Single-quality HLS is still rendered when false.
     const video = await db.video.create({
       data: {
         organizationId: orgId,
@@ -71,7 +74,7 @@ export async function POST(req: Request) {
         description: description || null,
         status: "UPLOADING",
         originalKey: `temp-key`,
-        requireHls: isHls,
+        requireHls: isMulti,
         sizeBytes: sizeBytes ? BigInt(sizeBytes) : null,
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
@@ -79,8 +82,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const storageType = getStorageType({ requireHls: isHls });
-    console.log(`[Presigned Upload] storageType=${storageType} for video ${video.id}`);
+    const storageType = getStorageType();
+    console.log(`[Presigned Upload] storageType=${storageType} for video ${video.id} (multi=${isMulti})`);
 
     if (storageType === "bunny") {
       // --------- BUNNY PATH ---------

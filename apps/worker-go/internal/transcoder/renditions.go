@@ -48,12 +48,11 @@ func makeEven(val float64) int {
 	return rounded
 }
 
-// SelectTargetRenditions chooses ladder rungs <= source height, never upscaling, and adds native resolution if gap >= minNativeGapPx.
-func SelectTargetRenditions(candidates []RenditionConfig, sourceWidth, sourceHeight int, minNativeGapPx int) []RenditionConfig {
-	if minNativeGapPx <= 0 {
-		minNativeGapPx = 100
-	}
-
+// SelectTargetRenditions chooses ladder rungs <= source height (height-only,
+// never upscaling, never adding an extra native/beyond-ladder rung). Widths are
+// recomputed from the source aspect for metadata only; FFmpeg scales with
+// height-only (`scale=-2:HEIGHT`) so any aspect ratio is preserved.
+func SelectTargetRenditions(candidates []RenditionConfig, sourceWidth, sourceHeight int, _minNativeGapPx int) []RenditionConfig {
 	sorted := make([]RenditionConfig, len(candidates))
 	copy(sorted, candidates)
 	sort.Slice(sorted, func(i, j int) bool {
@@ -62,6 +61,11 @@ func SelectTargetRenditions(candidates []RenditionConfig, sourceWidth, sourceHei
 
 	if len(sorted) == 0 {
 		return []RenditionConfig{}
+	}
+
+	// Unknown source height — trust the caller-provided (plan-capped) ladder.
+	if sourceHeight <= 0 {
+		return sorted
 	}
 
 	aspectRatio := 16.0 / 9.0
@@ -81,43 +85,23 @@ func SelectTargetRenditions(candidates []RenditionConfig, sourceWidth, sourceHei
 		}
 	}
 
+	// Source is smaller than every requested rung — render at the source height
+	// (even-rounded) instead of upscaling to the smallest rung.
 	if len(allowed) == 0 {
-		fallback := sorted[0]
+		evenHeight := sourceHeight
+		if evenHeight%2 != 0 {
+			evenHeight--
+		}
+		if evenHeight <= 0 {
+			evenHeight = 2
+		}
 		return []RenditionConfig{
 			{
-				Resolution:  fallback.Resolution,
-				Width:       makeEven(float64(fallback.Height) * aspectRatio),
-				Height:      fallback.Height,
-				BitrateKbps: fallback.BitrateKbps,
+				Resolution:  fmt.Sprintf("%dp", evenHeight),
+				Width:       makeEven(float64(evenHeight) * aspectRatio),
+				Height:      evenHeight,
+				BitrateKbps: BitrateForHeight(evenHeight),
 			},
-		}
-	}
-
-	largest := allowed[len(allowed)-1]
-	nativeGap := sourceHeight - largest.Height
-
-	if nativeGap >= minNativeGapPx {
-		width := makeEven(float64(sourceWidth))
-		height := sourceHeight
-		if height%2 != 0 {
-			height -= 1
-		}
-
-		alreadyExists := false
-		for _, r := range allowed {
-			if r.Height == height {
-				alreadyExists = true
-				break
-			}
-		}
-
-		if !alreadyExists {
-			allowed = append(allowed, RenditionConfig{
-				Resolution:  fmt.Sprintf("%dp", height),
-				Width:       width,
-				Height:      height,
-				BitrateKbps: BitrateForHeight(height),
-			})
 		}
 	}
 

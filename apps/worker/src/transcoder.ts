@@ -117,20 +117,25 @@ export function bitrateForHeight(height: number): number {
 
 /**
  * Selects renditions to encode for a given source video.
- * - Never upscales: only ladder rungs at or below the source height are kept.
- * - If the source's native height is at least `minNativeGapPx` taller than the
- *   largest standard rung kept, the native resolution is added as an extra
- *   rendition (e.g. source is 850p, ladder is 480/720/1080 -> render
- *   480, 720 and the native 850p, but not a useless upscaled 1080p).
+ * Height-only decision, strict capping:
+ * - Only ladder rungs at or below the source height are kept (never upscale).
+ * - Never adds an extra native/beyond-ladder rung: when the caller passes
+ *   e.g. only 1080p for a 4K source, only 1080p is rendered (no 4K extra).
+ * - Widths are recomputed from the source aspect for metadata only; the
+ *   actual FFmpeg scale uses height-only (`scale=-2:HEIGHT`) so any aspect
+ *   ratio (16:9, 9:16, 4:3, ...) is preserved with no enforcement.
  */
 export function selectTargetRenditions(
   candidates: RenditionConfig[],
   sourceWidth: number,
   sourceHeight: number,
-  minNativeGapPx: number = 100
+  _minNativeGapPx: number = 100
 ): RenditionConfig[] {
   const sorted = [...candidates].sort((a, b) => a.height - b.height);
   if (sorted.length === 0) return [];
+
+  // Unknown source height — trust the caller-provided (plan-capped) ladder.
+  if (!(sourceHeight > 0)) return sorted;
 
   const aspectRatio = sourceWidth > 0 && sourceHeight > 0 ? sourceWidth / sourceHeight : 16 / 9;
 
@@ -146,28 +151,19 @@ export function selectTargetRenditions(
       width: makeEven(r.height * aspectRatio),
     }));
 
-  // Video is smaller than the smallest rung — fall back to the smallest rung
+  // Source is smaller than every requested rung — render at the source height
+  // (even-rounded) instead of upscaling to the smallest rung.
   if (allowed.length === 0) {
-    const fallback = sorted[0];
-    return [{ ...fallback, width: makeEven(fallback.height * aspectRatio) }];
-  }
-
-  const largest = allowed[allowed.length - 1];
-  const nativeGap = sourceHeight - largest.height;
-
-  if (nativeGap >= minNativeGapPx) {
-    let width = makeEven(sourceWidth);
-    let height = sourceHeight % 2 !== 0 ? sourceHeight - 1 : sourceHeight;
-
-    // Guard against duplicate heights after even-rounding
-    if (!allowed.some((r) => r.height === height)) {
-      allowed.push({
-        resolution: `${height}p`,
-        width,
-        height,
-        bitrateKbps: bitrateForHeight(height),
-      });
-    }
+    const evenHeight = sourceHeight % 2 !== 0 ? sourceHeight - 1 : sourceHeight;
+    const safeHeight = evenHeight > 0 ? evenHeight : 2;
+    return [
+      {
+        resolution: `${safeHeight}p`,
+        width: makeEven(safeHeight * aspectRatio),
+        height: safeHeight,
+        bitrateKbps: bitrateForHeight(safeHeight),
+      },
+    ];
   }
 
   return allowed;
@@ -344,7 +340,7 @@ export async function processVideoJob(
         ? payload.renditions
         : DEFAULT_RESOLUTION_LADDER;
 
-    // 3. Select renditions — NO UPSCALING, plus native rendition when gap >= 100px
+    // 3. Select renditions — height-only capping, NO UPSCALING, NO extra native rung
     const targetRenditions = selectTargetRenditions(candidateRenditions, width, height);
     console.log(`[Worker] Generating renditions: ${targetRenditions.map((r) => r.resolution).join(", ")}`);
 
@@ -355,7 +351,10 @@ export async function processVideoJob(
     const totalRenditions = targetRenditions.length;
 
     // 4. Transcode all renditions into a single DASH manifest (master.mpd)
-    const { darNum, darDen } = computeTargetDAR(width, height, sar);
+    // Height-only scaling (`scale=-2:HEIGHT`) preserves any source aspect
+    // ratio automatically — no fixed widths, no setdar enforcement.
+    void sar;
+    void computeTargetDAR;
 
     const filterParts: string[] = [];
     if (totalRenditions > 1) {
@@ -365,9 +364,7 @@ export async function processVideoJob(
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
-      filterParts.push(
-        `${inputLabel}scale=${rend.width}:${rend.height}:flags=bicubic,setdar=${darNum}/${darDen}:max=1000000[o${i}]`
-      );
+      filterParts.push(`${inputLabel}scale=-2:${rend.height}:flags=bicubic[o${i}]`);
     });
     const filterComplex = filterParts.join(";");
 

@@ -1019,7 +1019,7 @@ function UploadedVideosContent() {
                       >
                         <HardDrive className="w-3 h-3 text-muted-foreground" />
                         {formatBytes(video.sizeBytes)}
-                        {video.requireHls && video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
+                        {video.status !== "READY" && video.sizeBytes ? " (Original)" : ""}
                       </span>
                     </div>
 

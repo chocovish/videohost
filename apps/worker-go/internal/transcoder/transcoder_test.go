@@ -43,13 +43,31 @@ func TestSelectTargetRenditions(t *testing.T) {
 		t.Errorf("unexpected resolutions: %+v", selected720)
 	}
 
-	// 900p source (gap of 180px above 720p) -> 480p, 720p, plus native 900p rung
+	// 900p source with 480/720/1080 ladder -> 480p + 720p only.
+	// No extra native rung is added even though the gap above 720p is 180px.
 	selected900 := SelectTargetRenditions(candidates, 1600, 900, 100)
-	if len(selected900) != 3 {
-		t.Fatalf("expected 3 renditions for 900p with native rung, got %d", len(selected900))
+	if len(selected900) != 2 {
+		t.Fatalf("expected 2 renditions for 900p (no native rung), got %d", len(selected900))
 	}
-	if selected900[2].Resolution != "900p" || selected900[2].Height != 900 {
-		t.Errorf("expected native 900p rung as 3rd rendition, got %+v", selected900[2])
+
+	// 4K source with only 1080p requested -> only 1080p (no 4K extra rung)
+	single1080 := SelectTargetRenditions(candidates[:3], 3840, 2160, 100)
+	for _, r := range single1080 {
+		if r.Height > 1080 {
+			t.Errorf("unexpected beyond-ladder rendition for capped 1080p request: %+v", r)
+		}
+	}
+	if len(single1080) != 3 {
+		t.Fatalf("expected 3 renditions (480/720/1080) for 4K source with 1080-capped ladder, got %d", len(single1080))
+	}
+
+	// Source smaller than smallest rung -> single source-height rendition, no upscale
+	tiny := SelectTargetRenditions(candidates, 320, 240, 100)
+	if len(tiny) != 1 {
+		t.Fatalf("expected 1 rendition for 240p source, got %d", len(tiny))
+	}
+	if tiny[0].Height != 240 {
+		t.Errorf("expected 240p source-height rendition, got %+v", tiny[0])
 	}
 }
 

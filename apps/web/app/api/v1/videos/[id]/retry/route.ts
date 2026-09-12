@@ -34,12 +34,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     console.warn("[Retry] Failed to clear stale renditions:", e);
   }
 
+  // Preserve the stored multi-quality request; retry always re-renders HLS
+  // (single or multi based on plan + stored flag via the queue).
   await db.video.update({
     where: { id },
     data: {
       status: "QUEUED",
       progress: 0,
-      requireHls: true,
     },
   });
 

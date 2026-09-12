@@ -59,25 +59,19 @@ export async function POST(req: Request) {
     }
 
     // ------------------------------------------------------------------
-    // S3 branch (default)
+    // S3 branch (default): always render HLS now.
+    // `requireHls` on the record means "multiple qualities" (Pro+ toggle);
+    // false still gets single-highest-quality HLS (free/basic capped at 1080p
+    // via the queue's plan-aware ladder).
     // ------------------------------------------------------------------
-    if (video.requireHls) {
-      await db.video.update({
-        where: { id: videoId },
-        data: { status: "QUEUED" },
-      });
+    await db.video.update({
+      where: { id: videoId },
+      data: { status: "QUEUED" },
+    });
 
-      await addTranscodeJob(videoId, orgId, { skipThumbnail });
+    await addTranscodeJob(videoId, orgId, { skipThumbnail });
 
-      return NextResponse.json({ success: true, status: "QUEUED", videoId, requireHls: true, skipThumbnail, storageType: "s3" });
-    } else {
-      await db.video.update({
-        where: { id: videoId },
-        data: { status: "READY" },
-      });
-
-      return NextResponse.json({ success: true, status: "READY", videoId, requireHls: false, storageType: "s3" });
-    }
+    return NextResponse.json({ success: true, status: "QUEUED", videoId, requireHls: Boolean(video.requireHls), skipThumbnail, storageType: "s3" });
   } catch (error: any) {
     console.error("Upload complete route error:", error);
     return NextResponse.json({ error: "Failed to queue video" }, { status: 500 });

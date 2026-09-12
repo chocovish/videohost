@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   AlertCircle,
   Download,
@@ -60,10 +60,12 @@ export default function ScreenRecordDrawer({
   const [customThumbBlob, setCustomThumbBlob] = useState<Blob | null>(null);
   const [customThumbUrl, setCustomThumbUrl] = useState<string | null>(null);
   const [compressingThumb, setCompressingThumb] = useState(false);
+  const [userPlan, setUserPlan] = useState<string | null>(null);
 
   const resetDashboardFields = useCallback(() => {
     setDescription("");
     setRequireHls(false);
+    // Keep last known plan across resets to avoid re-flashing free copy.
     setUploading(false);
     setProgress(0);
     setStatusText("");
@@ -81,6 +83,29 @@ export default function ScreenRecordDrawer({
     studioRef.current?.resetAll();
     resetDashboardFields();
   }, [resetDashboardFields]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (userPlan !== null) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/v1/usage");
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data?.plan) setUserPlan(String(data.plan).toLowerCase());
+        }
+      } catch {
+        // keep default free caps; backend still enforces plan gating
+      } finally {
+        if (!cancelled) setUserPlan((prev) => prev ?? "free");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   const handleAttemptClose = useCallback(() => {
     if (uploading) return;
@@ -342,27 +367,59 @@ export default function ScreenRecordDrawer({
                     </div>
 
                     <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 p-3">
-                        <div className="flex min-w-0 items-center gap-2">
-                          <div className="rounded-lg bg-primary/15 p-1.5 text-primary">
-                            <Layers className="h-3.5 w-3.5" />
+                      {(() => {
+                        if (userPlan === null) {
+                          return (
+                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 p-3">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <div className="rounded-lg bg-primary/15 p-1.5 text-primary">
+                                  <Layers className="h-3.5 w-3.5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <label htmlFor="studio-require-hls" className="block truncate text-xs font-bold">
+                                    Render in multiple qualities
+                                  </label>
+                                  <p className="text-xs text-muted-foreground">Checking your plan…</p>
+                                </div>
+                              </div>
+                              <Switch id="studio-require-hls" checked={false} disabled />
+                            </div>
+                          );
+                        }
+                        const canUseMulti = ["pro", "enterprise"].includes(userPlan.toLowerCase());
+                        return (
+                          <div className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/40 p-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className="rounded-lg bg-primary/15 p-1.5 text-primary">
+                                <Layers className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <label htmlFor="studio-require-hls" className="block truncate text-xs font-bold">
+                                  Render in multiple qualities {!canUseMulti && "(Pro)"}
+                                </label>
+                                <p className="text-xs text-muted-foreground">
+                                  {!canUseMulti
+                                    ? "Single highest-quality HLS (up to 1080p). Multi requires Pro+."
+                                    : requireHls
+                                      ? "Multiple HLS qualities (adaptive bitrate)."
+                                      : "Single highest-quality HLS."}
+                                </p>
+                                {canUseMulti && requireHls && (
+                                  <p className="text-[11px] text-muted-foreground">
+                                    Multiple quality render increases storage usage significantly.
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <Switch
+                              id="studio-require-hls"
+                              checked={canUseMulti && requireHls}
+                              onCheckedChange={(checked) => canUseMulti && setRequireHls(checked)}
+                              disabled={uploading || !canUseMulti}
+                            />
                           </div>
-                          <div className="min-w-0">
-                            <label htmlFor="studio-require-hls" className="block truncate text-xs font-bold">
-                              HLS multi-bitrate ladder
-                            </label>
-                            <p className="text-xs text-muted-foreground">
-                              {requireHls ? "Adaptive streaming enabled" : "Store the original video"}
-                            </p>
-                          </div>
-                        </div>
-                        <Switch
-                          id="studio-require-hls"
-                          checked={requireHls}
-                          onCheckedChange={setRequireHls}
-                          disabled={uploading}
-                        />
-                      </div>
+                        );
+                      })()}
 
                       {uploading && (
                         <div className="space-y-1.5 rounded-xl border border-primary/20 bg-primary/10 p-2.5">

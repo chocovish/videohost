@@ -46,7 +46,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const isHls = Boolean(requireHls);
+    const orgForPlan = await db.organization.findUnique({
+      where: { id: orgId },
+      include: { plan: true },
+    });
+    const planNameForUpload = (orgForPlan?.plan as any)?.name?.toLowerCase?.() || "free";
+    const allowsMultiForUpload = ["pro", "enterprise"].includes(planNameForUpload);
+    // `requireHls` from the client means "multiple qualities" (Pro+ only).
+    // Everyone gets HLS; toggle OFF = single highest quality (free/basic up to 1080p).
+    const isMulti = allowsMultiForUpload ? Boolean(requireHls) : false;
     const validModes = ["PUBLIC", "RESTRICTED", "PRIVATE", "PURCHASABLE"];
     const resolvedMode = validModes.includes(shareAccessMode) ? shareAccessMode : "PUBLIC";
     const parsedPrice = resolvedMode === "PURCHASABLE" && price !== undefined && price !== null ? parseFloat(String(price)) : null;
@@ -64,7 +72,7 @@ export async function POST(req: Request) {
         price: parsedPrice,
         currency: currency || "USD",
         countryPricing: resolvedMode === "PURCHASABLE" && countryPricing ? countryPricing : undefined,
-        requireHls: isHls,
+        requireHls: isMulti,
         sizeBytes: sizeBytes ? BigInt(sizeBytes) : null,
         durationSeconds: durationSeconds ? Math.round(Number(durationSeconds)) : null,
         sourceWidth: sourceWidth ? Math.round(Number(sourceWidth)) : null,
@@ -89,8 +97,8 @@ export async function POST(req: Request) {
     // ------------------------------------------------------------------
     // Branch: Bunny.net Stream vs S3
     // ------------------------------------------------------------------
-    const storageType = getStorageType({ requireHls: isHls });
-    console.log(`[Upload Init] storageType=${storageType} for video ${video.id} (org ${orgId})`);
+    const storageType = getStorageType();
+    console.log(`[Upload Init] storageType=${storageType} for video ${video.id} (org ${orgId}, multi=${isMulti})`);
 
     if (storageType === "bunny") {
       // --------- BUNNY PATH -------------------------------------------------
