@@ -27,6 +27,7 @@ import {
   DollarSign,
   Pencil,
   MoreVertical,
+  PhoneOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -173,6 +174,8 @@ export default function MeetingsDashboardPage() {
 
   const [deleteMeetingTarget, setDeleteMeetingTarget] = useState<{ id: string; title: string } | null>(null);
   const [isDeletingMeeting, setIsDeletingMeeting] = useState(false);
+  const [endMeetingTarget, setEndMeetingTarget] = useState<{ id: string; title: string } | null>(null);
+  const [isEndingMeeting, setIsEndingMeeting] = useState(false);
 
   const handleDeleteMeeting = (meeting: { id: string; title: string }) => {
     setDeleteMeetingTarget(meeting);
@@ -194,6 +197,37 @@ export default function MeetingsDashboardPage() {
       console.error("Failed to delete meeting:", err);
     } finally {
       setIsDeletingMeeting(false);
+    }
+  };
+
+  const handleEndMeeting = (meeting: { id: string; title: string }) => {
+    setEndMeetingTarget(meeting);
+  };
+
+  const handleExecuteEndMeeting = async () => {
+    if (!endMeetingTarget) return;
+    setIsEndingMeeting(true);
+    try {
+      const res = await fetch(`/api/meetings/${endMeetingTarget.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "ENDED" }),
+      });
+      if (res.ok) {
+        setMeetings((prev) =>
+          prev.map((m) =>
+            m.id === endMeetingTarget.id ? { ...m, status: "ENDED" as const } : m
+          )
+        );
+        setEndMeetingTarget(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to end meeting");
+      }
+    } catch (err) {
+      console.error("Failed to end meeting:", err);
+    } finally {
+      setIsEndingMeeting(false);
     }
   };
 
@@ -454,6 +488,15 @@ export default function MeetingsDashboardPage() {
                           <Share2 className="w-3.5 h-3.5 text-muted-foreground" />
                           <span>Share & Pass Pricing</span>
                         </DropdownMenuItem>
+                        {isLive && (
+                          <DropdownMenuItem
+                            onClick={() => handleEndMeeting({ id: meeting.id, title: meeting.title })}
+                            className="cursor-pointer gap-2 text-xs"
+                          >
+                            <PhoneOff className="w-3.5 h-3.5 text-muted-foreground" />
+                            <span>End Meeting</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => handleDeleteMeeting({ id: meeting.id, title: meeting.title })}
@@ -672,6 +715,22 @@ export default function MeetingsDashboardPage() {
         isLoading={isDeletingMeeting}
         onConfirm={handleExecuteDeleteMeeting}
         onCancel={() => setDeleteMeetingTarget(null)}
+      />
+
+      {/* End Meeting Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(endMeetingTarget)}
+        onOpenChange={(open) => {
+          if (!open) setEndMeetingTarget(null);
+        }}
+        title={`End Meeting "${endMeetingTarget?.title}"?`}
+        description="Are you sure you want to end this meeting for all participants? All active attendees will be disconnected and recording will be finalized."
+        variant="danger"
+        confirmText="End Meeting"
+        cancelText="Cancel"
+        isLoading={isEndingMeeting}
+        onConfirm={handleExecuteEndMeeting}
+        onCancel={() => setEndMeetingTarget(null)}
       />
     </div>
   );
