@@ -316,8 +316,10 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 	if err != nil {
 		return nil, handleError(fmt.Errorf("failed probing video: %w", err))
 	}
-	fmt.Printf("[Worker] Video probed: %dx%d, duration: %ds, hasAudio: %v, sar: %s\n",
-		meta.Width, meta.Height, meta.Duration, meta.HasAudio, meta.SAR)
+	fmt.Printf("[Worker] Video probed: %dx%d, duration: %ds, hasAudio: %v, sar: %s, fps: %.2f\n",
+		meta.Width, meta.Height, meta.Duration, meta.HasAudio, meta.SAR, meta.FPS)
+	outputFPS := OutputFPS(meta.FPS)
+	fmt.Printf("[Worker] Output CFR: %dfps (source %.2f)\n", outputFPS, meta.FPS)
 
 	// 3. Select target renditions
 	candidates := payload.Renditions
@@ -357,8 +359,8 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		if totalRenditions > 1 {
 			inputLabel = fmt.Sprintf("[v%d]", i)
 		}
-		filterParts = append(filterParts, fmt.Sprintf("%sscale=-2:%d:flags=bicubic[o%d]",
-			inputLabel, rend.Height, i))
+		filterParts = append(filterParts, fmt.Sprintf("%sscale=-2:%d:flags=bicubic,fps=%d[o%d]",
+			inputLabel, rend.Height, outputFPS, i))
 	}
 	filterComplex := strings.Join(filterParts, ";")
 
@@ -404,12 +406,15 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 	}
 
 	// Build FFmpeg command arguments
+	// CFR output via fps filter in filterComplex: 30fps for sources <60fps,
+	// 60fps otherwise (unknown -> 30). CRF-only rate control
+	// (no -b:v/-maxrate/-bufsize caps).
 	ffmpegArgs := []string{
 		"-y",
 		"-threads", strconv.Itoa(threadCount),
 		"-i", inputPath,
 		"-preset", "veryfast",
-		"-crf", "24",
+		"-crf", "23",
 		"-pix_fmt", "yuv420p",
 		"-filter_complex", filterComplex,
 	}
@@ -423,16 +428,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		"-flags", "+cgop",
 		"-force_key_frames", fmt.Sprintf("expr:gte(t,n_forced*%d)", segDuration),
 		"-x264-params", "scenecut=0:open_gop=0",
-		"-fps_mode:v", "passthrough",
 	)
-
-	for i, r := range targetRenditions {
-		ffmpegArgs = append(ffmpegArgs,
-			fmt.Sprintf("-b:v:%d", i), fmt.Sprintf("%dk", r.BitrateKbps),
-			fmt.Sprintf("-maxrate:v:%d", i), fmt.Sprintf("%dk", int(math.Round(float64(r.BitrateKbps)*1.2))),
-			fmt.Sprintf("-bufsize:v:%d", i), fmt.Sprintf("%dk", r.BitrateKbps*2),
-		)
-	}
 
 	ffmpegArgs = append(ffmpegArgs,
 		"-c:a", "aac",

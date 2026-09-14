@@ -380,12 +380,32 @@ export function organizeDashOutput(
   return repFolders;
 }
 
+export function parseFPSString(s?: string): number {
+  if (!s || s === "0/0") return 0;
+  const trimmed = s.trim();
+  const parts = trimmed.split("/");
+  if (parts.length === 2) {
+    const num = parseFloat(parts[0]);
+    const den = parseFloat(parts[1]);
+    if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+    return 0;
+  }
+  const v = parseFloat(trimmed);
+  return isNaN(v) ? 0 : v;
+}
+
+// Maps probed source fps to CFR output: >=60 -> 60, else 30 (unknown -> 30).
+export function outputFPSForSource(sourceFPS: number): number {
+  return sourceFPS >= 60 ? 60 : 30;
+}
+
 export async function probeVideo(filePath: string): Promise<{
   width: number;
   height: number;
   duration: number;
   hasAudio: boolean;
   sar?: string;
+  fps: number;
 }> {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(filePath, (err, metadata) => {
@@ -397,7 +417,12 @@ export async function probeVideo(filePath: string): Promise<{
       const duration = Math.round(metadata.format.duration || 0);
       const hasAudio = !!audioStream;
       const sar = videoStream?.sample_aspect_ratio;
-      resolve({ width, height, duration, hasAudio, sar });
+      // Cheap fps: reuse the same ffprobe output, no extra pass.
+      const fps =
+        parseFPSString((videoStream as any)?.avg_frame_rate) ||
+        parseFPSString((videoStream as any)?.r_frame_rate) ||
+        0;
+      resolve({ width, height, duration, hasAudio, sar, fps });
     });
   });
 }
@@ -492,10 +517,12 @@ export async function processVideoJob(
     assertNotCancelled();
 
     // 2. Probe metadata
-    const { width, height, duration, hasAudio, sar } = await probeVideo(inputPath);
+    const { width, height, duration, hasAudio, sar, fps: sourceFPS } = await probeVideo(inputPath);
+    const outputFPS = outputFPSForSource(sourceFPS || 0);
     console.log(
-      `[Worker] Video probed: ${width}x${height}, duration: ${duration}s, hasAudio: ${hasAudio}, sar: ${sar || "1:1"}`
+      `[Worker] Video probed: ${width}x${height}, duration: ${duration}s, hasAudio: ${hasAudio}, sar: ${sar || "1:1"}, fps: ${(sourceFPS || 0).toFixed(2)}`
     );
+    console.log(`[Worker] Output CFR: ${outputFPS}fps (source ${(sourceFPS || 0).toFixed(2)})`);
 
     // Determine initial rendition candidates from payload or default ladder
     const candidateRenditions =
@@ -527,7 +554,7 @@ export async function processVideoJob(
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
-      filterParts.push(`${inputLabel}scale=-2:${rend.height}:flags=bicubic[o${i}]`);
+      filterParts.push(`${inputLabel}scale=-2:${rend.height}:flags=bicubic,fps=${outputFPS}[o${i}]`);
     });
     const filterComplex = filterParts.join(";");
 
@@ -580,7 +607,7 @@ export async function processVideoJob(
         .outputOptions([
           `-threads ${threadCount}`,
           `-preset veryfast`,
-          `-crf 24`,
+          `-crf 23`,
           `-pix_fmt yuv420p`,
           `-filter_complex ${filterComplex}`,
           ...targetRenditions.map((_, i) => `-map [o${i}]`),
@@ -589,12 +616,6 @@ export async function processVideoJob(
           `-flags +cgop`,
           `-force_key_frames expr:gte(t,n_forced*${segDuration})`,
           `-x264-params scenecut=0:open_gop=0`,
-          `-fps_mode:v passthrough`,
-          ...targetRenditions.flatMap((r, i) => [
-            `-b:v:${i} ${r.bitrateKbps}k`,
-            `-maxrate:v:${i} ${Math.round(r.bitrateKbps * 1.2)}k`,
-            `-bufsize:v:${i} ${Math.round(r.bitrateKbps * 2)}k`,
-          ]),
           `-c:a aac`,
           `-b:a 128k`,
           `-f dash`,

@@ -379,7 +379,7 @@ export default function BookingClient({ initialOffering, offeringId }: BookingCl
             {/* Meeting type info */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Video className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>LiveKit HD Video Conference Room</span>
+              <span>HD Video Conference Room</span>
             </div>
 
             {/* Description */}

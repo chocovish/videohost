@@ -388,7 +388,7 @@ export async function sendMeetingInvitationEmail(options: SendMeetingInvitationE
       </head>
       <body>
         <div class="container">
-          <div class="badge">LiveKit Video Meeting</div>
+          <div class="badge">Video Meeting</div>
           <h1>${cleanMeetingTitle}</h1>
           <p class="host-sub"><strong>${cleanHostName}</strong> invited you to join a video conference on <strong>${cleanOrgName}</strong>.</p>
           
@@ -665,7 +665,7 @@ export async function sendAppointmentConfirmationEmail(options: SendAppointmentC
               }
               <div class="row">
                 <div class="col-label">Location</div>
-                <div class="col-val">LiveKit HD Video Room</div>
+                <div class="col-val">HD Video Room</div>
               </div>
             </div>
 
@@ -982,7 +982,7 @@ export async function sendAppointmentRescheduleEmail(options: SendAppointmentRes
                 ? `<div class="row-label">Reason / note</div><div class="reason">"${String(reason).replace(/</g, "&lt;")}"</div>`
                 : ""
             }
-            <p class="meta" style="margin-top: 16px;">Location: LiveKit HD Video Room. ${
+            <p class="meta" style="margin-top: 16px;">Location: HD Video Room. ${
               kind === "REQUEST" && !viewerIsProposer
                 ? "Approve or decline from your dashboard — no change happens until you respond."
                 : "No action needed — your calendar invite will reflect the confirmed time."

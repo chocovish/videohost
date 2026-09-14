@@ -16,6 +16,11 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
+    // Disable persistent Turbopack filesystem cache to avoid
+    // continuous disk writes (.next/dev/cache, .next/cache).
+    // Trade-off: slower dev restarts / builds, more CPU+RAM.
+    turbopackFileSystemCacheForDev: false,
+    turbopackFileSystemCacheForBuild: false,
   },
 };
 
