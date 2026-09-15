@@ -554,7 +554,7 @@ export async function processVideoJob(
     }
     targetRenditions.forEach((rend, i) => {
       const inputLabel = totalRenditions > 1 ? `[v${i}]` : `[0:v]`;
-      filterParts.push(`${inputLabel}scale=-2:${rend.height}:flags=bicubic,fps=${outputFPS}[o${i}]`);
+      filterParts.push(`${inputLabel}scale=-2:${rend.height}:flags=bicubic[o${i}]`);
     });
     const filterComplex = filterParts.join(";");
 
@@ -613,6 +613,7 @@ export async function processVideoJob(
           ...targetRenditions.map((_, i) => `-map [o${i}]`),
           `-map 0:a?`,
           `-c:v libx264`,
+          `-r ${outputFPS}`,
           `-flags +cgop`,
           `-force_key_frames expr:gte(t,n_forced*${segDuration})`,
           `-x264-params scenecut=0:open_gop=0`,

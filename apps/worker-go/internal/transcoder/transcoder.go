@@ -359,8 +359,8 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		if totalRenditions > 1 {
 			inputLabel = fmt.Sprintf("[v%d]", i)
 		}
-		filterParts = append(filterParts, fmt.Sprintf("%sscale=-2:%d:flags=bicubic,fps=%d[o%d]",
-			inputLabel, rend.Height, outputFPS, i))
+		filterParts = append(filterParts, fmt.Sprintf("%sscale=-2:%d:flags=bicubic[o%d]",
+			inputLabel, rend.Height, i))
 	}
 	filterComplex := strings.Join(filterParts, ";")
 
@@ -406,7 +406,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 	}
 
 	// Build FFmpeg command arguments
-	// CFR output via fps filter in filterComplex: 30fps for sources <60fps,
+	// CFR output via -r flag: 30fps for sources <60fps,
 	// 60fps otherwise (unknown -> 30). CRF-only rate control
 	// (no -b:v/-maxrate/-bufsize caps).
 	ffmpegArgs := []string{
@@ -417,6 +417,7 @@ func ProcessVideoJob(ctx context.Context, payload TranscodeJobPayload, onProgres
 		"-crf", "23",
 		"-pix_fmt", "yuv420p",
 		"-filter_complex", filterComplex,
+		"-r", strconv.Itoa(outputFPS),
 	}
 
 	for i := 0; i < totalRenditions; i++ {
