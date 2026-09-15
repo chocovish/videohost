@@ -180,6 +180,118 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// POST /transcribe or /api/transcribe — Whisper subtitle generation.
+	// All config (Whisper URL/key, S3 creds, storage key, callback) comes
+	// from the job payload; the worker holds no transcription config.
+	if method == http.MethodPost && (urlPath == "/transcribe" || urlPath == "/api/transcribe") {
+		if s.isShuttingDown.Load() {
+			s.sendJSONResponse(w, http.StatusServiceUnavailable, map[string]any{
+				"error": "Worker is shutting down",
+			})
+			return
+		}
+		if !s.checkAuth(r) {
+			fmt.Printf("[Worker HTTP] Unauthorized transcribe attempt from %s\n", r.RemoteAddr)
+			s.sendJSONResponse(w, http.StatusUnauthorized, map[string]any{
+				"error": "Unauthorized: invalid worker secret token",
+			})
+			return
+		}
+
+		bodyBytes, err := io.ReadAll(r.Body)
+		if err != nil {
+			s.sendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"error": "Invalid JSON payload",
+			})
+			return
+		}
+
+		var payload transcoder.TranscriptionJobPayload
+		if err := json.Unmarshal(bodyBytes, &payload); err != nil {
+			s.sendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"error": "Invalid JSON payload",
+			})
+			return
+		}
+
+		payload.CallbackUrl = urlutils.UseDockerHostForLocalhost(payload.CallbackUrl)
+		if payload.S3 != nil && payload.S3.Endpoint != "" {
+			payload.S3.Endpoint = urlutils.UseDockerHostForLocalhost(payload.S3.Endpoint)
+		}
+
+		videoId := payload.VideoId
+		if videoId == "" {
+			s.sendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"error": "videoId is required",
+			})
+			return
+		}
+
+		var missing []string
+		audioUrl := strings.TrimSpace(payload.AudioHlsUrl)
+		if audioUrl == "" {
+			audioUrl = strings.TrimSpace(payload.AudioUrl)
+		}
+		if audioUrl == "" {
+			missing = append(missing, "audioHlsUrl")
+		}
+		if strings.TrimSpace(payload.WhisperUrl) == "" && strings.TrimSpace(payload.WhisperApiUrl) == "" {
+			missing = append(missing, "whisperUrl")
+		}
+		if strings.TrimSpace(payload.WhisperApiKey) == "" && strings.TrimSpace(payload.WhisperAuthToken) == "" {
+			missing = append(missing, "whisperApiKey")
+		}
+		if payload.S3 == nil || strings.TrimSpace(payload.S3.Endpoint) == "" || strings.TrimSpace(payload.S3.Bucket) == "" {
+			missing = append(missing, "s3 (endpoint/bucket)")
+		}
+		if strings.TrimSpace(payload.StorageKey) == "" {
+			missing = append(missing, "storageKey")
+		}
+		if strings.TrimSpace(payload.SubtitleId) == "" {
+			missing = append(missing, "subtitleId")
+		}
+		if strings.TrimSpace(payload.CallbackUrl) == "" {
+			missing = append(missing, "callbackUrl")
+		}
+		if len(missing) > 0 {
+			s.sendJSONResponse(w, http.StatusBadRequest, map[string]any{
+				"error": "Transcription payload missing required field(s): " + strings.Join(missing, ", "),
+			})
+			return
+		}
+
+		dedupeKey := transcoder.TranscriptionQueueKey(videoId)
+		fmt.Printf("[Worker HTTP] Received transcribe request for videoId: %s\n", videoId)
+
+		if s.queue.IsJobQueuedOrActive(dedupeKey) {
+			s.sendJSONResponse(w, http.StatusAccepted, map[string]any{
+				"status":  "ALREADY_QUEUED",
+				"message": "Transcription job for this video is already queued or in progress",
+				"videoId": videoId,
+				"queue":   s.queue.GetQueueStats(),
+			})
+			return
+		}
+
+		s.sendJSONResponse(w, http.StatusAccepted, map[string]any{
+			"status":  "ACCEPTED",
+			"message": "Transcription job queued",
+			"videoId": videoId,
+			"queue":   s.queue.GetQueueStats(),
+		})
+
+		s.queue.EnqueueJob(dedupeKey, payload.OrganizationId, payload.CallbackUrl, func() error {
+			_, err := transcoder.ProcessTranscriptionJob(context.Background(), payload)
+			if err != nil {
+				fmt.Printf("[Worker HTTP] Async error transcribing videoId %s: %v\n", videoId, err)
+				return err
+			}
+			fmt.Printf("[Worker HTTP] Container finished transcription for videoId: %s\n", videoId)
+			return nil
+		})
+		return
+	}
+
 	// POST /cancel or /api/cancel
 	if method == http.MethodPost && (urlPath == "/cancel" || urlPath == "/api/cancel") {
 		if !s.checkAuth(r) {
@@ -201,15 +313,16 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		videoId := payload.VideoId
-		removedFromQueue := s.queue.CancelQueuedJob(videoId)
+		removedFromQueue := s.queue.CancelQueuedJob(videoId) || s.queue.CancelQueuedJob(transcoder.TranscriptionQueueKey(videoId))
 		abortedActive := transcoder.CancelActiveTranscode(videoId)
+		abortedTranscription := transcoder.CancelActiveTranscription(videoId)
 
-		fmt.Printf("[Worker HTTP] Cancel for videoId %s: queued=%v, active=%v\n", videoId, removedFromQueue, abortedActive)
+		fmt.Printf("[Worker HTTP] Cancel for videoId %s: queued=%v, active=%v, transcription=%v\n", videoId, removedFromQueue, abortedActive, abortedTranscription)
 
-		if !removedFromQueue && !abortedActive && !s.queue.IsJobQueuedOrActive(videoId) {
+		if !removedFromQueue && !abortedActive && !abortedTranscription && !s.queue.IsJobQueuedOrActive(videoId) {
 			s.sendJSONResponse(w, http.StatusNotFound, map[string]any{
 				"status":  "NOT_FOUND",
-				"message": "No queued or active transcode job found for this video",
+				"message": "No queued or active transcode/transcription job found for this video",
 				"videoId": videoId,
 				"queue":   s.queue.GetQueueStats(),
 			})
@@ -217,17 +330,20 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		}
 
 		msg := "Job removed from queue"
-		if !removedFromQueue && abortedActive {
+		if !removedFromQueue && abortedTranscription {
+			msg = "Active transcription aborted"
+		} else if !removedFromQueue && abortedActive {
 			msg = "Active transcode aborted"
 		}
 
 		s.sendJSONResponse(w, http.StatusOK, map[string]any{
-			"status":           "CANCELLED",
-			"message":          msg,
-			"videoId":          videoId,
-			"removedFromQueue": removedFromQueue,
-			"abortedActive":    abortedActive,
-			"queue":            s.queue.GetQueueStats(),
+			"status":              "CANCELLED",
+			"message":             msg,
+			"videoId":             videoId,
+			"removedFromQueue":    removedFromQueue,
+			"abortedActive":       abortedActive,
+			"abortedTranscription": abortedTranscription,
+			"queue":               s.queue.GetQueueStats(),
 		})
 		return
 	}

@@ -59,6 +59,21 @@ func main() {
 
 			processor := func(ctx context.Context, job *gobullmq.Job[transcoder.TranscodeJobPayload]) (map[string]any, error) {
 				payload := job.Data()
+				// Transcription jobs share the "video-transcode" queue (job name
+				// "transcribe" or an explicit jobType marker).
+				if job.Name() == "transcribe" || payload.IsTranscriptionPayload() {
+					tPayload := payload.ToTranscriptionPayload()
+					fmt.Printf("[Worker BullMQ] Received transcribe job %s for videoId: %s\n", job.ID(), tPayload.VideoId)
+					res, err := transcoder.ProcessTranscriptionJob(ctx, tPayload, func(progressCtx context.Context, p int) error {
+						return job.UpdateProgress(progressCtx, p)
+					})
+					if err != nil {
+						fmt.Printf("[Worker BullMQ] Job %s (videoId: %s) failed: %v\n", job.ID(), tPayload.VideoId, err)
+						return nil, err
+					}
+					fmt.Printf("[Worker BullMQ] Job %s (videoId: %s) completed successfully\n", job.ID(), tPayload.VideoId)
+					return res, nil
+				}
 				if payload.CallbackUrl != "" {
 					payload.CallbackUrl = urlutils.UseDockerHostForLocalhost(payload.CallbackUrl)
 				}
@@ -152,6 +167,9 @@ func main() {
 
 	// 4. Abort all active transcodes, delete partially uploaded S3 files, and dispatch CANCELLED webhooks
 	transcoder.CancelAllActiveJobs(8 * time.Second)
+
+	// 5. Abort all active transcriptions, clean up partial VTT uploads, and dispatch CANCELLED webhooks
+	transcoder.CancelAllActiveTranscriptions(8 * time.Second)
 
 	fmt.Println("[Worker Service] Shutdown cleanup complete")
 }

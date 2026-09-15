@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Captions, Check, Loader2, Star, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Captions, Check, Loader2, RefreshCw, Sparkles, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,10 @@ interface PendingFile {
 
 const CUSTOM_LANGUAGE_VALUE = "__custom";
 const AUTO_LANGUAGE_VALUE = "auto";
+
+const TRANSCRIBE_POLL_INTERVAL_MS = 8000;
+const TRANSCRIBE_POLL_MAX_ATTEMPTS = 38; // ~5 min per round
+const TRANSCRIBE_POLL_MAX_ROUNDS = 3; // ~15 min total before parking on Refresh
 
 /** Full language picker list (ISO 639-1), sorted alphabetically by name. */
 const SUBTITLE_LANGUAGES = [
@@ -161,9 +165,14 @@ export default function VideoSubtitlesManager({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [transcribeLang, setTranscribeLang] = useState("en");
+  const [transcribing, setTranscribing] = useState(false);
+  const [checkingTranscribeStatus, setCheckingTranscribeStatus] = useState(true);
+  const [transcribeMsg, setTranscribeMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const transcribeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchSubtitles = useCallback(async () => {
+  const fetchSubtitles = useCallback(async (): Promise<SubtitleItem[]> => {
     try {
       setLoading(true);
       setError(null);
@@ -173,16 +182,162 @@ export default function VideoSubtitlesManager({
       const list: SubtitleItem[] = data.subtitles || [];
       setSubtitles(list);
       onChange?.(list);
+      return list;
     } catch (e: any) {
       setError(e?.message || "Failed to load subtitles.");
+      return [];
     } finally {
       setLoading(false);
     }
   }, [videoId]);
 
+  const stopTranscriptionPolling = useCallback(() => {
+    if (transcribeTimerRef.current) clearInterval(transcribeTimerRef.current);
+    transcribeTimerRef.current = null;
+  }, []);
+
+  /** Server-side check: is an auto-generated transcription queued/running? */
+  const checkTranscriptionPending = useCallback(async (): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/v1/videos/${videoId}/subtitles/transcribe`, { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      return res.ok ? Boolean(data?.pending) : false;
+    } catch {
+      return false;
+    }
+  }, [videoId]);
+
+  const startTranscriptionPolling = useCallback(
+    (before: number) => {
+      stopTranscriptionPolling();
+      let attempts = 0;
+      let rounds = 0;
+      transcribeTimerRef.current = setInterval(async () => {
+        attempts++;
+        try {
+          const pollRes = await fetch(`/api/v1/videos/${videoId}/subtitles`, { cache: "no-store" });
+          const pollData = await pollRes.json().catch(() => ({}));
+          const list: SubtitleItem[] = pollRes.ok ? pollData.subtitles || [] : [];
+          if (pollRes.ok && list.length > before) {
+            setSubtitles(list);
+            onChange?.(list);
+            setTranscribeMsg("Auto-generated subtitle is ready.");
+            setTranscribing(false);
+            stopTranscriptionPolling();
+            return;
+          }
+        } catch {
+          // Keep polling through transient errors.
+        }
+        if (attempts >= TRANSCRIBE_POLL_MAX_ATTEMPTS) {
+          attempts = 0;
+          rounds++;
+          if (rounds >= TRANSCRIBE_POLL_MAX_ROUNDS) {
+            stopTranscriptionPolling();
+            // Stay disabled — Refresh re-checks the server status as escape hatch.
+            setTranscribeMsg(
+              "Transcription is taking longer than expected. It is still running — use Refresh to check back."
+            );
+            return;
+          }
+          const stillPending = await checkTranscriptionPending();
+          if (!stillPending) {
+            stopTranscriptionPolling();
+            await fetchSubtitles();
+            setTranscribing(false);
+            setTranscribeMsg("Transcription finished. Use Refresh to check for the new subtitle.");
+            return;
+          }
+          setTranscribeMsg("Transcription still in progress…");
+        }
+      }, TRANSCRIBE_POLL_INTERVAL_MS);
+    },
+    [videoId, fetchSubtitles, checkTranscriptionPending, stopTranscriptionPolling]
+  );
+
   useEffect(() => {
-    fetchSubtitles();
-  }, [fetchSubtitles]);
+    let cancelled = false;
+    const init = async () => {
+      const list = await fetchSubtitles();
+      if (cancelled) return;
+      const pending = await checkTranscriptionPending();
+      if (cancelled) return;
+      setCheckingTranscribeStatus(false);
+      if (pending) {
+        // A transcription is already running (e.g. started before reload) —
+        // block the trigger and resume watching for the new track.
+        setTranscribing(true);
+        setTranscribeMsg(
+          "An auto-generated transcription is already in progress. The subtitle will appear here when ready."
+        );
+        startTranscriptionPolling(list.length);
+      }
+    };
+    init();
+    return () => {
+      cancelled = true;
+      stopTranscriptionPolling();
+    };
+  }, [fetchSubtitles, checkTranscriptionPending, startTranscriptionPolling, stopTranscriptionPolling]);
+
+  useEffect(() => {
+    return () => {
+      if (transcribeTimerRef.current) clearInterval(transcribeTimerRef.current);
+    };
+  }, []);
+
+  const handleRefresh = async () => {
+    const list = await fetchSubtitles();
+    const pending = await checkTranscriptionPending();
+    if (pending) {
+      if (!transcribing) {
+        setTranscribing(true);
+        setTranscribeMsg(
+          "An auto-generated transcription is already in progress. The subtitle will appear here when ready."
+        );
+      }
+      startTranscriptionPolling(list.length);
+    } else if (transcribing) {
+      // Server says nothing is running anymore — re-enable the trigger.
+      stopTranscriptionPolling();
+      setTranscribing(false);
+    }
+  };
+
+  const handleAutoGenerate = async () => {
+    if (transcribing || uploading || checkingTranscribeStatus) return;
+    stopTranscriptionPolling();
+    setTranscribing(true);
+    setTranscribeMsg(null);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/videos/${videoId}/subtitles/transcribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: transcribeLang }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 409 && (data?.pending || /already running/i.test(data?.error || ""))) {
+          // Another transcription is already being made — don't start a
+          // second one; block the trigger and watch for its result instead.
+          setTranscribeMsg(
+            "An auto-generated transcription is already in progress. The subtitle will appear here when ready."
+          );
+          const list = await fetchSubtitles();
+          startTranscriptionPolling(list.length);
+          return;
+        }
+        throw new Error(data?.error || "Failed to start transcription.");
+      }
+      const before = subtitles.length;
+      setTranscribeMsg(data?.message || "Transcription started. The auto-generated subtitle will appear here when ready.");
+      startTranscriptionPolling(before);
+    } catch (e: any) {
+      setError(e?.message || "Failed to start transcription.");
+      setTranscribing(false);
+    }
+  };
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -324,6 +479,70 @@ export default function VideoSubtitlesManager({
           className="hidden"
           onChange={(e) => handleFilesSelected(e.target.files)}
         />
+      </div>
+
+      <div className="border border-border rounded-xl p-3 space-y-2.5 bg-muted/20">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-primary shrink-0" />
+          <p className="text-xs font-semibold text-foreground">Auto-generate from audio</p>
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Transcribes the video&apos;s dedicated audio rendition with AI and adds it as a
+          subtitle track named &ldquo;Auto-generated (lang)&rdquo;. Requires a processed video
+          with an audio rendition. Only one auto-generated transcription can run per video
+          at a time.
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select
+            value={transcribeLang}
+            onValueChange={(v) => setTranscribeLang(v || "en")}
+            disabled={transcribing || checkingTranscribeStatus || uploading}
+          >
+            <SelectTrigger size="sm" className="w-[160px]">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {SUBTITLE_LANGUAGES.map((l) => (
+                  <SelectItem key={l.code} value={l.code}>
+                    {l.label} ({l.code})
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Button
+            size="sm"
+            onClick={handleAutoGenerate}
+            disabled={transcribing || uploading || checkingTranscribeStatus}
+            className="gap-1.5"
+            title={transcribing ? "A transcription is already in progress" : "Auto-generate subtitle"}
+          >
+            {transcribing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="w-3.5 h-3.5" />
+            )}
+            {transcribing ? "Transcribing…" : "Auto-generate subtitle"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleRefresh()}
+            disabled={loading}
+            className="gap-1.5 h-8"
+            title="Refresh subtitle list"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
+        {transcribeMsg && (
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+            {transcribing && <Loader2 className="w-3 h-3 animate-spin text-primary shrink-0" />}
+            <span>{transcribeMsg}</span>
+          </p>
+        )}
       </div>
 
       {isBunnyEmbed && (

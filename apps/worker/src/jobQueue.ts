@@ -1,11 +1,20 @@
 import { ProgressReporter } from "./progress";
-import { TranscodeJobPayload } from "./transcoder";
 
 type JobRunner = () => Promise<void>;
 
+/**
+ * Minimal payload surface the queue needs (CANCELLED callbacks on shutdown).
+ * Both transcode and transcription payloads satisfy this structurally.
+ */
+export interface QueuedJobPayload {
+  videoId?: string;
+  organizationId?: string;
+  callbackUrl?: string;
+}
+
 interface QueueEntry {
   videoId: string;
-  payload?: TranscodeJobPayload;
+  payload?: QueuedJobPayload;
   run: JobRunner;
   resolve: () => void;
   reject: (err: unknown) => void;
@@ -82,7 +91,7 @@ export async function shutdownQueue(): Promise<void> {
  * Enqueues a job and resolves/rejects only once the job finishes running.
  * At most WORKER_MAX_CONCURRENT_JOBS jobs run at the same time.
  */
-export function enqueueJob(videoId: string, run: JobRunner, payload?: TranscodeJobPayload): Promise<void> {
+export function enqueueJob(videoId: string, run: JobRunner, payload?: QueuedJobPayload): Promise<void> {
   const stats = getQueueStats();
   console.log(
     `[Job Queue] Queued video ${videoId} (position ${stats.queued + 1}, ${stats.active}/${stats.maxConcurrent} active)`

@@ -4,7 +4,8 @@ A high-performance, stateless transcoding and packaging worker service written i
 
 ## Features
 
-- **Stateless HTTP API**: High-performance HTTP server matching `apps/worker` endpoints (`/health`, `/stats`, `/transcode`, `/cancel`).
+- **Stateless HTTP API**: High-performance HTTP server matching `apps/worker` endpoints (`/health`, `/stats`, `/transcode`, `/transcribe`, `/cancel`).
+- **Whisper Transcription Jobs**: `POST /transcribe` (or a `transcribe` BullMQ job on the shared `video-transcode` queue) converts an audio-rendition `.m3u8` to 16kHz mono WAV with FFmpeg, calls a Whisper-compatible `/v1/audio/transcriptions` endpoint, uploads the returned WebVTT to S3, and reports the result to the Next.js transcription callback. `whisperUrl` in the payload is the Whisper server base URL (e.g. `http://host:9000`) — the worker appends `/v1/audio/transcriptions` automatically (a full legacy endpoint is still accepted). All config (Whisper URL/key, S3 creds, storage key, callback) is supplied per-job in the payload — see `internal/transcoder/transcription.go`.
 - **Payload-Driven Architecture**: Fully independent of job environment variables; all storage credentials, buckets, and endpoints are supplied per request.
 - **Aspect Ratio Preservation**: Height-only scaling (`scale=-2:HEIGHT`) preserves any source aspect ratio (16:9, 9:16, 4:3, …) with no fixed-width or DAR enforcement. Stored widths are metadata only.
 - **Strict Ladder Capping (No Upscaling, No Native Extra)**: Only renders ladder rungs at or below the source height. Never upscales and never adds an extra native/beyond-ladder rung — a 1080p-capped request on a 4K source renders only 1080p and below.

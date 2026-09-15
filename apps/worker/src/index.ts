@@ -1,6 +1,12 @@
 import http from "http";
 import { Worker } from "bullmq";
 import { cancelActiveTranscode, cancelAllActiveJobs, processVideoJob } from "./transcoder";
+import {
+  cancelActiveTranscription,
+  cancelAllActiveTranscriptions,
+  processTranscriptionJob,
+  transcriptionQueueKey,
+} from "./transcription";
 import { cancelQueuedJob, enqueueJob, getQueueStats, isJobQueuedOrActive, shutdownQueue } from "./jobQueue";
 import { useDockerHostForLocalhost, useLocalhostForDockerHost } from "./urlUtils";
 
@@ -131,7 +137,94 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Cancel a queued or in-progress transcode job
+  // Transcription trigger endpoint (Whisper-compatible subtitle generation).
+  // All config (Whisper URL/key, S3 creds, storage key, callback) comes from
+  // the job payload — the worker holds no transcription config of its own.
+  if (method === "POST" && (url === "/transcribe" || url === "/api/transcribe")) {
+    if (isShuttingDown) {
+      sendJsonResponse(res, 503, { error: "Worker is shutting down" });
+      return;
+    }
+    if (WORKER_SECRET_TOKEN) {
+      const authHeader = req.headers["authorization"];
+      const secretHeader = req.headers["x-worker-secret"];
+      const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : secretHeader;
+
+      if (token !== WORKER_SECRET_TOKEN) {
+        console.warn(`[Worker HTTP] Unauthorized transcribe attempt from ${req.socket.remoteAddress}`);
+        sendJsonResponse(res, 401, { error: "Unauthorized: invalid worker secret token" });
+        return;
+      }
+    }
+
+    let bodyStr = "";
+    req.on("data", (chunk) => {
+      bodyStr += chunk;
+    });
+
+    req.on("end", async () => {
+      try {
+        const rawPayload = JSON.parse(bodyStr || "{}");
+        const payload = useDockerHostForLocalhost(rawPayload);
+        const videoId = payload.videoId;
+        const dedupeKey = videoId ? transcriptionQueueKey(videoId) : "";
+
+        if (!videoId) {
+          sendJsonResponse(res, 400, { error: "videoId is required" });
+          return;
+        }
+
+        const missing: string[] = [];
+        if (!payload.audioHlsUrl && !payload.audioUrl) missing.push("audioHlsUrl");
+        if (!payload.whisperUrl && !payload.whisperApiUrl) missing.push("whisperUrl");
+        if (!payload.whisperApiKey && !payload.whisperAuthToken) missing.push("whisperApiKey");
+        if (!payload.s3?.endpoint || !payload.s3?.bucket) missing.push("s3 (endpoint/bucket)");
+        if (!payload.storageKey) missing.push("storageKey");
+        if (!payload.subtitleId) missing.push("subtitleId");
+        if (!payload.callbackUrl) missing.push("callbackUrl");
+        if (missing.length > 0) {
+          sendJsonResponse(res, 400, { error: `Transcription payload missing required field(s): ${missing.join(", ")}` });
+          return;
+        }
+
+        console.log(`[Worker HTTP] Received transcribe request for videoId: ${videoId}:`, JSON.stringify(payload, null, 2));
+
+        // One transcription per video at a time (keyed separately from transcodes)
+        if (isJobQueuedOrActive(dedupeKey)) {
+          const queue = getQueueStats();
+          sendJsonResponse(res, 202, {
+            status: "ALREADY_QUEUED",
+            message: "Transcription job for this video is already queued or in progress",
+            videoId,
+            queue,
+          });
+          return;
+        }
+
+        sendJsonResponse(res, 202, {
+          status: "ACCEPTED",
+          message: "Transcription job queued",
+          videoId,
+          queue: getQueueStats(),
+        });
+
+        setImmediate(() => {
+          enqueueJob(dedupeKey, () => processTranscriptionJob(payload), payload)
+            .then(() => {
+              console.log(`[Worker HTTP] Container finished transcription for videoId: ${videoId}`);
+            })
+            .catch((err: any) => {
+              console.error(`[Worker HTTP] Async error transcribing videoId ${videoId}:`, err?.message || err);
+            });
+        });
+      } catch (err: any) {
+        sendJsonResponse(res, 400, { error: "Invalid JSON payload" });
+      }
+    });
+    return;
+  }
+
+  // Cancel a queued or in-progress transcode/transcription job
   if (method === "POST" && (url === "/cancel" || url === "/api/cancel")) {
     if (WORKER_SECRET_TOKEN) {
       const authHeader = req.headers["authorization"];
@@ -160,17 +253,18 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        const removedFromQueue = cancelQueuedJob(videoId);
+        const removedFromQueue = cancelQueuedJob(videoId) || cancelQueuedJob(transcriptionQueueKey(videoId));
         const abortedActive = cancelActiveTranscode(videoId);
+        const abortedTranscription = cancelActiveTranscription(videoId);
 
         console.log(
-          `[Worker HTTP] Cancel for videoId ${videoId}: queued=${removedFromQueue}, active=${abortedActive}`
+          `[Worker HTTP] Cancel for videoId ${videoId}: queued=${removedFromQueue}, active=${abortedActive}, transcription=${abortedTranscription}`
         );
 
-        if (!removedFromQueue && !abortedActive && !isJobQueuedOrActive(videoId)) {
+        if (!removedFromQueue && !abortedActive && !abortedTranscription && !isJobQueuedOrActive(videoId)) {
           sendJsonResponse(res, 404, {
             status: "NOT_FOUND",
-            message: "No queued or active transcode job found for this video",
+            message: "No queued or active transcode/transcription job found for this video",
             videoId,
             queue: getQueueStats(),
           });
@@ -181,10 +275,13 @@ const server = http.createServer(async (req, res) => {
           status: "CANCELLED",
           message: removedFromQueue
             ? "Job removed from queue"
-            : "Active transcode aborted",
+            : abortedTranscription
+              ? "Active transcription aborted"
+              : "Active transcode aborted",
           videoId,
           removedFromQueue,
           abortedActive,
+          abortedTranscription,
           queue: getQueueStats(),
         });
       } catch (err: any) {
@@ -211,6 +308,12 @@ if (REDIS_URL) {
       "video-transcode",
       async (job) => {
         const videoId = job.data?.videoId;
+        // Transcription jobs share the "video-transcode" queue under the
+        // "transcribe" job name (or an explicit jobType marker).
+        if (job.name === "transcribe" || job.data?.jobType === "transcription") {
+          console.log(`[Worker BullMQ] Started transcribing job ${job.id} for videoId: ${videoId}`);
+          return await processTranscriptionJob(job.data, job);
+        }
         console.log(`[Worker BullMQ] Started processing job ${job.id} for videoId: ${videoId}`);
         return await processVideoJob(job.data, job);
       },
@@ -281,6 +384,8 @@ async function handleShutdownSignal(signal: string) {
     await shutdownQueue();
     // 4. Cancel all active transcodes, delete partially uploaded S3 files, and report CANCELLED
     await cancelAllActiveJobs(8000);
+    // 5. Cancel all active transcriptions, clean up partial VTT uploads, and report CANCELLED
+    await cancelAllActiveTranscriptions(8000);
   } catch (e: any) {
     console.error("[Worker Service] Error during SIGTERM cleanup:", e?.message || e);
   } finally {

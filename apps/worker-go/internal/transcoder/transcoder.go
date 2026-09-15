@@ -58,6 +58,57 @@ type TranscodeJobPayload struct {
 	Threads           int                 `json:"threads,omitempty"`
 	WorkerCore        int                 `json:"workerCore,omitempty"`
 	WorkerCores       int                 `json:"workerCores,omitempty"`
+	// Optional transcription fields — present when a "transcribe" job lands
+	// on the shared "video-transcode" queue (see TranscriptionJobPayload).
+	JobType          string `json:"jobType,omitempty"`
+	AudioHlsUrl      string `json:"audioHlsUrl,omitempty"`
+	AudioUrl         string `json:"audioUrl,omitempty"`
+	FallbackHlsUrl   string `json:"fallbackHlsUrl,omitempty"`
+	MasterHlsUrl     string `json:"masterHlsUrl,omitempty"`
+	WhisperUrl       string `json:"whisperUrl,omitempty"`
+	WhisperApiUrl    string `json:"whisperApiUrl,omitempty"`
+	WhisperApiKey    string `json:"whisperApiKey,omitempty"`
+	WhisperAuthToken string `json:"whisperAuthToken,omitempty"`
+	WhisperLanguage  string `json:"whisperLanguage,omitempty"`
+	WhisperModel     string `json:"whisperModel,omitempty"`
+	ResponseFormat   string `json:"responseFormat,omitempty"`
+	SubtitleId       string `json:"subtitleId,omitempty"`
+	StorageKey       string `json:"storageKey,omitempty"`
+	Language         string `json:"language,omitempty"`
+	Label            string `json:"label,omitempty"`
+}
+
+// IsTranscriptionPayload reports whether a queue payload is a transcription
+// ("transcribe") job rather than a transcode job.
+func (p TranscodeJobPayload) IsTranscriptionPayload() bool {
+	return p.JobType == "transcription" || strings.TrimSpace(p.WhisperUrl) != "" || strings.TrimSpace(p.WhisperApiUrl) != ""
+}
+
+// ToTranscriptionPayload converts a shared-queue payload into the dedicated
+// transcription payload type.
+func (p TranscodeJobPayload) ToTranscriptionPayload() TranscriptionJobPayload {
+	return TranscriptionJobPayload{
+		JobType:          "transcription",
+		VideoId:          p.VideoId,
+		OrganizationId:   p.OrganizationId,
+		AudioHlsUrl:      p.AudioHlsUrl,
+		AudioUrl:         p.AudioUrl,
+		FallbackHlsUrl:   p.FallbackHlsUrl,
+		MasterHlsUrl:     p.MasterHlsUrl,
+		WhisperUrl:       p.WhisperUrl,
+		WhisperApiUrl:    p.WhisperApiUrl,
+		WhisperApiKey:    p.WhisperApiKey,
+		WhisperAuthToken: p.WhisperAuthToken,
+		WhisperLanguage:  p.WhisperLanguage,
+		WhisperModel:     p.WhisperModel,
+		ResponseFormat:   p.ResponseFormat,
+		S3:               p.S3,
+		SubtitleId:       p.SubtitleId,
+		StorageKey:       p.StorageKey,
+		Language:         p.Language,
+		Label:            p.Label,
+		CallbackUrl:      p.CallbackUrl,
+	}
 }
 
 type ActiveJobEntry struct {
