@@ -20,6 +20,88 @@ const DEFAULT_WEEKLY_HOURS = [
 
 const DAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 
+function safeTimeZone(tz: string | null | undefined, fallback = "UTC"): string {
+  const candidate = (tz || fallback).trim() || fallback;
+  try {
+    // Throws RangeError for unknown zones
+    new Intl.DateTimeFormat("en-US", { timeZone: candidate });
+    return candidate;
+  } catch {
+    return fallback;
+  }
+}
+
+function getTimeZoneOffsetMs(timeZone: string, date: Date): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = dtf.formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) map[p.type] = p.value;
+  const asUTC = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour) % 24,
+    Number(map.minute),
+    Number(map.second)
+  );
+  return asUTC - date.getTime();
+}
+
+/**
+ * Convert a wall-clock time in `timeZone` (YYYY-MM-DD HH:mm) to the
+ * corresponding UTC instant. Iterated to handle DST transitions.
+ */
+function zonedTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+  second = 0
+): Date {
+  let utc = Date.UTC(year, month - 1, day, hour, minute, second);
+  for (let i = 0; i < 3; i++) {
+    const offset = getTimeZoneOffsetMs(timeZone, new Date(utc));
+    const next = Date.UTC(year, month - 1, day, hour, minute, second) - offset;
+    if (next === utc) break;
+    utc = next;
+  }
+  return new Date(utc);
+}
+
+function getZonedDateParts(date: Date, timeZone: string): { year: number; month: number; day: number } {
+  const dtf = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = dtf.formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) map[p.type] = p.value;
+  return { year: Number(map.year), month: Number(map.month), day: Number(map.day) };
+}
+
+function shiftDateYMD(year: number, month: number, day: number, deltaDays: number) {
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+}
+
+function weekdayKeyForYMD(year: number, month: number, day: number): string {
+  return DAY_NAMES[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+}
+
 // GET /api/public/book/[id] - Fetch public offering and available time slots for a given date
 export async function GET(
   req: NextRequest,
@@ -78,35 +160,33 @@ export async function GET(
     });
 
     const weeklyHours = (availability?.weeklyHours as any[]) || DEFAULT_WEEKLY_HOURS;
-    const hostTz = availability?.timezone || "UTC";
+    const hostTz = safeTimeZone(availability?.timezone || "UTC");
+    const clientTzSafe = safeTimeZone(clientTz || hostTz, hostTz);
 
-    // Parse the requested date (YYYY-MM-DD)
+    // Parse the requested date (YYYY-MM-DD). The calendar day number the
+    // visitor clicked is interpreted as a date IN the visitor's selected
+    // timezone (dateStr is built from those calendar numbers on the client).
     const [year, month, day] = dateStr.split("-").map(Number);
     if (!year || !month || !day) {
       return NextResponse.json({ error: "Invalid date format. Expected YYYY-MM-DD." }, { status: 400 });
     }
 
-    const targetDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-    const dayOfWeek = DAY_NAMES[targetDate.getUTCDay()];
+    // UTC bounds of the visitor's selected day in their timezone. DST-safe:
+    // end is start-of-next-day minus 1ms.
+    const clientDayStartUtc = zonedTimeToUtc(year, month, day, 0, 0, clientTzSafe);
+    const nextDay = shiftDateYMD(year, month, day, 1);
+    const clientNextDayStartUtc = zonedTimeToUtc(nextDay.year, nextDay.month, nextDay.day, 0, 0, clientTzSafe);
+    const clientDayEndUtc = new Date(clientNextDayStartUtc.getTime() - 1);
 
-    const dayConfig = weeklyHours.find((d: any) => d.day?.toLowerCase() === dayOfWeek);
-    if (!dayConfig || !dayConfig.isEnabled || !Array.isArray(dayConfig.slots) || dayConfig.slots.length === 0) {
-      return NextResponse.json({ offering, availableSlots: [] });
-    }
-
-    // Calculate start and end of target day in UTC
-    const dayStartUtc = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
-    const dayEndUtc = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
-
-    // Fetch existing appointments that could overlap
+    // Fetch existing appointments that could overlap the visitor's day
     const existingAppointments = await db.appointment.findMany({
       where: {
         organizationId: offering.organizationId,
         hostId: offering.createdById,
         status: "CONFIRMED",
         ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
-        scheduledStart: { lte: dayEndUtc },
-        scheduledEnd: { gte: dayStartUtc },
+        scheduledStart: { lte: clientDayEndUtc },
+        scheduledEnd: { gte: clientDayStartUtc },
       },
       select: {
         scheduledStart: true,
@@ -127,49 +207,86 @@ export async function GET(
       timeLabel: string;
     }> = [];
 
-    for (const timeBlock of dayConfig.slots) {
-      const [startHour, startMin] = timeBlock.start.split(":").map(Number);
-      const [endHour, endMin] = timeBlock.end.split(":").map(Number);
-
-      const blockStartTime = new Date(Date.UTC(year, month - 1, day, startHour, startMin, 0));
-      const blockEndTime = new Date(Date.UTC(year, month - 1, day, endHour, endMin, 0));
-
-      let currentSlotStart = new Date(blockStartTime.getTime());
-
-      while (currentSlotStart.getTime() + duration * 60 * 1000 <= blockEndTime.getTime()) {
-        const currentSlotEnd = new Date(currentSlotStart.getTime() + duration * 60 * 1000);
-
-        // Check if slot is in the future past notice requirement
-        if (currentSlotStart.getTime() >= earliestBookableTime) {
-          // Check collision with existing confirmed appointments
-          const isColliding = existingAppointments.some((appt) => {
-            const apptStart = new Date(appt.scheduledStart).getTime();
-            const apptEnd = new Date(appt.scheduledEnd).getTime();
-            return currentSlotStart.getTime() < apptEnd && currentSlotEnd.getTime() > apptStart;
-          });
-
-          if (!isColliding) {
-            let label = `${currentSlotStart.getUTCHours().toString().padStart(2, "0")}:${currentSlotStart.getUTCMinutes().toString().padStart(2, "0")}`;
-            try {
-              label = new Intl.DateTimeFormat("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                timeZone: clientTz || hostTz,
-              }).format(currentSlotStart);
-            } catch {}
-
-            availableSlots.push({
-              start: currentSlotStart.toISOString(),
-              end: currentSlotEnd.toISOString(),
-              timeLabel: label,
-            });
-          }
-        }
-
-        // Advance by slotStepMinutes
-        currentSlotStart = new Date(currentSlotStart.getTime() + slotStepMinutes * 60 * 1000);
+    // Host weekly hours are wall-clock times IN the host timezone. A
+    // visitor day can span two host calendar days (and vice versa), so
+    // generate from every host date that could overlap the visitor day,
+    // then keep only slots starting inside the visitor day.
+    const hostDateKeys = new Map<string, { year: number; month: number; day: number }>();
+    for (const anchor of [clientDayStartUtc, clientDayEndUtc]) {
+      const hp = getZonedDateParts(anchor, hostTz);
+      for (const delta of [-1, 0, 1]) {
+        const s = shiftDateYMD(hp.year, hp.month, hp.day, delta);
+        const key = `${s.year}-${String(s.month).padStart(2, "0")}-${String(s.day).padStart(2, "0")}`;
+        if (!hostDateKeys.has(key)) hostDateKeys.set(key, s);
       }
     }
+
+    for (const hostDate of hostDateKeys.values()) {
+      const dayOfWeek = weekdayKeyForYMD(hostDate.year, hostDate.month, hostDate.day);
+      const dayConfig = weeklyHours.find((d: any) => d.day?.toLowerCase() === dayOfWeek);
+      if (!dayConfig || !dayConfig.isEnabled || !Array.isArray(dayConfig.slots) || dayConfig.slots.length === 0) {
+        continue;
+      }
+
+      for (const timeBlock of dayConfig.slots) {
+        const [startHour, startMin] = String(timeBlock.start || "").split(":").map(Number);
+        const [endHour, endMin] = String(timeBlock.end || "").split(":").map(Number);
+        if (
+          !Number.isFinite(startHour) || !Number.isFinite(startMin) ||
+          !Number.isFinite(endHour) || !Number.isFinite(endMin)
+        ) {
+          continue;
+        }
+
+        // Interpret the configured hours in the HOST timezone, not UTC.
+        const blockStartTime = zonedTimeToUtc(hostDate.year, hostDate.month, hostDate.day, startHour, startMin, hostTz);
+        const blockEndTime = zonedTimeToUtc(hostDate.year, hostDate.month, hostDate.day, endHour, endMin, hostTz);
+        if (blockEndTime.getTime() <= blockStartTime.getTime()) continue;
+
+        let currentSlotStart = new Date(blockStartTime.getTime());
+
+        while (currentSlotStart.getTime() + duration * 60 * 1000 <= blockEndTime.getTime()) {
+          const currentSlotEnd = new Date(currentSlotStart.getTime() + duration * 60 * 1000);
+
+          // Only show slots that fall on the visitor's selected date
+          const fallsOnSelectedDate =
+            currentSlotStart.getTime() >= clientDayStartUtc.getTime() &&
+            currentSlotStart.getTime() < clientNextDayStartUtc.getTime();
+
+          // Check if slot is in the future past notice requirement
+          if (fallsOnSelectedDate && currentSlotStart.getTime() >= earliestBookableTime) {
+            // Check collision with existing confirmed appointments
+            const isColliding = existingAppointments.some((appt) => {
+              const apptStart = new Date(appt.scheduledStart).getTime();
+              const apptEnd = new Date(appt.scheduledEnd).getTime();
+              return currentSlotStart.getTime() < apptEnd && currentSlotEnd.getTime() > apptStart;
+            });
+
+            if (!isColliding) {
+              let label = `${currentSlotStart.getUTCHours().toString().padStart(2, "0")}:${currentSlotStart.getUTCMinutes().toString().padStart(2, "0")}`;
+              try {
+                label = new Intl.DateTimeFormat("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  timeZone: clientTzSafe,
+                }).format(currentSlotStart);
+              } catch {}
+
+              availableSlots.push({
+                start: currentSlotStart.toISOString(),
+                end: currentSlotEnd.toISOString(),
+                timeLabel: label,
+              });
+            }
+          }
+
+          // Advance by slotStepMinutes
+          currentSlotStart = new Date(currentSlotStart.getTime() + slotStepMinutes * 60 * 1000);
+        }
+      }
+    }
+
+    availableSlots.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
 
     return NextResponse.json({
       offering,
