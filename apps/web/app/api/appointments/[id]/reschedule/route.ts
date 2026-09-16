@@ -184,7 +184,7 @@ export async function POST(
     // Email ONLY the other party — the proposer just made the request so they already know.
     // The appointment never moves until the other side approves.
     const baseUrl = getBaseUrl();
-    const joinUrl = appointment.joinUrl || (appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`);
+    const joinUrl = appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`;
     const hostName = appointment.host?.name || "Host";
     const hostEmail = appointment.host?.email;
     const orgName = (appointment as any).organization?.name || "Taped";

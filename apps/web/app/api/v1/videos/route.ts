@@ -136,7 +136,6 @@ export async function POST(req: Request) {
         const tus = createBunnyTusCredentials(bunnyVideoId, 86400, cfg);
 
         // Proxy URLs (keeps API key secret) – client PUTs here, we stream to Bunny
-        const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || "";
         const proxyUploadUrl = `/api/bunny/upload/${video.id}`;
         const proxyThumbnailUploadUrl = `/api/bunny/thumbnail/${video.id}`;
 

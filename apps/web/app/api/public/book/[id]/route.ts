@@ -481,7 +481,8 @@ export async function POST(
     });
 
     const baseUrl = getBaseUrl();
-    const joinUrl = `${baseUrl}/meet/${meeting.id}`;
+    const joinPath = `/meet/${meeting.id}`;
+    const joinUrl = `${baseUrl}${joinPath}`;
 
     // 2. Create Appointment record
     const appointment = await db.appointment.create({
@@ -503,7 +504,7 @@ export async function POST(
         paymentStatus,
         paymentId,
         meetingId: meeting.id,
-        joinUrl,
+        joinUrl: joinPath,
       },
       include: {
         offering: true,
@@ -649,7 +650,7 @@ export async function POST(
       success: true,
       message: "Appointment booked successfully",
       appointment,
-      joinUrl,
+      joinUrl: joinPath,
     }, { status: 201 });
   } catch (error: any) {
     console.error("[POST /api/public/book/[id] Error]:", error);

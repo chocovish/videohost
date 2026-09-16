@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@videohost/db";
 import { sendAppointmentReminderEmail } from "@/lib/mail";
+import { getBaseUrl } from "@/lib/utils";
 
 async function processAppointmentReminders(req: NextRequest) {
   // Verify optional CRON_SECRET if configured in env
@@ -51,7 +52,7 @@ async function processAppointmentReminders(req: NextRequest) {
       const hostEmail = appt.host?.email;
       const organizationName = appt.organization?.name || "Taped";
       const offeringTitle = appt.offering?.title || "Scheduled Appointment";
-      const joinUrl = appt.joinUrl || `/meet/${appt.meetingId || appt.id}`;
+      const joinUrl = `${getBaseUrl()}/meet/${appt.meetingId || appt.id}`;
 
       let clientSent = false;
       let hostSent = false;

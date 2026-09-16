@@ -72,9 +72,7 @@ export async function PATCH(
 
       // Notify both sides that the proposal was withdrawn
       const baseUrl = getBaseUrl();
-      const joinUrl =
-        appointment.joinUrl ||
-        (appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`);
+      const joinUrl = appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`;
       const mailBase = {
         hostName: appointment.host?.name || "Host",
         clientName: appointment.clientName,
@@ -135,9 +133,7 @@ export async function PATCH(
       });
 
       const baseUrl = getBaseUrl();
-      const joinUrl =
-        appointment.joinUrl ||
-        (appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`);
+      const joinUrl = appointment.meetingId ? `${baseUrl}/meet/${appointment.meetingId}` : `${baseUrl}/dashboard/appointments`;
       const mailBase = {
         hostName: appointment.host?.name || "Host",
         clientName: appointment.clientName,
@@ -256,9 +252,9 @@ export async function PATCH(
     });
 
     const baseUrl = getBaseUrl();
-    const joinUrl =
-      (updatedAppointment as any).joinUrl ||
-      ((updatedAppointment as any).meetingId ? `${baseUrl}/meet/${(updatedAppointment as any).meetingId}` : `${baseUrl}/dashboard/appointments`);
+    const joinUrl = (updatedAppointment as any).meetingId
+      ? `${baseUrl}/meet/${(updatedAppointment as any).meetingId}`
+      : `${baseUrl}/dashboard/appointments`;
     const mailBase = {
       hostName: appointment.host?.name || "Host",
       clientName: appointment.clientName,
