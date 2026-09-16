@@ -421,6 +421,11 @@ export default function ScheduledAppointmentsTab({ onStatsChange }: { onStatsCha
             const joinLink = appt.joinUrl || (appt.meetingId ? `/meet/${appt.meetingId}` : `/meet/${appt.id}`);
             const pending = appt.rescheduleRequests?.[0] || null;
             const needsHostAction = Boolean(pending && pending.proposedByRole === "CLIENT" && isConfirmed);
+            // Bought price from ContentPurchase (same source as payouts),
+            // never the offering's current live price.
+            const boughtPurchase = appt.purchases?.[0];
+            const boughtAmount = boughtPurchase?.amount ?? appt.offering?.price ?? 0;
+            const boughtCurrency = boughtPurchase?.currency || appt.offering?.currency || "USD";
 
             return (
               <div
@@ -469,11 +474,9 @@ export default function ScheduledAppointmentsTab({ onStatsChange }: { onStatsCha
                       </Badge>
                     )}
 
-                    {/* Price / Payment Badge */}
+                    {/* Bought Price Badge */}
                     <Badge variant="outline" className="text-[11px] font-mono">
-                      {(appt.offering?.price ?? 0) > 0
-                        ? `${appt.offering?.currency || "USD"} ${appt.offering.price}`
-                        : "Free"}
+                      {boughtAmount > 0 ? `${boughtCurrency} ${boughtAmount}` : "Free"}
                     </Badge>
                   </div>
 

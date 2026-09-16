@@ -481,7 +481,7 @@ export default function PurchasedItemsPage() {
                 <SelectItem value="newest">Newest Purchased</SelectItem>
                 <SelectItem value="oldest">Oldest Purchased</SelectItem>
                 <SelectItem value="title">Title (A-Z)</SelectItem>
-                <SelectItem value="price">Price (High to Low)</SelectItem>
+                <SelectItem value="price">Bought price (High to Low)</SelectItem>
                 </SelectGroup>
               </SelectContent>
             </Select>
@@ -763,11 +763,16 @@ export default function PurchasedItemsPage() {
                       </div>
                     )}
 
-                    {/* Price Paid & Payment Badge */}
+                    {/* Bought price & Payment Badge */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60">
                       <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-muted-foreground">
+                          Bought for
+                        </span>
                         <span className="text-xs font-bold text-foreground">
-                          {formatPrice(item.amount, item.currency)}
+                          {(item.amount || 0) > 0
+                            ? formatPrice(item.amount, item.currency)
+                            : "Free"}
                         </span>
                         <Badge variant="outline" className="text-xs uppercase font-mono py-0 h-4.5">
                           {item.paymentMethod}
@@ -964,9 +969,11 @@ export default function PurchasedItemsPage() {
                       </div>
                     )}
                     <div>
-                      <span className="text-muted-foreground block text-xs">Amount Paid</span>
+                      <span className="text-muted-foreground block text-xs">Bought for</span>
                       <span className="font-bold text-primary text-sm">
-                        {formatPrice(selectedReceipt.amount, selectedReceipt.currency)}
+                        {(selectedReceipt.amount || 0) > 0
+                          ? formatPrice(selectedReceipt.amount, selectedReceipt.currency)
+                          : "Free"}
                       </span>
                     </div>
                     <div>

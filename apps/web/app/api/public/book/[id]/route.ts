@@ -484,52 +484,50 @@ export async function POST(
     const joinPath = `/meet/${meeting.id}`;
     const joinUrl = `${baseUrl}${joinPath}`;
 
-    // 2. Create Appointment record
-    const appointment = await db.appointment.create({
-      data: {
-        organizationId: offering.organizationId,
-        offeringId: offering.id,
-        hostId: offering.createdById,
-        clientId,
-        clientName: clientName.trim(),
-        clientEmail: clientEmail.trim().toLowerCase(),
-        clientNotes: clientNotes ? clientNotes.trim() : null,
-        scheduledStart: startDate,
-        scheduledEnd: endDate,
-        durationMinutes: offering.duration,
-        timezone: timezone || "UTC",
-        status: "CONFIRMED",
-        price: effectivePrice,
-        currency: effectiveCurrency,
-        paymentStatus,
-        paymentId,
-        meetingId: meeting.id,
-        joinUrl: joinPath,
-      },
-      include: {
-        offering: true,
-        meeting: true,
-        host: {
-          select: { id: true, name: true, email: true },
+    // 2. Create Appointment + ContentPurchase atomically. ContentPurchase is
+    // the single source of truth for purchase details (same as
+    // VIDEO/PLAYLIST/MEETING); the Appointment row holds no payment fields.
+    // Always record a purchase, even for FREE (amount 0).
+    const appointment = await db.$transaction(async (tx) => {
+      const created = await tx.appointment.create({
+        data: {
+          organizationId: offering.organizationId,
+          offeringId: offering.id,
+          hostId: offering.createdById,
+          clientId,
+          clientName: clientName.trim(),
+          clientEmail: clientEmail.trim().toLowerCase(),
+          clientNotes: clientNotes ? clientNotes.trim() : null,
+          scheduledStart: startDate,
+          scheduledEnd: endDate,
+          durationMinutes: offering.duration,
+          timezone: timezone || "UTC",
+          status: "CONFIRMED",
+          meetingId: meeting.id,
+          joinUrl: joinPath,
         },
-      },
-    });
+        include: {
+          offering: true,
+          meeting: true,
+          host: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      });
 
-    // Record ContentPurchase if paid session and client user exists
-    if (paymentStatus === "PAID" && clientId) {
-      try {
+      if (paymentStatus === "PAID") {
         const split = calculateSaleSplit(
           effectivePrice,
           offering.organization?.plan?.name || "free",
           offering.organization?.plan?.commissionPercent
         );
 
-        await db.contentPurchase.create({
+        await tx.contentPurchase.create({
           data: {
             organizationId: offering.organizationId,
             userId: clientId,
             contentType: "APPOINTMENT",
-            appointmentId: appointment.id,
+            appointmentId: created.id,
             meetingId: meeting.id,
             amount: effectivePrice,
             currency: effectiveCurrency,
@@ -545,10 +543,32 @@ export async function POST(
             status: "COMPLETED",
           },
         });
-      } catch (cpErr) {
-        console.error("Failed to record ContentPurchase for appointment:", cpErr);
+      } else {
+        await tx.contentPurchase.create({
+          data: {
+            organizationId: offering.organizationId,
+            userId: clientId,
+            contentType: "APPOINTMENT",
+            appointmentId: created.id,
+            meetingId: meeting.id,
+            amount: 0,
+            currency: effectiveCurrency,
+            countryCode: countryCode ? String(countryCode).toUpperCase() : null,
+            commissionPercent: 0,
+            commissionAmount: 0,
+            gatewayFeePercent: 0,
+            gatewayFeeAmount: 0,
+            creatorEarnings: 0,
+            planSnapshot: "FREE_CLAIM",
+            paymentMethod: "FREE",
+            paymentId: `free_appt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            status: "COMPLETED",
+          },
+        });
       }
-    }
+
+      return created;
+    });
 
     // 3. Send confirmation emails to both parties
     const hostName = offering.createdBy?.name || "Host";
@@ -570,8 +590,8 @@ export async function POST(
         timezone,
         joinUrl,
         meetingId: meeting.id,
-        price: offering.price,
-        currency: offering.currency,
+        price: effectivePrice,
+        currency: effectiveCurrency,
         clientNotes: clientNotes ? clientNotes.trim() : null,
         organizationName,
       });
@@ -595,8 +615,8 @@ export async function POST(
           timezone,
           joinUrl,
           meetingId: meeting.id,
-          price: offering.price,
-          currency: offering.currency,
+          price: effectivePrice,
+          currency: effectiveCurrency,
           clientNotes: clientNotes ? clientNotes.trim() : null,
           organizationName,
         });

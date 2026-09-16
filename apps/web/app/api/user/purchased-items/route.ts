@@ -143,10 +143,16 @@ export async function GET(req: Request) {
     const baseUrl = getBaseUrl();
     const matchedPurchaseIds = new Set<string>();
 
-    // Process user appointments
-    const formattedAppointments = await Promise.all(
+    // Process user appointments.
+    // Purchase details (id/amount/currency/method/ids/dates) come strictly
+    // from ContentPurchase — the same source as VIDEO/PLAYLIST/MEETING.
+    // Appointment rows only supply scheduling details (times/host/joinUrl).
+    // Every booking creates its ContentPurchase atomically, and legacy rows
+    // were backfilled (scripts/backfill-appointment-purchases.ts), so a
+    // missing purchase means data corruption — logged and skipped rather
+    // than fabricating a price.
+    const formattedAppointmentsOrNull = await Promise.all(
       userAppointments.map(async (appt) => {
-        // Find if an associated ContentPurchase exists
         const matchingPurchase =
           appt.purchases?.[0] ||
           rawPurchases.find(
@@ -155,9 +161,15 @@ export async function GET(req: Request) {
               (p.meetingId && appt.meetingId && p.meetingId === appt.meetingId)
           );
 
-        if (matchingPurchase) {
-          matchedPurchaseIds.add(matchingPurchase.id);
+        if (!matchingPurchase) {
+          console.error(
+            "Purchased-items: appointment has no ContentPurchase, skipping:",
+            appt.id
+          );
+          return null;
         }
+
+        matchedPurchaseIds.add(matchingPurchase.id);
 
         let hostImage = appt.host?.image || null;
         if (hostImage && !hostImage.startsWith("http")) {
@@ -185,7 +197,6 @@ export async function GET(req: Request) {
           : "";
 
         return {
-          id: matchingPurchase?.id || appt.id,
           contentType: "APPOINTMENT" as const,
           contentId: appt.id,
           title: appt.offering?.title || "1:1 Appointment",
@@ -235,15 +246,16 @@ export async function GET(req: Request) {
             joinUrl,
           },
           shareUrl,
-          amount: matchingPurchase?.amount ?? appt.offering?.price ?? 0,
-          currency: matchingPurchase?.currency || appt.offering?.currency || "USD",
-          countryCode: matchingPurchase?.countryCode || null,
-          paymentMethod:
-            matchingPurchase?.paymentMethod ||
-            (matchingPurchase ? "ONLINE" : "FREE"),
-          paymentId: matchingPurchase?.paymentId || null,
-          status: appt.status === "CONFIRMED" ? "COMPLETED" : appt.status,
-          purchasedAt: (matchingPurchase?.createdAt || appt.createdAt).toISOString(),
+          // Purchase details — same fields, same source as
+          // VIDEO/PLAYLIST/MEETING: ContentPurchase only.
+          id: matchingPurchase.id,
+          amount: matchingPurchase.amount,
+          currency: matchingPurchase.currency || "USD",
+          countryCode: matchingPurchase.countryCode,
+          paymentMethod: matchingPurchase.paymentMethod || "CARD",
+          paymentId: matchingPurchase.paymentId,
+          status: matchingPurchase.status,
+          purchasedAt: matchingPurchase.createdAt.toISOString(),
           organization: {
             id: appt.organization.id,
             name: appt.organization.name,
@@ -252,6 +264,10 @@ export async function GET(req: Request) {
           },
         };
       })
+    );
+
+    const formattedAppointments = formattedAppointmentsOrNull.filter(
+      (item): item is NonNullable<typeof item> => item !== null
     );
 
     // Process remaining standard content purchases

@@ -875,11 +875,6 @@ model Appointment {
   durationMinutes Int
   timezone        String              @default("UTC")
   status          AppointmentStatus   @default(CONFIRMED)
-  // Deprecated payment fields (cleaned up in app code; all purchase info is in ContentPurchase)
-  price           Float?              @default(0)
-  currency        String?             @default("USD")
-  paymentStatus   String?             @default("FREE")
-  paymentId       String?
   meetingId       String?             // LiveKit video meeting ID
   joinUrl         String?             // Direct join URL e.g. /meet/[meetingId]
   cancelledReason String?

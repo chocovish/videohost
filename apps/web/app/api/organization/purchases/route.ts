@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { getCommissionRateForPlan, calculateSaleSplit } from "@/lib/platform-fees";
+import { getCommissionRateForPlan } from "@/lib/platform-fees";
 
 export async function GET(req: Request) {
   const authCtx = await authenticateRequest(req);
@@ -22,82 +22,11 @@ export async function GET(req: Request) {
         ? org.plan.commissionPercent
         : getCommissionRateForPlan(activePlanName);
 
-    // 2. Auto-sync any paid appointments that don't have a ContentPurchase row yet
-    try {
-      const paidAppointments = await db.appointment.findMany({
-        where: {
-          organizationId: authCtx.orgId,
-          offering: { price: { gt: 0 } },
-        },
-        include: {
-          offering: true,
-          purchases: { select: { id: true } },
-        },
-      });
-
-      for (const appt of paidAppointments) {
-        if (!appt.purchases || appt.purchases.length === 0) {
-          const existing = await db.contentPurchase.findFirst({
-            where: {
-              organizationId: authCtx.orgId,
-              contentType: "APPOINTMENT",
-              OR: [
-                { appointmentId: appt.id },
-                ...(appt.meetingId ? [{ meetingId: appt.meetingId }] : []),
-              ],
-            },
-          });
-
-          if (!existing) {
-            let userId = appt.clientId;
-            if (!userId && appt.clientEmail) {
-              const u = await db.user.findFirst({
-                where: { email: appt.clientEmail.toLowerCase().trim() },
-                select: { id: true },
-              });
-              if (u) userId = u.id;
-            }
-            if (!userId) userId = appt.hostId;
-
-            const split = calculateSaleSplit(
-              appt.offering.price,
-              org?.plan?.name || "free",
-              org?.plan?.commissionPercent
-            );
-
-            await db.contentPurchase.create({
-              data: {
-                organizationId: authCtx.orgId,
-                userId,
-                contentType: "APPOINTMENT",
-                appointmentId: appt.id,
-                meetingId: appt.meetingId,
-                amount: appt.offering.price,
-                currency: appt.offering.currency || "USD",
-                commissionPercent: split.commissionPercent,
-                commissionAmount: split.commissionAmount,
-                gatewayFeePercent: split.gatewayFeePercent,
-                gatewayFeeAmount: split.gatewayFeeAmount,
-                creatorEarnings: split.creatorEarnings,
-                planSnapshot: split.planSnapshot,
-                paymentMethod: "CARD",
-                status: "COMPLETED",
-                createdAt: appt.createdAt,
-              },
-            });
-          } else if (!existing.appointmentId) {
-            await db.contentPurchase.update({
-              where: { id: existing.id },
-              data: { appointmentId: appt.id },
-            });
-          }
-        }
-      }
-    } catch (syncErr) {
-      console.error("[Auto-sync appointment purchases Error]:", syncErr);
-    }
-
-    // 3. Perform parallel indexed DB-level aggregations and counts
+    // 2. Perform parallel indexed DB-level aggregations and counts
+    // Note: every booking creates its ContentPurchase atomically (see
+    // POST /api/public/book/[id]), and legacy rows were backfilled via
+    // scripts/backfill-appointment-purchases.ts — no on-the-fly fabrication
+    // of purchase rows here. ContentPurchase is the single source of truth.
     const [
       salesAgg,
       withdrawalsAgg,
