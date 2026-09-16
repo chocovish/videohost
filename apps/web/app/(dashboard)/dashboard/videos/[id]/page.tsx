@@ -8,6 +8,8 @@ import {
   Copy,
   Check,
   CheckCircle2,
+  Download,
+  Loader2,
   Trash2,
   Code,
   Clock,
@@ -62,6 +64,7 @@ interface VideoDetail {
   requireHls?: boolean;
   durationSeconds?: number;
   sizeBytes?: number | null;
+  originalDeleted?: boolean;
   sourceResolution?: string;
   shareAccessMode: "PUBLIC" | "RESTRICTED" | "PRIVATE" | "PURCHASABLE";
   price?: number | null;
@@ -290,6 +293,9 @@ export default function VideoDetailPage() {
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOriginalDeleteOpen, setIsOriginalDeleteOpen] = useState(false);
+  const [isDeletingOriginal, setIsDeletingOriginal] = useState(false);
+  const [isDownloadingOriginal, setIsDownloadingOriginal] = useState(false);
 
   const handleDelete = () => {
     setIsDeleteConfirmOpen(true);
@@ -313,6 +319,44 @@ export default function VideoDetailPage() {
       console.error("Delete error", e);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDownloadOriginal = async () => {
+    setIsDownloadingOriginal(true);
+    try {
+      const res = await fetch(`/api/v1/videos/${id}/original`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Failed to prepare the original file for download.");
+      }
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.download = data.fileName || "";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e: any) {
+      alert(e?.message || "Failed to download the original file.");
+    } finally {
+      setIsDownloadingOriginal(false);
+    }
+  };
+
+  const handleExecuteDeleteOriginal = async () => {
+    setIsDeletingOriginal(true);
+    try {
+      const res = await fetch(`/api/v1/videos/${id}/original`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to delete the original file.");
+      }
+      setIsOriginalDeleteOpen(false);
+      await fetchVideoDetail(true);
+    } catch (e: any) {
+      alert(e?.message || "Failed to delete the original file.");
+    } finally {
+      setIsDeletingOriginal(false);
     }
   };
 
@@ -779,6 +823,7 @@ export default function VideoDetailPage() {
                         video.sizeBytes !== null && video.sizeBytes !== undefined
                           ? Math.max(0, Number(video.sizeBytes) - totalRenditionsBytes)
                           : null;
+                      const hasOriginalFile = !video.originalDeleted;
                       return (
                         <div className="divide-y divide-border">
                           <div className="py-3 flex items-center justify-between gap-2 text-sm">
@@ -792,9 +837,44 @@ export default function VideoDetailPage() {
                                 {video.sourceResolution ? ` (${video.sourceResolution})` : ""}
                               </Badge>
                               <span className="text-xs text-muted-foreground font-mono">
-                                source file ({formatBytes(originalBytes)})
+                                {hasOriginalFile
+                                  ? `source file (${formatBytes(originalBytes)})`
+                                  : "source file deleted from storage"}
                               </span>
                             </div>
+                            {hasOriginalFile ? (
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Button
+                                  variant="outline"
+                                  size="xs"
+                                  onClick={handleDownloadOriginal}
+                                  disabled={isDownloadingOriginal}
+                                  title="Download the original source file"
+                                  className="gap-1.5"
+                                >
+                                  {isDownloadingOriginal ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Download className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>Download</span>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="xs"
+                                  onClick={() => setIsOriginalDeleteOpen(true)}
+                                  title="Delete the original source file to free up storage"
+                                  className="gap-1.5 text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </Button>
+                              </div>
+                            ) : (
+                              <Badge variant="secondary" className="shrink-0 text-xs">
+                                Deleted
+                              </Badge>
+                            )}
                           </div>
                           {video.renditions.map((rend) => {
                             const isAudio = rend.resolution.toLowerCase().includes("audio");
@@ -1058,6 +1138,19 @@ export default function VideoDetailPage() {
         cancelText="Cancel"
         isLoading={isDeleting}
         onConfirm={handleExecuteDelete}
+      />
+
+      {/* Delete Original File Confirmation Dialog */}
+      <ConfirmDialog
+        open={isOriginalDeleteOpen}
+        onOpenChange={setIsOriginalDeleteOpen}
+        title="Delete the original source file?"
+        description="The original upload will be permanently deleted from storage to free up space. All transcoded renditions stay available for playback and downloads. Re-encoding this video will no longer be possible."
+        variant="danger"
+        confirmText="Delete Original"
+        cancelText="Cancel"
+        isLoading={isDeletingOriginal}
+        onConfirm={handleExecuteDeleteOriginal}
       />
     </div>
   );

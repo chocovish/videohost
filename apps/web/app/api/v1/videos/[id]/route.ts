@@ -21,6 +21,7 @@ async function buildVideoResponse(video: any) {
     requireHls: video.requireHls,
     durationSeconds: video.durationSeconds,
     sizeBytes: computedSizeBytes,
+    originalDeleted: video.originalDeleted,
     sourceResolution: video.sourceWidth ? `${video.sourceWidth}x${video.sourceHeight}` : null,
     shareAccessMode: video.shareAccessMode,
     price: video.price,

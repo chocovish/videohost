@@ -15,6 +15,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
 
+  // Re-encoding starts from the original source file, so a retry would wipe the
+  // existing renditions and then fail if that file was already deleted.
+  if (video.originalDeleted) {
+    return NextResponse.json(
+      { error: "The original file was deleted from storage, so this video can no longer be re-encoded." },
+      { status: 409 }
+    );
+  }
+
   // Best-effort cleanup: delete any residual dash folder before re-encoding (e.g. partial uploads after SIGTERM/cancellation/failure)
   const dashPrefix = `videos/${authCtx.orgId}/${id}/dash`;
   const legacyDashPrefix = `${authCtx.orgId}/${id}/dash`;

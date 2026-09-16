@@ -39,6 +39,7 @@ export async function resolvePlaybackUrl(video: {
   organizationId: string;
   status: string;
   originalKey: string;
+  originalDeleted?: boolean;
   requireHls?: boolean | null;
   storageType?: string | null;
   bunnyVideoId?: string | null;

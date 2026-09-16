@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "powershell",
+      "Shell(npm:*)",
+      "Shell(npx tsc --noEmit -p tsconfig.json 2 >& 1)",
+      "Shell(Select-Object:*)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

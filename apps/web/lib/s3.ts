@@ -119,6 +119,29 @@ export function getPublicCdnUrl(key: string): string {
   return `${endpoint}/${BUCKET_NAME}/${cleanKey}`;
 }
 
+/**
+ * Presigns a GET that forces a browser download of the object.
+ * Unlike `getPresignedPlaybackUrl`, this never short-circuits to the public CDN
+ * URL, so the response carries a Content-Disposition attachment header.
+ */
+export async function getPresignedDownloadUrl(
+  key: string,
+  fileName?: string,
+  expiresInSeconds: number = 3600
+): Promise<string> {
+  if (!key) return "";
+  const fallbackName = fileName?.trim() || "download";
+  const asciiName = fallbackName.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+  const command = new GetObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ResponseContentType: "application/octet-stream",
+    ResponseContentDisposition: `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(fallbackName)}`,
+  });
+
+  return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds });
+}
+
 export async function getPresignedPlaybackUrl(key?: string | null, expiresInSeconds: number = 10000): Promise<string> {
   if (!key) return "";
   if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:") || key.startsWith("/")) {
@@ -222,6 +245,7 @@ export async function getPlaybackUrl(video: {
   organizationId: string;
   id: string;
   originalKey: string;
+  originalDeleted?: boolean;
   requireHls?: boolean;
   renditions?: any[];
   storageType?: string | null;
@@ -261,6 +285,8 @@ export async function getPlaybackUrl(video: {
     }
     return getDashPlaybackUrl(video.organizationId, video.id);
   }
+  // Single-quality playback streams the original file directly – nothing to play once it is deleted.
+  if (video.originalDeleted) return null;
   const fullOriginalKey = getVideoOriginalS3Key(video.organizationId, video.id, video.originalKey);
   return await getPresignedPlaybackUrl(fullOriginalKey);
 }
@@ -392,7 +418,10 @@ export async function deleteVideoFromS3(
   console.log(`[S3 Delete Complete] Total ${totalDeleted} object(s) deleted from S3 for video ${videoId}`);
 }
 
-export async function deleteFileFromS3(key: string): Promise<void> {
+export async function deleteFileFromS3(
+  key: string,
+  options?: { throwOnError?: boolean }
+): Promise<void> {
   if (!key) return;
   try {
     console.log(`[S3 Delete] Deleting file from S3: "${key}"...`);
@@ -400,6 +429,7 @@ export async function deleteFileFromS3(key: string): Promise<void> {
     console.log(`[S3 Delete] Successfully deleted file: "${key}"`);
   } catch (err) {
     console.error(`[S3 Delete Error] Failed to delete file "${key}" from S3:`, err);
+    if (options?.throwOnError) throw err;
   }
 }
 
