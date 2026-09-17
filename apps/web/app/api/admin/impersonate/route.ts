@@ -109,7 +109,7 @@ export async function POST(req: Request) {
 
     const isSecure =
       process.env.NODE_ENV === "production" &&
-      !process.env.NEXTAUTH_URL?.startsWith("http://localhost");
+      !process.env.APP_URL?.startsWith("http://localhost");
 
     const maxAge = 60 * 60 * 24 * 7; // 7 days
 

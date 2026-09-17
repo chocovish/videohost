@@ -182,8 +182,6 @@ DATABASE_URL="postgresql://postgres:passpass@localhost:5432/videohost?schema=pub
 
 # Auth.js / NextAuth Configuration
 NEXTAUTH_SECRET="your-super-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
-AUTH_URL="http://localhost:3000"
 
 # Cloud Storage (S3 / MinIO / Cloudflare R2)
 R2_ENDPOINT="http://localhost:9000"

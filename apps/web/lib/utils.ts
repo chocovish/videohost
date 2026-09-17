@@ -81,18 +81,24 @@ export function formatCurrencyPrice(amount: number | null | undefined, currency:
 /**
  * Resolves the application base URL without trailing slashes.
  * Client-side it is derived from the current host; server-side it requires APP_URL.
+ *
+ * Never throws during `next build`: layout/metadata modules are evaluated at
+ * build time for static prerendering (e.g. /_not-found) where runtime env may
+ * not be present (e.g. stripped by Turborepo). In that phase a placeholder is
+ * returned; runtime code paths (API routes, mail, payments) resolve the
+ * real URL again at runtime.
  */
 export function getBaseUrl(): string {
   if (typeof window !== "undefined" && window.location?.origin) {
     return window.location.origin;
   }
 
-  const envUrl =
-    process.env.APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXTAUTH_URL;
+  const envUrl = process.env.APP_URL;
 
   if (!envUrl) {
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      return "http://localhost:3000";
+    }
     throw new Error("APP_URL is not configured, cannot resolve the application base URL.");
   }
 

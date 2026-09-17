@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import { Plus_Jakarta_Sans, Fredoka } from "next/font/google";
-import { cn, getBaseUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { getImpersonationSession } from "@/lib/admin-auth";
 
@@ -18,10 +18,23 @@ const fontHeading = Fredoka({
   weight: ["500", "600", "700"],
 });
 
-const baseUrl = getBaseUrl();
+// Resolved at module scope but never throws: if no URL env is available
+// (e.g. `next build` without env while collecting /_not-found),
+// metadataBase is omitted instead of crashing prerendering.
+function resolveMetadataBase(): URL | undefined {
+  const raw = process.env.APP_URL;
+  if (!raw) return undefined;
+  try {
+    return new URL(raw.trim().replace(/\/+$/, ""));
+  } catch {
+    return undefined;
+  }
+}
+
+const metadataBase = resolveMetadataBase();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  ...(metadataBase ? { metadataBase } : {}),
   title: {
     default: "Taped — Video Hosting & Adaptive HLS Transcoding Platform",
     template: "%s | Taped",
