@@ -231,21 +231,69 @@ export async function POST(req: NextRequest) {
       if (existingVideo) {
         if (isSuccessfulStatus) {
           const originalFileName = s3Key ? (extractFileName(s3Key) || "original.mp4") : undefined;
-          // Update existing Video entry to READY with file size & duration
-          await db.video.update({
-            where: { id: existingVideo.id },
-            data: {
-              status: "READY",
-              progress: 100,
-              durationSeconds: durationSeconds ?? existingVideo.durationSeconds,
-              sizeBytes: sizeBytes ?? existingVideo.sizeBytes,
-              ...(originalFileName ? { originalKey: originalFileName } : {}),
-            },
-          });
+          // Idempotency: LiveKit may redeliver egress_ended. If a transcode is
+          // already queued/running, or the video already transcoded to READY,
+          // don't re-queue — just sync the meeting state below.
+          const alreadyDispatched =
+            existingVideo.status === "QUEUED" || existingVideo.status === "PROCESSING";
+          const alreadyReady = existingVideo.status === "READY";
+          if (alreadyDispatched || alreadyReady) {
+            console.log(
+              `[LiveKit Webhook] Video ${existingVideo.id} already ${existingVideo.status}, skipping transcode re-queue for Meeting ${meeting?.id || "unknown"}`
+            );
+            if (originalFileName && existingVideo.originalKey !== originalFileName) {
+              await db.video.update({
+                where: { id: existingVideo.id },
+                data: { originalKey: originalFileName },
+              });
+            }
+          } else {
+            // Reuse the manual-upload pipeline: mark QUEUED and dispatch the
+            // same transcode job. `requireHls: false` means single highest
+            // rendition (plan-capped), exactly like an upload with the
+            // multi-resolution toggle OFF. The worker generates the thumbnail
+            // (meeting recordings have none) and the transcode-callback flips
+            // the video to READY with HLS/DASH renditions.
+            await db.video.update({
+              where: { id: existingVideo.id },
+              data: {
+                status: "QUEUED",
+                progress: 0,
+                durationSeconds: durationSeconds ?? existingVideo.durationSeconds,
+                sizeBytes: sizeBytes ?? existingVideo.sizeBytes,
+                ...(originalFileName ? { originalKey: originalFileName } : {}),
+                requireHls: false,
+                storageType: "s3",
+              },
+            });
 
-          console.log(
-            `[LiveKit Webhook] Updated pre-created Video ${existingVideo.id} to READY for Meeting ${meeting?.id || "unknown"}`
-          );
+            try {
+              const { addTranscodeJob } = await import("@/lib/queue");
+              await addTranscodeJob(existingVideo.id, existingVideo.organizationId, {
+                skipThumbnail: false,
+              });
+              console.log(
+                `[LiveKit Webhook] Queued single-rendition transcode for Video ${existingVideo.id} (Meeting ${meeting?.id || "unknown"})`
+              );
+            } catch (queueErr: any) {
+              // Fallback so the recording stays watchable via the original mp4
+              // when no worker/queue is configured.
+              console.error(
+                `[LiveKit Webhook] Failed to queue transcode for Video ${existingVideo.id}, falling back to READY:`,
+                queueErr?.message || queueErr
+              );
+              await db.video.update({
+                where: { id: existingVideo.id },
+                data: {
+                  status: "READY",
+                  progress: 100,
+                  durationSeconds: durationSeconds ?? existingVideo.durationSeconds,
+                  sizeBytes: sizeBytes ?? existingVideo.sizeBytes,
+                  ...(originalFileName ? { originalKey: originalFileName } : {}),
+                },
+              });
+            }
+          }
         } else {
           // Egress ended with error or without file result
           await db.video.update({
@@ -301,10 +349,13 @@ export async function POST(req: NextRequest) {
               dateStyle: "medium",
               timeStyle: "short",
             }).format(new Date())}).`,
-            status: "READY",
-            progress: 100,
+            // Same as the pre-created path above: QUEUED + shared transcode
+            // job (single rendition, requireHls=false). Callback flips to READY.
+            status: "QUEUED",
+            progress: 0,
             originalKey: originalFileName,
             requireHls: false,
+            storageType: "s3",
             durationSeconds,
             sizeBytes,
           },
@@ -315,6 +366,26 @@ export async function POST(req: NextRequest) {
         console.log(
           `[LiveKit Webhook] Fallback created Video ${createdVideo.id} in folder "${meetingFolderName}" for Meeting ${meeting.id}`
         );
+
+        try {
+          const { addTranscodeJob } = await import("@/lib/queue");
+          await addTranscodeJob(createdVideo.id, meeting.organizationId, {
+            skipThumbnail: false,
+          });
+          console.log(
+            `[LiveKit Webhook] Queued single-rendition transcode for fallback Video ${createdVideo.id} (Meeting ${meeting.id})`
+          );
+        } catch (queueErr: any) {
+          console.error(
+            `[LiveKit Webhook] Failed to queue transcode for fallback Video ${createdVideo.id}, falling back to READY:`,
+            queueErr?.message || queueErr
+          );
+          await db.video.update({
+            where: { id: createdVideo.id },
+            data: { status: "READY", progress: 100 },
+          });
+          existingVideo = { ...createdVideo, status: "READY", progress: 100 } as typeof createdVideo;
+        }
       }
 
       // Update Meeting state if meeting was found
