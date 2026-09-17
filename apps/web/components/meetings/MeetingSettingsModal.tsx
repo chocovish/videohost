@@ -257,6 +257,7 @@ export default function MeetingSettingsModal() {
           variant="ghost"
           size="icon-xs"
           onClick={handleClose}
+          className="text-slate-400 hover:text-white hover:bg-slate-800"
           title="Close Settings"
         >
           <X className="w-4 h-4" />

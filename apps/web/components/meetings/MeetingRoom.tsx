@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import InMeetingInviteModal from "@/components/meetings/InMeetingInviteModal";
 import MeetingSettingsModal from "@/components/meetings/MeetingSettingsModal";
@@ -690,7 +691,7 @@ function RoomContent({
               variant={isParticipantsOpen ? "secondary" : "outline"}
               size="icon-sm"
               onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
-              className={`hidden sm:inline-flex relative transition-colors ${
+              className={`hidden sm:inline-flex relative transition-colors bg-slate-950/60 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white ${
                 isParticipantsOpen ? "text-primary border-primary/40" : ""
               }`}
               title="Participants list"
@@ -733,7 +734,7 @@ function RoomContent({
                   <Button
                     variant="outline"
                     size="icon-sm"
-                    className="text-slate-300 hover:text-white"
+                    className="bg-slate-950/60 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white"
                     title="More meeting options"
                   />
                 }
@@ -762,14 +763,16 @@ function RoomContent({
                 {/* Recording Controls in 3-dot Menu */}
                 {(meeting.canRecord || meeting.isHost || meeting.isOrgMember) && (
                   <>
-                    <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1 flex items-center justify-between">
-                      <span>Recording</span>
-                      {meeting.isFreePlan && (
-                        <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                          Paid Plan
-                        </span>
-                      )}
-                    </DropdownMenuLabel>
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1 flex items-center justify-between">
+                        <span>Recording</span>
+                        {meeting.isFreePlan && (
+                          <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                            Paid Plan
+                          </span>
+                        )}
+                      </DropdownMenuLabel>
+                    </DropdownMenuGroup>
 
                     {meeting.isFreePlan ? (
                       <DropdownMenuItem

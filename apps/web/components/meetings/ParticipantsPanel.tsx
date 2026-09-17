@@ -34,6 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -290,6 +291,7 @@ export default function ParticipantsPanel({
               variant="ghost"
               size="icon-xs"
               onClick={onClose}
+              className="text-slate-400 hover:text-white hover:bg-slate-800"
               title="Close panel"
             >
               <X className="w-4 h-4" />
@@ -303,7 +305,7 @@ export default function ParticipantsPanel({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsMuteAllModalOpen(true)}
-                className="flex-1 gap-1.5 text-slate-200 hover:text-white font-medium"
+                className="flex-1 gap-1.5 bg-slate-950/60 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white font-medium"
                 title="Mute all participant microphones"
               >
                 <VolumeX className="w-3.5 h-3.5 text-rose-400" />
@@ -490,7 +492,7 @@ export default function ParticipantsPanel({
                                 )
                               }
                               disabled={isMuteLoading}
-                              className="text-slate-300 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10"
+                              className="bg-slate-950/60 border-slate-700/80 text-slate-300 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10"
                               title={`Mute ${displayName}'s microphone`}
                             >
                               {isMuteLoading ? (
@@ -515,7 +517,7 @@ export default function ParticipantsPanel({
                                 )
                               }
                               disabled={isVideoLoading}
-                              className="text-slate-300 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10"
+                              className="bg-slate-950/60 border-slate-700/80 text-slate-300 hover:text-rose-400 hover:border-rose-500/40 hover:bg-rose-500/10"
                               title={`Turn off ${displayName}'s camera`}
                             >
                               {isVideoLoading ? (
@@ -557,7 +559,7 @@ export default function ParticipantsPanel({
                                 <Button
                                   variant="outline"
                                   size="icon-xs"
-                                  className="text-slate-400 hover:text-white"
+                                  className="bg-slate-950/60 border-slate-700/80 text-slate-400 hover:text-white hover:bg-slate-800"
                                   title="More participant options"
                                 />
                               }
@@ -568,9 +570,11 @@ export default function ParticipantsPanel({
                               align="end"
                               className="w-48 bg-slate-900 border border-slate-800 text-slate-200"
                             >
-                              <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
-                                Moderate {displayName}
-                              </DropdownMenuLabel>
+                              <DropdownMenuGroup>
+                                <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                                  Moderate {displayName}
+                                </DropdownMenuLabel>
+                              </DropdownMenuGroup>
                               <DropdownMenuSeparator className="bg-slate-800" />
 
                               {/* Mute Mic Option */}

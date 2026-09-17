@@ -330,7 +330,11 @@ export default function MeetPage() {
               variant={!isUserLeft && !isNetwork && !canReopen ? "default" : "outline"}
               size="lg"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className="w-full gap-2 font-bold cursor-pointer"
+              className={`w-full gap-2 font-bold cursor-pointer ${
+                !isUserLeft && !isNetwork && !canReopen
+                  ? ""
+                  : "bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white"
+              }`}
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
@@ -389,7 +393,7 @@ export default function MeetPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className="w-full text-xs text-slate-400 hover:text-white"
+              className="w-full text-xs text-slate-400 hover:text-white hover:bg-slate-800"
             >
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {session?.user ? "Back to Meetings" : "Go to Home"}
             </Button>
