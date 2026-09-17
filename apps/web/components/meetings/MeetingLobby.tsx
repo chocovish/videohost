@@ -409,7 +409,7 @@ export default function MeetingLobby({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -419,20 +419,20 @@ export default function MeetingLobby({
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-xs font-bold uppercase tracking-wider">
             <Radio className="w-3.5 h-3.5 animate-pulse" /> Meeting Lobby
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
             {meeting.title}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-mono">
+          <p className="text-xs sm:text-sm text-muted-foreground font-mono">
             Room ID: <span className="text-primary font-semibold">{meeting.id}</span>
             {meeting.hostName && ` • Hosted by ${meeting.hostName}`}
           </p>
         </div>
 
         {/* Main Grid: Video Preview (Left) + Join Settings (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-card border border-border text-card-foreground rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
           {/* Left Column: Camera Preview Box */}
           <div className="lg:col-span-7 flex flex-col justify-between space-y-4">
-            <div className="relative aspect-video w-full rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden shadow-inner flex items-center justify-center">
+            <div className="relative aspect-video w-full rounded-2xl bg-black border border-border overflow-hidden shadow-inner flex items-center justify-center">
               {/* The video element is ALWAYS mounted to preserve srcObject connection */}
               <video
                 ref={videoRef}
@@ -445,11 +445,11 @@ export default function MeetingLobby({
 
               {/* Camera Off / Fallback Placeholder Avatar */}
               {(!videoEnabled || permissionError) && (
-                <div className="flex flex-col items-center justify-center gap-3 text-slate-500 p-4 text-center">
-                  <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400">
+                <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground p-4 text-center">
+                  <div className="w-16 h-16 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
                     <User className="w-8 h-8" />
                   </div>
-                  <p className="text-xs font-medium text-slate-400">
+                  <p className="text-xs font-medium text-muted-foreground">
                     {permissionError ? "Camera preview unavailable" : "Camera is turned off"}
                   </p>
                 </div>
@@ -457,9 +457,9 @@ export default function MeetingLobby({
 
               {/* Audio visualizer bar in video preview */}
               {audioEnabled && !permissionError && (
-                <div className="absolute bottom-3 left-3 bg-slate-900/90 border border-slate-800 rounded-lg px-2.5 py-1.5 flex items-center gap-2 backdrop-blur-md">
+                <div className="absolute bottom-3 left-3 bg-muted/80 border border-border rounded-lg px-2.5 py-1.5 flex items-center gap-2 backdrop-blur-md">
                   <Mic className="w-3.5 h-3.5 text-emerald-400" />
-                  <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-emerald-400 transition-all duration-75"
                       style={{ width: `${Math.max(5, audioLevel)}%` }}
@@ -484,8 +484,8 @@ export default function MeetingLobby({
                   type="button"
                   onClick={toggleAudio}
                   className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${audioEnabled
-                    ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
-                    : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
+                    ? "bg-secondary text-secondary-foreground border-border hover:bg-muted"
+                    : "bg-destructive text-destructive-foreground border-transparent hover:bg-destructive/90"
                     }`}
                   title={audioEnabled ? "Mute Microphone" : "Unmute Microphone"}
                 >
@@ -495,8 +495,8 @@ export default function MeetingLobby({
                   type="button"
                   onClick={toggleVideo}
                   className={`p-2.5 rounded-xl border transition-all cursor-pointer shadow-lg ${videoEnabled
-                    ? "bg-slate-800/90 hover:bg-slate-700 border-slate-700 text-white"
-                    : "bg-rose-500 hover:bg-rose-600 border-rose-600 text-white"
+                    ? "bg-secondary text-secondary-foreground border-border hover:bg-muted"
+                    : "bg-destructive text-destructive-foreground border-transparent hover:bg-destructive/90"
                     }`}
                   title={videoEnabled ? "Turn Off Camera" : "Turn On Camera"}
                 >
@@ -511,7 +511,7 @@ export default function MeetingLobby({
                 <div className="flex items-start gap-2.5">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-white">Media Device Notice</p>
+                    <p className="font-semibold text-foreground">Media Device Notice</p>
                     <p className="text-amber-300/90 leading-relaxed">{permissionError}</p>
                   </div>
                 </div>
@@ -519,7 +519,7 @@ export default function MeetingLobby({
                   size="sm"
                   variant="outline"
                   onClick={() => initMedia()}
-                  className="h-8 px-2.5 border-amber-500/40 hover:bg-amber-500/20 text-amber-200 text-xs shrink-0 gap-1"
+                  className="h-8 px-2.5 text-xs shrink-0 gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
                   Retry
@@ -530,15 +530,15 @@ export default function MeetingLobby({
             {/* Device selection dropdowns */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="text-slate-400 font-medium mb-1.5 block">Microphone</label>
+                <label className="text-muted-foreground font-medium mb-1.5 block">Microphone</label>
                 <Select
                   value={selectedAudioDevice || (audioDevices.length > 0 ? audioDevices[0].deviceId : "default")}
                   onValueChange={(val) => handleDeviceChange("audio", !val || val === "default" ? "" : val)}
                 >
-                  <SelectTrigger className="w-full bg-slate-950/90 border-slate-800 text-slate-200">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select microphone" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  <SelectContent className="shadow-2xl">
                     <SelectGroup>
                     {audioDevices.length === 0 ? (
                       <SelectItem value="default" className="text-xs">
@@ -557,15 +557,15 @@ export default function MeetingLobby({
               </div>
 
               <div>
-                <label className="text-slate-400 font-medium mb-1.5 block">Camera</label>
+                <label className="text-muted-foreground font-medium mb-1.5 block">Camera</label>
                 <Select
                   value={selectedVideoDevice || (videoDevices.length > 0 ? videoDevices[0].deviceId : "default")}
                   onValueChange={(val) => handleDeviceChange("video", !val || val === "default" ? "" : val)}
                 >
-                  <SelectTrigger className="w-full bg-slate-950/90 border-slate-800 text-slate-200">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select camera" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                  <SelectContent className="shadow-2xl">
                     <SelectGroup>
                     {videoDevices.length === 0 ? (
                       <SelectItem value="default" className="text-xs">
@@ -591,12 +591,12 @@ export default function MeetingLobby({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     {isHost ? "Joining as Host" : (meeting.allowGuests ? "Guest & Attendee Access" : "Registered Attendee")}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-white">Enter your name</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-lg font-bold text-foreground">Enter your name</h3>
+                <p className="text-xs text-muted-foreground">
                   Other participants in the video conference will identify you by this name.
                 </p>
               </div>
@@ -608,14 +608,14 @@ export default function MeetingLobby({
                   placeholder="Your full name or handle"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-hidden focus:border-primary focus:ring-1 focus:ring-primary font-semibold transition-all"
+                  className="w-full px-4 py-3 bg-background border border-input rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-ring focus:ring-1 focus:ring-ring font-semibold transition-all"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={!displayName.trim() || isInitializing}
-                className="w-full py-3.5 bg-primary hover:bg-primary/90 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-primary/20 gap-2 cursor-pointer"
+                className="w-full py-3.5 font-extrabold text-sm rounded-xl gap-2 cursor-pointer"
               >
                 {isInitializing ? (
                   <>
@@ -632,7 +632,7 @@ export default function MeetingLobby({
             </form>
 
             {/* Quick features summary */}
-            <div className="pt-4 border-t border-slate-800/80 space-y-2 text-[11px] text-slate-400">
+            <div className="pt-4 border-t border-border space-y-2 text-[11px] text-muted-foreground">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 <span>HD Audio & Video with adaptive LiveKit WebRTC</span>

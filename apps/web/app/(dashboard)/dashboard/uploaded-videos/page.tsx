@@ -433,6 +433,7 @@ function UploadedVideosContent() {
             <RefreshCw className={`w-4 h-4 text-muted-foreground ${isRefreshing ? "animate-spin text-primary" : ""}`} />
             <span>Refresh</span>
           </Button>
+          <Button variant="outline">Test Button</Button>
           <Button
             variant="outline"
             onClick={() => setIsCreateFolderOpen(true)}

@@ -87,10 +87,10 @@ export default function RecordOptionsModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isStarting && onClose()}>
       <DialogContent
-        className="border-slate-800/80 bg-slate-900/95 text-slate-100 p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-w-xl"
+        className="p-0 overflow-hidden max-w-xl"
       >
         {/* Header */}
-        <div className="p-6 pb-4 border-b border-slate-800/80 bg-slate-950/40">
+        <div className="p-6 pb-4 border-b border-border bg-muted/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/10 border border-rose-500/30 text-rose-400">
               <Disc className="w-5 h-5 animate-pulse" />
@@ -112,13 +112,13 @@ export default function RecordOptionsModal({
             <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-500/40 text-rose-200 text-xs flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white">Recording Error</p>
+                <p className="font-semibold text-foreground">Recording Error</p>
                 <p className="mt-0.5 text-rose-300">{error}</p>
               </div>
               {onClearError && (
                 <button
                   onClick={onClearError}
-                  className="text-rose-400 hover:text-white text-xs font-semibold underline shrink-0"
+                  className="text-rose-400 hover:text-foreground text-xs font-semibold underline shrink-0"
                 >
                   Dismiss
                 </button>
@@ -128,7 +128,7 @@ export default function RecordOptionsModal({
 
           {/* Layout Selection Cards */}
           <div className="space-y-2.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Select Recording Layout
             </label>
 
@@ -142,28 +142,28 @@ export default function RecordOptionsModal({
                 className={`group relative p-4 rounded-xl border transition-all cursor-pointer flex items-start gap-3.5 ${
                   selectedLayout === layout.id
                     ? "bg-emerald-500/10 border-emerald-500/50 shadow-lg shadow-emerald-500/5 ring-1 ring-emerald-500/30"
-                    : "bg-slate-950/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50"
+                    : "bg-muted/40 border-border hover:border-ring/50"
                 }`}
               >
                 <div
                   className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                     selectedLayout === layout.id
                       ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-slate-800/80 text-slate-400 group-hover:text-slate-200"
+                      : "bg-muted text-muted-foreground group-hover:text-foreground"
                   }`}
                 >
                   {layout.icon}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-sm text-white">{layout.label}</span>
+                    <span className="font-semibold text-sm text-foreground">{layout.label}</span>
                     {selectedLayout === layout.id && (
                       <span className="w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3 stroke-3" />
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{layout.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{layout.description}</p>
                 </div>
               </div>
             ))}
@@ -171,17 +171,17 @@ export default function RecordOptionsModal({
         </div>
 
         {/* Modal Footer */}
-        <DialogFooter className="p-4 sm:p-6 border-t border-slate-800/80 bg-slate-950/60 shrink-0 flex items-center justify-between sm:justify-between gap-3">
+        <DialogFooter className="p-4 sm:p-6 border-t border-border bg-muted/40 shrink-0 flex items-center justify-between sm:justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={onClose} disabled={isStarting}>
             Cancel
           </Button>
 
           <Button
-            variant="default"
+            variant="destructive"
             size="sm"
             onClick={handleSubmit}
             disabled={isStarting}
-            className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/20"
+            className="gap-2"
           >
             {isStarting ? (
               <>

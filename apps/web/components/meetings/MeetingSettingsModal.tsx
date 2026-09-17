@@ -238,18 +238,18 @@ export default function MeetingSettingsModal() {
 
   return (
     <div
-      className="w-full max-w-2xl bg-slate-900/95 border border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-2xl flex flex-col max-h-[90vh] text-slate-100 animate-in fade-in zoom-in-95 duration-150 select-none"
+      className="w-full max-w-2xl bg-card border border-border rounded-3xl shadow-2xl overflow-hidden backdrop-blur-2xl flex flex-col max-h-[90vh] text-card-foreground animate-in fade-in zoom-in-95 duration-150 select-none"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Modal Header */}
-      <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-muted/40">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary">
             <SettingsIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white leading-tight">Meeting Settings</h3>
-            <p className="text-xs text-slate-400">Configure devices, audio, video & meeting options</p>
+            <h3 className="text-base font-bold text-foreground leading-tight">Meeting Settings</h3>
+            <p className="text-xs text-muted-foreground">Configure devices, audio, video & meeting options</p>
           </div>
         </div>
 
@@ -257,7 +257,6 @@ export default function MeetingSettingsModal() {
           variant="ghost"
           size="icon-xs"
           onClick={handleClose}
-          className="text-slate-400 hover:text-white hover:bg-slate-800"
           title="Close Settings"
         >
           <X className="w-4 h-4" />
@@ -265,13 +264,13 @@ export default function MeetingSettingsModal() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-800/80 bg-slate-950/40 px-6 gap-2">
+      <div className="flex border-b border-border bg-muted/40 px-6 gap-2">
         <button
           onClick={() => setActiveTab("audio")}
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "audio"
               ? "border-primary text-primary"
-              : "border-transparent text-slate-400 hover:text-slate-200"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Mic className="w-4 h-4" />
@@ -283,7 +282,7 @@ export default function MeetingSettingsModal() {
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "video"
               ? "border-primary text-primary"
-              : "border-transparent text-slate-400 hover:text-slate-200"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <VideoIcon className="w-4 h-4" />
@@ -295,7 +294,7 @@ export default function MeetingSettingsModal() {
           className={`flex items-center gap-2 py-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === "general"
               ? "border-primary text-primary"
-              : "border-transparent text-slate-400 hover:text-slate-200"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Info className="w-4 h-4" />
@@ -311,7 +310,7 @@ export default function MeetingSettingsModal() {
             {/* Microphone Selector */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <Mic className="w-3.5 h-3.5 text-primary" />
                   Microphone Input
                 </label>
@@ -335,10 +334,10 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveAudioInputDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select microphone" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                <SelectContent className="shadow-2xl">
                   <SelectGroup>
                   {audioInputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
@@ -360,12 +359,12 @@ export default function MeetingSettingsModal() {
               </Select>
 
               {/* Real-time Mic Level Indicator */}
-              <div className="p-3 bg-slate-950/80 border border-slate-800/80 rounded-xl space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="p-3 bg-muted/50 border border-border rounded-xl space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Input Volume Level (Speak to test)</span>
-                  <span className="font-mono text-[11px] text-slate-300">{audioLevel}%</span>
+                  <span className="font-mono text-[11px] text-foreground">{audioLevel}%</span>
                 </div>
-                <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden flex">
                   <div
                     className="h-full bg-linear-to-r from-emerald-500 via-primary to-amber-400 rounded-full transition-all duration-75"
                     style={{ width: `${isMicrophoneEnabled ? audioLevel : 0}%` }}
@@ -382,7 +381,7 @@ export default function MeetingSettingsModal() {
             {/* Speaker Selector & Test */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
                   Speaker Output
                 </label>
@@ -403,10 +402,10 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveAudioOutputDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select speaker" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                <SelectContent className="shadow-2xl">
                   <SelectGroup>
                   {audioOutputDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
@@ -429,13 +428,13 @@ export default function MeetingSettingsModal() {
             </div>
 
             {/* Audio Enhancements */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Audio Enhancements</h4>
+            <div className="pt-2 border-t border-border space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Audio Enhancements</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div className="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-white">Noise Suppression</p>
-                    <p className="text-[10px] text-slate-400">Reduce background hums</p>
+                    <p className="text-xs font-semibold text-foreground">Noise Suppression</p>
+                    <p className="text-[10px] text-muted-foreground">Reduce background hums</p>
                   </div>
                   <input
                     type="checkbox"
@@ -445,10 +444,10 @@ export default function MeetingSettingsModal() {
                   />
                 </div>
 
-                <div className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div className="p-3 bg-muted/50 border border-border rounded-xl flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-semibold text-white">Echo Cancellation</p>
-                    <p className="text-[10px] text-slate-400">Prevent speaker feedback</p>
+                    <p className="text-xs font-semibold text-foreground">Echo Cancellation</p>
+                    <p className="text-[10px] text-muted-foreground">Prevent speaker feedback</p>
                   </div>
                   <input
                     type="checkbox"
@@ -468,7 +467,7 @@ export default function MeetingSettingsModal() {
             {/* Camera Selector */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                   <VideoIcon className="w-3.5 h-3.5 text-primary" />
                   Camera Device
                 </label>
@@ -492,10 +491,10 @@ export default function MeetingSettingsModal() {
                   if (val) setActiveVideoDevice(val);
                 }}
               >
-                <SelectTrigger className="w-full bg-slate-950 border-slate-800 text-white">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select camera" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 shadow-2xl">
+                <SelectContent className="shadow-2xl">
                   <SelectGroup>
                   {videoDevices.length === 0 ? (
                     <SelectItem value="default" className="text-xs">
@@ -519,19 +518,19 @@ export default function MeetingSettingsModal() {
 
             {/* Camera Live Preview Box */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-400">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Live Video Preview</span>
                 <button
                   type="button"
                   onClick={() => setIsMirrored(!isMirrored)}
-                  className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
                   <RotateCw className="w-3 h-3" />
                   <span>{isMirrored ? "Mirrored" : "Normal"}</span>
                 </button>
               </div>
 
-              <div className="relative aspect-video w-full max-w-md mx-auto rounded-2xl bg-black border border-slate-800 overflow-hidden flex items-center justify-center shadow-inner">
+              <div className="relative aspect-video w-full max-w-md mx-auto rounded-2xl bg-black border border-border overflow-hidden flex items-center justify-center shadow-inner">
                 {isCameraEnabled && cameraTrack && localParticipant ? (
                   <>
                     <VideoTrack
@@ -544,19 +543,19 @@ export default function MeetingSettingsModal() {
                         isMirrored ? "scale-x-[-1]" : ""
                       }`}
                     />
-                    <div className="absolute bottom-2.5 left-2.5 bg-slate-950/80 border border-slate-800 px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 backdrop-blur-md">
+                    <div className="absolute bottom-2.5 left-2.5 bg-muted/80 border border-border px-2 py-0.5 rounded text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 backdrop-blur-md">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       <span>Active Live Preview</span>
                     </div>
                   </>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
+                    <div className="w-12 h-12 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground">
                       <VideoOff className="w-6 h-6" />
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-xs font-semibold text-slate-300">Camera is currently turned off</p>
-                      <p className="text-[11px] text-slate-500">Enable camera to see your live preview</p>
+                      <p className="text-xs font-semibold text-foreground">Camera is currently turned off</p>
+                      <p className="text-[11px] text-muted-foreground">Enable camera to see your live preview</p>
                     </div>
                     <Button
                       variant="default"
@@ -573,8 +572,8 @@ export default function MeetingSettingsModal() {
             </div>
 
             {/* Video Quality / Preset */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <div className="pt-2 border-t border-border space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
                 Video Quality Preset
               </label>
@@ -591,12 +590,12 @@ export default function MeetingSettingsModal() {
                     onClick={() => setVideoQuality(item.id as any)}
                     className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                       videoQuality === item.id
-                        ? "bg-primary/15 border-primary text-white"
-                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                        ? "bg-primary/15 border-primary text-foreground"
+                        : "bg-muted/40 border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     <p className="text-xs font-bold leading-tight">{item.label}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</p>
                   </button>
                 ))}
               </div>
@@ -608,9 +607,9 @@ export default function MeetingSettingsModal() {
         {activeTab === "general" && (
           <div className="space-y-5">
             {/* Meeting Room Link */}
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="p-4 rounded-2xl bg-muted/50 border border-border space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white uppercase tracking-wider">Meeting Room Link</span>
+                <span className="text-xs font-bold text-foreground uppercase tracking-wider">Meeting Room Link</span>
                 <Button
                   variant="default"
                   size="xs"
@@ -621,24 +620,24 @@ export default function MeetingSettingsModal() {
                   <span>{copiedLink ? "Copied!" : "Copy Link"}</span>
                 </Button>
               </div>
-              <p className="text-xs font-mono text-slate-300 truncate bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+              <p className="text-xs font-mono text-foreground truncate bg-muted/60 p-2.5 rounded-lg border border-border">
                 {typeof window !== "undefined" ? window.location.href : ""}
               </p>
             </div>
 
             {/* WebRTC Diagnostics & Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+              <div className="p-3.5 rounded-xl bg-muted/50 border border-border space-y-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   <span>Security & Protocol</span>
                 </div>
-                <p className="text-xs font-bold text-white">LiveKit SFU / WebRTC (E2EE Ready)</p>
-                <p className="text-[10px] text-slate-400">Encrypted low-latency video streaming</p>
+                <p className="text-xs font-bold text-foreground">LiveKit SFU / WebRTC (E2EE Ready)</p>
+                <p className="text-[10px] text-muted-foreground">Encrypted low-latency video streaming</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+              <div className="p-3.5 rounded-xl bg-muted/50 border border-border space-y-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                   <Radio className="w-4 h-4 text-primary" />
                   <span>Connection State</span>
                 </div>
@@ -646,7 +645,7 @@ export default function MeetingSettingsModal() {
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   {connectionState === ConnectionState.Connected ? "Connected (Optimal)" : connectionState}
                 </p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-muted-foreground">
                   {participants.length} participant{participants.length === 1 ? "" : "s"} in call
                 </p>
               </div>

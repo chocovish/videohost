@@ -239,9 +239,9 @@ export default function MeetPage() {
 
   if (isLoading && !meeting && !isInRoom && !leaveState) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-        <p className="text-sm font-medium text-slate-400">Connecting to meeting room...</p>
+        <p className="text-sm font-medium text-muted-foreground">Connecting to meeting room...</p>
       </div>
     );
   }
@@ -257,8 +257,8 @@ export default function MeetPage() {
       (isHost || isOrgMember || (session?.user?.id && meeting?.createdById === session.user.id));
 
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-card border border-border text-card-foreground rounded-3xl p-8 text-center space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           <div
             className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center border ${
               isNetwork
@@ -282,7 +282,7 @@ export default function MeetPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-foreground">
               {isNetwork
                 ? "Network Connection Issue"
                 : isEnded
@@ -291,7 +291,7 @@ export default function MeetPage() {
                 ? "Removed from Meeting"
                 : "You Left the Meeting"}
             </h2>
-            <p className="text-sm text-slate-400 mt-2 leading-relaxed">
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               {leaveState.message}
             </p>
           </div>
@@ -330,11 +330,7 @@ export default function MeetPage() {
               variant={!isUserLeft && !isNetwork && !canReopen ? "default" : "outline"}
               size="lg"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className={`w-full gap-2 font-bold cursor-pointer ${
-                !isUserLeft && !isNetwork && !canReopen
-                  ? ""
-                  : "bg-slate-900 border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white"
-              }`}
+              className="w-full gap-2 font-bold cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>{session?.user ? "Back to Dashboard" : "Go to Home"}</span>
@@ -350,8 +346,8 @@ export default function MeetPage() {
     const isFree = meeting?.price === null || meeting?.price === undefined || Number(meeting?.price) <= 0;
     const formattedPrice = isFree ? "Free" : (meeting?.price ? `${meeting.currency || "USD"} ${meeting.price}` : "Paid Pass");
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-black">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-card border border-border text-card-foreground rounded-3xl p-8 text-center space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center border bg-amber-500/10 border-amber-500/30 text-amber-400">
             <Ticket className="w-8 h-8" />
           </div>
@@ -360,18 +356,18 @@ export default function MeetPage() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
               Entry Pass Required
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tight">
+            <h2 className="text-2xl font-black text-foreground tracking-tight">
               {meeting?.title || "Live Conference Meeting"}
             </h2>
-            <p className="text-sm text-slate-400 leading-relaxed">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               This session requires a registered entry pass. Please visit the share page to claim your attendee pass.
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+          <div className="p-4 rounded-2xl bg-muted/50 border border-border flex items-center justify-between">
             <div className="text-left">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Entry Ticket</p>
-              <p className="text-xs font-semibold text-slate-200">Live Access Pass</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Entry Ticket</p>
+              <p className="text-xs font-semibold text-foreground">Live Access Pass</p>
             </div>
             <div className="text-right">
               <span className="text-lg font-black text-amber-400">{formattedPrice}</span>
@@ -383,7 +379,7 @@ export default function MeetPage() {
               variant="default"
               size="lg"
               onClick={() => router.push(`/share/${id}`)}
-              className="w-full gap-2 font-black cursor-pointer bg-amber-400 hover:bg-amber-300 text-slate-950"
+              className="w-full gap-2 font-black cursor-pointer"
             >
               <Ticket className="w-4 h-4" />
               <span>{isFree ? "Buy for Free" : `Get Entry Pass • ${formattedPrice}`}</span>
@@ -393,7 +389,7 @@ export default function MeetPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.push(session?.user ? "/dashboard/meetings" : "/")}
-              className="w-full text-xs text-slate-400 hover:text-white hover:bg-slate-800"
+              className="w-full text-xs"
             >
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> {session?.user ? "Back to Meetings" : "Go to Home"}
             </Button>
@@ -405,16 +401,16 @@ export default function MeetPage() {
 
   if (error && !isInRoom) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-5 shadow-2xl">
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-card border border-border text-card-foreground rounded-3xl p-8 text-center space-y-5 shadow-2xl">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400">
             <AlertCircle className="w-7 h-7" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-foreground">
               {requiresAuth ? "Sign In Required" : "Meeting Unavailable"}
             </h2>
-            <p className="text-sm text-slate-400 mt-2">{error}</p>
+            <p className="text-sm text-muted-foreground mt-2">{error}</p>
           </div>
           <div className="space-y-2 pt-2">
             {requiresAuth ? (

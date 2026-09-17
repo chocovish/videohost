@@ -88,7 +88,7 @@ export default function MeetingRoom({
   const userIntentionalLeave = useRef(false);
 
   return (
-    <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none">
+    <div className="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden select-none">
       <LiveKitRoom
         token={token}
         serverUrl={serverUrl}
@@ -477,7 +477,7 @@ function RoomContent({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-slate-950 relative">
+    <div className="flex-1 flex flex-col h-full w-full overflow-hidden bg-background relative">
       {/* Moderation Toast Alert Notification */}
       {inMeetingToast && (
         <div className="absolute top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-full px-4 animate-in fade-in slide-in-from-top-3 duration-200 pointer-events-none">
@@ -489,7 +489,7 @@ function RoomContent({
                 ? "bg-amber-950/95 border-amber-500/50 text-amber-100"
                 : inMeetingToast.type === "success"
                 ? "bg-emerald-950/95 border-emerald-500/50 text-emerald-100"
-                : "bg-slate-900/95 border-slate-700 text-slate-100"
+                : "bg-card border-border text-card-foreground"
             }`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
@@ -506,7 +506,7 @@ function RoomContent({
             </div>
             <button
               onClick={() => setInMeetingToast(null)}
-              className="p-1 text-slate-400 hover:text-white rounded-lg transition-colors shrink-0"
+              className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors shrink-0"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -521,7 +521,7 @@ function RoomContent({
             <div className="flex gap-3 min-w-0">
               <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div className="text-xs space-y-1.5 min-w-0">
-                <p className="font-bold text-white text-sm">Recording Start Failed</p>
+                <p className="font-bold text-foreground text-sm">Recording Start Failed</p>
                 <p className="text-rose-200/90 leading-relaxed">{recordingError}</p>
                 {recordingFallbackUrl && (
                   <div className="pt-1">
@@ -529,7 +529,7 @@ function RoomContent({
                       href={recordingFallbackUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/30 text-xs font-semibold transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:text-foreground hover:bg-emerald-500/30 text-xs font-semibold transition-colors"
                     >
                       Open Screen Recording
                     </a>
@@ -539,7 +539,7 @@ function RoomContent({
             </div>
             <button
               onClick={() => setRecordingError(null)}
-              className="text-rose-400 hover:text-white p-1 rounded-lg hover:bg-rose-900/50 transition-colors shrink-0"
+              className="text-rose-400 hover:text-foreground p-1 rounded-lg hover:bg-destructive/20 transition-colors shrink-0"
               title="Dismiss error"
             >
               <X className="w-4 h-4" />
@@ -549,30 +549,30 @@ function RoomContent({
       )}
 
       {/* Top Navigation / Status Header Bar */}
-      <header className="h-14 px-3 sm:px-5 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between z-20 backdrop-blur-md gap-2">
+      <header className="h-14 px-3 sm:px-5 bg-card/90 border-b border-border flex items-center justify-between z-20 backdrop-blur-md gap-2">
         {/* Left: Organization Logo & Meeting Title */}
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           {meeting.organizationLogoUrl ? (
             <img
               src={meeting.organizationLogoUrl}
               alt={meeting.organizationName || "Organization"}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-slate-700/60 shrink-0 bg-slate-900 shadow-xs"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-border shrink-0 bg-muted shadow-xs"
             />
           ) : (
             <img
               src="/taped-in-logo.webp"
               alt="Taped"
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain border border-slate-700/60 shrink-0 bg-slate-900 p-1 shadow-xs"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-contain border border-border shrink-0 bg-muted p-1 shadow-xs"
             />
           )}
 
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex flex-col min-w-0">
-              <h2 className="text-xs sm:text-sm font-bold text-white truncate max-w-[130px] sm:max-w-xs md:max-w-md leading-tight">
+              <h2 className="text-xs sm:text-sm font-bold text-foreground truncate max-w-[130px] sm:max-w-xs md:max-w-md leading-tight">
                 {meeting.title}
               </h2>
               {meeting.organizationName && (
-                <span className="text-[10px] text-slate-400 truncate hidden sm:inline leading-none mt-0.5">
+                <span className="text-[10px] text-muted-foreground truncate hidden sm:inline leading-none mt-0.5">
                   {meeting.organizationName}
                 </span>
               )}
@@ -583,7 +583,7 @@ function RoomContent({
         {/* Right: In-meeting Timer, Recording Status & Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Meeting duration call timer with animated pulse */}
-          <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-slate-950/60 border border-slate-800 text-[11px] sm:text-xs font-mono text-slate-300 font-semibold inline-flex items-center gap-1.5 sm:gap-2">
+          <div className="h-7 sm:h-8 px-2.5 sm:px-3 rounded-full bg-muted/60 border border-border text-[11px] sm:text-xs font-mono text-muted-foreground font-semibold inline-flex items-center gap-1.5 sm:gap-2">
             <span className="relative flex h-2 w-2 shrink-0 items-center justify-center">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-emerald-500" />
@@ -624,7 +624,7 @@ function RoomContent({
                     variant="outline"
                     size="sm"
                     onClick={() => setIsUpgradeModalOpen(true)}
-                    className="inline-flex gap-1.5 text-slate-300 hover:text-white border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 transition-colors shadow-xs"
+                    className="inline-flex gap-1.5 shadow-xs"
                     title="Meeting recording is not available on the Free plan. Click to view upgrade options."
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -691,13 +691,13 @@ function RoomContent({
               variant={isParticipantsOpen ? "secondary" : "outline"}
               size="icon-sm"
               onClick={() => setIsParticipantsOpen(!isParticipantsOpen)}
-              className={`hidden sm:inline-flex relative transition-colors bg-slate-950/60 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white ${
+              className={`hidden sm:inline-flex relative transition-colors ${
                 isParticipantsOpen ? "text-primary border-primary/40" : ""
               }`}
               title="Participants list"
             >
               <Users className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 bg-slate-800 text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-slate-700 text-slate-200">
+              <span className="absolute -top-1 -right-1 bg-muted text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-border text-muted-foreground">
                 {participants.length}
               </span>
             </Button>
@@ -734,7 +734,6 @@ function RoomContent({
                   <Button
                     variant="outline"
                     size="icon-sm"
-                    className="bg-slate-950/60 border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white"
                     title="More meeting options"
                   />
                 }
@@ -743,28 +742,28 @@ function RoomContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-56 bg-slate-900 border border-slate-800 text-slate-200 shadow-2xl p-1.5 z-50"
+                className="w-56 p-1.5 z-50"
               >
                 {/* Participants list in 3-dot menu */}
                 <DropdownMenuItem
                   onClick={() => setIsParticipantsOpen(true)}
-                  className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 flex items-center justify-between"
+                  className="gap-2.5 text-xs cursor-pointer py-2 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4 text-sky-400" />
                     <span>Participants</span>
                   </div>
-                  <span className="bg-slate-800 text-[10px] font-bold rounded-full px-2 py-0.5 border border-slate-700 text-slate-300">
+                  <span className="bg-muted text-[10px] font-bold rounded-full px-2 py-0.5 border border-border text-muted-foreground">
                     {participants.length}
                   </span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-slate-800 my-1" />
+                <DropdownMenuSeparator className="my-1" />
 
                 {/* Recording Controls in 3-dot Menu */}
                 {(meeting.canRecord || meeting.isHost || meeting.isOrgMember) && (
                   <>
                     <DropdownMenuGroup>
-                      <DropdownMenuLabel className="text-[10px] text-slate-400 uppercase tracking-wider font-bold px-2 py-1 flex items-center justify-between">
+                      <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 flex items-center justify-between">
                         <span>Recording</span>
                         {meeting.isFreePlan && (
                           <span className="text-[9px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
@@ -777,7 +776,7 @@ function RoomContent({
                     {meeting.isFreePlan ? (
                       <DropdownMenuItem
                         onClick={() => setIsUpgradeModalOpen(true)}
-                        className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-slate-300"
+                        className="gap-2.5 text-xs cursor-pointer py-2"
                       >
                         <Lock className="w-4 h-4 text-amber-400" />
                         <span>Record Meeting (Upgrade)</span>
@@ -787,14 +786,14 @@ function RoomContent({
                         <DropdownMenuItem
                           onClick={isRecording ? handleStopRecording : handleRecordButtonClick}
                           disabled={isUpdatingRecord}
-                          className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
+                          className="gap-2.5 text-xs cursor-pointer py-2"
                         >
                           {isUpdatingRecord ? (
                             <Loader2 className="w-4 h-4 animate-spin text-primary" />
                           ) : (
                             <Disc
                               className={`w-4 h-4 ${
-                                isRecording ? "text-rose-400 animate-pulse" : "text-slate-400"
+                                isRecording ? "text-rose-400 animate-pulse" : "text-muted-foreground"
                               }`}
                             />
                           )}
@@ -809,7 +808,7 @@ function RoomContent({
                               setRecordingError(null);
                               setIsRecordOptionsOpen(true);
                             }}
-                            className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2 text-amber-300"
+                            className="gap-2.5 text-xs cursor-pointer py-2 text-amber-300"
                           >
                             <Sliders className="w-4 h-4 text-amber-400" />
                             <span>Adjust REC Layout</span>
@@ -817,7 +816,7 @@ function RoomContent({
                         )}
                       </>
                     )}
-                    <DropdownMenuSeparator className="bg-slate-800 my-1" />
+                    <DropdownMenuSeparator className="my-1" />
                   </>
                 )}
 
@@ -826,12 +825,12 @@ function RoomContent({
                   <>
                     <DropdownMenuItem
                       onClick={() => setIsInviteOpen(true)}
-                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-white py-2"
+                      className="gap-2.5 text-xs cursor-pointer py-2"
                     >
                       <Plus className="w-4 h-4 text-lime-400" />
                       <span className="font-semibold text-lime-300">Invite People</span>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-slate-800 my-1" />
+                    <DropdownMenuSeparator className="my-1" />
                   </>
                 )}
 
@@ -840,14 +839,14 @@ function RoomContent({
                   <>
                     <DropdownMenuItem
                       onClick={handleEndMeetingForAll}
-                      className="gap-2.5 text-xs cursor-pointer focus:bg-rose-950/60 focus:text-rose-200 text-rose-400 py-2"
+                      className="gap-2.5 text-xs cursor-pointer text-rose-400 py-2"
                     >
                       <PhoneOff className="w-4 h-4 text-rose-400" />
                       <span className="font-bold">End Meeting for All</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleLeaveMeeting}
-                      className="gap-2.5 text-xs cursor-pointer focus:bg-slate-800 focus:text-slate-200 text-slate-400 py-2"
+                      className="gap-2.5 text-xs cursor-pointer py-2"
                     >
                       <PhoneOff className="w-4 h-4" />
                       <span>Leave (Keep Active)</span>
@@ -856,7 +855,7 @@ function RoomContent({
                 ) : (
                   <DropdownMenuItem
                     onClick={handleLeaveMeeting}
-                    className="gap-2.5 text-xs cursor-pointer focus:bg-rose-950/60 focus:text-rose-200 text-rose-400 py-2"
+                    className="gap-2.5 text-xs cursor-pointer text-rose-400 py-2"
                   >
                     <PhoneOff className="w-4 h-4 text-rose-400" />
                     <span className="font-bold">Leave Meeting</span>
@@ -871,7 +870,7 @@ function RoomContent({
       {/* Main Video Conference Layout + Drawers */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* LiveKit Video Conference Stage */}
-        <div className="flex-1 h-full w-full relative overflow-hidden bg-slate-950">
+        <div className="flex-1 h-full w-full relative overflow-hidden bg-black">
           <VideoConference
             chatMessageFormatter={(msg) => msg}
             SettingsComponent={MeetingSettingsModal}
