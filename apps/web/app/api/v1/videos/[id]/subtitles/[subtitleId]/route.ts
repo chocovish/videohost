@@ -1,7 +1,40 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { authenticateRequest } from "@/lib/api-auth";
 import { db } from "@videohost/db";
-import { deleteSubtitleFile, normalizeSubtitleLabel, normalizeSubtitleLanguage } from "@/lib/subtitles";
+import {
+  deleteSubtitleFile,
+  getSubtitleContent,
+  getSubtitleS3Key,
+  normalizeSubtitleLabel,
+  normalizeSubtitleLanguage,
+  SUBTITLE_MAX_BYTES,
+  uploadSubtitleBuffer,
+  validateVttContent,
+} from "@/lib/subtitles";
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string; subtitleId: string }> }
+) {
+  const { id, subtitleId } = await params;
+  const authCtx = await authenticateRequest(req);
+  if (!authCtx) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const video = await db.video.findFirst({ where: { id, organizationId: authCtx.orgId } });
+  if (!video) return NextResponse.json({ error: "Video not found" }, { status: 404 });
+
+  const subtitle = await db.videoSubtitle.findFirst({ where: { id: subtitleId, videoId: id } });
+  if (!subtitle) return NextResponse.json({ error: "Subtitle not found" }, { status: 404 });
+
+  try {
+    const content = await getSubtitleContent(subtitle.storageKey);
+    return NextResponse.json({ content }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error("[Subtitles Read Error]", error);
+    return NextResponse.json({ error: "Failed to load subtitle file." }, { status: 500 });
+  }
+}
 
 export async function PATCH(
   req: Request,
@@ -24,7 +57,21 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const dataToUpdate: { label?: string; language?: string; isDefault?: boolean } = {};
+  const dataToUpdate: { label?: string; language?: string; isDefault?: boolean; sizeBytes?: number; storageKey?: string } = {};
+  let content: string | undefined;
+  if (body.content !== undefined) {
+    if (typeof body.content !== "string") {
+      return NextResponse.json({ error: "Subtitle content must be text." }, { status: 400 });
+    }
+    content = body.content;
+    const contentBuffer = Buffer.from(content, "utf-8");
+    if (contentBuffer.length > SUBTITLE_MAX_BYTES) {
+      return NextResponse.json({ error: "Subtitle file too large (max 5MB)." }, { status: 400 });
+    }
+    const validation = validateVttContent(content);
+    if (!validation.ok) return NextResponse.json({ error: validation.error }, { status: 400 });
+    dataToUpdate.sizeBytes = contentBuffer.length;
+  }
   if (body.label !== undefined) {
     const next = normalizeSubtitleLabel(String(body.label || ""), body.language ?? subtitle.language);
     if (!next) return NextResponse.json({ error: "Label cannot be empty." }, { status: 400 });
@@ -54,14 +101,42 @@ export async function PATCH(
     );
   }
 
-  if (dataToUpdate.isDefault === true) {
-    await db.videoSubtitle.updateMany({
-      where: { videoId: id, id: { not: subtitleId } },
-      data: { isDefault: false },
-    });
+  let newStorageKey: string | undefined;
+  if (content !== undefined) {
+    newStorageKey = getSubtitleS3Key(video.organizationId, id, `${subtitleId}-${randomUUID()}`, nextLanguage);
+    dataToUpdate.storageKey = newStorageKey;
+    try {
+      await uploadSubtitleBuffer(newStorageKey, Buffer.from(content, "utf-8"));
+    } catch (error) {
+      console.error("[Subtitles Edit Upload Error]", error);
+      return NextResponse.json({ error: "Failed to store edited subtitle file." }, { status: 500 });
+    }
   }
 
-  const updated = await db.videoSubtitle.update({ where: { id: subtitleId }, data: dataToUpdate });
+  let updated;
+  try {
+    updated = await db.$transaction(async (tx) => {
+      const row = await tx.videoSubtitle.update({ where: { id: subtitleId }, data: dataToUpdate });
+      if (dataToUpdate.isDefault === true) {
+        await tx.videoSubtitle.updateMany({
+          where: { videoId: id, id: { not: subtitleId } },
+          data: { isDefault: false },
+        });
+      }
+      return row;
+    });
+  } catch (error) {
+    if (newStorageKey) await deleteSubtitleFile(newStorageKey).catch(() => {});
+    console.error("[Subtitles Edit Error]", error);
+    return NextResponse.json({ error: "Failed to update subtitle." }, { status: 500 });
+  }
+
+  // New keys keep CDN caches from serving the previous subtitle after an edit.
+  if (newStorageKey && subtitle.storageKey !== newStorageKey) {
+    await deleteSubtitleFile(subtitle.storageKey).catch((error) =>
+      console.warn("[Subtitles Edit] Old file cleanup failed:", error)
+    );
+  }
   return NextResponse.json({
     subtitle: {
       id: updated.id,

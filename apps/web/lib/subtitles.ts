@@ -1,4 +1,5 @@
-import { getPresignedPlaybackUrl, getPublicCdnUrl, uploadBufferToS3, deleteFileFromS3 } from "./s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { BUCKET_NAME, getPresignedPlaybackUrl, getPublicCdnUrl, s3, uploadBufferToS3, deleteFileFromS3 } from "./s3";
 import { db } from "@videohost/db";
 
 export interface SubtitleTrack {
@@ -68,6 +69,16 @@ export function validateVttContent(text: string): { ok: boolean; error?: string 
 
 export async function uploadSubtitleBuffer(key: string, body: Buffer): Promise<void> {
   await uploadBufferToS3(key, body, SUBTITLE_CONTENT_TYPE);
+}
+
+/** Read a stored subtitle for the authenticated subtitle editor. */
+export async function getSubtitleContent(storageKey: string): Promise<string> {
+  if (!storageKey || storageKey === "pending" || /^https?:\/\//i.test(storageKey)) {
+    throw new Error("Subtitle file is not available for editing.");
+  }
+  const result = await s3.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: storageKey }));
+  if (!result.Body) throw new Error("Subtitle file is empty.");
+  return result.Body.transformToString("utf-8");
 }
 
 export async function deleteSubtitleFile(key: string): Promise<void> {

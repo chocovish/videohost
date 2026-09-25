@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Captions, Check, Loader2, RefreshCw, Sparkles, Star, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Captions, Check, Loader2, Pencil, RefreshCw, Sparkles, Star, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import SubtitleEditorDialog from "@/components/SubtitleEditorDialog";
 import {
   Select,
   SelectContent,
@@ -165,6 +166,7 @@ export default function VideoSubtitlesManager({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [editingSubtitle, setEditingSubtitle] = useState<SubtitleItem | null>(null);
   const [transcribeLang, setTranscribeLang] = useState("en");
   const [transcribing, setTranscribing] = useState(false);
   const [checkingTranscribeStatus, setCheckingTranscribeStatus] = useState(true);
@@ -448,6 +450,13 @@ export default function VideoSubtitlesManager({
 
   return (
     <div className="space-y-4">
+      <SubtitleEditorDialog
+        videoId={videoId}
+        subtitle={editingSubtitle}
+        open={Boolean(editingSubtitle)}
+        onOpenChange={(open) => { if (!open) setEditingSubtitle(null); }}
+        onSaved={fetchSubtitles}
+      />
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="space-y-1">
           <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -457,8 +466,8 @@ export default function VideoSubtitlesManager({
           <p className="text-xs text-muted-foreground max-w-xl leading-relaxed">
             Upload multiple WebVTT (.vtt) tracks – e.g. English, Hindi. Just giving each
             file a name is enough; language is auto-detected from the file name and can
-            be changed below if needed. Viewers switch tracks (or turn them off) from the
-            CC menu in the player.
+            be changed below if needed. Use Edit on a track to adjust its caption text and
+            timing. Viewers switch tracks (or turn them off) from the CC menu in the player.
           </p>
         </div>
         <Button
@@ -688,6 +697,18 @@ export default function VideoSubtitlesManager({
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingSubtitle(s)}
+                  disabled={Boolean(actionId) || uploading}
+                  className="gap-1 text-xs h-8"
+                  title="Edit subtitle captions and timings"
+                  aria-label={`Edit ${s.label} subtitles`}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
                 {!s.isDefault && (
                   <Button
                     variant="outline"
